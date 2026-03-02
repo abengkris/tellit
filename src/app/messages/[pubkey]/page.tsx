@@ -12,6 +12,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { shortenPubkey, decodeNip19 } from "@/lib/utils/nip19";
 import { format } from "date-fns";
+import { PostContentRenderer } from "@/components/post/parts/PostContent";
 
 export default function ChatPage({ params }: { params: Promise<{ pubkey: string }> }) {
   const { pubkey: rawPubkey } = use(params);
@@ -34,6 +35,17 @@ export default function ChatPage({ params }: { params: Promise<{ pubkey: string 
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
+
+  // Mark as read when entering the chat
+  useEffect(() => {
+    if (messenger && hexPubkey) {
+      messenger.getConversation(hexPubkey).then(conv => {
+        if (conv && (conv as any).setRead) {
+          (conv as any).setRead();
+        }
+      });
+    }
+  }, [messenger, hexPubkey, messages.length]);
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -115,13 +127,17 @@ export default function ChatPage({ params }: { params: Promise<{ pubkey: string 
                     )}
                     <div className={`flex ${isMe ? "justify-end" : "justify-start"}`}>
                       <div 
-                        className={`max-w-[80%] px-4 py-2.5 rounded-2xl text-[15px] shadow-sm ${
+                        className={`max-w-[85%] px-4 py-2.5 rounded-2xl text-[15px] shadow-sm ${
                           isMe 
                             ? "bg-blue-500 text-white rounded-tr-none" 
                             : "bg-white dark:bg-gray-900 text-gray-900 dark:text-white border border-gray-100 dark:border-gray-800 rounded-tl-none"
                         }`}
                       >
-                        <p className="whitespace-pre-wrap break-words">{msg.content}</p>
+                        <PostContentRenderer 
+                          content={msg.content} 
+                          event={msg.event} 
+                          className={isMe ? "text-white" : ""}
+                        />
                         <p className={`text-[9px] mt-1 text-right opacity-60 font-medium ${isMe ? "text-white" : "text-gray-500"}`}>
                           {format(new Date(msg.timestamp * 1000), "HH:mm")}
                         </p>
