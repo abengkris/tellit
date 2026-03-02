@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
-import { NDKEvent, NDKFilter, NDKUser } from "@nostr-dev-kit/ndk";
+import { useState, useEffect, useCallback } from "react";
+import { NDKEvent, NDKUser } from "@nostr-dev-kit/ndk";
+import { NDKMessenger, NDKConversation } from "@nostr-dev-kit/messages";
 import { useNDK } from "@/hooks/useNDK";
 import { useAuthStore } from "@/store/auth";
 
@@ -22,142 +23,78 @@ export interface Conversation {
 }
 
 export function useMessages() {
-  const { ndk, isReady } = useNDK();
+  const { messenger, isReady } = useNDK();
   const { user } = useAuthStore();
   const [conversations, setConversations] = useState<Map<string, Conversation>>(new Map());
   const [loading, setLoading] = useState(true);
-  const processedEventIds = useRef<Set<string>>(new Set());
 
-  const processGiftWrap = useCallback(async (giftWrap: NDKEvent): Promise<Message | null> => {
-    if (!user || processedEventIds.current.has(giftWrap.id)) return null;
-    processedEventIds.current.add(giftWrap.id);
-
-    try {
-      // 1. Decrypt Gift Wrap (Kind 1059) to get Seal (Kind 13)
-      const seal = await (giftWrap as any).decrypt(user ?? undefined);
-      if (!seal || (seal as any).kind !== 13) return null;
-
-      // 2. Decrypt Seal (Kind 13) to get Message (Kind 14)
-      // Note: The sender of the seal is the actual sender of the message
-      const sender = (seal as any).pubkey;
-      const messageEvent = await (seal as any).decrypt(user ?? undefined);
-      if (!messageEvent || (messageEvent as any).kind !== 14) return null;
-
-      // The recipient is the one tagged in the Kind 14 rumor
-      const recipientTag = messageEvent.getMatchingTags("p")[0];
-      const recipient = recipientTag ? recipientTag[1] : user!.pubkey;
-
-      return {
-        id: messageEvent.id,
-        sender: sender,
-        recipient: recipient,
-        content: messageEvent.content,
-        timestamp: messageEvent.created_at || giftWrap.created_at || 0,
-        event: messageEvent
-      };
-    } catch (e) {
-      // console.error("Failed to decrypt NIP-17 message:", e);
-      return null;
-    }
+  const mapNDKMessage = useCallback((ndkEvent: NDKEvent): Message => {
+    const recipientTag = ndkEvent.getMatchingTags("p")[0];
+    const recipient = recipientTag ? recipientTag[1] : (user?.pubkey || "");
+    
+    return {
+      id: ndkEvent.id,
+      sender: ndkEvent.pubkey,
+      recipient: recipient,
+      content: ndkEvent.content,
+      timestamp: ndkEvent.created_at || 0,
+      event: ndkEvent
+    };
   }, [user]);
 
-  const fetchMessages = useCallback(async () => {
-    if (!ndk || !isReady || !user) return;
+  const updateConversations = useCallback(() => {
+    if (!messenger || !user) return;
 
-    setLoading(true);
-    try {
-      // Fetch incoming gift wraps (those sent TO me, including my own sent copies)
-      const filter: NDKFilter = {
-        kinds: [1059],
-        "#p": [user.pubkey],
-        limit: 100,
-      };
+    const ndkConversations = messenger.getConversations();
+    const next = new Map<string, Conversation>();
 
-      const giftWraps = await ndk.fetchEvents(filter);
-      const newMessages: Message[] = [];
+    ndkConversations.forEach((conv: NDKConversation) => {
+      // Find the other participant
+      const chatPartner = Array.from(conv.participants).find(p => p !== user.pubkey);
+      if (!chatPartner) return;
 
-      for (const gw of Array.from(giftWraps)) {
-        const msg = await processGiftWrap(gw);
-        if (msg) newMessages.push(msg);
-      }
+      const events = conv.getMessages();
+      if (events.length === 0) return;
 
-      // Group by conversation
-      setConversations((prev) => {
-        const next = new Map(prev);
-        newMessages.forEach((msg) => {
-          // Chat partner is the person we are talking to.
-          // If we sent the message (sender is me), chat partner is the recipient.
-          // If we received the message (sender is not me), chat partner is the sender.
-          const isMe = msg.sender === user.pubkey;
-          const chatPartner = isMe ? msg.recipient : msg.sender;
-          
-          if (chatPartner === user.pubkey) return; // Ignore self-to-self if any
+      const messages = events
+        .map(mapNDKMessage)
+        .sort((a, b) => b.timestamp - a.timestamp);
 
-          const conv = next.get(chatPartner) || {
-            pubkey: chatPartner,
-            messages: [],
-            unreadCount: 0,
-            lastMessage: msg,
-          };
-
-          if (!conv.messages.find((m) => m.id === msg.id)) {
-            conv.messages.push(msg);
-            conv.messages.sort((a, b) => b.timestamp - a.timestamp);
-            conv.lastMessage = conv.messages[0];
-            next.set(chatPartner, conv);
-          }
-        });
-        return next;
+      next.set(chatPartner, {
+        pubkey: chatPartner,
+        messages: messages,
+        lastMessage: messages[0],
+        unreadCount: 0, // NDKMessenger might have its own unread tracking, but for now we simplify
       });
-    } catch (err) {
-      console.error("Error fetching messages:", err);
-    } finally {
-      setLoading(false);
-    }
-  }, [ndk, isReady, user, processGiftWrap]);
-
-  useEffect(() => {
-    fetchMessages();
-
-    if (!ndk || !isReady || !user) return;
-
-    // Real-time listener for NEW gift wraps
-    const sub = ndk.subscribe(
-      { kinds: [1059], "#p": [user.pubkey], since: Math.floor(Date.now() / 1000) },
-      { closeOnEose: false }
-    );
-
-    sub.on("event", async (gw: NDKEvent) => {
-      const msg = await processGiftWrap(gw);
-      if (msg) {
-        setConversations((prev) => {
-          const next = new Map(prev);
-          const isMe = msg.sender === user.pubkey;
-          const chatPartner = isMe ? msg.recipient : msg.sender;
-          
-          if (chatPartner === user.pubkey) return next;
-
-          const conv = next.get(chatPartner) || {
-            pubkey: chatPartner,
-            messages: [],
-            unreadCount: 0,
-            lastMessage: msg,
-          };
-
-          if (!conv.messages.find((m) => m.id === msg.id)) {
-            conv.messages.unshift(msg);
-            conv.messages.sort((a, b) => b.timestamp - a.timestamp);
-            conv.lastMessage = conv.messages[0];
-            if (!isMe) conv.unreadCount++;
-            next.set(chatPartner, conv);
-          }
-          return next;
-        });
-      }
     });
 
-    return () => sub.stop();
-  }, [ndk, isReady, user, fetchMessages, processGiftWrap]);
+    setConversations(next);
+  }, [messenger, user, mapNDKMessage]);
 
-  return { conversations: Array.from(conversations.values()), loading, refresh: fetchMessages };
+  useEffect(() => {
+    if (!messenger || !isReady || !user) return;
+
+    setLoading(true);
+    
+    // Initial load
+    updateConversations();
+    setLoading(false);
+
+    // Listen for new messages
+    const handleMessage = () => {
+      updateConversations();
+    };
+
+    messenger.on("message", handleMessage);
+    
+    return () => {
+      messenger.off("message", handleMessage);
+    };
+  }, [messenger, isReady, user, updateConversations]);
+
+  return { 
+    conversations: Array.from(conversations.values()), 
+    loading, 
+    refresh: updateConversations 
+  };
 }

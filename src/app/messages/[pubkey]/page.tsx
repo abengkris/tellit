@@ -18,7 +18,7 @@ export default function ChatPage({ params }: { params: Promise<{ pubkey: string 
   const { id: hexPubkey } = decodeNip19(rawPubkey);
   const { messages, loading, user } = useChat(hexPubkey);
   const { profile } = useProfile(hexPubkey);
-  const { ndk } = useNDK();
+  const { ndk, messenger } = useNDK();
   const { addToast } = useUIStore();
   const router = useRouter();
   
@@ -37,12 +37,12 @@ export default function ChatPage({ params }: { params: Promise<{ pubkey: string 
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!ndk || !content.trim() || !user || isSending) return;
+    if (!ndk || !messenger || !content.trim() || !user || isSending) return;
 
     setIsSubmitting(true);
     try {
       const recipient = ndk.getUser({ pubkey: hexPubkey });
-      const success = await sendMessage(ndk, recipient, content);
+      const success = await sendMessage(messenger, recipient, content);
       if (success) {
         setContent("");
       } else {

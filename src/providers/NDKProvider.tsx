@@ -3,21 +3,25 @@
 import { createContext, useEffect, useState, ReactNode } from "react";
 import NDK, { NDKPrivateKeySigner, NDKNip07Signer } from "@nostr-dev-kit/ndk";
 import NDKCacheAdapterDexie from "@nostr-dev-kit/ndk-cache-dexie";
+import { NDKMessenger } from "@nostr-dev-kit/messages";
 import { useAuthStore } from "@/store/auth";
 import { getNDK, connectNDK } from "@/lib/ndk";
 
 export interface NDKContextType {
   ndk: NDK | null;
+  messenger: NDKMessenger | null;
   isReady: boolean;
 }
 
 export const NDKContext = createContext<NDKContextType>({
   ndk: null,
+  messenger: null,
   isReady: false,
 });
 
 export const NDKProvider = ({ children }: { children: ReactNode }) => {
   const [ndk, setNdk] = useState<NDK | null>(null);
+  const [messenger, setMessenger] = useState<NDKMessenger | null>(null);
   const [isReady, setIsReady] = useState(false);
   const { privateKey, isLoggedIn, loginType, publicKey, setUser } = useAuthStore();
 
@@ -73,6 +77,10 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
     // Set NDK instance immediately
     setNdk(instance);
 
+    // Initialize Messenger
+    const msgInstance = new NDKMessenger(instance);
+    setMessenger(msgInstance);
+
     // Connection with safety timeout
     const connectPromise = instance.connect();
     const timeoutPromise = new Promise((_, reject) => 
@@ -83,16 +91,25 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
       .then(() => {
         setIsReady(true);
         console.log("NDK connected and session restored");
+        
+        // Start messenger after connection
+        if (isLoggedIn) {
+          msgInstance.start();
+        }
       })
       .catch(err => {
         console.warn("NDK connection partial or timed out:", err.message);
         // Still set isReady to true so the app can function with whatever relays connected
         setIsReady(true);
+        
+        if (isLoggedIn) {
+          msgInstance.start();
+        }
       });
   }, [isLoggedIn, loginType, privateKey, publicKey, setUser]);
 
   return (
-    <NDKContext.Provider value={{ ndk, isReady }}>
+    <NDKContext.Provider value={{ ndk, messenger, isReady }}>
       {children}
     </NDKContext.Provider>
   );
