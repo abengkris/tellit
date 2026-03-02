@@ -58,7 +58,7 @@ export const UserIdentity: React.FC<UserIdentityProps> = ({
         <span
           className={`
             truncate
-            ${isPost ? 'text-xs text-zinc-500' : 'text-sm font-medium text-blue-500'}
+            ${isPost ? 'text-xs text-zinc-500 max-w-[100px] sm:max-w-[150px]' : 'text-sm font-medium text-blue-500'}
             ${status === 'invalid' ? 'text-red-500' : ''}
           `}
         >
