@@ -10,6 +10,8 @@ import Image from "next/image";
 import { FeedSkeleton } from "@/components/feed/FeedSkeleton";
 import { UserIdentity } from "@/components/common/UserIdentity";
 import { shortenPubkey } from "@/lib/utils/nip19";
+import { nip19 } from "nostr-tools";
+import { useRouter } from "next/navigation";
 
 const NotificationIcon = ({ type }: { type: string }) => {
   switch (type) {
@@ -18,24 +20,67 @@ const NotificationIcon = ({ type }: { type: string }) => {
     case 'reply': return <MessageCircle size={20} className="text-blue-500" fill="currentColor" />;
     case 'zap': return <Zap size={20} className="text-yellow-500" fill="currentColor" />;
     case 'mention': return <MessageCircle size={20} className="text-purple-500" />;
-    default: return null;
+    case 'follow': return <UserPlus size={20} className="text-blue-400" />;
+    default: return <Bell size={20} className="text-gray-400" />;
   }
 };
 
 const NotificationItem = ({ event }: { event: SapaNotification }) => {
   const { profile } = useProfile(event.pubkey);
+  const router = useRouter();
   const displayName = profile?.name || profile?.displayName || shortenPubkey(event.pubkey);
   const avatar = profile?.picture || `https://api.dicebear.com/7.x/avataaars/svg?seed=${event.pubkey}`;
 
+  const getTargetHref = () => {
+    if (event.type === 'follow') return `/${event.author.npub}`;
+    
+    // For interactions, find the target event
+    const eTag = event.tags.find(t => t[0] === 'e' || t[0] === 'E');
+    const aTag = event.tags.find(t => t[0] === 'a' || t[0] === 'A');
+    
+    if (event.type === 'reply' || event.type === 'mention') {
+      // Link to the event itself to see the thread
+      return `/post/${event.encode()}`;
+    }
+
+    if (eTag) return `/post/${eTag[1]}`;
+    if (aTag) {
+      // Handle NIP-33/Long-form links
+      const parts = aTag[1].split(':');
+      if (parts[0] === '30023') {
+        // Encode as naddr
+        try {
+          const naddr = nip19.naddrEncode({
+            kind: 30023,
+            pubkey: parts[1],
+            identifier: parts[2]
+          });
+          return `/article/${naddr}`;
+        } catch (e) {
+          return `/post/${event.encode()}`;
+        }
+      }
+    }
+
+    return `/post/${event.encode()}`;
+  };
+
+  const handleNotificationClick = () => {
+    router.push(getTargetHref());
+  };
+
   return (
-    <div className="border-b border-gray-100 dark:border-gray-900 hover:bg-gray-50 dark:hover:bg-gray-900/50 transition-colors">
+    <div 
+      onClick={handleNotificationClick}
+      className="border-b border-gray-100 dark:border-gray-900 hover:bg-gray-50 dark:hover:bg-gray-900/50 transition-colors cursor-pointer"
+    >
       <div className="flex p-4 space-x-3">
         <div className="shrink-0 pt-1">
           <NotificationIcon type={event.type} />
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center space-x-2 mb-1">
-            <Link href={`/${event.author.npub}`} className="shrink-0">
+            <Link href={`/${event.author.npub}`} className="shrink-0 z-10" onClick={e => e.stopPropagation()}>
               <Image 
                 src={avatar} 
                 width={32}
@@ -46,20 +91,21 @@ const NotificationItem = ({ event }: { event: SapaNotification }) => {
               />
             </Link>
             <div className="flex flex-wrap items-center gap-x-1 min-w-0">
-              <Link href={`/${event.author.npub}`} className="font-bold hover:underline truncate max-w-[150px]">
+              <Link href={`/${event.author.npub}`} className="font-bold hover:underline truncate max-w-[150px] z-10" onClick={e => e.stopPropagation()}>
                 {displayName}
               </Link>
               <span className="text-gray-500 text-sm whitespace-nowrap">
                 {event.type === 'like' && "liked your post"}
                 {event.type === 'repost' && "reposted your post"}
-                {event.type === 'reply' && "replied to your post"}
+                {event.type === 'reply' && (event.kind === 1111 ? "commented on your article" : "replied to your post")}
                 {event.type === 'zap' && "zapped your post"}
-                {event.type === 'mention' && "mentioned you"}
+                {event.type === 'mention' && (event.kind === 30023 ? "mentioned you in an article" : "mentioned you")}
+                {event.type === 'follow' && "followed you"}
               </span>
             </div>
           </div>
           
-          {event.content && (
+          {event.content && event.type !== 'follow' && event.type !== 'like' && event.type !== 'repost' && (
             <div className="text-gray-600 dark:text-gray-400 text-sm border-l-2 border-gray-200 dark:border-gray-800 pl-3 py-1 italic line-clamp-2">
               {event.content}
             </div>
