@@ -28,7 +28,7 @@ import { FeedSkeleton } from "@/components/feed/FeedSkeleton";
 import { format } from "date-fns";
 import { decodeNip19, shortenPubkey } from "@/lib/utils/nip19";
 
-type ProfileTab = "posts" | "replies" | "media" | "likes";
+type ProfileTab = "posts" | "replies" | "media" | "articles" | "likes";
 
 function formatCount(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
@@ -53,8 +53,13 @@ export default function ProfilePage({ params }: { params: Promise<{ npub: string
   const { user: currentUser } = useAuthStore();
 
   // Determine feed parameters based on tab
-  const feedKinds = activeTab === "likes" ? [7] : [1];
-  const disableFiltering = activeTab === "replies" || activeTab === "likes";
+  const feedKinds = React.useMemo(() => {
+    if (activeTab === "likes") return [7];
+    if (activeTab === "articles") return [30023];
+    return [1];
+  }, [activeTab]);
+
+  const disableFiltering = activeTab === "replies" || activeTab === "likes" || activeTab === "articles";
   
   const { posts, loading: feedLoading, loadMore, hasMore } = useFeed([hexPubkey], feedKinds, disableFiltering);
 
@@ -276,7 +281,7 @@ export default function ProfilePage({ params }: { params: Promise<{ npub: string
 
       {/* Tabs */}
       <div className="flex border-b border-gray-200 dark:border-gray-800" role="tablist">
-        {(["posts", "replies", "media", "likes"] as const).map((tab) => (
+        {(["posts", "replies", "media", "articles", "likes"] as const).map((tab) => (
           <button
             key={tab}
             role="tab"
