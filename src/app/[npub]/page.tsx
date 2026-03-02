@@ -172,8 +172,8 @@ export default function ProfilePage({ params }: { params: Promise<{ npub: string
           </div>
         </div>
 
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
+        <div className="space-y-1 min-w-0">
+          <div className="flex items-center gap-2 min-w-0">
             <UserIdentity 
               pubkey={hexPubkey}
               displayName={profile?.name || profile?.displayName}
