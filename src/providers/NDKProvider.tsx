@@ -88,22 +88,22 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
     );
 
     Promise.race([connectPromise, timeoutPromise])
-      .then(() => {
+      .then(async () => {
         setIsReady(true);
         console.log("NDK connected and session restored");
         
         // Start messenger after connection
         if (isLoggedIn) {
-          msgInstance.start();
+          await msgInstance.start();
         }
       })
-      .catch(err => {
+      .catch(async (err) => {
         console.warn("NDK connection partial or timed out:", err.message);
         // Still set isReady to true so the app can function with whatever relays connected
         setIsReady(true);
         
         if (isLoggedIn) {
-          msgInstance.start();
+          await msgInstance.start();
         }
       });
   }, [isLoggedIn, loginType, privateKey, publicKey, setUser]);

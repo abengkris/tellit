@@ -28,57 +28,72 @@ export function useMessages() {
   const [conversations, setConversations] = useState<Map<string, Conversation>>(new Map());
   const [loading, setLoading] = useState(true);
 
-  const mapNDKMessage = useCallback((ndkEvent: NDKEvent): Message => {
-    const recipientTag = ndkEvent.getMatchingTags("p")[0];
-    const recipient = recipientTag ? recipientTag[1] : (user?.pubkey || "");
+  // ndkMessage is of type NDKMessage from @nostr-dev-kit/messages
+  const mapNDKMessage = useCallback((ndkMessage: any): Message => {
+    // If it has an event property, use it, otherwise use message properties
+    const event = ndkMessage.event || ndkMessage;
+    const sender = ndkMessage.sender?.pubkey || event.pubkey || "";
+    const recipient = ndkMessage.recipient?.pubkey || (event.getMatchingTags ? event.getMatchingTags("p")[0]?.[1] : "");
     
     return {
-      id: ndkEvent.id,
-      sender: ndkEvent.pubkey,
+      id: ndkMessage.id || event.id,
+      sender: sender,
       recipient: recipient,
-      content: ndkEvent.content,
-      timestamp: ndkEvent.created_at || 0,
-      event: ndkEvent
+      content: ndkMessage.content || event.content,
+      timestamp: ndkMessage.created_at || event.created_at || 0,
+      event: event as NDKEvent
     };
   }, [user]);
 
-  const updateConversations = useCallback(() => {
+  const updateConversations = useCallback(async () => {
     if (!messenger || !user) return;
 
-    const ndkConversations = messenger.getConversations();
-    const next = new Map<string, Conversation>();
+    try {
+      const ndkConversations = await messenger.getConversations();
+      const next = new Map<string, Conversation>();
 
-    ndkConversations.forEach((conv: NDKConversation) => {
-      // Find the other participant
-      const chatPartner = Array.from(conv.participants).find(p => p !== user.pubkey);
-      if (!chatPartner) return;
+      for (const conv of ndkConversations) {
+        // Find the other participant
+        const participants = Array.from(conv.participants);
+        const chatPartnerUser = participants.find(p => {
+          if (typeof p === "string") return p !== user.pubkey;
+          return (p as any).pubkey !== user.pubkey;
+        });
 
-      const events = conv.getMessages();
-      if (events.length === 0) return;
+        if (!chatPartnerUser) continue;
+        const chatPartnerPubkey = typeof chatPartnerUser === "string" ? chatPartnerUser : (chatPartnerUser as any).pubkey;
 
-      const messages = events
-        .map(mapNDKMessage)
-        .sort((a, b) => b.timestamp - a.timestamp);
+        const events = await conv.getMessages();
+        if (events.length === 0) continue;
 
-      next.set(chatPartner, {
-        pubkey: chatPartner,
-        messages: messages,
-        lastMessage: messages[0],
-        unreadCount: 0, // NDKMessenger might have its own unread tracking, but for now we simplify
-      });
-    });
+        const messages = events
+          .map(msg => mapNDKMessage(msg))
+          .sort((a, b) => b.timestamp - a.timestamp);
 
-    setConversations(next);
+        next.set(chatPartnerPubkey, {
+          pubkey: chatPartnerPubkey,
+          messages: messages,
+          lastMessage: messages[0],
+          unreadCount: 0,
+        });
+      }
+
+      setConversations(next);
+    } catch (err) {
+      console.error("Failed to update conversations:", err);
+    }
   }, [messenger, user, mapNDKMessage]);
 
   useEffect(() => {
     if (!messenger || !isReady || !user) return;
 
-    setLoading(true);
-    
-    // Initial load
-    updateConversations();
-    setLoading(false);
+    const load = async () => {
+      setLoading(true);
+      await updateConversations();
+      setLoading(false);
+    };
+
+    load();
 
     // Listen for new messages
     const handleMessage = () => {
