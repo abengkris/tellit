@@ -16,6 +16,8 @@ import { usePostStats } from "@/hooks/usePostStats";
 import { ThreadNode } from "@/components/post/ThreadNode";
 import { useThread } from "@/hooks/useThread";
 import { shortenPubkey } from "@/lib/utils/nip19";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 export default function ArticleDetailPage({ params }: { params: Promise<{ naddr: string }> }) {
   const { naddr } = use(params);
@@ -175,11 +177,19 @@ export default function ArticleDetailPage({ params }: { params: Promise<{ naddr:
           )}
 
           <div className="prose prose-blue dark:prose-invert max-w-none">
-            <PostContentRenderer 
-              content={article.content}
-              event={article}
-              className="text-lg leading-relaxed"
-            />
+            <ReactMarkdown 
+              remarkPlugins={[remarkGfm]}
+              components={{
+                img: ({ node, ...props }) => (
+                  <img {...props} className="rounded-2xl border border-gray-200 dark:border-gray-800 w-full" />
+                ),
+                a: ({ node, ...props }) => (
+                  <a {...props} className="text-blue-500 hover:underline" target="_blank" rel="noopener noreferrer" />
+                ),
+              }}
+            >
+              {article.content}
+            </ReactMarkdown>
           </div>
 
           <div className="mt-12 pt-6 border-t border-gray-100 dark:border-gray-900">
