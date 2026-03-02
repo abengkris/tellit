@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Search, User, LogIn, LogOut, Bell, MessageSquare, Activity, Bookmark } from "lucide-react";
+import { Home, Search, User, LogIn, LogOut, Bell, MessageSquare, Activity, Bookmark, PenTool } from "lucide-react";
 import { useAuthStore } from "@/store/auth";
 import { useNDK } from "@/hooks/useNDK";
 import { useNotifications } from "@/hooks/useNotifications";
@@ -58,6 +58,7 @@ export const Sidebar = () => {
           <>
             <SidebarItem href="/notifications" icon={Bell} label="Notifications" badge={unreadCount} />
             <SidebarItem href="/messages" icon={MessageSquare} label="Messages" />
+            <SidebarItem href="/article/new" icon={PenTool} label="Write" />
             <SidebarItem href="/bookmarks" icon={Bookmark} label="Bookmarks" />
             <SidebarItem href={`/${user?.npub}`} icon={User} label="Profile" />
           </>

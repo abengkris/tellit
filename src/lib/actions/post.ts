@@ -97,6 +97,58 @@ export const publishPost = async (
   return event;
 };
 
+export interface ArticleOptions {
+  title: string;
+  summary?: string;
+  image?: string;
+  tags?: string[];
+}
+
+export const publishArticle = async (
+  ndk: NDK,
+  content: string,
+  options: ArticleOptions
+): Promise<NDKEvent> => {
+  const event = new NDKEvent(ndk);
+  event.kind = 30023;
+  event.content = content;
+  
+  const now = Math.floor(Date.now() / 1000);
+  const identifier = `article-${now}`;
+
+  event.tags = [
+    ["d", identifier],
+    ["title", options.title],
+    ["published_at", String(now)],
+  ];
+
+  if (options.summary) {
+    event.tags.push(["summary", options.summary]);
+  }
+
+  if (options.image) {
+    event.tags.push(["image", options.image]);
+  }
+
+  if (options.tags) {
+    options.tags.forEach(t => {
+      event.tags.push(["t", t.toLowerCase()]);
+    });
+  }
+
+  // Handle hashtags in content too
+  const hashtagRegex = /#(\w+)/g;
+  const hashtags = [...content.matchAll(hashtagRegex)].map((m) => m[1]);
+  hashtags.forEach((tag) => {
+    if (!event.tags.some(t => t[0] === 't' && t[1] === tag.toLowerCase())) {
+      event.tags.push(["t", tag.toLowerCase()]);
+    }
+  });
+
+  await event.publish();
+  return event;
+};
+
 /**
  * Delete a post (NIP-09).
  * Sends a kind 5 deletion request to the relays.
