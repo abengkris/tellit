@@ -278,7 +278,6 @@ export default function ProfilePage({ params }: { params: Promise<{ npub: string
             <span className="font-bold text-gray-900 dark:text-white">
               {formatCount(totalSats)}
             </span>
-            <span className="text-gray-500">Sats</span>
           </div>
 
           {!relaysLoading && userRelays.length > 0 && (
@@ -287,7 +286,6 @@ export default function ProfilePage({ params }: { params: Promise<{ npub: string
               <span className="font-bold text-gray-900 dark:text-white">
                 {userRelays.length}
               </span>
-              <span className="text-gray-500">Relays</span>
             </div>
           )}
         </div>
