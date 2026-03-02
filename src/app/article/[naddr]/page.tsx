@@ -141,7 +141,7 @@ export default function ArticleDetailPage({ params }: { params: Promise<{ naddr:
           <div className="flex flex-wrap items-center gap-x-6 gap-y-3 text-sm text-gray-500 mb-8 border-b border-gray-100 dark:border-gray-900 pb-6">
             <Link href={`/${article.author.npub}`} className="flex items-center gap-2 group">
               <img 
-                src={profile?.picture || `https://api.dicebear.com/7.x/avataaars/svg?seed=${article.pubkey}`}
+                src={profile?.picture || `https://robohash.org/${article.pubkey}?set=set4`}
                 className="w-8 h-8 rounded-full border border-gray-200 dark:border-gray-800"
                 alt={profile?.name || "Author"}
               />

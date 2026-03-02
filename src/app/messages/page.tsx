@@ -67,7 +67,7 @@ export default function MessagesPage() {
 const ConversationItem = ({ conversation }: { conversation: Conversation }) => {
   const { profile } = useProfile(conversation.pubkey);
   const displayName = profile?.name || profile?.displayName || shortenPubkey(conversation.pubkey);
-  const avatar = profile?.picture || `https://api.dicebear.com/7.x/avataaars/svg?seed=${conversation.pubkey}`;
+  const avatar = profile?.picture || `https://robohash.org/${conversation.pubkey}?set=set4`;
 
   return (
     <Link 

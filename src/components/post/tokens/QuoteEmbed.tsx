@@ -73,7 +73,7 @@ function QuoteEmbedContent({ event, className }: { event: NDKEvent; className: s
       {/* Author mini */}
       <div className="flex items-center gap-2 mb-2 min-w-0">
         <Image
-          src={profile?.picture ?? `https://api.dicebear.com/7.x/avataaars/svg?seed=${event.pubkey}`}
+          src={profile?.picture ?? `https://robohash.org/${event.pubkey}?set=set4`}
           alt=""
           width={20}
           height={20}

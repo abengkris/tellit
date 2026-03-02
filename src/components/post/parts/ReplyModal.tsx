@@ -18,7 +18,7 @@ export const ReplyModal: React.FC<ReplyModalProps> = ({ event, onClose }) => {
   const { profile } = useProfile(event.pubkey);
   
   const displayName = profile?.name || profile?.displayName || shortenPubkey(event.pubkey);
-  const avatar = profile?.picture || `https://api.dicebear.com/7.x/avataaars/svg?seed=${event.pubkey}`;
+  const avatar = profile?.picture || `https://robohash.org/${event.pubkey}?set=set4`;
   const isArticle = event.kind === 30023;
 
   return (

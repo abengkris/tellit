@@ -85,7 +85,7 @@ export const PostCard: React.FC<PostCardProps> = ({
   [profile, displayEvent.pubkey]);
 
   const avatar = useMemo(() => 
-    profile?.picture || `https://api.dicebear.com/7.x/avataaars/svg?seed=${displayEvent.pubkey}`,
+    profile?.picture || `https://robohash.org/${displayEvent.pubkey}?set=set4`,
   [profile, displayEvent.pubkey]);
 
   const repostAuthorName = useMemo(() => {

@@ -111,7 +111,7 @@ export default function SearchPage() {
                 >
                   <div className="relative mb-3">
                     <Image
-                      src={user.profile?.picture || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.pubkey}`}
+                      src={user.profile?.picture || `https://robohash.org/${user.pubkey}?set=set4`}
                       alt={user.profile?.name || "Profile"}
                       width={80}
                       height={80}

@@ -140,7 +140,7 @@ export const ProfileEditModal: React.FC<ProfileEditModalProps> = ({
             <div className="relative -mt-12 mb-6 inline-block">
               <div className="w-24 h-24 rounded-full border-4 border-white dark:border-black overflow-hidden bg-gray-100 dark:bg-gray-900 shadow-md">
                 <Image 
-                  src={formData.picture || `https://api.dicebear.com/7.x/avataaars/svg?seed=placeholder`} 
+                  src={formData.picture || `https://robohash.org/placeholder?set=set4`} 
                   alt="Avatar preview" 
                   width={96} 
                   height={96} 

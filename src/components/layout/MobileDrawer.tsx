@@ -70,7 +70,7 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({ isOpen, onClose, onO
           <div className="p-5">
             <Link href={`/${user?.npub}`} onClick={onClose} className="block mb-4">
               <Image
-                src={user?.profile?.picture || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.pubkey}`}
+                src={user?.profile?.picture || `https://robohash.org/${user?.pubkey}?set=set4`}
                 alt="Profile"
                 width={64}
                 height={64}
