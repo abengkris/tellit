@@ -144,6 +144,16 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
           }
         }
       });
+
+    return () => {
+      if (msgInstance) {
+        try {
+          (msgInstance as any).destroy();
+        } catch (e) {
+          console.warn("Error destroying NDKMessenger:", e);
+        }
+      }
+    };
   }, [isLoggedIn, loginType, privateKey, publicKey, setUser, addToast, incrementUnreadMessagesCount]);
 
   return (
