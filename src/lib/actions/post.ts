@@ -41,23 +41,55 @@ export const publishPost = async (
     }
   }
 
-  // 3. Handle Reply (NIP-10) -> e tags
+  // 3. Handle Reply (NIP-10 or NIP-22)
   if (options?.replyTo) {
-    const rootTag = options.replyTo.tags.find((t) => t[0] === "e" && t[3] === "root");
-    const rootId = rootTag ? rootTag[1] : options.replyTo.id;
-
-    // Add root tag if this is not the root itself
-    if (rootId !== options.replyTo.id) {
-      event.tags.push(["e", rootId, "", "root"]);
-    } else {
-      event.tags.push(["e", rootId, "", "root"]);
-    }
-
-    // Add reply tag (the direct parent)
-    event.tags.push(["e", options.replyTo.id, "", "reply"]);
+    const parent = options.replyTo;
     
-    // Also add p tag for the person we are replying to
-    event.tags.push(["p", options.replyTo.pubkey]);
+    // NIP-22 Comments (Kind 1111)
+    // Used when replying to Kind 30023 or nested Kind 1111
+    if (parent.kind === 30023 || parent.kind === 1111) {
+      event.kind = 1111;
+      
+      let rootId = "";
+      let rootKind = "";
+      let rootPubkey = "";
+
+      if (parent.kind === 30023) {
+        rootId = parent.id;
+        rootKind = "30023";
+        rootPubkey = parent.pubkey;
+      } else {
+        // Parent is a comment, find its root from uppercase tags
+        const E = parent.tags.find(t => t[0] === 'E')?.[1];
+        const K = parent.tags.find(t => t[0] === 'K')?.[1];
+        const P = parent.tags.find(t => t[0] === 'P')?.[1];
+        
+        rootId = E || parent.id;
+        rootKind = K || "30023"; // Fallback to 30023 if not found
+        rootPubkey = P || parent.pubkey;
+      }
+
+      // Root tags (Uppercase)
+      event.tags.push(["E", rootId]);
+      event.tags.push(["K", rootKind]);
+      event.tags.push(["P", rootPubkey]);
+
+      // Parent tags (Lowercase)
+      event.tags.push(["e", parent.id]);
+      event.tags.push(["k", String(parent.kind)]);
+      event.tags.push(["p", parent.pubkey]);
+    } 
+    // Standard NIP-10 Replies (Kind 1)
+    else {
+      const rootTag = parent.tags.find((t) => t[0] === "e" && t[3] === "root");
+      const rootId = rootTag ? rootTag[1] : parent.id;
+
+      event.tags.push(["e", rootId, "", "root"]);
+      if (rootId !== parent.id) {
+        event.tags.push(["e", parent.id, "", "reply"]);
+      }
+      event.tags.push(["p", parent.pubkey]);
+    }
   }
 
   // 4. Publish

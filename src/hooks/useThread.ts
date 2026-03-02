@@ -27,7 +27,7 @@ export function useThread(focalId?: string, hintRelays?: string[]) {
     setLoadingReplies(true);
     try {
       const filter: NDKFilter = {
-        kinds: [1],
+        kinds: [1, 1111],
         "#e": [targetId],
         limit: 20,
       };
@@ -39,6 +39,10 @@ export function useThread(focalId?: string, hintRelays?: string[]) {
       const replyEvents = await ndk.fetchEvents(filter, undefined, relaySet);
       const directReplies = Array.from(replyEvents)
         .filter(ev => {
+          if (ev.kind === 1111) {
+            const eTag = ev.tags.find(t => t[0] === 'e');
+            return eTag?.[1] === targetId;
+          }
           const replyTag = ev.tags.find(t => t[0] === 'e' && t[3] === 'reply');
           if (replyTag) return replyTag[1] === targetId;
           const eTags = ev.tags.filter(t => t[0] === 'e');
@@ -121,13 +125,17 @@ export function useThread(focalId?: string, hintRelays?: string[]) {
     if (!ndk) return [];
     try {
       const events = await ndk.fetchEvents({
-        kinds: [1],
+        kinds: [1, 1111],
         "#e": [eventId],
         limit: 10
       }, undefined, relaySet);
       
       return Array.from(events)
         .filter(ev => {
+          if (ev.kind === 1111) {
+            const eTag = ev.tags.find(t => t[0] === 'e');
+            return eTag?.[1] === eventId;
+          }
           const replyTag = ev.tags.find(t => t[0] === 'e' && t[3] === 'reply');
           if (replyTag) return replyTag[1] === eventId;
           const eTags = ev.tags.filter(t => t[0] === 'e');

@@ -54,7 +54,7 @@ export function usePostStats(eventId?: string) {
     seenEvents.current.clear();
 
     const filter: NDKFilter = {
-      kinds: [1, 6, 7, 9735, 10003],
+      kinds: [1, 6, 7, 9735, 10003, 1111],
       "#e": [eventId],
     };
 
@@ -90,13 +90,16 @@ export function usePostStats(eventId?: string) {
         } 
         
         // 3. Comments (Replies) and Quotes
-        else if (event.kind === 1) {
+        else if (event.kind === 1 || event.kind === 1111) {
           const eTags = event.tags.filter(t => t[0] === 'e');
-          const isReply = event.tags.some(t => t[0] === 'e' && (t[3] === 'reply' || t[3] === 'root')) || 
+          const isReply = event.kind === 1111 || 
+                          event.tags.some(t => t[0] === 'e' && (t[3] === 'reply' || t[3] === 'root')) || 
                           eTags[eTags.length - 1]?.[1] === eventId;
           
-          const isQuote = event.tags.some(t => t[0] === 'e' && t[1] === eventId && t[3] === 'mention') ||
-                          (event.content.includes(`nostr:${eventId}`) && !isReply);
+          const isQuote = event.kind === 1 && (
+                          event.tags.some(t => t[0] === 'e' && t[1] === eventId && t[3] === 'mention') ||
+                          (event.content.includes(`nostr:${eventId}`) && !isReply)
+          );
 
           if (isReply) {
             newStats.comments++;

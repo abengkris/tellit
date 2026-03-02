@@ -52,6 +52,7 @@ export const PostCard: React.FC<PostCardProps> = ({
   
   const displayEvent = isRepost && repostedEvent ? repostedEvent : event;
   const isArticle = displayEvent.kind === 30023;
+  const isComment = displayEvent.kind === 1111;
   const { profile } = useProfile(displayEvent.pubkey);
   const { 
     likes, 
@@ -100,6 +101,14 @@ export const PostCard: React.FC<PostCardProps> = ({
     return displayEvent.encode();
   }, [displayEvent, isArticle]);
 
+  const navigationHref = useMemo(() => {
+    if (isArticle) return `/article/${eventNoteId}`;
+    
+    // For comments (Kind 1111), if they are specifically on articles, 
+    // we could route to /article/... but /post/... handles the thread view better for now.
+    return `/post/${eventNoteId}`;
+  }, [isArticle, eventNoteId]);
+
   const replyingToNpub = useMemo(() => {
     const replyPTag = displayEvent.tags.find(t => t[0] === 'p' && t[3] === 'reply') || 
                       [...displayEvent.tags].reverse().find(t => t[0] === 'p');
@@ -141,9 +150,9 @@ export const PostCard: React.FC<PostCardProps> = ({
     >
       {/* Stretched Link for Accessibility */}
       <Link 
-        href={isArticle ? `/article/${eventNoteId}` : `/post/${eventNoteId}`}
+        href={navigationHref}
         className="absolute inset-0 z-0"
-        aria-label={`View ${isArticle ? 'article' : 'post'} by ${displayName}`}
+        aria-label={`View ${isArticle ? 'article' : isComment ? 'comment' : 'post'} by ${displayName}`}
       />
 
       <div className="flex relative min-w-0 z-10 pointer-events-none">
