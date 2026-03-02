@@ -40,10 +40,36 @@ export function PostContentRenderer({
   const [showFull, setShowFull] = useState(false);
   const [showSensitive, setShowSensitive] = useState(false);
 
+  const nudeDetections = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const tag of event.tags) {
+      if (tag[0] === "nude_detector" && tag[1]) {
+        // Format: "URL MODEL SCORE"
+        const parts = tag[1].split(' ');
+        if (parts.length >= 3) {
+          const url = parts[0];
+          const score = parseFloat(parts[2]);
+          if (!isNaN(score)) {
+            map.set(url, score);
+          }
+        }
+      }
+    }
+    return map;
+  }, [event.tags]);
+
   const contentWarning = useMemo(() => {
     const tag = event.tags.find(t => t[0] === "content-warning");
-    return tag ? tag[1] || "Sensitive content" : null;
-  }, [event.tags]);
+    if (tag) return tag[1] || "Sensitive content";
+    
+    // Check for automated detections with high probability (threshold 0.5)
+    const highScores = Array.from(nudeDetections.values()).filter(score => score > 0.5);
+    if (highScores.length > 0) {
+      return "Media may contain sensitive content (detected)";
+    }
+    
+    return null;
+  }, [event.tags, nudeDetections]);
 
   const isLong = content.length > 600;
 
