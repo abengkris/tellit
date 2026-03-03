@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { MessageCircle, Repeat2, Heart, Zap, Bookmark, Quote } from "lucide-react";
+import { MessageCircle, Repeat2, Heart, Zap, Bookmark, Quote, Share } from "lucide-react";
 import { useUIStore } from "@/store/ui";
 import { useLists } from "@/hooks/useLists";
 
@@ -18,6 +18,7 @@ interface PostActionsProps {
   onLikeClick?: (e: React.MouseEvent) => void;
   onZapClick?: (e: React.MouseEvent) => void;
   onQuoteClick?: (e: React.MouseEvent) => void;
+  onShareClick?: (e: React.MouseEvent) => void;
 }
 
 export const PostActions: React.FC<PostActionsProps> = ({
@@ -34,7 +35,8 @@ export const PostActions: React.FC<PostActionsProps> = ({
   onRepostClick,
   onLikeClick,
   onZapClick,
-  onQuoteClick
+  onQuoteClick,
+  onShareClick
 }) => {
   const [optimisticLikes, setOptimisticLikes] = useState(initialLikes);
   const [optimisticReacted, setOptimisticReacted] = useState(initialUserReacted);
@@ -174,6 +176,20 @@ export const PostActions: React.FC<PostActionsProps> = ({
           <Bookmark size={20} fill={isBookmarked ? 'currentColor' : 'none'} className={isBookmarked ? "animate-in zoom-in-125 duration-300" : ""} />
         </div>
         <span className="text-xs">{bookmarks > 0 ? formatCount(bookmarks) : ""}</span>
+      </button>
+
+      {/* Share */}
+      <button 
+        onClick={(e) => {
+          e.stopPropagation();
+          onShareClick?.(e);
+        }}
+        aria-label="Share"
+        className="group flex items-center space-x-1 hover:text-blue-500 transition-colors"
+      >
+        <div className="p-3 group-hover:bg-blue-50 dark:group-hover:bg-blue-900/20 rounded-full transition-colors">
+          <Share size={20} />
+        </div>
       </button>
     </div>
   );

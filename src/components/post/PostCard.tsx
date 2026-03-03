@@ -175,6 +175,33 @@ export const PostCard: React.FC<PostCardProps> = ({
     }
   };
 
+  const handleShare = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const shareUrl = `${window.location.origin}${navigationHref}`;
+    
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `Post by ${displayName} on Tell it!`,
+          text: displayEvent.content.slice(0, 100) + (displayEvent.content.length > 100 ? '...' : ''),
+          url: shareUrl,
+        });
+      } catch (err) {
+        if ((err as Error).name !== 'AbortError') {
+          console.error("Error sharing:", err);
+        }
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+        addToast("Link copied to clipboard!", "success");
+      } catch (err) {
+        console.error("Error copying to clipboard:", err);
+        addToast("Failed to copy link", "error");
+      }
+    }
+  };
+
   if (isDeleted || (currentUser?.pubkey !== displayEvent.pubkey && isMuted(displayEvent.pubkey))) return null;
 
   return (
@@ -245,6 +272,7 @@ export const PostCard: React.FC<PostCardProps> = ({
             onZapClick={() => setShowZapModal(true)}
             onReplyClick={() => setShowReplyModal(true)}
             onQuoteClick={handleQuote}
+            onShareClick={handleShare}
           />
         </div>
       </div>

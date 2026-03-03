@@ -5,7 +5,7 @@ import { MainLayout } from "@/components/layout/MainLayout";
 import { useProfile } from "@/hooks/useProfile";
 import { useFeed } from "@/hooks/useFeed";
 import { PostCard } from "@/components/post/PostCard";
-import { Loader2, Calendar, MapPin, Link as LinkIcon, Zap, Activity, Mail } from "lucide-react";
+import { Loader2, Calendar, MapPin, Link as LinkIcon, Zap, Activity, Mail, Share } from "lucide-react";
 import { useAuthStore } from "@/store/auth";
 import { useNDK } from "@/hooks/useNDK";
 import { useFollowingList } from "@/hooks/useFollowingList";
@@ -54,6 +54,7 @@ export default function ProfilePage({ params }: { params: Promise<{ npub: string
 
   const { ndk } = useNDK();
   const { user: currentUser } = useAuthStore();
+  const { addToast } = useUIStore();
 
   // Determine feed parameters based on tab
   const feedKinds = React.useMemo(() => {
@@ -73,6 +74,32 @@ export default function ProfilePage({ params }: { params: Promise<{ npub: string
 
   const avatar = profile?.picture || `https://robohash.org/${hexPubkey}?set=set1`;
   const displayName = profile?.name || profile?.displayName || shortenPubkey(npubParam);
+
+  const handleShare = async () => {
+    const shareUrl = typeof window !== 'undefined' ? window.location.href : '';
+    
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `${displayName} on Tell it!`,
+          text: profile?.about?.slice(0, 100) || `Check out ${displayName}'s profile on Tell it!`,
+          url: shareUrl,
+        });
+      } catch (err) {
+        if ((err as Error).name !== 'AbortError') {
+          console.error("Error sharing:", err);
+        }
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+        addToast("Profile link copied to clipboard!", "success");
+      } catch (err) {
+        console.error("Error copying to clipboard:", err);
+        addToast("Failed to copy link", "error");
+      }
+    }
+  };
 
   const safeHostname = (url: string) => {
     try {
@@ -145,6 +172,13 @@ export default function ProfilePage({ params }: { params: Promise<{ npub: string
           </div>
           
           <div className="flex gap-2 items-center">
+            <button
+              onClick={handleShare}
+              className="p-2 border border-gray-300 dark:border-gray-700 rounded-full hover:bg-gray-50 dark:hover:bg-gray-900 transition-all text-gray-500 hover:text-blue-500"
+              aria-label="Share Profile"
+            >
+              <Share size={20} />
+            </button>
             {isOwnProfile ? (
               <button
                 onClick={() => setIsEditModalOpen(true)}
