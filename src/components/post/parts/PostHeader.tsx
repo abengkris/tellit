@@ -139,6 +139,12 @@ export const PostHeader: React.FC<PostHeaderProps> = ({
                 variant="post"
               />
             </Link>
+            {isPinned && (
+              <div className="flex items-center gap-1 text-blue-500 bg-blue-500/10 border border-blue-500/20 px-1.5 py-0.5 rounded font-black uppercase text-[8px] tracking-tighter mt-1 shrink-0">
+                <Pin size={8} fill="currentColor" />
+                <span>Pinned</span>
+              </div>
+            )}
             {isArticle && (
               <span className="text-[9px] bg-purple-500/10 text-purple-500 border border-purple-500/20 px-1 rounded font-bold uppercase tracking-tighter shrink-0 mt-1">
                 Article

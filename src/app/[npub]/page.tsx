@@ -19,8 +19,10 @@ import { useZaps } from "@/hooks/useZaps";
 import { useRelayList } from "@/hooks/useRelayList";
 import { useUserStatus } from "@/hooks/useUserStatus";
 import { useLists } from "@/hooks/useLists";
+import { usePinnedPosts } from "@/hooks/usePinnedPosts";
 import { Music, Activity as StatusIcon, Tag } from "lucide-react";
 import { FollowedBy } from "@/components/profile/FollowedBy";
+import { PostCard } from "@/components/post/PostCard";
 
 import Image from "next/image";
 import Link from "next/link";
@@ -50,7 +52,8 @@ export default function ProfilePage({ params }: { params: Promise<{ npub: string
   const { count: followingCount, loading: fwLoading } = useFollowingList(hexPubkey);
   const { count: followerCount, loading: fLoading } = useFollowerCount(hexPubkey);
   const { totalSats } = useZaps(hexPubkey, true);
-  const { interests } = useLists(hexPubkey);
+  const { interests, pinnedEventIds } = useLists(hexPubkey);
+  const { pinnedPosts } = usePinnedPosts(hexPubkey, pinnedEventIds);
 
   const { ndk } = useNDK();
   const { user: currentUser } = useAuthStore();
@@ -362,8 +365,17 @@ export default function ProfilePage({ params }: { params: Promise<{ npub: string
 
       {/* Feed */}
       <div className="pb-20">
+        {/* Pinned Posts Section */}
+        {activeTab === "posts" && pinnedPosts.length > 0 && (
+          <div className="border-b-4 border-gray-100 dark:border-gray-900 bg-blue-50/5">
+            {pinnedPosts.map((post) => (
+              <PostCard key={`pinned-${post.id}`} event={post} />
+            ))}
+          </div>
+        )}
+
         <FeedList 
-          posts={posts}
+          posts={posts.filter(p => !pinnedEventIds.has(p.id))}
           isLoading={feedLoading}
           loadMore={loadMore}
           hasMore={hasMore}
