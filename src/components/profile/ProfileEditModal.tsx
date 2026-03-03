@@ -37,6 +37,7 @@ export const ProfileEditModal: React.FC<ProfileEditModalProps> = ({
   const [uploadingBanner, setUploadingBanner] = useState(false);
   const [interestInput, setInterestInput] = useState("");
   const [idInput, setIdInput] = useState({ platform: "github", identity: "", proof: "" });
+  const [showIdHelp, setShowIdHelp] = useState(false);
   
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const bannerInputRef = useRef<HTMLInputElement>(null);
@@ -423,10 +424,36 @@ export const ProfileEditModal: React.FC<ProfileEditModalProps> = ({
               </div>
 
               <div className="space-y-3 pt-4 border-t border-gray-100 dark:border-gray-800">
-                <label className="text-sm font-black uppercase tracking-widest text-gray-400 flex items-center gap-2">
-                  <ShieldCheck size={14} />
-                  Verified Identities (NIP-39)
-                </label>
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-black uppercase tracking-widest text-gray-400 flex items-center gap-2">
+                    <ShieldCheck size={14} />
+                    Verified Identities (NIP-39)
+                  </label>
+                  <button 
+                    type="button"
+                    onClick={() => setShowIdHelp(!showIdHelp)}
+                    className="text-[10px] font-bold text-blue-500 hover:underline"
+                  >
+                    {showIdHelp ? "Hide guide" : "How to verify?"}
+                  </button>
+                </div>
+
+                {showIdHelp && (
+                  <div className="p-4 bg-blue-50/20 dark:bg-blue-900/10 rounded-2xl border border-blue-100/50 dark:border-blue-900/20 text-[11px] space-y-3 animate-in slide-in-from-top-2 duration-300">
+                    <div>
+                      <p className="font-black text-blue-500 uppercase mb-1">GitHub</p>
+                      <p className="text-gray-500 dark:text-gray-400">Create a Gist with: <code className="bg-white dark:bg-black p-0.5 rounded text-[10px]">Verifying that I control the following Nostr public key: [your_npub]</code>. Paste the Gist ID as proof.</p>
+                    </div>
+                    <div>
+                      <p className="font-black text-blue-500 uppercase mb-1">Twitter</p>
+                      <p className="text-gray-500 dark:text-gray-400">Tweet: <code className="bg-white dark:bg-black p-0.5 rounded text-[10px]">Verifying my account on nostr My Public Key: "[your_npub]"</code>. Paste the Tweet ID as proof.</p>
+                    </div>
+                    <div>
+                      <p className="font-black text-blue-500 uppercase mb-1">Mastodon</p>
+                      <p className="text-gray-500 dark:text-gray-400">Post verification text on your instance. Identity format: <code className="bg-white dark:bg-black p-0.5 rounded text-[10px]">instance.com/@user</code>. Proof: Post ID.</p>
+                    </div>
+                  </div>
+                )}
 
                 <div className="flex flex-col gap-3">
                   {externalIdentities.map((id, index) => (
