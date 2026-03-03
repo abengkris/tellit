@@ -82,7 +82,7 @@ export function useLists(targetPubkey?: string) {
     } finally {
       setLoading(false);
     }
-  }, [ndk, isReady, user]);
+  }, [ndk, isReady, pubkey]);
 
   useEffect(() => {
     fetchLists();

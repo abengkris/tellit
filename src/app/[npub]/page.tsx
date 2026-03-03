@@ -82,6 +82,24 @@ export default function ProfilePage({ params }: { params: Promise<{ npub: string
     }
   };
 
+  // Custom filter for tabs
+  const filteredPosts = React.useMemo(() => {
+    if (activeTab === "replies") {
+      return posts.filter(p => p.tags.some(t => t[0] === 'e'));
+    }
+    if (activeTab === "posts") {
+      return posts.filter(p => !p.tags.some(t => t[0] === 'e'));
+    }
+    if (activeTab === "media") {
+      return posts.filter(p => {
+        const hasMediaUrl = p.content.match(/https?:\/\/[^\s]+\.(jpg|jpeg|png|gif|webp|mov|mp4|webm)/i);
+        const hasImeta = p.tags.some(t => t[0] === 'imeta');
+        return hasMediaUrl || hasImeta;
+      });
+    }
+    return posts;
+  }, [posts, activeTab]);
+
   if (profileLoading) {
     return (
       <MainLayout>
@@ -101,24 +119,6 @@ export default function ProfilePage({ params }: { params: Promise<{ npub: string
       </MainLayout>
     );
   }
-
-  // Custom filter for tabs
-  const filteredPosts = React.useMemo(() => {
-    if (activeTab === "replies") {
-      return posts.filter(p => p.tags.some(t => t[0] === 'e'));
-    }
-    if (activeTab === "posts") {
-      return posts.filter(p => !p.tags.some(t => t[0] === 'e'));
-    }
-    if (activeTab === "media") {
-      return posts.filter(p => {
-        const hasMediaUrl = p.content.match(/https?:\/\/[^\s]+\.(jpg|jpeg|png|gif|webp|mov|mp4|webm)/i);
-        const hasImeta = p.tags.some(t => t[0] === 'imeta');
-        return hasMediaUrl || hasImeta;
-      });
-    }
-    return posts;
-  }, [posts, activeTab]);
 
   return (
     <MainLayout>
