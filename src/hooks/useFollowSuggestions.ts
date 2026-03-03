@@ -12,7 +12,7 @@ interface Suggestion {
   followedByPubkeys: string[];
 }
 
-export function useFollowSuggestions(limit: number = 5) {
+export function useFollowSuggestions(limit: number = 5, authorsLimit: number = 100) {
   const { ndk, isReady } = useNDK();
   const { user: currentUser } = useAuthStore();
   const { following: myFollowing, loading: followingLoading } = useFollowingList(currentUser?.pubkey);
@@ -30,7 +30,7 @@ export function useFollowSuggestions(limit: number = 5) {
         // 1. Fetch contact lists of people I follow (depth 2)
         const contactListEvents = await ndk.fetchEvents({
           kinds: [3],
-          authors: myFollowing.slice(0, 100), // Limit to first 100 follows for performance
+          authors: myFollowing.slice(0, authorsLimit), 
         });
 
         if (!isMounted) return;
