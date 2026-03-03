@@ -46,14 +46,15 @@ export function useWoT(viewerPubkey: string | undefined): UseWoTReturn {
     }
 
     setStatus("loading");
+    console.log(`[WoT] Starting load for ${viewerPubkey}...`);
     // NDKWoT constructor now requires rootPubkey
     const instance = new NDKWoT(ndk, viewerPubkey);
 
     wotLoadPromise = instance
       .load({
         depth: 2,
-        timeout: 15000, // 15s max for WoT build
-        maxFollows: 150, // Don't crawl more than 150 follows per user
+        timeout: 30000, // Increased to 30s
+        maxFollows: 150, 
       })
       .then(() => {
         wotSingleton = instance;
@@ -63,7 +64,7 @@ export function useWoT(viewerPubkey: string | undefined): UseWoTReturn {
         console.log(`[WoT] Finished loading. Size: ${instance.size}`);
       })
       .catch(err => {
-        console.error("[WoT] Load failed:", err);
+        console.error("[WoT] Load failed or timed out:", err);
         setStatus("error");
         wotLoadPromise = null; 
       });

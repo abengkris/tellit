@@ -1,19 +1,27 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { NDKEvent, NDKFilter, NDKUser } from "@nostr-dev-kit/ndk";
 import { useNDK } from "@/hooks/useNDK";
+import { decodeNip19 } from "@/lib/utils/nip19";
 
 export function useSearch(query: string) {
   const { ndk, isReady } = useNDK();
   const [posts, setPosts] = useState<NDKEvent[]>([]);
   const [profiles, setProfiles] = useState<NDKUser[]>([]);
+  const [directResult, setDirectResult] = useState<{
+    user?: NDKUser;
+    event?: NDKEvent;
+  }>({});
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const oldestTimestampRef = useRef<number | undefined>(undefined);
 
   const performSearch = useCallback(async (isLoadMore = false) => {
     if (!ndk || !isReady || !query || query.length < 3) {
-      setPosts([]);
-      setProfiles([]);
+      if (!isLoadMore) {
+        setPosts([]);
+        setProfiles([]);
+        setDirectResult({});
+      }
       return;
     }
 
@@ -21,6 +29,30 @@ export function useSearch(query: string) {
 
     try {
       if (!isLoadMore) {
+        setDirectResult({});
+        
+        // 0. Check if query is NIP-19
+        const decoded = decodeNip19(query);
+        if (decoded.id && decoded.id !== query) {
+          // It's likely a valid NIP-19 or hex
+          if (query.startsWith("npub") || query.startsWith("nprofile") || (query.length === 64 && !query.startsWith("note"))) {
+            const user = ndk.getUser({ pubkey: decoded.id });
+            await user.fetchProfile();
+            setDirectResult({ user });
+          } else if (query.startsWith("note") || query.startsWith("nevent") || (query.length === 64 && query.startsWith("note"))) {
+            const event = await ndk.fetchEvent(decoded.id);
+            if (event) setDirectResult({ event });
+          } else if (query.startsWith("naddr")) {
+             const filter: NDKFilter = {
+               kinds: [decoded.kind!],
+               authors: [decoded.pubkey!],
+               "#d": [decoded.identifier!]
+             };
+             const event = await ndk.fetchEvent(filter);
+             if (event) setDirectResult({ event });
+          }
+        }
+
         // 1. Search Profiles (kind:0)
         const profileFilter: NDKFilter = {
           kinds: [0],
@@ -38,6 +70,13 @@ export function useSearch(query: string) {
           }
           return user;
         });
+        
+        // Add direct result to profiles if it's a user and not already there
+        if (directResult.user) {
+          const exists = foundProfiles.some(p => p.pubkey === directResult.user?.pubkey);
+          if (!exists) foundProfiles.unshift(directResult.user);
+        }
+
         setProfiles(foundProfiles);
       }
 
@@ -68,7 +107,14 @@ export function useSearch(query: string) {
       const newPostsList = Array.from(postEvents).sort((a, b) => (b.created_at ?? 0) - (a.created_at ?? 0));
       
       setPosts((prev) => {
-        const combined = isLoadMore ? [...prev, ...newPostsList] : newPostsList;
+        let combined = isLoadMore ? [...prev, ...newPostsList] : newPostsList;
+        
+        // Add direct result event if it's a post
+        if (!isLoadMore && directResult.event) {
+          const exists = combined.some(p => p.id === directResult.event?.id);
+          if (!exists) combined = [directResult.event, ...combined];
+        }
+
         const unique = combined.filter((v, i, a) => a.findIndex(t => t.id === v.id) === i);
         
         if (unique.length > 0) {
@@ -88,7 +134,7 @@ export function useSearch(query: string) {
     } finally {
       setLoading(false);
     }
-  }, [ndk, isReady, query]);
+  }, [ndk, isReady, query, directResult.user, directResult.event]);
 
   useEffect(() => {
     setHasMore(true);
@@ -102,5 +148,5 @@ export function useSearch(query: string) {
     }
   };
 
-  return { posts, profiles, loading, loadMore, hasMore };
+  return { posts, profiles, loading, loadMore, hasMore, directResult };
 }
