@@ -94,8 +94,8 @@ export const PostComposer: React.FC<PostComposerProps> = ({
       addToast(successMsg, "success");
       onSuccess?.();
     } catch (err) {
-      console.error("Failed to post:", err);
-      addToast("Failed to publish post.", "error");
+      console.error("Failed to post details:", err);
+      addToast(`Failed to publish post: ${(err as Error).message || "Unknown error"}`, "error");
     } finally {
       setIsSubmitting(false);
     }

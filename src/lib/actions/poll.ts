@@ -48,10 +48,20 @@ export const createPoll = async (
     event.tags.push(["relay", url]);
   });
 
-  console.log("[Poll] Publishing poll event:", event.rawEvent());
-  await event.sign();
-  await event.publish();
-  return event;
+  event.created_at = Math.floor(Date.now() / 1000);
+
+  console.log("[Poll] Attempting to sign and publish poll event:", event.rawEvent());
+  
+  try {
+    await event.sign();
+    console.log("[Poll] Event signed successfully");
+    const relayResponses = await event.publish();
+    console.log("[Poll] Publish result:", relayResponses);
+    return event;
+  } catch (err) {
+    console.error("[Poll] Failed during sign or publish:", err);
+    throw err;
+  }
 };
 
 /**

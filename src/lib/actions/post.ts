@@ -114,8 +114,15 @@ export const publishPost = async (
   }
 
   // 4. Publish
-  await event.publish();
-  return event;
+  try {
+    console.log("[Post] Attempting to publish event kind:", event.kind);
+    await event.sign();
+    await event.publish();
+    return event;
+  } catch (err) {
+    console.error("[Post] Publish failed:", err);
+    throw err;
+  }
 };
 
 export interface ArticleOptions {
