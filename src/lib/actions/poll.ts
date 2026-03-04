@@ -1,4 +1,4 @@
-import NDK, { NDKEvent } from "@nostr-dev-kit/ndk";
+import NDK, { NDKEvent, NDKKind } from "@nostr-dev-kit/ndk";
 
 export interface PollOption {
   id: string;
@@ -21,7 +21,7 @@ export const createPoll = async (
   pollOptions: CreatePollOptions
 ): Promise<NDKEvent> => {
   const event = new NDKEvent(ndk);
-  event.kind = 1068;
+  event.kind = 1068 as NDKKind;
   event.content = content;
 
   // Add options
@@ -56,7 +56,7 @@ export const respondToPoll = async (
   optionIds: string[]
 ): Promise<NDKEvent> => {
   const event = new NDKEvent(ndk);
-  event.kind = 1018;
+  event.kind = 1018 as NDKKind;
   event.content = "";
   
   event.tags.push(["e", pollEvent.id]);

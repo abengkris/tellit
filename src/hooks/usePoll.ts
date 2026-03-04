@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, useMemo } from "react";
-import { NDKEvent, NDKSubscription } from "@nostr-dev-kit/ndk";
+import { NDKEvent, NDKSubscription, NDKKind } from "@nostr-dev-kit/ndk";
 import { useNDK } from "./useNDK";
 import { useAuthStore } from "@/store/auth";
 import { respondToPoll } from "@/lib/actions/poll";
@@ -57,7 +57,7 @@ export function usePoll(pollEvent: NDKEvent) {
       setLoading(true);
       
       const newSub = ndk.subscribe(
-        { kinds: [1018], "#e": [pollEvent.id] },
+        { kinds: [1018 as NDKKind], "#e": [pollEvent.id] },
         { closeOnEose: false }
       );
       subRef.current = newSub;
