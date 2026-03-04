@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { MessageCircle, Repeat2, Heart, Zap, Bookmark, Quote, Share } from "lucide-react";
 import { useUIStore } from "@/store/ui";
 import { useLists } from "@/hooks/useLists";
