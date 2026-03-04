@@ -4,7 +4,7 @@ import React, { use } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useProfile } from "@/hooks/useProfile";
 import { useFeed } from "@/hooks/useFeed";
-import { Calendar, Link as LinkIcon, Zap, Activity, Mail, Share, Copy, Check } from "lucide-react";
+import { Calendar, Link as LinkIcon, Zap, Activity, Mail, Share, Copy, Check, MoreVertical, Edit2 } from "lucide-react";
 import { useAuthStore } from "@/store/auth";
 import { useUIStore } from "@/store/ui";
 import { useNDK } from "@/hooks/useNDK";
@@ -15,6 +15,7 @@ import { ProfileEditModal } from "@/components/profile/ProfileEditModal";
 import { UserStatusModal } from "@/components/profile/UserStatusModal";
 import { UserIdentity } from "@/components/common/UserIdentity";
 import { ZapModal } from "@/components/common/ZapModal";
+import { DropdownMenu } from "@/components/common/DropdownMenu";
 import { useZaps } from "@/hooks/useZaps";
 import { useRelayList } from "@/hooks/useRelayList";
 import { useUserStatus } from "@/hooks/useUserStatus";
@@ -187,7 +188,7 @@ export default function ProfilePage({ params }: { params: Promise<{ npub: string
 
       <div className="px-4 pb-4 border-b border-gray-200 dark:border-gray-800">
         <div className="relative flex justify-between items-end -mt-16 mb-4">
-          <div className="p-1 bg-white dark:bg-black rounded-full ring-4 ring-white dark:ring-black">
+          <div className="p-1 bg-white dark:bg-black rounded-full ring-4 ring-white dark:ring-black shrink-0">
             <Image 
               src={avatar} 
               alt={displayName} 
@@ -198,39 +199,70 @@ export default function ProfilePage({ params }: { params: Promise<{ npub: string
             />
           </div>
           
-          <div className="flex gap-2 items-center">
-            <button
-              onClick={handleShare}
-              className="p-2 border border-gray-300 dark:border-gray-700 rounded-full hover:bg-gray-50 dark:hover:bg-gray-900 transition-all text-gray-500 hover:text-blue-500"
-              aria-label="Share Profile"
-            >
-              <Share size={20} />
-            </button>
+          <div className="flex gap-2 items-center flex-wrap justify-end">
             {isOwnProfile ? (
-              <button
-                onClick={() => setIsEditModalOpen(true)}
-                className="px-6 py-2 border border-gray-300 dark:border-gray-700 rounded-full font-bold hover:bg-gray-50 dark:hover:bg-gray-900 transition-all"
-              >
-                Edit Profile
-              </button>
-            ) : currentUser && (
-              <>
-                <Link
-                  href={`/messages/${npubParam}`}
-                  className="p-2 border border-gray-300 dark:border-gray-700 rounded-full hover:bg-blue-50 dark:hover:bg-blue-900/20 text-blue-500 transition-all"
-                  aria-label="Message User"
-                >
-                  <Mail size={20} />
-                </Link>
-                <button
-                  onClick={() => setShowZapModal(true)}
-                  className="p-2 border border-gray-300 dark:border-gray-700 rounded-full hover:bg-yellow-50 dark:hover:bg-yellow-900/20 text-yellow-500 transition-all"
-                  aria-label="Zap User"
-                >
-                  <Zap size={20} fill="currentColor" />
-                </button>
-                <FollowButton targetPubkey={hexPubkey} size="lg" />
-              </>
+              <div className="flex gap-2 items-center">
+                <DropdownMenu
+                  trigger={
+                    <button className="p-2 border border-gray-300 dark:border-gray-700 rounded-full hover:bg-gray-50 dark:hover:bg-gray-900 transition-all text-gray-500">
+                      <MoreVertical size={20} />
+                    </button>
+                  }
+                  items={[
+                    {
+                      label: "Edit Profile",
+                      onClick: () => setIsEditModalOpen(true),
+                      icon: <Edit2 size={16} />
+                    },
+                    {
+                      label: "Share Profile",
+                      onClick: handleShare,
+                      icon: <Share size={16} />
+                    }
+                  ]}
+                />
+              </div>
+            ) : (
+              <div className="flex gap-2 items-center">
+                {currentUser && (
+                  <>
+                    <Link
+                      href={`/messages/${npubParam}`}
+                      className="p-2 border border-gray-300 dark:border-gray-700 rounded-full hover:bg-blue-50 dark:hover:bg-blue-900/20 text-blue-500 transition-all"
+                      aria-label="Message User"
+                    >
+                      <Mail size={20} />
+                    </Link>
+                    <button
+                      onClick={() => setShowZapModal(true)}
+                      className="p-2 border border-gray-300 dark:border-gray-700 rounded-full hover:bg-yellow-50 dark:hover:bg-yellow-900/20 text-yellow-500 transition-all"
+                      aria-label="Zap User"
+                    >
+                      <Zap size={20} fill="currentColor" />
+                    </button>
+                    <FollowButton targetPubkey={hexPubkey} size="lg" />
+                  </>
+                )}
+                <DropdownMenu
+                  trigger={
+                    <button className="p-2 border border-gray-300 dark:border-gray-700 rounded-full hover:bg-gray-50 dark:hover:bg-gray-900 transition-all text-gray-500">
+                      <MoreVertical size={20} />
+                    </button>
+                  }
+                  items={[
+                    {
+                      label: "Share Profile",
+                      onClick: handleShare,
+                      icon: <Share size={16} />
+                    },
+                    {
+                      label: "Copy Npub",
+                      onClick: handleCopyNpub,
+                      icon: <Copy size={16} />
+                    }
+                  ]}
+                />
+              </div>
             )}
           </div>
         </div>
