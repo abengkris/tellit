@@ -70,6 +70,7 @@ export function PostContentRenderer({
   }, [event.tags, nudeDetections]);
 
   const isLong = content.length > 600;
+  const shouldTruncate = isLong && !showFull && !isFullArticle;
   const imetaMap = useMemo(() => buildImetaMap(event.tags), [event.tags]);
   const normalizedContent = useMemo(() => resolveDeprecatedMentions(content, event.tags), [content, event.tags]);
 
@@ -177,21 +178,30 @@ export function PostContentRenderer({
       ) : (
         <>
           {textTokens.length > 0 && (
-            <div
-              className={`text-[15px] leading-relaxed whitespace-pre-wrap break-words text-gray-900 dark:text-gray-100 text-pretty min-w-0 ${
-                maxLines && !showFull ? `line-clamp-${maxLines}` : ""
-              }`}
-            >
-              {textTokens.map((token, i) => (
-                <TokenRenderer key={i} token={token} emojiMap={emojiMap} />
-              ))}
-              {isLong && !showFull && (
-                <button 
-                  onClick={(e) => { e.stopPropagation(); setShowFull(true); }}
-                  className="text-blue-500 hover:underline ml-1 font-bold text-sm"
-                >
-                  Show more
-                </button>
+            <div className="relative group">
+              <div
+                className={`text-[15px] leading-relaxed whitespace-pre-wrap break-words text-gray-900 dark:text-gray-100 text-pretty min-w-0 ${
+                  shouldTruncate ? "max-h-[300px] overflow-hidden" : ""
+                } ${
+                  maxLines && !showFull ? `line-clamp-${maxLines}` : ""
+                }`}
+              >
+                {textTokens.map((token, i) => (
+                  <TokenRenderer key={i} token={token} emojiMap={emojiMap} />
+                ))}
+              </div>
+              
+              {isLong && !isFullArticle && (
+                <div className={`${shouldTruncate ? "absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-white dark:from-black via-white/80 dark:via-black/80 to-transparent flex items-end justify-center pb-2" : "mt-2 flex justify-start"}`}>
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); setShowFull(!showFull); }}
+                    className={`text-blue-500 hover:text-blue-600 font-bold text-sm transition-all active:scale-95 ${
+                      shouldTruncate ? "bg-white/90 dark:bg-black/90 backdrop-blur-sm px-4 py-1.5 rounded-full border border-blue-500/20 shadow-sm hover:border-blue-500/40" : "hover:underline"
+                    }`}
+                  >
+                    {showFull ? "Show less" : "Show more"}
+                  </button>
+                </div>
               )}
             </div>
           )}
