@@ -225,7 +225,8 @@ export const PostComposer: React.FC<PostComposerProps> = ({
                 )}
                 <button
                   onClick={() => removeMedia(i)}
-                  className="absolute top-1 right-1 p-1 bg-black/50 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="absolute top-1 right-1 p-1 bg-black/60 text-white rounded-full hover:bg-black/80 transition-colors"
+                  aria-label="Remove media"
                 >
                   <X size={14} />
                 </button>
@@ -280,13 +281,13 @@ export const PostComposer: React.FC<PostComposerProps> = ({
             <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
               <span className="flex items-center gap-1">
                 <Loader2 size={12} className="animate-spin" />
-                Uploading media...
+                Uploading media…
               </span>
               <span>{uploadProgress}%</span>
             </div>
             <div className="w-full h-1 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
               <div 
-                className="h-full bg-blue-500 transition-all duration-300" 
+                className="h-full bg-blue-500 transition-[width] duration-300" 
                 style={{ width: `${uploadProgress}%` }}
               />
             </div>
@@ -324,7 +325,7 @@ export const PostComposer: React.FC<PostComposerProps> = ({
               title="Add poll"
               aria-label="Add poll"
               onClick={() => setShowPoll(!showPoll)}
-              className={`p-3 rounded-full transition-all ${
+              className={`p-3 rounded-full transition-transform transition-colors ${
                 showPoll 
                   ? "bg-blue-500 text-white shadow-lg shadow-blue-500/30 scale-110" 
                   : "hover:bg-blue-50 dark:hover:bg-blue-900/20 text-blue-500"
@@ -351,7 +352,7 @@ export const PostComposer: React.FC<PostComposerProps> = ({
               aria-label="Content Warning"
               aria-pressed={isSensitive}
               onClick={() => setIsSensitive(!isSensitive)}
-              className={`p-3 rounded-full transition-all ${
+              className={`p-3 rounded-full transition-transform transition-colors ${
                 isSensitive 
                   ? "bg-amber-500 text-white shadow-lg shadow-amber-500/30 scale-110" 
                   : "hover:bg-blue-50 dark:hover:bg-blue-900/20 text-blue-500"
@@ -364,11 +365,18 @@ export const PostComposer: React.FC<PostComposerProps> = ({
           <button
             onClick={handlePost}
             disabled={!content.trim() || isSubmitting || isUploading}
-            className={`px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white font-bold rounded-full transition-colors ${
-              (!content.trim() || isSubmitting || isUploading) ? "opacity-50 cursor-not-allowed" : ""
+            className={`px-6 py-2 bg-blue-500 hover:bg-blue-600 text-white font-bold rounded-full transition-transform transition-colors flex items-center gap-2 ${
+              (!content.trim() || isSubmitting || isUploading) ? "opacity-50 cursor-not-allowed" : "active:scale-95"
             }`}
           >
-            {isSubmitting ? "Posting..." : replyTo ? "Reply" : quoteEvent ? "Quote" : "Post"}
+            {isSubmitting ? (
+              <>
+                <Loader2 size={16} className="animate-spin" />
+                <span>Posting…</span>
+              </>
+            ) : (
+              replyTo ? "Reply" : quoteEvent ? "Quote" : "Post"
+            )}
           </button>
         </div>
       </div>
