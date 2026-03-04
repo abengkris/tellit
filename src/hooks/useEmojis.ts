@@ -27,12 +27,20 @@ export function useEmojis() {
 
     const fetchEmojis = async () => {
       try {
-        // Fetch Kind 10030 (User emoji list) and Kind 30030 (Emoji sets)
-        const events = await ndk.fetchEvents(
+        // Fetch User's emoji list (Kind 10030), User's sets (Kind 30030), 
+        // and the specific featured set provided.
+        const filters = [
           { 
             kinds: [10030 as NDKKind, 30030 as NDKKind], 
             authors: [user.pubkey] 
           },
+          { 
+            ids: ["8d87e3ae547a3302b50f85e23b7a147615671fde72ede324804ab90ba4f40efc"] 
+          }
+        ];
+
+        const events = await ndk.fetchEvents(
+          filters,
           { cacheUsage: NDKSubscriptionCacheUsage.CACHE_FIRST }
         );
 
