@@ -4,7 +4,7 @@ import React, { use } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useProfile } from "@/hooks/useProfile";
 import { useFeed } from "@/hooks/useFeed";
-import { Calendar, Link as LinkIcon, Zap, Activity, Mail, Share } from "lucide-react";
+import { Calendar, Link as LinkIcon, Zap, Activity, Mail, Share, Copy, Check } from "lucide-react";
 import { useAuthStore } from "@/store/auth";
 import { useUIStore } from "@/store/ui";
 import { useNDK } from "@/hooks/useNDK";
@@ -102,7 +102,20 @@ export default function ProfilePage({ params }: { params: Promise<{ npub: string
   const [isEditModalOpen, setIsEditModalOpen] = React.useState(false);
   const [isStatusModalOpen, setIsStatusModalOpen] = React.useState(false);
   const [showZapModal, setShowZapModal] = React.useState(false);
+  const [copied, setCopied] = React.useState(false);
   const isOwnProfile = currentUser?.pubkey === hexPubkey;
+
+  const handleCopyNpub = async () => {
+    try {
+      await navigator.clipboard.writeText(npubParam);
+      setCopied(true);
+      addToast("Npub copied to clipboard!", "success");
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error("Failed to copy:", err);
+      addToast("Failed to copy npub", "error");
+    }
+  };
 
   const avatar = profile?.picture || `https://robohash.org/${hexPubkey}?set=set1`;
   const displayName = profile?.name || profile?.displayName || shortenPubkey(npubParam);
@@ -296,9 +309,22 @@ export default function ProfilePage({ params }: { params: Promise<{ npub: string
             </div>
           )}
 
-          <p className="text-gray-500 text-xs font-mono break-all bg-gray-50 dark:bg-gray-900 p-2 rounded-xl border border-gray-100 dark:border-gray-800">
-            {npubParam}
-          </p>
+          <button 
+            onClick={handleCopyNpub}
+            className="flex items-center justify-between w-full text-gray-500 text-xs font-mono bg-gray-50 dark:bg-gray-900 p-2.5 rounded-xl border border-gray-100 dark:border-gray-800 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group text-left"
+            title="Click to copy npub"
+          >
+            <span className="truncate mr-2">
+              {npubParam.slice(0, 16)}…{npubParam.slice(-16)}
+            </span>
+            <div className="shrink-0 flex items-center justify-center w-6 h-6 rounded-lg bg-white dark:bg-black border border-gray-100 dark:border-gray-800 group-hover:border-blue-500/30 group-hover:text-blue-500 transition-all shadow-sm">
+              {copied ? (
+                <Check size={12} className="text-green-500" />
+              ) : (
+                <Copy size={12} />
+              )}
+            </div>
+          </button>
         </div>
 
         {profile?.about && (
