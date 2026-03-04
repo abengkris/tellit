@@ -27,6 +27,7 @@ import { PostCard } from "@/components/post/PostCard";
 
 import Image from "next/image";
 import Link from "next/link";
+import { useSearchParams, usePathname, useRouter } from "next/navigation";
 
 import { FeedList } from "@/components/feed/FeedList";
 import { FeedSkeleton } from "@/components/feed/FeedSkeleton";
@@ -45,7 +46,26 @@ export default function ProfilePage({ params }: { params: Promise<{ npub: string
   const { npub: npubParam } = use(params);
   const { id: hexPubkey } = decodeNip19(npubParam);
   
-  const [activeTab, setActiveTab] = React.useState<ProfileTab>("posts");
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+  const router = useRouter();
+
+  const [activeTab, setActiveTab] = React.useState<ProfileTab>((searchParams.get("tab") as ProfileTab) || "posts");
+
+  // Sync state with URL when it changes
+  React.useEffect(() => {
+    const tab = searchParams.get("tab") as ProfileTab;
+    if (tab && tab !== activeTab) {
+      setActiveTab(tab);
+    }
+  }, [searchParams, activeTab]);
+
+  const handleTabChange = (tab: ProfileTab) => {
+    setActiveTab(tab);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("tab", tab);
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  };
   const { profile, loading: profileLoading } = useProfile(hexPubkey);
   const { relays: userRelays, loading: relaysLoading } = useRelayList(hexPubkey);
   const { generalStatus, musicStatus } = useUserStatus(hexPubkey);
@@ -359,7 +379,7 @@ export default function ProfilePage({ params }: { params: Promise<{ npub: string
             key={tab}
             role="tab"
             aria-selected={activeTab === tab}
-            onClick={() => setActiveTab(tab)}
+            onClick={() => handleTabChange(tab)}
             className={`flex-1 py-4 text-sm font-bold capitalize transition-colors relative ${
               activeTab === tab ? "text-blue-500" : "text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-900"
             }`}

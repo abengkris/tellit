@@ -174,9 +174,11 @@ export const ProfileEditModal: React.FC<ProfileEditModalProps> = ({
             ) : (
               <div className="w-full h-full bg-gradient-to-r from-blue-400 to-purple-500 opacity-20" />
             )}
-            <div 
-              className="absolute inset-0 flex flex-col items-center justify-center bg-black/20 group-hover:bg-black/40 cursor-pointer transition-all gap-2"
+            <button 
+              type="button"
+              className="absolute inset-0 flex flex-col items-center justify-center bg-black/20 group-hover:bg-black/40 cursor-pointer transition-all gap-2 w-full"
               onClick={() => bannerInputRef.current?.click()}
+              aria-label="Change Banner"
             >
               {uploadingBanner ? (
                 <Loader2 className="text-white animate-spin" size={32} />
@@ -186,7 +188,7 @@ export const ProfileEditModal: React.FC<ProfileEditModalProps> = ({
                   <span className="text-white text-[10px] font-bold uppercase tracking-widest drop-shadow-md bg-black/40 px-3 py-1.5 rounded-full border border-white/20 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity">Change Banner</span>
                 </>
               )}
-            </div>
+            </button>
             <input 
               type="file" 
               ref={bannerInputRef} 
@@ -209,16 +211,18 @@ export const ProfileEditModal: React.FC<ProfileEditModalProps> = ({
                   unoptimized
                 />
               </div>
-              <div 
-                className="absolute inset-0 flex items-center justify-center bg-black/40 group-hover:bg-black/60 rounded-full cursor-pointer transition-all"
+              <button 
+                type="button"
+                className="absolute inset-0 flex items-center justify-center bg-black/40 group-hover:bg-black/60 rounded-full cursor-pointer transition-all w-full"
                 onClick={() => avatarInputRef.current?.click()}
+                aria-label="Change Avatar"
               >
                 {uploadingAvatar ? (
                   <Loader2 className="text-white animate-spin" size={24} />
                 ) : (
                   <Camera className="text-white" size={24} />
                 )}
-              </div>
+              </button>
               <input 
                 type="file" 
                 ref={avatarInputRef} 
@@ -303,7 +307,7 @@ export const ProfileEditModal: React.FC<ProfileEditModalProps> = ({
                   rows={3}
                   value={formData.about}
                   onChange={handleChange}
-                  placeholder="Tell us about yourself..."
+                  placeholder="Tell us about yourself…"
                   className="w-full bg-transparent border border-gray-200 dark:border-gray-800 rounded-xl p-3 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all resize-none"
                 />
               </div>
@@ -405,7 +409,11 @@ export const ProfileEditModal: React.FC<ProfileEditModalProps> = ({
                       #{interest}
                       <button
                         type="button"
-                        onClick={() => removeInterest(interest)}
+                        onClick={() => {
+                          if (confirm(`Remove #${interest}?`)) {
+                            removeInterest(interest);
+                          }
+                        }}
                         className="hover:text-red-500 transition-colors"
                       >
                         <X size={12} strokeWidth={3} />
@@ -498,7 +506,11 @@ export const ProfileEditModal: React.FC<ProfileEditModalProps> = ({
                       </div>
                       <button
                         type="button"
-                        onClick={() => removeExternalIdentity(id.platform, id.identity)}
+                        onClick={() => {
+                          if (confirm(`Remove ${id.platform} identity (${id.identity})?`)) {
+                            removeExternalIdentity(id.platform, id.identity);
+                          }
+                        }}
                         className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 text-gray-400 hover:text-red-500 rounded-lg transition-colors"
                       >
                         <Trash2 size={16} />
