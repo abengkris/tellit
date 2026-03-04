@@ -48,6 +48,8 @@ export const createPoll = async (
     event.tags.push(["relay", url]);
   });
 
+  console.log("[Poll] Publishing poll event:", event.rawEvent());
+  await event.sign();
   await event.publish();
   return event;
 };
@@ -70,6 +72,8 @@ export const respondToPoll = async (
     event.tags.push(["response", id]);
   });
 
+  console.log("[Poll] Publishing response event:", event.rawEvent());
+  await event.sign();
   await event.publish();
   return event;
 };
