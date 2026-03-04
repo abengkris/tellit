@@ -4,7 +4,8 @@ import React, { useState, useRef, useEffect } from "react";
 import { useAuthStore } from "@/store/auth";
 import { useNDK } from "@/hooks/useNDK";
 import { publishPost } from "@/lib/actions/post";
-import { ImageIcon, Calendar, Smile, MapPin, Loader2, X, AlertTriangle } from "lucide-react";
+import { PollOption } from "@/lib/actions/poll";
+import { ImageIcon, Calendar, Smile, MapPin, Loader2, X, AlertTriangle, List } from "lucide-react";
 import Image from "next/image";
 import { useUIStore } from "@/store/ui";
 import { useBlossom } from "@/hooks/useBlossom";
@@ -32,6 +33,11 @@ export const PostComposer: React.FC<PostComposerProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [showPoll, setShowPoll] = useState(false);
+  const [pollOptions, setPollOptions] = useState<PollOption[]>([
+    { id: "0", label: "" },
+    { id: "1", label: "" }
+  ]);
   const { user, isLoggedIn } = useAuthStore();
   const { ndk } = useNDK();
   const { addToast } = useUIStore();
@@ -48,6 +54,15 @@ export const PostComposer: React.FC<PostComposerProps> = ({
   const handlePost = async () => {
     if (!ndk || !content.trim() || isSubmitting) return;
 
+    // Validate poll if active
+    if (showPoll) {
+      const validOptions = pollOptions.filter(o => o.label.trim() !== "");
+      if (validOptions.length < 2) {
+        addToast("Poll must have at least 2 options", "error");
+        return;
+      }
+    }
+
     setIsSubmitting(true);
     try {
       const tags: NDKTag[] = imetaTags.map(imetaTagToTag);
@@ -56,15 +71,25 @@ export const PostComposer: React.FC<PostComposerProps> = ({
         tags.push(["content-warning", contentWarning]);
       }
 
-      await publishPost(ndk, content, { tags, replyTo, quoteEvent });
+      const pollOptionsData = showPoll ? {
+        options: pollOptions.filter(o => o.label.trim() !== ""),
+        pollType: "singlechoice" as const,
+        // Default to 24h
+        endsAt: Math.floor(Date.now() / 1000) + 86400
+      } : undefined;
+
+      await publishPost(ndk, content, { tags, replyTo, quoteEvent, pollOptions: pollOptionsData });
       setContent("");
       setImetaTags([]);
       setIsSensitive(false);
       setContentWarning("");
+      setShowPoll(false);
+      setPollOptions([{ id: "0", label: "" }, { id: "1", label: "" }]);
       
       let successMsg = "Post published successfully!";
       if (replyTo) successMsg = "Reply sent!";
       else if (quoteEvent) successMsg = "Quote shared!";
+      else if (showPoll) successMsg = "Poll created!";
       
       addToast(successMsg, "success");
       onSuccess?.();
@@ -115,6 +140,24 @@ export const PostComposer: React.FC<PostComposerProps> = ({
   };
 
   if (!isLoggedIn) return null;
+
+  const updatePollOption = (index: number, label: string) => {
+    setPollOptions(prev => {
+      const next = [...prev];
+      next[index] = { ...next[index], label };
+      return next;
+    });
+  };
+
+  const addPollOption = () => {
+    if (pollOptions.length >= 5) return;
+    setPollOptions(prev => [...prev, { id: String(prev.length), label: "" }]);
+  };
+
+  const removePollOption = (index: number) => {
+    if (pollOptions.length <= 2) return;
+    setPollOptions(prev => prev.filter((_, i) => i !== index));
+  };
 
   const removeMedia = (index: number) => {
     const tag = imetaTags[index];
@@ -191,6 +234,47 @@ export const PostComposer: React.FC<PostComposerProps> = ({
           </div>
         )}
 
+        {showPoll && (
+          <div className="mb-4 p-4 bg-gray-50 dark:bg-gray-900/50 rounded-2xl border border-gray-100 dark:border-gray-800 space-y-3 animate-in slide-in-from-top-2 duration-200">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Poll Options</span>
+              <button 
+                onClick={() => setShowPoll(false)}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+              >
+                <X size={14} />
+              </button>
+            </div>
+            {pollOptions.map((opt, i) => (
+              <div key={i} className="flex gap-2">
+                <input
+                  type="text"
+                  value={opt.label}
+                  onChange={(e) => updatePollOption(i, e.target.value)}
+                  placeholder={`Option ${i + 1}`}
+                  className="flex-1 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                />
+                {pollOptions.length > 2 && (
+                  <button 
+                    onClick={() => removePollOption(i)}
+                    className="text-gray-400 hover:text-red-500 transition-colors"
+                  >
+                    <X size={18} />
+                  </button>
+                )}
+              </div>
+            ))}
+            {pollOptions.length < 5 && (
+              <button
+                onClick={addPollOption}
+                className="text-xs font-bold text-blue-500 hover:text-blue-600 transition-colors pl-1"
+              >
+                + Add another option
+              </button>
+            )}
+          </div>
+        )}
+
         {isUploading && (
           <div className="mb-3">
             <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
@@ -235,6 +319,18 @@ export const PostComposer: React.FC<PostComposerProps> = ({
               className="p-3 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-full transition-colors"
             >
               <Smile size={20} />
+            </button>
+            <button 
+              title="Add poll"
+              aria-label="Add poll"
+              onClick={() => setShowPoll(!showPoll)}
+              className={`p-3 rounded-full transition-all ${
+                showPoll 
+                  ? "bg-blue-500 text-white shadow-lg shadow-blue-500/30 scale-110" 
+                  : "hover:bg-blue-50 dark:hover:bg-blue-900/20 text-blue-500"
+              }`}
+            >
+              <List size={20} />
             </button>
             <button 
               title="Schedule post"

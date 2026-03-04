@@ -1,9 +1,12 @@
 import NDK, { NDKEvent, NDKTag } from "@nostr-dev-kit/ndk";
 import { nip19 } from "nostr-tools";
 
+import { createPoll, CreatePollOptions } from "./poll";
+
 interface PostOptions {
   replyTo?: NDKEvent;
   quoteEvent?: NDKEvent;
+  pollOptions?: CreatePollOptions;
   tags?: NDKTag[];
 }
 
@@ -12,6 +15,11 @@ export const publishPost = async (
   content: string,
   options?: PostOptions
 ): Promise<NDKEvent> => {
+  // If poll options provided, use kind 1068
+  if (options?.pollOptions) {
+    return createPoll(ndk, content, options.pollOptions);
+  }
+
   const event = new NDKEvent(ndk);
   event.kind = 1;
   event.content = content;

@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.2] - 2026-03-03
+
+### Added
+- **NIP-88 Polls:** Users can now create and vote on polls (kind 1068 and 1018).
+- **Poll UI:** Added a beautiful `PollRenderer` with real-time result updates and progress bars.
+- **Poll Management:** Integrated poll creation into the `PostComposer`.
+- **Poll Badges:** Added a "Poll" badge to the post header for better discoverability.
+
 ## [0.3.1] - 2026-03-03
 
 ### Added

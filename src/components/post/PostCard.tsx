@@ -20,6 +20,7 @@ import { RawEventModal } from "./parts/RawEventModal";
 import { ReportModal } from "./parts/ReportModal";
 import { ReplyModal } from "./parts/ReplyModal";
 import { QuoteModal } from "./parts/QuoteModal";
+import { PollRenderer } from "./PollRenderer";
 import { shortenPubkey } from "@/lib/utils/nip19";
 import { nip19 } from "nostr-tools";
 import { useLists } from "@/hooks/useLists";
@@ -63,6 +64,7 @@ export const PostCard: React.FC<PostCardProps> = ({
   const displayEvent = isRepost && repostedEvent ? repostedEvent : event;
   const isArticle = displayEvent.kind === 30023;
   const isComment = displayEvent.kind === 1111;
+  const isPoll = displayEvent.kind === 1068;
   const { profile } = useProfile(displayEvent.pubkey);
   const { 
     likes, 
@@ -296,6 +298,7 @@ export const PostCard: React.FC<PostCardProps> = ({
             repostAuthorName={repostAuthorName}
             bot={profile?.bot}
             isArticle={isArticle}
+            isPoll={isPoll}
             isPinned={isPinned(displayEvent.id)}
             isMuted={isMuted(displayEvent.pubkey)}
             isBookmarked={isBookmarked(displayEvent.id)}
@@ -314,6 +317,10 @@ export const PostCard: React.FC<PostCardProps> = ({
             isArticle={isArticle}
             event={displayEvent}
           />
+
+          {isPoll && (
+            <PollRenderer event={displayEvent} />
+          )}
 
           <PostActions
             eventId={displayEvent.id}

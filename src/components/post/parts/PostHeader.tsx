@@ -12,7 +12,8 @@ import {
   PinOff, 
   VolumeX, 
   Volume2, 
-  Bookmark 
+  Bookmark,
+  BarChart2
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -40,6 +41,7 @@ interface PostHeaderProps {
   isBookmarked?: boolean;
   bot?: boolean | string;
   isArticle?: boolean;
+  isPoll?: boolean;
 }
 
 export const PostHeader: React.FC<PostHeaderProps> = ({
@@ -61,7 +63,8 @@ export const PostHeader: React.FC<PostHeaderProps> = ({
   isMuted,
   isBookmarked,
   bot,
-  isArticle
+  isArticle,
+  isPoll
 }) => {
   const formattedTime = createdAt
     ? formatDistanceToNow(new Date(createdAt * 1000), { addSuffix: true })
@@ -143,6 +146,12 @@ export const PostHeader: React.FC<PostHeaderProps> = ({
               <div className="flex items-center gap-1 text-blue-500 bg-blue-500/10 border border-blue-500/20 px-1.5 py-0.5 rounded font-black uppercase text-[8px] tracking-tighter mt-1 shrink-0">
                 <Pin size={8} fill="currentColor" />
                 <span>Pinned</span>
+              </div>
+            )}
+            {isPoll && (
+              <div className="flex items-center gap-1 text-orange-500 bg-orange-500/10 border border-orange-500/20 px-1.5 py-0.5 rounded font-black uppercase text-[8px] tracking-tighter mt-1 shrink-0">
+                <BarChart2 size={8} fill="currentColor" />
+                <span>Poll</span>
               </div>
             )}
             {isArticle && (
