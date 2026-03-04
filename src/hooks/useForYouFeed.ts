@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { NDKEvent } from "@nostr-dev-kit/ndk";
+import { NDKEvent, NDKKind } from "@nostr-dev-kit/ndk";
 import { NDKWoT } from "@nostr-dev-kit/wot";
 import { useNDK } from "@/hooks/useNDK";
 import { useWoT, CachedWoT } from "./useWoT";
@@ -73,7 +73,7 @@ export function useForYouFeed({
 
     const sub = ndk.subscribe(
       {
-        kinds: [1, 1068, 30023],
+        kinds: [1, 1068, 30023] as NDKKind[],
         authors,
         limit: 30,
       },
@@ -126,7 +126,7 @@ export function useForYouFeed({
     const authors = wot ? wot.getAllPubkeys({ maxDepth: 2 }).slice(0, 500) : followingList;
 
     const older = await ndk.fetchEvents({
-      kinds: [1, 1068, 30023],
+      kinds: [1, 1068, 30023] as NDKKind[],
       authors,
       until: oldest - 1,
       limit: 30,

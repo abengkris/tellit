@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from "react";
-import { NDKEvent, NDKFilter, NDKSubscription } from "@nostr-dev-kit/ndk";
+import { NDKEvent, NDKFilter, NDKSubscription, NDKKind } from "@nostr-dev-kit/ndk";
 import { useNDK } from "@/hooks/useNDK";
 import { useLists } from "@/hooks/useLists";
 
@@ -18,7 +18,7 @@ export type FeedFilterType = "all" | "posts" | "replies" | "media";
  * @param kinds List of event kinds to fetch (default: [1]).
  * @param filterType Client-side filter to apply (used for profile sub-feeds).
  */
-export function useFeed(authors: string[], kinds: number[] = [1, 1068, 30023], filterType: FeedFilterType = "all") {
+export function useFeed(authors: string[], kinds: number[] = [1, 1068, 30023] as NDKKind[], filterType: FeedFilterType = "all") {
   const { ndk, isReady } = useNDK();
   const { mutedPubkeys } = useLists();
   const [posts, setPosts] = useState<NDKEvent[]>([]);

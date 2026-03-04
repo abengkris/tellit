@@ -5,6 +5,7 @@ import { MainLayout } from "@/components/layout/MainLayout";
 import { PostComposer } from "@/components/post/PostComposer";
 import { useAuthStore } from "@/store/auth";
 import { useNDK } from "@/hooks/useNDK";
+import { NDKKind } from "@nostr-dev-kit/ndk";
 import { useRouter } from "next/navigation";
 import { Loader2, Sparkles, Users, Globe } from "lucide-react";
 import { FeedList } from "@/components/feed/FeedList";
@@ -231,7 +232,7 @@ function FollowingFeedTab({ followingList, viewerPubkey }: { followingList: stri
   const { posts, newCount, isLoading, flushNewPosts, loadMore, hasMore } =
     usePausedFeed({
       filter: {
-        kinds: [1, 1068, 30023],
+        kinds: [1, 1068, 30023] as NDKKind[],
         authors,
       },
     });
@@ -259,7 +260,7 @@ function GlobalFeedTab() {
   const { posts, newCount, isLoading, flushNewPosts, loadMore, hasMore } =
     usePausedFeed({
       filter: {
-        kinds: [1, 1068, 30023],
+        kinds: [1, 1068, 30023] as NDKKind[],
       },
     });
 
