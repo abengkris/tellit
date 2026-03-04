@@ -141,12 +141,11 @@ export const PostCard: React.FC<PostCardProps> = ({
     return `/post/${eventNoteId}`;
   }, [isArticle, eventNoteId]);
 
-  const replyingToNpub = useMemo(() => {
+  const replyingToPubkey = useMemo(() => {
     const replyPTag = displayEvent.tags.find(t => t[0] === 'p' && t[3] === 'reply') || 
                       [...displayEvent.tags].reverse().find(t => t[0] === 'p');
-    const pubkey = replyPTag ? replyPTag[1] : null;
-    return pubkey ? ndk?.getUser({ pubkey }).npub : null;
-  }, [displayEvent.tags, ndk]);
+    return replyPTag ? replyPTag[1] : null;
+  }, [displayEvent.tags]);
 
   const handleDelete = async (e?: React.MouseEvent) => {
     e?.stopPropagation();
@@ -327,7 +326,7 @@ export const PostCard: React.FC<PostCardProps> = ({
 
           <PostContentRenderer
             content={displayEvent.content}
-            replyingToNpub={replyingToNpub}
+            replyingToPubkey={replyingToPubkey}
             isRepost={isRepost}
             isArticle={isArticle}
             event={displayEvent}

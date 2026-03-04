@@ -5,9 +5,10 @@ import { NDKEvent } from "@nostr-dev-kit/ndk";
 import { X } from "lucide-react";
 import { PostComposer } from "../PostComposer";
 import { PostHeader } from "./PostHeader";
-import { shortenPubkey } from "@/lib/utils/nip19";
+import { shortenPubkey, toNpub } from "@/lib/utils/nip19";
 import { useProfile } from "@/hooks/useProfile";
 import { PostContentRenderer } from "./PostContent";
+import Link from "next/link";
 
 interface ReplyModalProps {
   event: NDKEvent;
@@ -64,7 +65,7 @@ export const ReplyModal: React.FC<ReplyModalProps> = ({ event, onClose }) => {
               />
             </div>
             <div className="mt-2 text-sm text-gray-500">
-              Replying to <span className="text-blue-500">@{shortenPubkey(event.pubkey)}</span>
+              Replying to <Link href={`/${toNpub(event.pubkey)}`} className="text-blue-500 font-bold hover:underline">@{displayName}</Link>
             </div>
           </div>
         </div>

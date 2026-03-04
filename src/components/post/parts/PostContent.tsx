@@ -14,7 +14,8 @@ import { ShortenedUrl } from "../tokens/ShortenedUrl";
 import { UrlPreview } from "../tokens/UrlPreview";
 import { AsyncMediaEmbed } from "../tokens/AsyncMediaEmbed";
 import { NDKEvent } from "@nostr-dev-kit/ndk";
-import { shortenPubkey } from "@/lib/utils/nip19";
+import { shortenPubkey, toNpub } from "@/lib/utils/nip19";
+import { useProfile } from "@/hooks/useProfile";
 
 interface PostContentRendererProps {
   content: string;
@@ -23,11 +24,22 @@ interface PostContentRendererProps {
   renderQuotes?: boolean;
   maxLines?: number;
   className?: string;
-  replyingToNpub?: string | null;
+  replyingToPubkey?: string | null;
   isRepost?: boolean;
   isArticle?: boolean;
   isFullArticle?: boolean;
 }
+
+const ReplyRecipient: React.FC<{ pubkey: string }> = ({ pubkey }) => {
+  const { profile } = useProfile(pubkey);
+  const displayName = profile?.name || profile?.displayName || shortenPubkey(pubkey);
+  
+  return (
+    <Link href={`/${toNpub(pubkey)}`} className="text-blue-500 hover:underline font-bold">
+      @{displayName}
+    </Link>
+  );
+};
 
 export function PostContentRenderer({
   content,
@@ -36,7 +48,7 @@ export function PostContentRenderer({
   renderQuotes = true,
   maxLines,
   className = "",
-  replyingToNpub,
+  replyingToPubkey,
   isRepost,
   isArticle,
   isFullArticle = false,
@@ -153,9 +165,9 @@ export function PostContentRenderer({
         </div>
       )}
 
-      {(!isArticle || isFullArticle) && replyingToNpub && !isRepost && (
+      {(!isArticle || isFullArticle) && replyingToPubkey && !isRepost && (
         <div className="text-gray-500 text-xs mb-1" onClick={(e) => e.stopPropagation()}>
-          Replying to <span className="text-blue-500 hover:underline">@{shortenPubkey(replyingToNpub)}</span>
+          Replying to <ReplyRecipient pubkey={replyingToPubkey} />
         </div>
       )}
 
