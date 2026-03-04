@@ -18,3 +18,9 @@ Domain: tellit.id
 - Hook custom: use prefix (useNostr, useFeed)
 - Event Nostr selalu divalidasi sebelum ditampilkan
 - Selalu handle loading dan error state
+
+## Standar Dokumentasi (Mandat)
+- **Changelog:** Setiap update fitur atau fix bug signifikan WAJIB dicatat di `CHANGELOG.md`.
+- **JSDoc/TSDoc:** Gunakan JSDoc untuk mendokumentasikan fungsi, hook, dan komponen yang kompleks.
+- **Commit Messages:** Gunakan prefix conventional commits (feat:, fix:, chore:, docs:).
+- **README:** Update README jika ada perubahan pada cara install atau konfigurasi.

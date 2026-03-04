@@ -5,8 +5,19 @@ import { useLists } from "@/hooks/useLists";
 
 const MAX_POSTS = 100;
 
+/**
+ * Filtering types for the feed, mostly used for profile tabs.
+ */
 export type FeedFilterType = "all" | "posts" | "replies" | "media";
 
+/**
+ * Robust hook to manage and provide a stream of Nostr events.
+ * Handles initial loading, pagination (load more), and real-time updates.
+ * 
+ * @param authors List of pubkeys to include in the feed (empty for global).
+ * @param kinds List of event kinds to fetch (default: [1]).
+ * @param filterType Client-side filter to apply (used for profile sub-feeds).
+ */
 export function useFeed(authors: string[], kinds: number[] = [1], filterType: FeedFilterType = "all") {
   const { ndk, isReady } = useNDK();
   const { mutedPubkeys } = useLists();

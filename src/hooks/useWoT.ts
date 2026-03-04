@@ -14,7 +14,9 @@ interface UseWoTReturn {
 
 const CACHE_KEY_PREFIX = "tellit_wot_cache_";
 const CACHE_EXPIRY = 3600000; // 1 hour in ms
-
+/**
+ * Simple wrapper class for cached WoT data to mimic NDKWoT behavior.
+ */
 export class CachedWoT {
   public scores: Map<string, number>;
   public size: number;
@@ -24,11 +26,16 @@ export class CachedWoT {
     this.size = this.scores.size;
   }
 
+  /**
+   * Returns the trust score for a given pubkey (0 to 1).
+   */
   getScore(pubkey: string): number {
     return this.scores.get(pubkey) ?? 0;
   }
 
-  // Compatible with NDKWoT signature
+  /**
+   * Returns all pubkeys present in the cached graph.
+   */
   getAllPubkeys(_options?: { maxDepth?: number }): string[] {
     return Array.from(this.scores.keys());
   }
@@ -38,8 +45,21 @@ let wotSingleton: NDKWoT | CachedWoT | null = null;
 let wotSingletonPubkey: string | null = null;
 let wotLoadPromise: Promise<void> | null = null;
 
+/**
+ * Hook to manage and provide the Web of Trust (WoT) graph.
+ * Implements a 2-layer caching strategy: 
+ * 1. In-memory singleton for instant access across components.
+ * 2. LocalStorage persistence with 1-hour expiry.
+ * 
+ * @param viewerPubkey The pubkey of the user whose trust network we are building.
+ */
 export function useWoT(viewerPubkey: string | undefined): UseWoTReturn {
-  const { ndk, isReady } = useNDK();
+...
+/**
+ * Resets the in-memory WoT singleton.
+ */
+export function resetWoT() {
+
   const [status, setStatus] = useState<WoTStatus>("idle");
   const [pubkeyCount, setPubkeyCount] = useState(0);
   const [wot, setWot] = useState<NDKWoT | CachedWoT | null>(null);

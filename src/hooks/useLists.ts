@@ -5,6 +5,9 @@ import { useNDK } from "@/hooks/useNDK";
 import { NDKEvent, NDKSubscriptionCacheUsage } from "@nostr-dev-kit/ndk";
 import { useAuthStore } from "@/store/auth";
 
+/**
+ * Supported NIP-51 and NIP-39 list kinds.
+ */
 export enum ListKind {
   Mute = 10000,
   Pinned = 10001,
@@ -15,12 +18,21 @@ export enum ListKind {
   Emojis = 10030,
 }
 
+/**
+ * Represents a verified external account linked via NIP-39.
+ */
 export interface ExternalIdentity {
   platform: string;
   identity: string;
   proof: string;
 }
 
+/**
+ * Hook to manage various Nostr-based lists (Mutes, Bookmarks, Interests, etc.).
+ * Supports both the current user's lists (with write access) and target users' lists (read-only).
+ * 
+ * @param targetPubkey Optional pubkey to fetch lists for. Defaults to current logged-in user.
+ */
 export function useLists(targetPubkey?: string) {
   const { ndk, isReady } = useNDK();
   const { user: currentUser } = useAuthStore();
