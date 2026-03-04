@@ -18,7 +18,7 @@ export type FeedFilterType = "all" | "posts" | "replies" | "media";
  * @param kinds List of event kinds to fetch (default: [1]).
  * @param filterType Client-side filter to apply (used for profile sub-feeds).
  */
-export function useFeed(authors: string[], kinds: number[] = [1], filterType: FeedFilterType = "all") {
+export function useFeed(authors: string[], kinds: number[] = [1, 1068, 30023], filterType: FeedFilterType = "all") {
   const { ndk, isReady } = useNDK();
   const { mutedPubkeys } = useLists();
   const [posts, setPosts] = useState<NDKEvent[]>([]);
@@ -49,7 +49,7 @@ export function useFeed(authors: string[], kinds: number[] = [1], filterType: Fe
   const matchesFilter = useCallback((event: NDKEvent) => {
     if (filterType === "all") return true;
     
-    if (event.kind === 1 || event.kind === 30023) {
+    if (event.kind === 1 || event.kind === 30023 || event.kind === 1068) {
       const hasETags = event.tags.some(t => t[0] === 'e');
       if (filterType === "posts") return !hasETags;
       if (filterType === "replies") return hasETags;
