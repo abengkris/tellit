@@ -244,24 +244,39 @@ export const PostComposer: React.FC<PostComposerProps> = ({
         />
 
         <div className={`transition-all duration-500 overflow-hidden ${isExpanded || content.trim() ? "max-h-[800px] opacity-100 mt-2" : "max-h-0 opacity-0 mt-0"}`}>
-          {showEmojiPicker && emojis.length > 0 && (
+          {showEmojiPicker && (
             <div className="mb-4 p-4 bg-gray-50 dark:bg-gray-900/50 rounded-2xl border border-gray-100 dark:border-gray-800 animate-in zoom-in-95 duration-200">
               <div className="flex items-center justify-between mb-3">
                 <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Custom Emojis</span>
                 <button onClick={() => setShowEmojiPicker(false)} className="text-gray-400 hover:text-gray-600"><X size={14} /></button>
               </div>
-              <div className="grid grid-cols-6 sm:grid-cols-8 gap-2 overflow-y-auto max-h-48 p-1">
-                {emojis.map((emoji) => (
-                  <button
-                    key={emoji.shortcode}
-                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); insertEmoji(emoji.shortcode); }}
-                    title={`:${emoji.shortcode}:`}
-                    className="p-2 hover:bg-white dark:hover:bg-black rounded-xl transition-all hover:scale-110 active:scale-90 border border-transparent hover:border-gray-100 dark:hover:border-gray-800 flex items-center justify-center"
+              
+              {emojis.length > 0 ? (
+                <div className="grid grid-cols-6 sm:grid-cols-8 gap-2 overflow-y-auto max-h-48 p-1">
+                  {emojis.map((emoji) => (
+                    <button
+                      key={emoji.shortcode}
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); insertEmoji(emoji.shortcode); }}
+                      title={`:${emoji.shortcode}:`}
+                      className="p-2 hover:bg-white dark:hover:bg-black rounded-xl transition-all hover:scale-110 active:scale-90 border border-transparent hover:border-gray-100 dark:hover:border-gray-800 flex items-center justify-center"
+                    >
+                      <img src={emoji.url} alt={emoji.shortcode} className="w-6 h-6 object-contain" />
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="py-4 text-center">
+                  <p className="text-sm text-gray-500 mb-2">You don&apos;t have any custom emojis yet.</p>
+                  <a 
+                    href="https://emojish.id" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-xs font-bold text-blue-500 hover:underline"
                   >
-                    <img src={emoji.url} alt={emoji.shortcode} className="w-6 h-6 object-contain" />
-                  </button>
-                ))}
-              </div>
+                    Discover emojis on emojish.id ↗
+                  </a>
+                </div>
+              )}
             </div>
           )}
 
