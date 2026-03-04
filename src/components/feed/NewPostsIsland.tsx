@@ -32,6 +32,7 @@ export function NewPostsIsland({ count, onFlush }: NewPostsIslandProps) {
           e.stopPropagation();
           onFlush();
         }}
+        key={shakeKey}
         className="
           pointer-events-auto
           flex items-center gap-2
@@ -41,8 +42,11 @@ export function NewPostsIsland({ count, onFlush }: NewPostsIslandProps) {
           rounded-full shadow-2xl shadow-blue-500/20
           border border-white/10
           transition-all duration-200
+          animate-in fade-in slide-in-from-bottom-2 zoom-in-95
         "
-        style={{ animation: "island-appear 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)" }}
+        style={{ 
+          animation: shakeKey > 0 ? "shake 0.4s cubic-bezier(.36,.07,.19,.97) both" : undefined 
+        }}
       >
         <ArrowUp size={16} className="shrink-0" />
         <span>
