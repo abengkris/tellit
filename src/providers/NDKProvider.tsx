@@ -51,10 +51,36 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
     instance.initialValidationRatio = 0.5;
     instance.lowestValidationRatio = 0.05;
 
-    // Handle invalid signatures
-    instance.on("event:invalid-sig", (event) => {
-      console.error("Invalid signature detected from relay:", event.relay?.url);
-      addToast(`Invalid signature detected from relay: ${event.relay?.url || 'unknown'}`, "error");
+    // Handle invalid signatures with throttling and relay management
+    const invalidSigCountByRelay = new Map<string, number>();
+    let lastToastTime = 0;
+    const TOAST_THROTTLE = 5000; // 5 seconds
+    const DISCONNECT_THRESHOLD = 5; // Disconnect after 5 invalid signatures from the same relay
+
+    instance.on("event:invalid-sig", (event, relay) => {
+      const relayUrl = relay?.url || 'unknown';
+      console.error("Invalid signature detected from relay:", relayUrl);
+      
+      const currentCount = (invalidSigCountByRelay.get(relayUrl) || 0) + 1;
+      invalidSigCountByRelay.set(relayUrl, currentCount);
+
+      const now = Date.now();
+      
+      if (currentCount >= DISCONNECT_THRESHOLD && relay) {
+        console.warn(`Disconnecting from malicious relay ${relayUrl} due to multiple invalid signatures.`);
+        relay.disconnect();
+        
+        if (now - lastToastTime > TOAST_THROTTLE) {
+          addToast(`Disconnected from malicious relay: ${relayUrl}`, "error");
+          lastToastTime = now;
+        }
+        return;
+      }
+
+      if (now - lastToastTime > TOAST_THROTTLE) {
+        addToast(`Invalid signature detected from relay: ${relayUrl}`, "error");
+        lastToastTime = now;
+      }
     });
 
     // Handle session restoration

@@ -10,7 +10,8 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 - **NDK Performance Optimizations:** Implemented validation sampling to reduce main-thread load and improve event processing speed.
-- **Invalid Signature Detection:** Added real-time notifications for invalid event signatures received from relays.
+- **Relay Protection:** The app now automatically disconnects from relays that send too many invalid event signatures (threshold: 5).
+- **Throttled Notifications:** Invalid signature warnings are now throttled to prevent UI overwhelming and potential browser crashes.
 - **Organizational Affiliation:** Added support for NIP-05 affiliations. If a user is verified via `name@domain.tld`, the app now automatically checks for a root identity at `_@domain.tld` and displays its profile picture as a small badge next to the user's name (similar to X/Twitter affiliations).
 - **Affiliation Hook:** New `useAffiliation` hook for efficient root identity discovery with domain-level caching.
 - **Affiliation Info Modal:** Clicking the display name on a profile page now shows a detailed modal explaining the account's organizational affiliation with links to the parent entity.
