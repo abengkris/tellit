@@ -104,7 +104,9 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
         const session = sessionManager.activeSession;
         if (session) {
           setActiveSession(session);
-          setUser(session.user);
+          // sessionManager provides activeUser, fallback to ndk.getUser if needed
+          const user = sessionManager.activeUser || instance.getUser({ pubkey: session.pubkey });
+          setUser(user);
           setLoginState(true, session.pubkey);
         }
       } else {
