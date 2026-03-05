@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useEffect, useState, ReactNode, useRef } from "react";
-import NDK, { NDKPrivateKeySigner, NDKNip07Signer, NDKUser, NDKEvent } from "@nostr-dev-kit/ndk";
+import NDK, { NDKUser, NDKEvent, NDKCacheAdapter, NDKRelay } from "@nostr-dev-kit/ndk";
 import NDKCacheAdapterDexie from "@nostr-dev-kit/ndk-cache-dexie";
 import { NDKMessenger, CacheModuleStorage } from "@nostr-dev-kit/messages";
 import { NDKSessionManager, LocalStorage, NDKSession } from "@nostr-dev-kit/sessions";
@@ -53,7 +53,7 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
     
     // Set cache adapter if not already set
     if (!instance.cacheAdapter && dexieAdapter) {
-      instance.cacheAdapter = dexieAdapter as any;
+      instance.cacheAdapter = dexieAdapter as unknown as NDKCacheAdapter;
     }
 
     // Performance Optimization: Validation Sampling
@@ -66,7 +66,7 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
     const TOAST_THROTTLE = 5000;
     const DISCONNECT_THRESHOLD = 5;
 
-    instance.on("event:invalid-sig", (event, relay) => {
+    instance.on("event:invalid-sig", (event: NDKEvent, relay?: NDKRelay) => {
       const relayUrl = relay?.url || 'unknown';
       console.error("Invalid signature detected from relay:", relayUrl);
       
@@ -91,7 +91,7 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
     });
 
     // Handle publishing failures
-    instance.on("event:publish-failed", (event, error) => {
+    instance.on("event:publish-failed", (event: NDKEvent, error: Error) => {
       console.error(`Event ${event.id} failed to publish:`, error);
       addToast(`Failed to publish event to relays. It will be retried automatically.`, "error");
     });
@@ -107,23 +107,27 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
       }
     });
     sessionsRef.current = sessionManager;
-    setSessions(sessionManager);
+    Promise.resolve().then(() => setSessions(sessionManager));
 
     // Subscribe to session changes to sync with store
     const unsubscribeSessions = sessionManager.subscribe((state) => {
       if (state.activePubkey) {
         const session = sessionManager.activeSession;
         if (session) {
-          setActiveSession(session);
-          // sessionManager provides activeUser, fallback to ndk.getUser if needed
-          const user = sessionManager.activeUser || instance.getUser({ pubkey: session.pubkey });
-          setUser(user);
-          setLoginState(true, session.pubkey);
+          Promise.resolve().then(() => {
+            setActiveSession(session);
+            // sessionManager provides activeUser, fallback to ndk.getUser if needed
+            const user = sessionManager.activeUser || instance.getUser({ pubkey: session.pubkey });
+            setUser(user);
+            setLoginState(true, session.pubkey);
+          });
         }
       } else {
-        setActiveSession(null);
-        setUser(null);
-        setLoginState(false, null);
+        Promise.resolve().then(() => {
+          setActiveSession(null);
+          setUser(null);
+          setLoginState(false, null);
+        });
       }
     });
 
@@ -157,7 +161,7 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
       if (currentPubkey) {
         try {
           const storage = (dexieAdapter && currentPubkey) 
-            ? new CacheModuleStorage(dexieAdapter as any, currentPubkey) 
+            ? new CacheModuleStorage(dexieAdapter as unknown as NDKCacheAdapter, currentPubkey) 
             : undefined;
           
           msgInstance = new NDKMessenger(instance, { storage });
@@ -214,7 +218,7 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
         try { (messengerRef.current as any).destroy(); } catch (e) {}
       }
     };
-  }, [setUser, setLoginState, incrementUnreadMessagesCount]);
+  }, [setUser, setLoginState, incrementUnreadMessagesCount, addToast]);
 
   return (
     <NDKContext.Provider value={{ ndk, messenger, sessions, activeSession, isReady }}>

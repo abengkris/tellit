@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { NDKEvent, NDKUser } from "@nostr-dev-kit/ndk";
+import { NDKEvent } from "@nostr-dev-kit/ndk";
 import { NDKMessenger } from "@nostr-dev-kit/messages";
 import { useNDK } from "@/hooks/useNDK";
 import { useAuthStore } from "@/store/auth";
@@ -106,8 +106,10 @@ export function useMessages() {
     if (isInitialLoad.current) {
       Promise.resolve().then(() => setLoading(true));
       fetchConversations().finally(() => {
-        setLoading(false);
-        isInitialLoad.current = false;
+        Promise.resolve().then(() => {
+          setLoading(false);
+          isInitialLoad.current = false;
+        });
       });
     }
 

@@ -96,7 +96,7 @@ export function useWoT(viewerPubkey: string | undefined): UseWoTReturn {
     if (wotSingletonPubkey !== viewerPubkey) {
       wotSingleton = null;
       wotSingletonPubkey = viewerPubkey;
-      setRetries(0); // Reset retries for new user
+      Promise.resolve().then(() => setRetries(0)); // Reset retries for new user
     }
 
     let isMounted = true;

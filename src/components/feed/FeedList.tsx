@@ -114,7 +114,7 @@ export function FeedList({
           </div>
         )}
         {!hasMore && posts.length > 0 && (
-          <p className="text-gray-500 text-sm font-medium">You've reached the end of the road</p>
+          <p className="text-gray-500 text-sm font-medium">You&apos;ve reached the end of the road</p>
         )}
       </div>
     </div>

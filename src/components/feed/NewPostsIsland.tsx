@@ -15,7 +15,7 @@ export function NewPostsIsland({ count, onFlush }: NewPostsIslandProps) {
 
   useEffect(() => {
     if (count > prevCount.current) {
-      setShakeKey(prev => prev + 1);
+      Promise.resolve().then(() => setShakeKey(prev => prev + 1));
     }
     prevCount.current = count;
   }, [count]);

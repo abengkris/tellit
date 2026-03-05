@@ -11,16 +11,16 @@ export function useNIP05(pubkey: string | undefined, nip05: string | undefined) 
     let isMounted = true;
 
     if (!pubkey || !nip05) {
-      setStatus('idle');
+      if (status !== 'idle') Promise.resolve().then(() => setStatus('idle'));
       return;
     }
 
     if (!nip05.includes('@')) {
-      setStatus('invalid');
+      if (status !== 'invalid') Promise.resolve().then(() => setStatus('invalid'));
       return;
     }
     
-    setStatus('loading');
+    if (status !== 'loading') Promise.resolve().then(() => setStatus('loading'));
 
     const verify = async () => {
       try {
@@ -54,7 +54,7 @@ export function useNIP05(pubkey: string | undefined, nip05: string | undefined) 
     return () => {
       isMounted = false;
     };
-  }, [pubkey, nip05]);
+  }, [pubkey, nip05]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return status;
 }

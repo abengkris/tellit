@@ -36,6 +36,7 @@ All notable changes to this project will be documented in this file.
 - **Affiliation Info Modal:** Clicking the display name on a profile page now shows a detailed modal explaining the account's organizational affiliation with links to the parent entity.
 
 ### Fixed
+- **Linting & Stability:** Fixed multiple critical linting issues including cascading renders in hooks/providers, unescaped entities, and type mismatches.
 - **Search Layout:** Fixed horizontal overflow issues on the search page by isolating scroll containers and refining text truncation for long identifiers.
 - **Runtime Stability:** Fixed browser crash issues caused by nested links and redundant hook execution.
 - **NIP-05 CORS:** Fixed CORS issues by proxying NIP-05 verification requests through an internal API route.
