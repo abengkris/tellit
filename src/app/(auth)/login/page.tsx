@@ -33,7 +33,7 @@ export default function LoginPage() {
     isLoggedIn 
   } = useAuthStore();
   
-  const { ndk, isReady } = useNDK();
+  const { ndk, sessions, isReady } = useNDK();
   const { addToast } = useUIStore();
   const router = useRouter();
 
@@ -45,9 +45,9 @@ export default function LoginPage() {
   }, [isLoggedIn, router]);
 
   const handleNip07Login = async () => {
-    if (!ndk || !isReady) return;
+    if (!ndk || !sessions || !isReady) return;
     try {
-      await login(ndk);
+      await login(ndk, sessions);
       addToast("Logged in successfully!", "success");
     } catch (err) {
       addToast("NIP-07 Login failed. Check extension.", "error");
@@ -56,9 +56,9 @@ export default function LoginPage() {
 
   const handleKeyLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!ndk || !isReady || !privateKey) return;
+    if (!ndk || !sessions || !isReady || !privateKey) return;
     try {
-      await loginWithPrivateKey(ndk, privateKey);
+      await loginWithPrivateKey(ndk, sessions, privateKey);
       addToast("Logged in successfully!", "success");
     } catch (err) {
       addToast("Invalid private key.", "error");
@@ -66,9 +66,9 @@ export default function LoginPage() {
   };
 
   const handleGenerateKey = async () => {
-    if (!ndk || !isReady) return;
+    if (!ndk || !sessions || !isReady) return;
     try {
-      const k = await generateNewKey(ndk);
+      const k = await generateNewKey(ndk, sessions);
       setNewKey(k);
       setShowOnboarding(true);
       addToast("New identity generated!", "success");

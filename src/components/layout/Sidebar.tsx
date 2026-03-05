@@ -40,7 +40,7 @@ const SidebarItem = ({ href, icon: Icon, label, badge }: { href: string; icon: a
 
 export const Sidebar = () => {
   const { user, isLoggedIn, login, logout } = useAuthStore();
-  const { ndk } = useNDK();
+  const { ndk, sessions } = useNDK();
   const { unreadCount } = useNotifications();
   const { unreadMessagesCount } = useUIStore();
   const { connectedCount, totalCount } = useRelayStatus();
@@ -81,7 +81,7 @@ export const Sidebar = () => {
 
         {isLoggedIn ? (
           <button
-            onClick={() => logout(ndk || undefined)}
+            onClick={() => logout(sessions)}
             aria-label="Logout"
             className="hidden sm:flex items-center space-x-4 p-3 rounded-full hover:bg-red-50 dark:hover:bg-red-900/10 text-red-500 transition-colors w-full"
           >
@@ -90,7 +90,7 @@ export const Sidebar = () => {
           </button>
         ) : (
           <button
-            onClick={() => ndk && login(ndk)}
+            onClick={() => ndk && sessions && login(ndk, sessions)}
             aria-label="Login"
             className="flex items-center space-x-4 p-3 rounded-full hover:bg-blue-50 dark:hover:bg-blue-900/10 text-blue-500 transition-colors w-full"
           >

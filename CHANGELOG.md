@@ -9,6 +9,9 @@ All notable changes to this project will be documented in this file.
 - **Mentions:** Updated `MentionLink` to correctly use the domain as the display name when a user has a `_` NIP-05 identifier and no other name set.
 
 ### Added
+- **Multi-Account Support:** Migrated to `@nostr-dev-kit/sessions` for robust multi-account management. Users can now maintain multiple sessions with persistent storage.
+- **Session Persistence:** Login states, follows, mutes, and relay lists are now automatically persisted and restored between app launches using `NDKSessionManager`.
+- **Automatic Data Fetching:** Added automatic background fetching of user profile data, contact lists, and mute lists upon login.
 - **Cache-First Feed:** Optimized `useFeed` to use the `onEvents` handler for batch-processing initial cached results, enabling near-instant feed loading.
 - **Relay Goal Optimization:** Improved contact list fetching in `useFollowing` with specified relay goals for better reliability.
 - **Subscription Grouping:** Leveraged NDK's intelligent subscription grouping to reduce relay load by batching multiple requests (e.g., profile fetches and post stats) into single `REQ` commands.

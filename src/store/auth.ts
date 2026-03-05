@@ -13,10 +13,11 @@ interface AuthState {
   _hasHydrated: boolean;
   
   setHasHydrated: (state: boolean) => void;
-  login: (ndk: NDK) => Promise<void>;
-  loginWithPrivateKey: (ndk: NDK, privateKey: string) => Promise<void>;
-  generateNewKey: (ndk: NDK) => Promise<string>;
-  logout: (ndk?: NDK) => void;
+  setLoginState: (isLoggedIn: boolean, publicKey: string | null) => void;
+  login: (ndk: NDK, sessions: NDKSessionManager) => Promise<void>;
+  loginWithPrivateKey: (ndk: NDK, sessions: NDKSessionManager, privateKey: string) => Promise<void>;
+  generateNewKey: (ndk: NDK, sessions: NDKSessionManager) => Promise<string>;
+  logout: (sessions: NDKSessionManager | null) => void;
   setUser: (user: NDKUser | null) => void;
 }
 
@@ -32,21 +33,23 @@ export const useAuthStore = create<AuthState>()(
       _hasHydrated: false,
 
       setHasHydrated: (state) => set({ _hasHydrated: state }),
+      setLoginState: (isLoggedIn, publicKey) => set({ isLoggedIn, publicKey }),
       setUser: (user) => set({ user }),
 
-      login: async (ndk) => {
+      login: async (ndk, sessions) => {
         set({ isLoading: true });
         try {
           const signer = new NDKNip07Signer();
-          ndk.signer = signer;
+          const pubkey = await sessions.login(signer, {
+            follows: true,
+            mutes: true,
+            relayList: true,
+            setActive: true
+          });
           
-          const user = await signer.user();
-          if (user) {
-            user.ndk = ndk;
-            await user.fetchProfile();
+          if (pubkey) {
             set({ 
-              user, 
-              publicKey: user.pubkey, 
+              publicKey: pubkey, 
               isLoggedIn: true, 
               isLoading: false,
               loginType: 'nip07'
@@ -59,19 +62,20 @@ export const useAuthStore = create<AuthState>()(
         }
       },
 
-      loginWithPrivateKey: async (ndk, privateKey) => {
+      loginWithPrivateKey: async (ndk, sessions, privateKey) => {
         set({ isLoading: true });
         try {
           const signer = new NDKPrivateKeySigner(privateKey);
-          ndk.signer = signer;
-          
-          const user = await signer.user();
-          if (user) {
-            user.ndk = ndk;
-            await user.fetchProfile();
+          const pubkey = await sessions.login(signer, {
+            follows: true,
+            mutes: true,
+            relayList: true,
+            setActive: true
+          });
+
+          if (pubkey) {
             set({ 
-              user, 
-              publicKey: user.pubkey, 
+              publicKey: pubkey, 
               privateKey: privateKey,
               isLoggedIn: true, 
               isLoading: false,
@@ -85,15 +89,15 @@ export const useAuthStore = create<AuthState>()(
         }
       },
 
-      generateNewKey: async (ndk) => {
-        const signer = NDKPrivateKeySigner.generate();
+      generateNewKey: async (ndk, sessions) => {
+        const { pubkey, signer } = await sessions.createAccount({
+          // Automatic setup could be added here
+        });
+        
         const privateKey = signer.privateKey!;
-        const user = await signer.user();
-        user.ndk = ndk;
         
         set({
-          user,
-          publicKey: user.pubkey,
+          publicKey: pubkey,
           privateKey,
           isLoggedIn: true,
           isLoading: false,
@@ -103,11 +107,10 @@ export const useAuthStore = create<AuthState>()(
         return privateKey;
       },
 
-      logout: (ndk) => {
+      logout: (sessions) => {
         resetWoT();
-        if (ndk) {
-          ndk.signer = undefined;
-          ndk.activeUser = undefined;
+        if (sessions) {
+          sessions.logout();
         }
         set({ 
           user: null, 

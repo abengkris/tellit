@@ -14,6 +14,7 @@
     "@nostr-dev-kit/ndk-blossom": "^2.0.2",
     "@nostr-dev-kit/ndk-cache-dexie": "^2.6.44",
     "@nostr-dev-kit/ndk-wallet": "^0.7.1",
+    "@nostr-dev-kit/sessions": "^1.0.0",
     "@nostr-dev-kit/wot": "^1.0.0",
     "@tailwindcss/typography": "^0.5.19",
     "date-fns": "^4.1.0",

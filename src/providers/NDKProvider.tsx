@@ -1,9 +1,10 @@
 "use client";
 
 import { createContext, useEffect, useState, ReactNode, useRef } from "react";
-import NDK, { NDKPrivateKeySigner, NDKNip07Signer } from "@nostr-dev-kit/ndk";
+import NDK, { NDKPrivateKeySigner, NDKNip07Signer, NDKUser } from "@nostr-dev-kit/ndk";
 import NDKCacheAdapterDexie from "@nostr-dev-kit/ndk-cache-dexie";
 import { NDKMessenger, CacheModuleStorage } from "@nostr-dev-kit/messages";
+import { NDKSessionManager, LocalStorage, NDKSession } from "@nostr-dev-kit/sessions";
 import { useAuthStore } from "@/store/auth";
 import { useUIStore } from "@/store/ui";
 import { getNDK } from "@/lib/ndk";
@@ -11,22 +12,31 @@ import { getNDK } from "@/lib/ndk";
 export interface NDKContextType {
   ndk: NDK | null;
   messenger: NDKMessenger | null;
+  sessions: NDKSessionManager | null;
+  activeSession: NDKSession | null;
   isReady: boolean;
 }
 
 export const NDKContext = createContext<NDKContextType>({
   ndk: null,
   messenger: null,
+  sessions: null,
+  activeSession: null,
   isReady: false,
 });
 
 export const NDKProvider = ({ children }: { children: ReactNode }) => {
   const [ndk, setNdk] = useState<NDK | null>(null);
   const [messenger, setMessenger] = useState<NDKMessenger | null>(null);
+  const [sessions, setSessions] = useState<NDKSessionManager | null>(null);
+  const [activeSession, setActiveSession] = useState<NDKSession | null>(null);
   const [isReady, setIsReady] = useState(false);
-  const { privateKey, isLoggedIn, loginType, publicKey, setUser } = useAuthStore();
+  
+  const { setUser, setLoginState } = useAuthStore();
   const { incrementUnreadMessagesCount, addToast } = useUIStore();
+  
   const messengerRef = useRef<NDKMessenger | null>(null);
+  const sessionsRef = useRef<NDKSessionManager | null>(null);
 
   useEffect(() => {
     // Only run on client
@@ -47,15 +57,14 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
     }
 
     // Performance Optimization: Validation Sampling
-    // Initially verify 50% of signatures, dropping to 5% as relay trust is established
     instance.initialValidationRatio = 0.5;
     instance.lowestValidationRatio = 0.05;
 
     // Handle invalid signatures with throttling and relay management
     const invalidSigCountByRelay = new Map<string, number>();
     let lastToastTime = 0;
-    const TOAST_THROTTLE = 5000; // 5 seconds
-    const DISCONNECT_THRESHOLD = 5; // Disconnect after 5 invalid signatures from the same relay
+    const TOAST_THROTTLE = 5000;
+    const DISCONNECT_THRESHOLD = 5;
 
     instance.on("event:invalid-sig", (event, relay) => {
       const relayUrl = relay?.url || 'unknown';
@@ -67,9 +76,7 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
       const now = Date.now();
       
       if (currentCount >= DISCONNECT_THRESHOLD && relay) {
-        console.warn(`Disconnecting from malicious relay ${relayUrl} due to multiple invalid signatures.`);
         relay.disconnect();
-        
         if (now - lastToastTime > TOAST_THROTTLE) {
           addToast(`Disconnected from malicious relay: ${relayUrl}`, "error");
           lastToastTime = now;
@@ -83,54 +90,59 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
       }
     });
 
-    // Handle session restoration
-    const restoreSession = async () => {
-      if (isLoggedIn) {
-        if (loginType === 'privateKey' && privateKey) {
-          instance.signer = new NDKPrivateKeySigner(privateKey);
-        } else if (loginType === 'nip07') {
-          if (window.nostr) {
-            instance.signer = new NDKNip07Signer();
-          }
-        }
+    // Initialize Session Manager
+    const sessionManager = new NDKSessionManager(instance, {
+      storage: new LocalStorage("tellit-sessions"),
+      autoSave: true
+    });
+    sessionsRef.current = sessionManager;
+    setSessions(sessionManager);
 
-        if (publicKey) {
-          const user = instance.getUser({ pubkey: publicKey });
-          user.ndk = instance;
-          instance.activeUser = user;
-          
-          // Initial set to ensure state is available
-          setUser(user);
-          
-          // Background fetch profile and update if needed
-          user.fetchProfile().then(() => {
-            setUser(user);
-          });
+    // Subscribe to session changes to sync with store
+    const unsubscribeSessions = sessionManager.subscribe((state) => {
+      if (state.activePubkey) {
+        const session = sessionManager.activeSession;
+        if (session) {
+          setActiveSession(session);
+          setUser(session.user);
+          setLoginState(true, session.pubkey);
         }
+      } else {
+        setActiveSession(null);
+        setUser(null);
+        setLoginState(false, null);
       }
+    });
+
+    // Handle session restoration
+    const initApp = async () => {
+      // Restore sessions first
+      await sessionManager.restore();
       
       setNdk(instance);
 
-      // Initialize Messenger safely with Storage
+      // Initialize Messenger safely if we have an active user
+      const currentPubkey = sessionManager.activePubkey;
       let msgInstance: NDKMessenger | null = null;
-      try {
-        const storage = (dexieAdapter && publicKey) 
-          ? new CacheModuleStorage(dexieAdapter as any, publicKey) 
-          : undefined;
-        
-        msgInstance = new NDKMessenger(instance, { storage });
-        messengerRef.current = msgInstance;
-        setMessenger(msgInstance);
-
-      } catch (e) {
-        console.error("Failed to initialize NDKMessenger:", e);
+      
+      if (currentPubkey) {
+        try {
+          const storage = (dexieAdapter && currentPubkey) 
+            ? new CacheModuleStorage(dexieAdapter as any, currentPubkey) 
+            : undefined;
+          
+          msgInstance = new NDKMessenger(instance, { storage });
+          messengerRef.current = msgInstance;
+          setMessenger(msgInstance);
+        } catch (e) {
+          console.error("Failed to initialize NDKMessenger:", e);
+        }
       }
 
       return msgInstance;
     };
 
-    restoreSession().then((msgInstance) => {
-      // Connection with safety timeout
+    initApp().then((msgInstance) => {
       const connectPromise = instance.connect();
       const timeoutPromise = new Promise((_, reject) => 
         setTimeout(() => reject(new Error("Connection timeout")), 10000)
@@ -139,19 +151,15 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
       Promise.race([connectPromise, timeoutPromise])
         .then(async () => {
           setIsReady(true);
-          console.log("NDK connected and session restored");
+          console.log("NDK connected and sessions restored");
           
-          if (isLoggedIn && msgInstance) {
+          if (sessionManager.activePubkey && msgInstance) {
             try {
               await msgInstance.start();
-
-              // Global Message Listener for Notifications
               msgInstance.on("message", (message: any) => {
-                // Only notify for INCOMING messages that are not from the current user
-                if (message.sender?.pubkey !== publicKey && message.recipient?.pubkey === publicKey) {
-                  // Don't show toast if we are on the message page for this specific user
+                const currentPubkey = sessionManager.activePubkey;
+                if (message.sender?.pubkey !== currentPubkey && message.recipient?.pubkey === currentPubkey) {
                   const isCurrentChat = window.location.pathname.includes(`/messages/${message.sender?.pubkey}`);
-                  
                   if (!isCurrentChat) {
                     incrementUnreadMessagesCount();
                   }
@@ -165,40 +173,22 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
         .catch(async (err) => {
           console.warn("NDK connection partial or timed out:", err.message);
           setIsReady(true);
-          
-          if (isLoggedIn && msgInstance) {
-            try {
-              await msgInstance.start();
-
-              // Global Message Listener for Notifications (Fallback)
-              msgInstance.on("message", (message: any) => {
-                if (message.sender?.pubkey !== publicKey && message.recipient?.pubkey === publicKey) {
-                  const isCurrentChat = window.location.pathname.includes(`/messages/${message.sender?.pubkey}`);
-                  if (!isCurrentChat) {
-                    incrementUnreadMessagesCount();
-                  }
-                }
-              });
-            } catch (e) {
-              console.error("Failed to start NDKMessenger (fallback):", e);
-            }
+          if (sessionManager.activePubkey && msgInstance) {
+            try { await msgInstance.start(); } catch (e) {}
           }
         });
     });
 
     return () => {
+      unsubscribeSessions();
       if (messengerRef.current) {
-        try {
-          (messengerRef.current as any).destroy();
-        } catch (e) {
-          console.warn("Error destroying NDKMessenger:", e);
-        }
+        try { (messengerRef.current as any).destroy(); } catch (e) {}
       }
     };
-  }, [isLoggedIn, loginType, privateKey, publicKey, setUser, incrementUnreadMessagesCount]);
+  }, [setUser, setLoginState, incrementUnreadMessagesCount]);
 
   return (
-    <NDKContext.Provider value={{ ndk, messenger, isReady }}>
+    <NDKContext.Provider value={{ ndk, messenger, sessions, activeSession, isReady }}>
       {children}
     </NDKContext.Provider>
   );
