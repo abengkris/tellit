@@ -47,13 +47,53 @@ export function SearchContent() {
       </div>
 
       <div className="p-0">
-        {/* Direct Result (e.g. searching for a specific note/event) */}
-        {directResult.event && (
+        {/* Direct Results (Exact Matches) */}
+        {(directResult.event || directResult.user) && (
           <section className="border-b-4 border-gray-100 dark:border-gray-900 animate-in slide-in-from-top duration-500">
-            <div className="bg-blue-50/50 dark:bg-blue-900/10 p-4 border-b border-blue-100 dark:border-blue-900/30">
-              <span className="text-[10px] font-black uppercase tracking-tighter text-blue-500">Exact Match Found</span>
+            <div className="bg-blue-50/50 dark:bg-blue-900/10 p-4 border-b border-blue-100 dark:border-blue-900/30 flex items-center justify-between">
+              <span className="text-[10px] font-black uppercase tracking-tighter text-blue-500 flex items-center gap-1.5">
+                <CheckCircle2 size={12} />
+                Exact Match Found
+              </span>
             </div>
-            <PostCard event={directResult.event} />
+            
+            {directResult.event && <PostCard event={directResult.event} />}
+            
+            {directResult.user && (
+              <Link 
+                href={`/${directResult.user.npub}`}
+                className="flex items-center gap-4 p-6 bg-white dark:bg-black hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
+              >
+                <div className="relative">
+                  <Image
+                    src={directResult.user.profile?.picture || `https://robohash.org/${directResult.user.pubkey}?set=set1`}
+                    alt={directResult.user.profile?.name || "Profile"}
+                    width={64}
+                    height={64}
+                    className="w-16 h-16 rounded-2xl object-cover bg-zinc-100 dark:bg-zinc-800 shadow-sm"
+                    unoptimized
+                  />
+                  {directResult.user.profile?.nip05 && (
+                    <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-blue-500 text-white rounded-full flex items-center justify-center border-2 border-white dark:border-black shadow-sm">
+                      <CheckCircle2 size={10} fill="currentColor" />
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-black text-lg truncate">
+                    {directResult.user.profile?.name || directResult.user.profile?.displayName || shortenPubkey(directResult.user.npub)}
+                  </h3>
+                  <p className="text-sm text-gray-500 font-mono truncate">
+                    {directResult.user.profile?.nip05 
+                      ? (directResult.user.profile.nip05.startsWith('_@') ? directResult.user.profile.nip05.substring(1) : directResult.user.profile.nip05)
+                      : shortenPubkey(directResult.user.npub, 12)}
+                  </p>
+                </div>
+                <div className="bg-blue-500 text-white text-xs font-black px-4 py-2 rounded-xl shadow-lg shadow-blue-500/20">
+                  View Profile
+                </div>
+              </Link>
+            )}
           </section>
         )}
 

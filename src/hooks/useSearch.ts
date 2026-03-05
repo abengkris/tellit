@@ -39,12 +39,22 @@ export function useSearch(query: string) {
         const isNip05 = query.includes("@") || query.includes(".");
 
         if (isNip19 || isHex || isNip05) {
+          // Extract relay hints if query is NIP-19
+          let relayHints: string[] | undefined = undefined;
+          try {
+            if (query.startsWith("nprofile") || query.startsWith("nevent") || query.startsWith("naddr")) {
+              const decoded = decodeNip19(query);
+              relayHints = decoded.relays;
+            }
+          } catch (e) {}
+
           // Try to fetch as a user first if it looks like a user ID or NIP-05
           if (query.startsWith("npub") || query.startsWith("nprofile") || isNip05 || (isHex && !query.startsWith("note"))) {
             try {
               const user = await ndk.fetchUser(query);
               if (user) {
-                await user.fetchProfile();
+                // If we have relay hints, we should try to fetch profile from them
+                await user.fetchProfile(relayHints ? { relayUrls: relayHints } : undefined);
                 setDirectResult({ user });
               }
             } catch (e) {
@@ -55,7 +65,7 @@ export function useSearch(query: string) {
           // If not a user result, or also check if it's an event
           if (!directResult.user && (query.startsWith("note") || query.startsWith("nevent") || query.startsWith("naddr") || isHex)) {
             try {
-              const event = await ndk.fetchEvent(query);
+              const event = await ndk.fetchEvent(query, relayHints ? { relayUrls: relayHints } : undefined);
               if (event) setDirectResult({ event });
             } catch (e) {
               console.warn("Failed to fetch event direct result", e);
