@@ -10,6 +10,7 @@ import { publishArticle } from "@/lib/actions/post";
 import { ArrowLeft, Loader2, Image as ImageIcon, Send, Eye, PenLine } from "lucide-react";
 import { ArticleRenderer } from "@/components/article/ArticleRenderer";
 import { NDKEvent } from "@nostr-dev-kit/ndk";
+import Image from "next/image";
 
 export default function NewArticlePage() {
   const { ndk, isReady } = useNDK();
