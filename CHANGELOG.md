@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.4] - 2026-03-05
+
+### Changed
+- **NIP-05 Display:** Improved display of NIP-05 identifiers with a local part of `_` (e.g., `_@domain.com` now shows as `@domain.com` in profiles and search results).
+- **Mentions:** Updated `MentionLink` to correctly use the domain as the display name when a user has a `_` NIP-05 identifier and no other name set.
+
 ## [0.3.3] - 2026-03-04
 
 ### Added

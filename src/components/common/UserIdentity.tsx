@@ -65,7 +65,7 @@ export const UserIdentity: React.FC<UserIdentityProps> = ({
             ${status === 'invalid' ? 'text-red-500' : ''}
           `}
         >
-          {nip05}
+          {nip05.startsWith('_@') ? nip05.substring(1) : nip05}
         </span>
       )}
     </div>

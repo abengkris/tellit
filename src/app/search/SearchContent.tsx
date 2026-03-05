@@ -142,7 +142,9 @@ export function SearchContent() {
                     {user.profile?.name || shortenPubkey(user.npub)}
                   </p>
                   <p className="text-[10px] text-gray-500 font-mono truncate w-28 mt-1">
-                    {user.profile?.nip05 || shortenPubkey(user.npub, 10)}
+                    {user.profile?.nip05 
+                      ? (user.profile.nip05.startsWith('_@') ? user.profile.nip05.substring(1) : user.profile.nip05)
+                      : shortenPubkey(user.npub, 10)}
                   </p>
                 </Link>
               ))}

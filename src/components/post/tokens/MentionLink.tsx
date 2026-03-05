@@ -15,11 +15,14 @@ export function MentionLink({ pubkey, raw }: MentionLinkProps) {
 
   // Resolve display name dengan prioritas:
   // name > display_name > nip05 username > npub (pendek)
+  const nip05Name = profile?.nip05?.split("@")[0];
+  const nip05Domain = profile?.nip05?.split("@")[1];
+  
   const displayName = loading
     ? shortenPubkey(pubkey)
     : profile?.name
     ?? profile?.displayName
-    ?? profile?.nip05?.split("@")[0]
+    ?? (nip05Name === "_" ? nip05Domain : nip05Name)
     ?? shortenPubkey(pubkey);
 
   const npub = pubkey ? nip19.npubEncode(pubkey) : "";
