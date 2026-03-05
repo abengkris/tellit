@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import NDK, { NDKUser, NDKNip07Signer, NDKPrivateKeySigner } from "@nostr-dev-kit/ndk";
+import { NDKSessionManager } from "@nostr-dev-kit/sessions";
 import { resetWoT } from "@/hooks/useWoT";
 
 interface AuthState {
