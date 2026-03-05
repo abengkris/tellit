@@ -9,7 +9,7 @@ All notable changes to this project will be documented in this file.
 - **Mentions:** Updated `MentionLink` to correctly use the domain as the display name when a user has a `_` NIP-05 identifier and no other name set.
 
 ### Added
-- **NDK Performance Optimizations:** Implemented Service Worker signature validation and validation sampling to reduce main-thread load and improve event processing speed.
+- **NDK Performance Optimizations:** Implemented validation sampling to reduce main-thread load and improve event processing speed.
 - **Invalid Signature Detection:** Added real-time notifications for invalid event signatures received from relays.
 - **Organizational Affiliation:** Added support for NIP-05 affiliations. If a user is verified via `name@domain.tld`, the app now automatically checks for a root identity at `_@domain.tld` and displays its profile picture as a small badge next to the user's name (similar to X/Twitter affiliations).
 - **Affiliation Hook:** New `useAffiliation` hook for efficient root identity discovery with domain-level caching.

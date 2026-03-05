@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useEffect, useState, ReactNode, useRef } from "react";
-import NDK, { NDKPrivateKeySigner, NDKNip07Signer, NDKSigVerificationWorker } from "@nostr-dev-kit/ndk";
+import NDK, { NDKPrivateKeySigner, NDKNip07Signer } from "@nostr-dev-kit/ndk";
 import NDKCacheAdapterDexie from "@nostr-dev-kit/ndk-cache-dexie";
 import { NDKMessenger, CacheModuleStorage } from "@nostr-dev-kit/messages";
 import { useAuthStore } from "@/store/auth";
@@ -44,16 +44,6 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
     // Set cache adapter if not already set
     if (!instance.cacheAdapter && dexieAdapter) {
       instance.cacheAdapter = dexieAdapter as any;
-    }
-
-    // Performance Optimization: Signature Verification Worker
-    if (!instance.signatureVerificationWorker) {
-      try {
-        instance.signatureVerificationWorker = new NDKSigVerificationWorker();
-        console.log("NDK Signature Verification Worker initialized");
-      } catch (e) {
-        console.warn("Failed to initialize NDK Signature Verification Worker:", e);
-      }
     }
 
     // Performance Optimization: Validation Sampling
