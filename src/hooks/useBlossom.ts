@@ -44,7 +44,7 @@ export function useBlossom() {
       if (!blossom || !ndk) return url;
       try {
         const user = ndk.getUser({ pubkey });
-        const correctUrl = await blossom.fixUrl(user, url);
+        const correctUrl = await blossom.fixUrl(user as any, url);
         return correctUrl || url;
       } catch (err) {
         return url;
@@ -58,7 +58,7 @@ export function useBlossom() {
       if (!blossom || !ndk) return [];
       try {
         const user = ndk.getUser({ pubkey });
-        return await blossom.listBlobs(user);
+        return await blossom.listBlobs(user as any);
       } catch (err) {
         return [];
       }
