@@ -9,6 +9,9 @@ All notable changes to this project will be documented in this file.
 - **Mentions:** Updated `MentionLink` to correctly use the domain as the display name when a user has a `_` NIP-05 identifier and no other name set.
 
 ### Added
+- **Enhanced NIP-19 Support:** Improved handling of Nostr identifiers (npub, nprofile, nevent, naddr) throughout the app.
+- **Robust Search:** Search now leverages NDK's `fetchUser` and `fetchEvent` to provide reliable direct results for NIP-19 strings and NIP-05 identifiers.
+- **NIP-19 Utilities:** Expanded utility functions in `lib/utils/nip19.ts` with comprehensive encoding/decoding for complex NIP-19 types.
 - **Multi-Account Support:** Migrated to `@nostr-dev-kit/sessions` for robust multi-account management. Users can now maintain multiple sessions with persistent storage.
 - **Session Persistence:** Login states, follows, mutes, and relay lists are now automatically persisted and restored between app launches using `NDKSessionManager`.
 - **Automatic Data Fetching:** Added automatic background fetching of user profile data, contact lists, and mute lists upon login.

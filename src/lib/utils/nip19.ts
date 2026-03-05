@@ -9,6 +9,7 @@ export function decodeNip19(nip19String: string): {
   kind?: number;
   pubkey?: string;
   identifier?: string;
+  author?: string;
 } {
   if (!nip19String) return { id: "" };
   
@@ -24,16 +25,23 @@ export function decodeNip19(nip19String: string): {
       case "note":
         return { id: decoded.data as string };
       case "nprofile":
-        return { id: decoded.data.pubkey, relays: decoded.data.relays };
+        return { id: decoded.data.pubkey, relays: decoded.data.relays, pubkey: decoded.data.pubkey };
       case "nevent":
-        return { id: decoded.data.id, relays: decoded.data.relays, kind: decoded.data.kind };
+        return { 
+          id: decoded.data.id, 
+          relays: decoded.data.relays, 
+          kind: decoded.data.kind, 
+          author: decoded.data.author,
+          pubkey: decoded.data.author 
+        };
       case "naddr":
         return { 
           id: decoded.data.identifier, 
           relays: decoded.data.relays, 
           kind: decoded.data.kind, 
           pubkey: decoded.data.pubkey,
-          identifier: decoded.data.identifier
+          identifier: decoded.data.identifier,
+          author: decoded.data.pubkey
         };
       default:
         return { id: nip19String };
@@ -64,6 +72,17 @@ export function toNpub(pubkey: string): string {
 }
 
 /**
+ * Encodes a pubkey and optional relays into an nprofile.
+ */
+export function toNProfile(pubkey: string, relays?: string[]): string {
+  try {
+    return nip19.nprofileEncode({ pubkey, relays });
+  } catch (e) {
+    return toNpub(pubkey);
+  }
+}
+
+/**
  * Encodes a hex event ID to note.
  */
 export function toNote(eventId: string): string {
@@ -72,6 +91,17 @@ export function toNote(eventId: string): string {
     return nip19.noteEncode(eventId);
   } catch (e) {
     return eventId;
+  }
+}
+
+/**
+ * Encodes an event ID, kind, and author into an nevent.
+ */
+export function toNEvent(id: string, author?: string, kind?: number, relays?: string[]): string {
+  try {
+    return nip19.neventEncode({ id, author, kind, relays });
+  } catch (e) {
+    return toNote(id);
   }
 }
 
