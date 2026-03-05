@@ -7,6 +7,7 @@ import { PostComposer } from "../PostComposer";
 import { shortenPubkey } from "@/lib/utils/nip19";
 import { useProfile } from "@/hooks/useProfile";
 import { PostContentRenderer } from "./PostContent";
+import Image from "next/image";
 
 interface QuoteModalProps {
   event: NDKEvent;
@@ -52,11 +53,15 @@ export const QuoteModal: React.FC<QuoteModalProps> = ({ event, onClose }) => {
         <div className="p-6">
           <div className="rounded-2xl border border-gray-100 dark:border-gray-800 overflow-hidden bg-gray-50/50 dark:bg-gray-900/30">
             <div className="p-4 flex gap-3">
-              <img 
-                src={avatar} 
-                alt={displayName} 
-                className="w-6 h-6 rounded-full object-cover bg-gray-200 shrink-0"
-              />
+              <div className="relative w-6 h-6 rounded-full overflow-hidden bg-gray-200 shrink-0">
+                <Image 
+                  src={avatar} 
+                  alt={displayName} 
+                  fill
+                  className="object-cover"
+                  unoptimized
+                />
+              </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1 mb-1 text-sm">
                   <span className="font-bold truncate">{displayName}</span>

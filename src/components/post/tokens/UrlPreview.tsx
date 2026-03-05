@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import Image from "next/image";
 
 interface Metadata {
   title: string;
@@ -45,11 +46,12 @@ export function UrlPreview({ url }: { url: string }) {
     >
       {metadata.image && (
         <div className="relative aspect-[1.91/1] w-full border-b border-gray-200 dark:border-gray-800">
-          <img
+          <Image
             src={metadata.image}
             alt={metadata.title}
-            className="absolute inset-0 w-full h-full object-cover"
-            onError={(e) => (e.currentTarget.style.display = "none")}
+            fill
+            className="object-cover"
+            unoptimized
           />
         </div>
       )}

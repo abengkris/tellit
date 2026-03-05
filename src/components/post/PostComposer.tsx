@@ -304,7 +304,7 @@ export const PostComposer: React.FC<PostComposerProps> = ({
               {imetaTags.map((tag, i) => (
                 <div key={i} className="relative group w-24 h-24 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900">
                   {tag.m?.startsWith("image/") ? (
-                    <img src={tag.url} alt="Preview" className="w-full h-full object-cover" />
+                    <Image src={tag.url!} alt="Preview" fill className="object-cover" unoptimized />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-xs text-gray-500">
                       Video

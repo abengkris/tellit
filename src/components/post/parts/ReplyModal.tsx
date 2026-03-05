@@ -9,6 +9,7 @@ import { shortenPubkey, toNpub } from "@/lib/utils/nip19";
 import { useProfile } from "@/hooks/useProfile";
 import { PostContentRenderer } from "./PostContent";
 import Link from "next/link";
+import Image from "next/image";
 
 interface ReplyModalProps {
   event: NDKEvent;
@@ -43,11 +44,15 @@ export const ReplyModal: React.FC<ReplyModalProps> = ({ event, onClose }) => {
         {/* Parent Post Preview */}
         <div className="p-4 flex gap-3">
           <div className="flex flex-col items-center shrink-0">
-            <img 
-              src={avatar} 
-              alt={displayName} 
-              className="w-12 h-12 rounded-full object-cover bg-gray-200"
-            />
+            <div className="relative w-12 h-12 rounded-full overflow-hidden bg-gray-200">
+              <Image 
+                src={avatar} 
+                alt={displayName} 
+                fill
+                className="object-cover"
+                unoptimized
+              />
+            </div>
             <div className="w-0.5 grow bg-gray-200 dark:bg-gray-800 my-1" />
           </div>
           <div className="flex-1 min-w-0">
