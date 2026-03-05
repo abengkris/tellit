@@ -16,10 +16,10 @@ export function useFollowing(pubkey?: string) {
 
     const fetchFollowing = async () => {
       try {
-        const contactListEvent = await ndk.fetchEvent({
-          kinds: [3],
-          authors: [pubkey],
-        });
+        const contactListEvent = await ndk.fetchEvent(
+          { kinds: [3], authors: [pubkey] },
+          { relayGoalPerAuthor: 3 }
+        );
 
         if (contactListEvent) {
           const pubkeys = contactListEvent.tags

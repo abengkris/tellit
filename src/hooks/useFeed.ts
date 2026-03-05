@@ -99,25 +99,15 @@ export function useFeed(authors: string[], kinds: number[] = [1, 1068, 30023] as
     let eventsReceived = 0;
     const batch: NDKEvent[] = [];
 
-    const sub = ndk.subscribe(filter, { closeOnEose: true, groupable: false });
-    subscriptionRef.current = sub;
-
-    sub.on("event", (event: NDKEvent) => {
-      clearTimeout(loadingTimeout);
-      if (mutedRef.current.has(event.pubkey)) return;
-      if (!kinds.includes(event.kind!)) return;
-
-      eventsReceived++;
-      if (matchesFilter(event)) {
-        batch.push(event);
-      }
-    });
-
-    sub.on("eose", () => {
-      clearTimeout(loadingTimeout);
-      
+    const handleBatch = (events: NDKEvent[]) => {
       setPosts((prev) => {
-        const combined = isLoadMore ? [...prev, ...batch] : batch;
+        const filtered = events.filter(e => {
+          if (mutedRef.current.has(e.pubkey)) return false;
+          if (!kinds.includes(e.kind!)) return false;
+          return matchesFilter(e);
+        });
+
+        const combined = isLoadMore ? [...prev, ...filtered] : filtered;
         const unique = Array.from(new Map(combined.map(p => [p.id, p])).values());
         const sorted = unique.sort((a, b) => (b.created_at ?? 0) - (a.created_at ?? 0));
         
@@ -127,12 +117,33 @@ export function useFeed(authors: string[], kinds: number[] = [1, 1068, 30023] as
         
         return sorted.slice(0, MAX_POSTS);
       });
+    };
 
-      if (eventsReceived < fetchLimit) {
-        setHasMore(false);
+    const sub = ndk.subscribe(
+      filter, 
+      { closeOnEose: true, groupable: false },
+      undefined, // RelaySet
+      {
+        onEvents: (events) => {
+          clearTimeout(loadingTimeout);
+          eventsReceived += events.length;
+          handleBatch(events);
+        },
+        onEvent: (event) => {
+          clearTimeout(loadingTimeout);
+          eventsReceived++;
+          handleBatch([event]);
+        },
+        onEose: () => {
+          clearTimeout(loadingTimeout);
+          if (eventsReceived < fetchLimit) {
+            setHasMore(false);
+          }
+          setLoading(false);
+        }
       }
-      setLoading(false);
-    });
+    );
+    subscriptionRef.current = sub;
   }, [ndk, isReady, authors, kinds, filterType, matchesFilter]);
 
   // Real-time listener

@@ -9,6 +9,8 @@ All notable changes to this project will be documented in this file.
 - **Mentions:** Updated `MentionLink` to correctly use the domain as the display name when a user has a `_` NIP-05 identifier and no other name set.
 
 ### Added
+- **Cache-First Feed:** Optimized `useFeed` to use the `onEvents` handler for batch-processing initial cached results, enabling near-instant feed loading.
+- **Relay Goal Optimization:** Improved contact list fetching in `useFollowing` with specified relay goals for better reliability.
 - **Subscription Grouping:** Leveraged NDK's intelligent subscription grouping to reduce relay load by batching multiple requests (e.g., profile fetches and post stats) into single `REQ` commands.
 - **Immediate Feed Loading:** Optimized `useFeed` to disable grouping for initial loads, ensuring the fastest possible time-to-first-post for users.
 - **Filter Validation:** Enabled NDK filter validation in `fix` mode. This automatically cleans up `undefined` or invalid values in subscription filters, preventing runtime errors in cache adapters and relays.
