@@ -9,6 +9,10 @@ All notable changes to this project will be documented in this file.
 - **Mentions:** Updated `MentionLink` to correctly use the domain as the display name when a user has a `_` NIP-05 identifier and no other name set.
 
 ### Added
+- **Optimistic Publishing:** Implemented optimistic publishing for posts, articles, reposts, and reactions. The UI now updates immediately without waiting for relay confirmation.
+- **Unpublished Event Recovery:** The app now automatically detects and retries publishing events that failed in previous sessions by checking the local cache on startup.
+- **Global Publish Failure Handling:** Added a global listener for event publishing failures with user-friendly toast notifications.
+- **Improved Replaceable Events:** Updated profile updates, status changes, and follow lists to use `publishReplaceable()`, ensuring proper event sequencing and avoiding ID conflicts.
 - **Enhanced NIP-19 Support:** Improved handling of Nostr identifiers (npub, nprofile, nevent, naddr) throughout the app.
 - **Robust Search:** Search now leverages NDK's `fetchUser` and `fetchEvent` to provide reliable direct results for NIP-19 strings and NIP-05 identifiers.
 - **NIP-19 Utilities:** Expanded utility functions in `lib/utils/nip19.ts` with comprehensive encoding/decoding for complex NIP-19 types.

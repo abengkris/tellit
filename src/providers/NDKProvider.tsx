@@ -90,6 +90,12 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
       }
     });
 
+    // Handle publishing failures
+    instance.on("event:publish-failed", (event, error) => {
+      console.error(`Event ${event.id} failed to publish:`, error);
+      addToast(`Failed to publish event to relays. It will be retried automatically.`, "error");
+    });
+
     // Initialize Session Manager
     const sessionManager = new NDKSessionManager(instance, {
       storage: new LocalStorage("tellit-sessions"),
@@ -127,6 +133,22 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
       await sessionManager.restore();
       
       setNdk(instance);
+
+      // Retry unpublished events from cache
+      if (instance.cacheAdapter && (instance.cacheAdapter as any).getUnpublishedEvents) {
+        try {
+          const unpublishedEvents = await (instance.cacheAdapter as any).getUnpublishedEvents();
+          if (unpublishedEvents && unpublishedEvents.length > 0) {
+            console.log(`Retrying ${unpublishedEvents.length} unpublished events from cache...`);
+            unpublishedEvents.forEach((event: NDKEvent) => {
+              event.ndk = instance;
+              event.publish();
+            });
+          }
+        } catch (e) {
+          console.warn("Failed to retry unpublished events:", e);
+        }
+      }
 
       // Initialize Messenger safely if we have an active user
       const currentPubkey = sessionManager.activePubkey;

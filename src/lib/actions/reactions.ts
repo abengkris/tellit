@@ -21,6 +21,6 @@ export const reactToEvent = async (
     ["p", targetEvent.pubkey]
   ];
 
-  await reaction.publish();
+  reaction.publish(); // Optimistic
   return reaction;
 };

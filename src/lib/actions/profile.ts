@@ -19,7 +19,7 @@ export async function updateProfile(
     event.content = JSON.stringify(metadata);
     
     // We should probably sign and publish
-    await event.publish();
+    await event.publishReplaceable();
     
     // Update local user object if possible or just rely on relay refresh
     return true;
@@ -55,7 +55,7 @@ export async function updateStatus(
       event.tags.push(["r", link]);
     }
 
-    await event.publish();
+    await event.publishReplaceable();
     return true;
   } catch (error) {
     console.error("Failed to update status:", error);

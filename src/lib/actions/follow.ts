@@ -67,7 +67,7 @@ export async function followUser(
     newContactList.content = currentContactList?.content ?? "";
 
     await newContactList.sign();
-    await newContactList.publish();
+    await newContactList.publishReplaceable();
 
     return { success: true };
   } catch (err) {
@@ -119,7 +119,7 @@ export async function unfollowUser(
     newContactList.content = currentContactList.content;
 
     await newContactList.sign();
-    await newContactList.publish();
+    await newContactList.publishReplaceable();
 
     return { success: true };
   } catch (err) {
