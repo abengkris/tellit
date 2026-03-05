@@ -42,9 +42,6 @@ export const useAuthStore = create<AuthState>()(
         try {
           const signer = new NDKNip07Signer();
           const pubkey = await sessions.login(signer, {
-            follows: true,
-            mutes: true,
-            relayList: true,
             setActive: true
           });
           
@@ -68,9 +65,6 @@ export const useAuthStore = create<AuthState>()(
         try {
           const signer = new NDKPrivateKeySigner(privateKey);
           const pubkey = await sessions.login(signer, {
-            follows: true,
-            mutes: true,
-            relayList: true,
             setActive: true
           });
 

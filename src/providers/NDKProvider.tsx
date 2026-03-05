@@ -93,7 +93,12 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
     // Initialize Session Manager
     const sessionManager = new NDKSessionManager(instance, {
       storage: new LocalStorage("tellit-sessions"),
-      autoSave: true
+      autoSave: true,
+      fetches: {
+        follows: true,
+        mutes: true,
+        relayList: true
+      }
     });
     sessionsRef.current = sessionManager;
     setSessions(sessionManager);
