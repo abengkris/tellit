@@ -20,7 +20,7 @@ interface MobileDrawerProps {
 
 export const MobileDrawer: React.FC<MobileDrawerProps> = ({ isOpen, onClose, onOpenRelays }) => {
   const { user, logout } = useAuthStore();
-  const { ndk } = useNDK();
+  const { sessions } = useNDK();
   const { unreadMessagesCount } = useUIStore();
   const { connectedCount, totalCount } = useRelayStatus();
   const { count: followingCount } = useFollowingList(user?.pubkey);
@@ -142,7 +142,7 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({ isOpen, onClose, onO
         {/* Footer */}
         <div className="p-4 border-t border-gray-100 dark:border-gray-900">
           <button
-            onClick={() => { onClose(); logout(ndk || undefined); }}
+            onClick={() => { onClose(); logout(sessions); }}
             className="w-full flex items-center space-x-4 p-4 rounded-2xl text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors font-bold"
           >
             <LogOut size={22} />
