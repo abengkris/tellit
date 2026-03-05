@@ -9,6 +9,7 @@ All notable changes to this project will be documented in this file.
 - **Mentions:** Updated `MentionLink` to correctly use the domain as the display name when a user has a `_` NIP-05 identifier and no other name set.
 
 ### Added
+- **Search URL Parameters:** Added support for `?q=` URL parameter on the search page, enabling direct linking to search results and synchronizing search state with the browser address bar.
 - **Optimistic Publishing:** Implemented optimistic publishing for posts, articles, reposts, and reactions. The UI now updates immediately without waiting for relay confirmation.
 - **Unpublished Event Recovery:** The app now automatically detects and retries publishing events that failed in previous sessions by checking the local cache on startup.
 - **Global Publish Failure Handling:** Added a global listener for event publishing failures with user-friendly toast notifications.

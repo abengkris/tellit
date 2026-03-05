@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Search, Loader2, TrendingUp, X, CheckCircle2 } from "lucide-react";
 import { useSearch } from "@/hooks/useSearch";
@@ -10,11 +10,35 @@ import Link from "next/link";
 import Image from "next/image";
 import { FeedSkeleton } from "@/components/feed/FeedSkeleton";
 import { shortenPubkey } from "@/lib/utils/nip19";
+import { useSearchParams, useRouter } from "next/navigation";
 
 export function SearchContent() {
-  const [searchInput, setSearchInput] = useState("");
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const initialQuery = searchParams.get("q") || "";
+  
+  const [searchInput, setSearchInput] = useState(initialQuery);
   const [debouncedQuery] = useDebounce(searchInput, 300);
   const { posts, profiles, loading, loadMore, hasMore, directResult } = useSearch(debouncedQuery);
+
+  // Sync URL with search input
+  useEffect(() => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (debouncedQuery) {
+      params.set("q", debouncedQuery);
+    } else {
+      params.delete("q");
+    }
+    
+    // Update URL without a full page reload
+    const queryStr = params.toString();
+    const newUrl = queryStr ? `/search?${queryStr}` : "/search";
+    
+    // Only push if the query actually changed to avoid history spam
+    if (window.location.search !== `?${queryStr}` && (window.location.search !== "" || queryStr !== "")) {
+      router.replace(newUrl);
+    }
+  }, [debouncedQuery, router, searchParams]);
 
   const trendingTags = ["nostr", "bitcoin", "tellit", "art", "tech", "zap", "photography", "meme"];
 
