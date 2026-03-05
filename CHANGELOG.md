@@ -11,6 +11,7 @@ All notable changes to this project will be documented in this file.
 ### Added
 - **Organizational Affiliation:** Added support for NIP-05 affiliations. If a user is verified via `name@domain.tld`, the app now automatically checks for a root identity at `_@domain.tld` and displays its profile picture as a small badge next to the user's name (similar to X/Twitter affiliations).
 - **Affiliation Hook:** New `useAffiliation` hook for efficient root identity discovery with domain-level caching.
+- **Affiliation Info Modal:** Clicking the display name on a profile page now shows a detailed modal explaining the account's organizational affiliation with links to the parent entity.
 
 ### Fixed
 - **NIP-05 CORS:** Fixed CORS issues by proxying NIP-05 verification requests through an internal API route.
