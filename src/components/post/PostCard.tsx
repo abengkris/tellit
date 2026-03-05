@@ -99,7 +99,7 @@ export const PostCard: React.FC<PostCardProps> = ({
         try {
           const raw = JSON.parse(event.content);
           const ev = new NDKEvent(ndk, raw);
-          setRepostedEvent(ev);
+          Promise.resolve().then(() => setRepostedEvent(ev));
         } catch {
           // Not valid JSON
         }
