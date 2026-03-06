@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.4] - 2026-03-06
+
+### Fixed
+- **TypeScript Build Error:** Resolved a type mismatch between `NDKWoT` and `CachedWoT` by centralizing trust score access in the `useWoT` hook.
+
 ## [0.4.3] - 2026-03-06
 
 ### Changed

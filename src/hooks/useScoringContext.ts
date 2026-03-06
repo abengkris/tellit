@@ -10,7 +10,7 @@ export function useScoringContext(
   followingList: string[]
 ): ScoringContext | null {
   const { ndk, isReady } = useNDK();
-  const { wot } = useWoT(viewerPubkey);
+  const { wot, trustScores } = useWoT(viewerPubkey);
   const [ctx, setCtx] = useState<ScoringContext | null>(null);
   const buildingRef = useRef(false);
 
@@ -74,12 +74,12 @@ export function useScoringContext(
         followsOfFollowsSet: followsOfFollows,
         interactionHistory,
         mutedSet,
-        trustScores: wot?.scores,
+        trustScores: trustScores,
       });
     }
 
     build().catch(console.error);
-  }, [ndk, isReady, viewerPubkey, followingList.join(","), wot]);
+  }, [ndk, isReady, viewerPubkey, followingList.join(","), trustScores]);
 
   return ctx;
 }

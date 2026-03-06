@@ -9,6 +9,7 @@ type WoTStatus = "idle" | "loading" | "ready" | "error";
 
 interface UseWoTReturn {
   wot: NDKWoT | CachedWoT | null;
+  trustScores: Map<string, number>;
   status: WoTStatus;
   pubkeyCount: number;
 }
@@ -74,6 +75,7 @@ export function useWoT(viewerPubkey: string | undefined): UseWoTReturn {
   const [status, setStatus] = useState<WoTStatus>("idle");
   const [pubkeyCount, setPubkeyCount] = useState(0);
   const [wot, setWot] = useState<NDKWoT | CachedWoT | null>(null);
+  const [trustScores, setTrustScores] = useState<Map<string, number>>(new Map());
   const [retries, setRetries] = useState(0);
 
   useEffect(() => {
@@ -83,8 +85,13 @@ export function useWoT(viewerPubkey: string | undefined): UseWoTReturn {
     if (wotSingleton && wotSingletonPubkey === viewerPubkey) {
       if (wot !== wotSingleton) {
         const singleton = wotSingleton;
+        const scores = singleton instanceof CachedWoT 
+          ? singleton.scores 
+          : singleton.getScores(singleton.getAllPubkeys());
+
         Promise.resolve().then(() => {
           setWot(singleton);
+          setTrustScores(scores);
           setStatus("ready");
           setPubkeyCount(singleton.size);
         });
@@ -117,6 +124,7 @@ export function useWoT(viewerPubkey: string | undefined): UseWoTReturn {
           Promise.resolve().then(() => {
             if (isMounted) {
               setWot(cachedInstance);
+              setTrustScores(cachedInstance.scores);
               setPubkeyCount(cachedInstance.size);
               setStatus("ready");
             }
@@ -190,6 +198,7 @@ export function useWoT(viewerPubkey: string | undefined): UseWoTReturn {
             wotSingleton = instance;
             wotSingletonPubkey = viewerPubkey;
             setWot(instance);
+            setTrustScores(scoresMap);
             setStatus("ready");
             setPubkeyCount(instance.size);
             wotLoadPromise = null;
@@ -217,7 +226,7 @@ export function useWoT(viewerPubkey: string | undefined): UseWoTReturn {
     };
   }, [ndk, isReady, viewerPubkey, wot, status, retries]);
 
-  return { wot, status, pubkeyCount };
+  return { wot, trustScores, status, pubkeyCount };
 }
 
 /**
