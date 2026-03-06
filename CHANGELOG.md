@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.3] - 2026-03-06
+
+### Changed
+- **"For You" Algorithm Refinement:** Improved the scoring engine with a more robust logarithmic freshness decay and increased weights for social signals.
+- **WoT Integration:** Integrated Web of Trust (WoT) trust scores into the feed scoring algorithm via `useScoringContext`, allowing for better content prioritization from trusted sources.
+
 ## [0.4.2] - 2026-03-06
 
 ### Fixed

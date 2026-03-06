@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useNDK } from "@/hooks/useNDK";
+import { useWoT } from "@/hooks/useWoT";
 import { ScoringContext } from "@/lib/feed/scorer";
 
 export function useScoringContext(
@@ -9,6 +10,7 @@ export function useScoringContext(
   followingList: string[]
 ): ScoringContext | null {
   const { ndk, isReady } = useNDK();
+  const { wot } = useWoT(viewerPubkey);
   const [ctx, setCtx] = useState<ScoringContext | null>(null);
   const buildingRef = useRef(false);
 
@@ -72,11 +74,12 @@ export function useScoringContext(
         followsOfFollowsSet: followsOfFollows,
         interactionHistory,
         mutedSet,
+        trustScores: wot?.scores,
       });
     }
 
     build().catch(console.error);
-  }, [ndk, isReady, viewerPubkey, followingList.join(",")]);
+  }, [ndk, isReady, viewerPubkey, followingList.join(","), wot]);
 
   return ctx;
 }
