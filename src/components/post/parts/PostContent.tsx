@@ -29,6 +29,7 @@ interface PostContentRendererProps {
   replyingToPubkey?: string | null;
   isRepost?: boolean;
   isArticle?: boolean;
+  isHighlight?: boolean;
   isFullArticle?: boolean;
 }
 
@@ -53,10 +54,20 @@ export function PostContentRenderer({
   replyingToPubkey,
   isRepost,
   isArticle,
+  isHighlight,
   isFullArticle = false,
 }: PostContentRendererProps) {
   const [showFull, setShowFull] = useState(false);
   const [showSensitive, setShowSensitive] = useState(false);
+
+  const comment = useMemo(() => isHighlight ? event.tags.find(t => t[0] === "comment")?.[1] : null, [isHighlight, event.tags]);
+  const highlightSource = useMemo(() => {
+    if (!isHighlight) return null;
+    const eTag = event.tags.find(t => t[0] === 'e');
+    const aTag = event.tags.find(t => t[0] === 'a');
+    const rTag = event.tags.find(t => t[0] === 'r');
+    return { id: eTag?.[1] || aTag?.[1], url: rTag?.[1] };
+  }, [isHighlight, event.tags]);
 
   const nudeDetections = useMemo(() => {
     const map = new Map<string, number>();
@@ -99,6 +110,7 @@ export function PostContentRenderer({
   }, [event.tags]);
 
   const tokens = useMemo(() => tokenize(normalizedContent), [normalizedContent]);
+  const commentTokens = useMemo(() => comment ? tokenize(comment) : [], [comment]);
 
   const isMediaUrl = (url: string) => {
     const path = url.split('?')[0].split('#')[0].toLowerCase();
@@ -165,6 +177,13 @@ export function PostContentRenderer({
 
   return (
     <div className={`flex flex-col min-w-0 max-w-full overflow-hidden ${className}`}>
+      {isHighlight && (
+        <div className="flex items-center gap-1.5 mb-2 text-[10px] font-black uppercase tracking-widest text-amber-500 bg-amber-500/10 w-fit px-2 py-0.5 rounded-full border border-amber-500/20">
+          <Play size={10} className="fill-current" />
+          Highlight
+        </div>
+      )}
+
       {isArticle && !isFullArticle && (
         <div className="flex flex-col gap-3">
           {event.tags.find(t => t[0] === 'image')?.[1] && (
@@ -214,8 +233,9 @@ export function PostContentRenderer({
         </div>
       ) : (
         <>
-          {textTokens.length > 0 && (
-            <div className="relative group">
+          {/* Main Content (Comment for highlights, or the content itself) */}
+          {(commentTokens.length > 0 || (textTokens.length > 0 && !isHighlight)) && (
+            <div className="relative group mb-2">
               <div
                 className={`text-[15px] leading-relaxed whitespace-pre-wrap break-words text-gray-900 dark:text-gray-100 text-pretty min-w-0 ${
                   shouldTruncate ? "max-h-[300px] overflow-hidden" : ""
@@ -223,12 +243,12 @@ export function PostContentRenderer({
                   maxLines && !showFull ? `line-clamp-${maxLines}` : ""
                 }`}
               >
-                {textTokens.map((token, i) => (
+                {(isHighlight ? commentTokens : textTokens).map((token, i) => (
                   <TokenRenderer key={i} token={token} emojiMap={emojiMap} />
                 ))}
               </div>
               
-              {isLong && !isFullArticle && (
+              {isLong && !isFullArticle && !isHighlight && (
                 <div className={`${shouldTruncate ? "absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-white dark:from-black via-white/80 dark:via-black/80 to-transparent flex items-end justify-center pb-2" : "mt-2 flex justify-start"}`}>
                   <button 
                     onClick={(e) => { e.stopPropagation(); setShowFull(!showFull); }}
@@ -238,6 +258,39 @@ export function PostContentRenderer({
                   >
                     {showFull ? "Show less" : "Show more"}
                   </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* The Highlighted Content (For kind 9802) */}
+          {isHighlight && textTokens.length > 0 && (
+            <div className="relative pl-4 border-l-4 border-amber-500/30 bg-amber-50/30 dark:bg-amber-950/10 py-3 pr-4 rounded-r-2xl my-2">
+              <div className="text-[15px] italic text-gray-800 dark:text-gray-200 leading-relaxed">
+                {textTokens.map((token, i) => (
+                  <TokenRenderer key={i} token={token} emojiMap={emojiMap} />
+                ))}
+              </div>
+              {highlightSource && (highlightSource.id || highlightSource.url) && (
+                <div className="mt-2 flex items-center gap-2">
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter shrink-0">Source:</span>
+                  {highlightSource.id ? (
+                    <Link 
+                      href={`/post/${highlightSource.id}`}
+                      className="text-[10px] font-mono text-blue-500 hover:underline truncate max-w-[200px]"
+                    >
+                      {highlightSource.id}
+                    </Link>
+                  ) : highlightSource.url ? (
+                    <a 
+                      href={highlightSource.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[10px] font-mono text-blue-500 hover:underline truncate max-w-[200px]"
+                    >
+                      {highlightSource.url}
+                    </a>
+                  ) : null}
                 </div>
               )}
             </div>
@@ -283,6 +336,7 @@ export function PostContentRenderer({
                             url={cleanUrl} 
                             imeta={imeta} 
                             noMargin 
+                            objectFit="cover"
                             className="w-full h-full"
                           />
                         ) : (

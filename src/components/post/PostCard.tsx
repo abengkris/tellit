@@ -60,6 +60,7 @@ export const PostCard: React.FC<PostCardProps> = ({
   } = useLists();
 
   const isRepost = event.kind === 6 || event.kind === 16;
+  const isHighlight = event.kind === 9802;
   const { profile: repostAuthorProfile } = useProfile(isRepost ? event.pubkey : undefined);
   
   const displayEvent = isRepost && repostedEvent ? repostedEvent : event;
@@ -335,6 +336,7 @@ export const PostCard: React.FC<PostCardProps> = ({
             content={displayEvent.content}
             replyingToPubkey={replyingToPubkey}
             isRepost={isRepost}
+            isHighlight={isHighlight}
             isArticle={isArticle}
             event={displayEvent}
           />

@@ -8,12 +8,14 @@ export function ImageEmbed({
   url, 
   imeta, 
   className = "", 
-  noMargin = false 
+  noMargin = false,
+  objectFit = "contain"
 }: { 
   url: string; 
   imeta?: ImetaData;
   className?: string;
   noMargin?: boolean;
+  objectFit?: "contain" | "cover";
 }) {
   const [error, setError] = useState(false);
   const [loaded, setLoaded] = useState(false);
@@ -37,18 +39,24 @@ export function ImageEmbed({
     );
   }
 
-  const aspectRatio = imeta?.dimensions 
+  const aspectRatio = (imeta?.dimensions?.w && imeta?.dimensions?.h)
     ? `${imeta.dimensions.w} / ${imeta.dimensions.h}`
     : undefined;
 
   return (
     <div 
-      className={`relative overflow-hidden bg-gray-100 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 w-full max-w-full ${!noMargin ? 'rounded-2xl mt-3' : ''} ${className}`}
-      style={{ aspectRatio, minHeight: !loaded ? '200px' : 'auto' }}
+      className={`relative overflow-hidden bg-gray-100 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 mx-auto ${!noMargin ? 'rounded-2xl mt-3' : ''} ${className}`}
+      style={{ 
+        aspectRatio, 
+        maxHeight: '80vh',
+        width: aspectRatio ? 'auto' : '100%',
+        maxWidth: '100%',
+        minHeight: !loaded && !aspectRatio ? '200px' : 'auto' 
+      }}
     >
       {/* Placeholder: Blurhash or Skeleton */}
       {!loaded && (
-        <div className="absolute inset-0 w-full h-full">
+        <div className="absolute inset-0 w-full h-full z-0">
           {imeta?.blurhash ? (
             <Blurhash
               hash={imeta.blurhash}
@@ -59,7 +67,7 @@ export function ImageEmbed({
               punch={1}
             />
           ) : (
-            <div className="w-full h-full animate-pulse bg-gray-200 dark:bg-gray-800" />
+            <div className="w-full h-full animate-pulse bg-gray-200 dark:bg-zinc-800" />
           )}
         </div>
       )}
@@ -67,7 +75,9 @@ export function ImageEmbed({
       <img
         src={displayUrl}
         alt={imeta?.alt || "Post media"}
-        className={`w-full h-auto max-h-[80vh] object-contain transition-opacity duration-500 block mx-auto cursor-pointer ${
+        className={`w-full h-full max-h-[80vh] transition-opacity duration-500 block mx-auto cursor-pointer relative z-10 ${
+          objectFit === "cover" ? "object-cover" : "object-contain"
+        } ${
           loaded ? "opacity-100" : "opacity-0"
         }`}
         onLoad={() => setLoaded(true)}
