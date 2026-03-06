@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.9] - 2026-03-06
+
+### Changed
+- **Follow Button Refinement:** Updated the `FollowButton` to use the primary `blue-500` brand color for the "Follow" state. Improved the "Following/Unfollow" state with better color contrast and a dedicated hover effect for clearer user interaction.
+
 ## [0.3.8] - 2026-03-06
 
 ### Changed

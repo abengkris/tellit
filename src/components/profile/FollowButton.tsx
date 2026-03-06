@@ -48,14 +48,14 @@ export function FollowButton({
       disabled={isPending}
       className={`
         ${sizeClasses[size]}
-        font-semibold rounded-full border transition-colors duration-150
+        font-bold rounded-full border transition-all duration-200
         ${isPending ? "opacity-60 cursor-not-allowed" : "cursor-pointer active:scale-95 transition-transform"}
         ${
           isFollowing
             ? // State: following → hover shows "Unfollow"
-              "bg-transparent border-zinc-600 text-white hover:border-red-500 hover:text-red-400 hover:bg-red-950/30 group"
+              "bg-transparent border-gray-300 dark:border-gray-700 text-gray-900 dark:text-gray-100 hover:border-red-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 group"
             : // State: not following
-              "bg-white text-black border-white hover:bg-zinc-200"
+              "bg-blue-500 text-white border-blue-500 hover:bg-blue-600 shadow-sm shadow-blue-500/20"
         }
         ${className}
       `}
@@ -68,7 +68,7 @@ export function FollowButton({
       ) : isFollowing ? (
         <>
           <span className="group-hover:hidden">Following</span>
-          <span className="hidden group-hover:inline text-red-400">Unfollow</span>
+          <span className="hidden group-hover:inline">Unfollow</span>
         </>
       ) : (
         "Follow"
