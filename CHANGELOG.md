@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.6.1] - 2026-03-06
+
+### Changed
+- **Responsive Images:** Improved image embedding to prevent overflow and "offside" layouts on mobile devices. Images now use `object-cover` within their constrained containers for a more consistent appearance while respecting their aspect ratios.
+
 ## [0.6.0] - 2026-03-06
 
 ### Added

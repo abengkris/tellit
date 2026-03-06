@@ -43,7 +43,7 @@ export function ImageEmbed({
 
   return (
     <div 
-      className={`relative overflow-hidden bg-gray-100 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 w-full ${!noMargin ? 'rounded-2xl mt-3' : ''} ${className}`}
+      className={`relative overflow-hidden bg-gray-100 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 w-full max-w-full ${!noMargin ? 'rounded-2xl mt-3' : ''} ${className}`}
       style={{ aspectRatio, minHeight: !loaded ? '200px' : 'auto' }}
     >
       {/* Placeholder: Blurhash or Skeleton */}
@@ -67,7 +67,7 @@ export function ImageEmbed({
       <img
         src={displayUrl}
         alt={imeta?.alt || "Post media"}
-        className={`w-full h-auto max-h-[70vh] object-contain transition-opacity duration-500 block mx-auto cursor-pointer ${
+        className={`w-full h-auto max-h-[70vh] object-cover transition-opacity duration-500 block mx-auto cursor-pointer ${
           loaded ? "opacity-100" : "opacity-0"
         }`}
         onLoad={() => setLoaded(true)}
