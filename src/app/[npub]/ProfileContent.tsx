@@ -27,6 +27,7 @@ import { FollowedBy } from "@/components/profile/FollowedBy";
 import { ExternalIdentities } from "@/components/profile/ExternalIdentities";
 import { PostCard } from "@/components/post/PostCard";
 import { MediaGrid } from "@/components/profile/MediaGrid";
+import { FormattedAbout } from "@/components/profile/FormattedAbout";
 
 import Image from "next/image";
 import Link from "next/link";
@@ -359,8 +360,8 @@ export function ProfileContent({ npubParam }: { npubParam: string }) {
         </div>
 
         {profile?.about && (
-          <div className="mt-4 text-gray-900 dark:text-gray-100 whitespace-pre-wrap">
-            <Emojify text={profile.about} tags={profile.tags} />
+          <div className="mt-4 text-gray-900 dark:text-gray-100">
+            <FormattedAbout text={profile.about} tags={profile.tags} />
           </div>
         )}
 
