@@ -1,8 +1,7 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { ImetaData } from "@/lib/content/tokenizer";
-import { useBlossom } from "@/hooks/useBlossom";
 
 export function ImageEmbed({ 
   url, 
@@ -17,15 +16,25 @@ export function ImageEmbed({
 }) {
   const [error, setError] = useState(false);
   const [loaded, setLoaded] = useState(false);
-  const { getOptimizedUrl } = useBlossom();
 
-  // Request an optimized version if it's a Blossom URL
-  const optimizedUrl = useMemo(() => {
-    if (url.startsWith('data:')) return url;
-    return getOptimizedUrl(url, { width: 1200, format: 'webp', quality: 85 });
-  }, [url, getOptimizedUrl]);
+  // We'll skip optimization for now to ensure maximum compatibility
+  const displayUrl = url;
 
-  if (error) return null;
+  if (error) {
+    return (
+      <div className="mt-3 p-4 bg-gray-100 dark:bg-gray-900 rounded-2xl border border-dashed border-gray-300 dark:border-gray-700 flex flex-col items-center justify-center gap-2 text-gray-500">
+        <span className="text-xs font-bold uppercase tracking-widest">Failed to load image</span>
+        <a 
+          href={url} 
+          target="_blank" 
+          rel="noopener noreferrer" 
+          className="text-[10px] text-blue-500 hover:underline break-all text-center px-4"
+        >
+          {url}
+        </a>
+      </div>
+    );
+  }
 
   const aspectRatio = imeta?.dimensions 
     ? `${imeta.dimensions.w} / ${imeta.dimensions.h}`
@@ -34,18 +43,18 @@ export function ImageEmbed({
   return (
     <div 
       className={`relative overflow-hidden bg-gray-100 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 w-full ${!noMargin ? 'rounded-2xl mt-3' : ''} ${className}`}
-      style={{ aspectRatio, maxHeight: noMargin ? 'none' : undefined }}
+      style={{ aspectRatio, minHeight: !loaded ? '200px' : 'auto' }}
     >
       {/* Skeleton loading */}
       {!loaded && (
-        <div className="w-full h-full min-h-[150px] animate-pulse bg-gray-200 dark:bg-gray-800" />
+        <div className="absolute inset-0 w-full h-full animate-pulse bg-gray-200 dark:bg-gray-800" />
       )}
 
       <img
-        src={optimizedUrl}
+        src={displayUrl}
         alt={imeta?.alt || "Post media"}
-        className={`w-full h-full object-cover transition-opacity duration-300 block mx-auto ${
-          loaded ? "opacity-100" : "opacity-0 absolute inset-0"
+        className={`w-full h-auto max-h-[70vh] object-contain transition-opacity duration-300 block mx-auto cursor-pointer ${
+          loaded ? "opacity-100" : "opacity-0"
         }`}
         onLoad={() => setLoaded(true)}
         onError={() => setError(true)}

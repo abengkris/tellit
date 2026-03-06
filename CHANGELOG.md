@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.6] - 2026-03-06
+
+### Fixed
+- **Image Rendering Reliability:** Simplified `ImageEmbed` to use original URLs by default, bypassing potentially unreliable optimization servers.
+- **Improved Error Feedback:** Added a "Failed to load image" placeholder with a direct link to the media when an image fails to load, improving debuggability and user experience.
+
 ## [0.5.5] - 2026-03-06
 
 ### Removed
