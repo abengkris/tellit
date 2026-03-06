@@ -232,7 +232,7 @@ function FollowingFeedTab({ followingList, viewerPubkey }: { followingList: stri
   const { posts, newCount, isLoading, flushNewPosts, loadMore, hasMore } =
     usePausedFeed({
       filter: {
-        kinds: [1, 1068, 30023] as NDKKind[],
+        kinds: [1, 6, 16, 1068, 30023] as NDKKind[],
         authors,
       },
     });
@@ -260,7 +260,7 @@ function GlobalFeedTab() {
   const { posts, newCount, isLoading, flushNewPosts, loadMore, hasMore } =
     usePausedFeed({
       filter: {
-        kinds: [1, 1068, 30023] as NDKKind[],
+        kinds: [1, 6, 16, 1068, 30023] as NDKKind[],
       },
     });
 

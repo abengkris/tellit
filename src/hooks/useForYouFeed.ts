@@ -90,7 +90,7 @@ export function useForYouFeed({
 
     const sub = ndk.subscribe(
       {
-        kinds: [1, 1068, 30023] as NDKKind[],
+        kinds: [1, 6, 16, 1068, 30023] as NDKKind[],
         authors,
         limit: 30,
       },
@@ -143,7 +143,7 @@ export function useForYouFeed({
     const authors = wot ? wot.getAllPubkeys({ maxDepth: 2 }).slice(0, 500) : followingList;
 
     const older = await ndk.fetchEvents({
-      kinds: [1, 1068, 30023] as NDKKind[],
+      kinds: [1, 6, 16, 1068, 30023] as NDKKind[],
       authors,
       until: oldest - 1,
       limit: 30,

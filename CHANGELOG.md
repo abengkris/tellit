@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.2] - 2026-03-06
+
+### Changed
+- **Home Feed Enrichment:** Added support for **reposts** (Kind 6, 16) across all main home feed tabs (For You, Following, and Global). This ensures a more consistent and active discovery experience on the home screen.
+
 ## [0.5.1] - 2026-03-06
 
 ### Changed
