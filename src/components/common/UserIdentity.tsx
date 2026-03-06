@@ -31,6 +31,10 @@ export const UserIdentity: React.FC<UserIdentityProps> = ({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const status = useNIP05(pubkey, nip05);
   const affiliationPubkey = useAffiliation(nip05);
+
+  const [name, domain] = nip05?.split('@') || [];
+  const domainPart = domain?.split('.')[0];
+  const isOrg = name === '_' || name === domainPart;
   
   // Only fetch org profile when modal is open to save resources
   const { profile: orgProfile } = useProfile(isModalOpen ? (affiliationPubkey || undefined) : undefined);
@@ -63,7 +67,7 @@ export const UserIdentity: React.FC<UserIdentityProps> = ({
           <>
             <BadgeCheck
               size={isPost ? 14 : 20}
-              className="text-amber-500 fill-amber-500/10 shrink-0"
+              className={`${isOrg ? 'text-amber-500 fill-amber-500/10' : 'text-blue-500 fill-blue-500/10'} shrink-0`}
             />
             {affiliationPubkey && (
               <AffiliationBadge 

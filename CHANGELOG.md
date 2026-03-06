@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.6] - 2026-03-06
+
+### Changed
+- **Verified Badge Differentiation:** The verified check mark (`BadgeCheck`) now uses different colors based on the account type: **Blue** (`text-blue-500`) for general verified users and **Orange** (`text-amber-500`) for organizational/root identities (NIP-05 ending in `_@domain.tld` or `domain@domain.tld`).
+
 ## [0.3.5] - 2026-03-06
 
 ### Changed
