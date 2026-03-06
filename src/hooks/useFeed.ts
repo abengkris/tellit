@@ -77,10 +77,15 @@ export function useFeed(authors: string[], kinds: number[] = [1, 20, 1063, 1068,
       return false;
     }
 
-    if (event.kind === 1 || event.kind === 30023 || event.kind === 1068) {
+    if (event.kind === 1 || event.kind === 30023 || event.kind === 1068 || event.kind === 1111) {
       const hasETags = event.tags.some(t => t[0] === 'e');
       if (filterType === "posts") return !hasETags;
       if (filterType === "replies") return hasETags;
+    }
+
+    // Reposts (6, 16) are always "posts" in the profile tab context
+    if (event.kind === 6 || event.kind === 16) {
+      return filterType === "posts" || filterType === "all";
     }
     
     return true;

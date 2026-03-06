@@ -87,8 +87,8 @@ export function ProfileContent({ npubParam }: { npubParam: string }) {
     if (activeTab === "likes") return { feedKinds: [7], feedFilter: "all" as const };
     if (activeTab === "articles") return { feedKinds: [30023], feedFilter: "all" as const };
     if (activeTab === "media") return { feedKinds: [1, 20, 1063, 30023], feedFilter: "media" as const };
-    if (activeTab === "replies") return { feedKinds: [1], feedFilter: "replies" as const };
-    return { feedKinds: [1], feedFilter: "posts" as const };
+    if (activeTab === "replies") return { feedKinds: [1, 1111], feedFilter: "replies" as const };
+    return { feedKinds: [1, 6, 16, 1068], feedFilter: "posts" as const };
   }, [activeTab]);
   
   // Stabilize authors array

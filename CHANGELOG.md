@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.1] - 2026-03-06
+
+### Changed
+- **Profile Feed Enrichment:** The "posts" tab on the profile page now includes **reposts** (Kind 6, 16), **polls** (Kind 1068), and **quote posts**. This ensures a more complete view of a user's activity.
+- **Improved Filter Logic:** Refined `useFeed` filter to correctly categorize Kind 1111 as replies and ensure reposts are always treated as primary posts in the profile context.
+
 ## [0.4.0] - 2026-03-06
 
 ### Added
