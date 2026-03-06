@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.5] - 2026-03-06
+
+### Removed
+- **Multi-Image Grid:** Reverted the experimental image grid layout. Multiple images in a single post now render in a vertical stack for consistent alignment and simplicity.
+
 ## [0.5.4] - 2026-03-06
 
 ### Fixed

@@ -253,41 +253,16 @@ export function PostContentRenderer({
           )}
 
           {renderMedia && mediaTokens.length > 0 && (
-            <div className="mt-3 w-full">
-              {/* Image Grid Logic for multiple images */}
-              {mediaTokens.filter(t => t.type === 'image').length > 1 ? (
-                <div className={`grid gap-1 overflow-hidden rounded-2xl border border-gray-200 dark:border-gray-800 ${
-                  mediaTokens.filter(t => t.type === 'image').length === 2 ? 'grid-cols-2 aspect-video' : 
-                  mediaTokens.filter(t => t.type === 'image').length === 3 ? 'grid-cols-2 grid-rows-2 aspect-square' : 
-                  'grid-cols-2 grid-rows-2 aspect-square'
-                }`}>
-                  {mediaTokens.filter(t => t.type === 'image').slice(0, 4).map((token, i, arr) => {
-                    const cleanUrl = token.value.replace(/[.,;]$/, "");
-                    const imeta = imetaMap.get(cleanUrl);
-                    
-                    return (
-                      <div 
-                        key={i} 
-                        className={`relative ${arr.length === 3 && i === 0 ? 'row-span-2' : ''}`}
-                      >
-                        <ImageEmbed url={cleanUrl} imeta={imeta} noMargin={true} className="border-0 h-full w-full" />
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {mediaTokens.map((token, i) => {
-                    const cleanUrl = token.value.replace(/[.,;]$/, "");
-                    const imeta = imetaMap.get(cleanUrl);
-                    return token.type === "image" ? (
-                      <ImageEmbed key={i} url={cleanUrl} imeta={imeta} />
-                    ) : (
-                      <VideoEmbed key={i} url={cleanUrl} />
-                    );
-                  })}
-                </div>
-              )}
+            <div className="space-y-2 w-full">
+              {mediaTokens.map((token, i) => {
+                const cleanUrl = token.value.replace(/[.,;]$/, "");
+                const imeta = imetaMap.get(cleanUrl);
+                return token.type === "image" ? (
+                  <ImageEmbed key={i} url={cleanUrl} imeta={imeta} />
+                ) : (
+                  <VideoEmbed key={i} url={cleanUrl} />
+                );
+              })}
             </div>
           )}
 
