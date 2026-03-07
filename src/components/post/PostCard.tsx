@@ -349,6 +349,7 @@ export const PostCard: React.FC<PostCardProps> = ({
 
           <PostActions
             eventId={displayEvent.id}
+            authorPubkey={displayEvent.pubkey}
             likes={likes}
             reposts={reposts}
             comments={comments}

@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.6.7] - 2026-03-07
+
+### Added
+- **One-tap Zaps:** Users with a connected WebLN provider (e.g., Alby) can now zap posts instantly with a single click using their default amount.
+- **Zap Confetti:** Added a fun confetti animation when a zap is successfully sent or confirmed.
+- **Zap Settings:** Added a new setting to configure the default zap amount for one-tap zaps.
+
+### Improved
+- **Visual Feedback:** Enhanced the Zap modal and post actions to provide clearer feedback during payment processing.
+
 ## [0.6.6] - 2026-03-07
 
 ### Improved

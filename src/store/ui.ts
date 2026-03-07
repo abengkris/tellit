@@ -13,6 +13,7 @@ interface UIState {
   activeChatPubkey: string | null;
   wotStrictMode: boolean;
   browserNotificationsEnabled: boolean;
+  defaultZapAmount: number;
   addToast: (message: string, type?: "success" | "error" | "info") => void;
   removeToast: (id: string) => void;
   setUnreadMessagesCount: (count: number) => void;
@@ -20,6 +21,7 @@ interface UIState {
   setActiveChatPubkey: (pubkey: string | null) => void;
   setWotStrictMode: (enabled: boolean) => void;
   setBrowserNotificationsEnabled: (enabled: boolean) => void;
+  setDefaultZapAmount: (amount: number) => void;
 }
 
 export const useUIStore = create<UIState>()(
@@ -30,6 +32,7 @@ export const useUIStore = create<UIState>()(
       activeChatPubkey: null,
       wotStrictMode: false,
       browserNotificationsEnabled: false,
+      defaultZapAmount: 21,
       addToast: (message, type = "info") => {
         const id = Math.random().toString(36).substring(7);
         set((state) => ({
@@ -50,6 +53,7 @@ export const useUIStore = create<UIState>()(
       setActiveChatPubkey: (pubkey) => set({ activeChatPubkey: pubkey }),
       setWotStrictMode: (enabled) => set({ wotStrictMode: enabled }),
       setBrowserNotificationsEnabled: (enabled) => set({ browserNotificationsEnabled: enabled }),
+      setDefaultZapAmount: (amount) => set({ defaultZapAmount: amount }),
     }),
     {
       name: "tellit-ui-storage",
@@ -57,6 +61,7 @@ export const useUIStore = create<UIState>()(
       partialize: (state) => ({
         wotStrictMode: state.wotStrictMode,
         browserNotificationsEnabled: state.browserNotificationsEnabled,
+        defaultZapAmount: state.defaultZapAmount,
       }),
     }
   )

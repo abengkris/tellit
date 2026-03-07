@@ -1,6 +1,6 @@
 {
   "name": "tellit",
-  "version": "0.6.6",
+  "version": "0.6.7",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -28,6 +28,7 @@
     "@nostr-dev-kit/wot": "^1.0.0",
     "@tailwindcss/typography": "^0.5.19",
     "blurhash": "^2.0.5",
+    "canvas-confetti": "^1.9.4",
     "date-fns": "^4.1.0",
     "dexie": "^4.3.0",
     "lucide-react": "^0.575.0",
@@ -46,6 +47,7 @@
     "@tailwindcss/postcss": "^4",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
+    "@types/canvas-confetti": "^1.9.0",
     "@types/node": "^20.19.35",
     "@types/react": "^19",
     "@types/react-dom": "^19",

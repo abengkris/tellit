@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useUIStore } from "@/store/ui";
 import { useAuthStore } from "@/store/auth";
-import { Bell, Shield, User, Globe, ChevronRight } from "lucide-react";
+import { Bell, Shield, User, Globe, Zap } from "lucide-react";
 import { Avatar } from "@/components/common/Avatar";
 
 export default function SettingsPage() {
@@ -14,6 +14,8 @@ export default function SettingsPage() {
     setBrowserNotificationsEnabled,
     wotStrictMode,
     setWotStrictMode,
+    defaultZapAmount,
+    setDefaultZapAmount,
     addToast
   } = useUIStore();
 
@@ -72,6 +74,42 @@ export default function SettingsPage() {
             </div>
           </section>
         )}
+
+        {/* Zap Settings Section */}
+        <section className="mb-10">
+          <h2 className="text-sm font-bold uppercase tracking-widest text-gray-500 mb-4 flex items-center gap-2">
+            <Zap size={16} /> Zaps
+          </h2>
+          <div className="p-4 bg-white dark:bg-black border border-gray-100 dark:border-gray-800 rounded-3xl space-y-4">
+            <div>
+              <label className="block text-sm font-bold mb-2">Default Zap Amount (Sats)</label>
+              <div className="grid grid-cols-4 gap-2 mb-3">
+                {[21, 100, 1000, 5000].map((val) => (
+                  <button
+                    key={val}
+                    onClick={() => setDefaultZapAmount(val)}
+                    className={`py-2 rounded-xl text-sm font-bold border transition-all ${
+                      defaultZapAmount === val 
+                        ? "bg-yellow-500 border-yellow-500 text-white shadow-lg shadow-yellow-500/20" 
+                        : "border-gray-200 dark:border-gray-800 hover:border-yellow-500"
+                    }`}
+                  >
+                    {val}
+                  </button>
+                ))}
+              </div>
+              <input
+                type="number"
+                value={defaultZapAmount}
+                onChange={(e) => setDefaultZapAmount(Number(e.target.value))}
+                className="w-full p-3 bg-gray-50 dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-500 text-sm"
+              />
+              <p className="text-[10px] text-gray-500 mt-2">
+                This amount will be used as the default in the Zap modal.
+              </p>
+            </div>
+          </div>
+        </section>
 
         {/* Preferences Section */}
         <section className="mb-10">
@@ -137,7 +175,7 @@ export default function SettingsPage() {
 
         {/* Footer info */}
         <div className="text-center text-gray-500 text-sm mt-20">
-          Tell it! v0.6.2<br/>
+          Tell it! v0.6.6<br/>
           Built with NDK & Next.js
         </div>
       </div>

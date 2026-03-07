@@ -7,6 +7,7 @@ import { createZapInvoice, listenForZapReceipt } from "@/lib/actions/zap";
 import { X, Zap, Loader2, CheckCircle2, ExternalLink } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { useUIStore } from "@/store/ui";
+import { triggerZapConfetti } from "@/lib/utils/confetti";
 
 interface WebLN {
   enable: () => Promise<void>;
@@ -28,12 +29,12 @@ interface ZapModalProps {
 
 export const ZapModal: React.FC<ZapModalProps> = ({ event, user, onClose, onSuccess }) => {
   const { ndk } = useNDK();
-  const [amount, setAmount] = useState<number>(1000); // 1000 sat default
+  const { addToast, defaultZapAmount } = useUIStore();
+  const [amount, setAmount] = useState<number>(defaultZapAmount || 21);
   const [comment, setComment] = useState("");
   const [invoice, setInvoice] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [paid, setPaid] = useState(false);
-  const { addToast } = useUIStore();
 
   const target = event || user;
 
@@ -47,6 +48,7 @@ export const ZapModal: React.FC<ZapModalProps> = ({ event, user, onClose, onSucc
     const stopListening = listenForZapReceipt(ndk, targetId, (receipt) => {
       console.log("Zap confirmed:", receipt);
       setPaid(true);
+      triggerZapConfetti();
       addToast("Zap received!", "success");
       if (onSuccess) onSuccess();
     }, !!user);
@@ -117,7 +119,7 @@ export const ZapModal: React.FC<ZapModalProps> = ({ event, user, onClose, onSucc
               <div>
                 <label className="block text-sm font-medium text-gray-500 mb-2">Amount (Sats)</label>
                 <div className="grid grid-cols-4 gap-2 mb-4">
-                  {[10, 100, 1000, 5000].map((val) => (
+                  {[21, 100, 1000, 5000].map((val) => (
                     <button
                       key={val}
                       onClick={() => setAmount(val)}

@@ -1,10 +1,14 @@
 import React, { useState, useMemo, useEffect } from "react";
-import { MessageCircle, Repeat2, Heart, Zap, Bookmark, Quote, Share } from "lucide-react";
+import { MessageCircle, Repeat2, Heart, Zap, Bookmark, Quote, Share, Loader2 } from "lucide-react";
 import { useUIStore } from "@/store/ui";
 import { useLists } from "@/hooks/useLists";
+import { triggerConfetti, triggerZapConfetti } from "@/lib/utils/confetti";
+import { useNDK } from "@/hooks/useNDK";
+import { createZapInvoice, listenForZapReceipt } from "@/lib/actions/zap";
 
 interface PostActionsProps {
   eventId: string;
+  authorPubkey?: string; // Needed for one-tap zap
   likes: number;
   reposts: number;
   comments: number;
@@ -23,12 +27,13 @@ interface PostActionsProps {
 
 export const PostActions: React.FC<PostActionsProps> = ({
   eventId,
+  authorPubkey,
   likes: initialLikes,
   reposts: initialReposts,
   comments,
   quotes,
   bookmarks,
-  zaps = 0,
+  zaps: initialZaps,
   userReacted: initialUserReacted,
   userReposted: initialUserReposted,
   onReplyClick,
@@ -42,25 +47,19 @@ export const PostActions: React.FC<PostActionsProps> = ({
   const [optimisticReacted, setOptimisticReacted] = useState(initialUserReacted);
   const [optimisticReposted, setOptimisticReposted] = useState(initialUserReposted);
   const [optimisticReposts, setOptimisticReposts] = useState(initialReposts);
-  const { addToast } = useUIStore();
+  const [optimisticZaps, setOptimisticZaps] = useState(initialZaps || 0);
+  const [isZapping, setIsZapping] = useState(false);
+  
+  const { addToast, defaultZapAmount } = useUIStore();
+  const { ndk } = useNDK();
   const { bookmarkedEventIds, bookmarkPost, unbookmarkPost } = useLists();
 
   // Sync state with props when they change from relay updates
-  useEffect(() => {
-    setOptimisticLikes(initialLikes);
-  }, [initialLikes]);
-
-  useEffect(() => {
-    setOptimisticReacted(initialUserReacted);
-  }, [initialUserReacted]);
-
-  useEffect(() => {
-    setOptimisticReposted(initialUserReposted);
-  }, [initialUserReposted]);
-
-  useEffect(() => {
-    setOptimisticReposts(initialReposts);
-  }, [initialReposts]);
+  useEffect(() => { setOptimisticLikes(initialLikes); }, [initialLikes]);
+  useEffect(() => { setOptimisticReacted(initialUserReacted); }, [initialUserReacted]);
+  useEffect(() => { setOptimisticReposted(initialUserReposted); }, [initialUserReposted]);
+  useEffect(() => { setOptimisticReposts(initialReposts); }, [initialReposts]);
+  useEffect(() => { setOptimisticZaps(initialZaps || 0); }, [initialZaps]);
 
   const isBookmarked = useMemo(() => bookmarkedEventIds.has(eventId), [bookmarkedEventIds, eventId]);
 
@@ -78,12 +77,12 @@ export const PostActions: React.FC<PostActionsProps> = ({
   const handleLike = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (optimisticReacted === '+') {
-      // In NIP-25 we don't usually "unlike" easily, but we can update UI
       setOptimisticLikes(prev => Math.max(0, prev - 1));
       setOptimisticReacted(null);
     } else {
       setOptimisticLikes(prev => prev + 1);
       setOptimisticReacted('+');
+      triggerConfetti();
       addToast("Liked!", "success");
       onLikeClick?.(e);
     }
@@ -97,6 +96,42 @@ export const PostActions: React.FC<PostActionsProps> = ({
       addToast("Reposted!", "success");
       onRepostClick?.(e);
     }
+  };
+
+  const handleZap = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    // Check for WebLN
+    if (typeof window !== "undefined" && window.webln && ndk && authorPubkey) {
+      try {
+        setIsZapping(true);
+        await window.webln.enable();
+        
+        // Fetch event to ensure we have the full object for zapping
+        const event = await ndk.fetchEvent(eventId);
+        if (!event) throw new Error("Could not find event to zap");
+
+        const amount = defaultZapAmount || 21;
+        const bolt11 = await createZapInvoice(ndk, amount * 1000, event);
+        
+        if (bolt11) {
+          const response = await window.webln.sendPayment(bolt11);
+          if (response.preimage) {
+            triggerZapConfetti();
+            setOptimisticZaps(prev => prev + amount); // Add sats to counter
+            addToast(`Zapped ${amount} sats!`, "success");
+            return;
+          }
+        }
+      } catch (err) {
+        console.warn("One-tap zap failed, falling back to modal", err);
+      } finally {
+        setIsZapping(false);
+      }
+    }
+    
+    // Fallback to modal
+    onZapClick?.(e);
   };
 
   const formatCount = (n: number) => {
@@ -148,18 +183,24 @@ export const PostActions: React.FC<PostActionsProps> = ({
 
       {/* Zap */}
       <button 
-        onClick={(e) => {
-          e.stopPropagation();
+        onClick={handleZap}
+        onContextMenu={(e) => {
+          e.preventDefault();
           onZapClick?.(e);
         }}
         aria-label="Zap"
         className="group flex items-center space-x-1 hover:text-yellow-500 transition-colors"
+        disabled={isZapping}
       >
-        <div className="p-3 group-hover:bg-yellow-50 dark:group-hover:bg-yellow-900/20 rounded-full transition-colors">
-          <Zap size={20} className={zaps > 0 ? "text-yellow-500 fill-yellow-500" : ""} />
+        <div className="p-3 group-hover:bg-yellow-50 dark:group-hover:bg-yellow-900/20 rounded-full transition-colors relative">
+          {isZapping ? (
+            <Loader2 size={20} className="animate-spin text-yellow-500" />
+          ) : (
+            <Zap size={20} className={optimisticZaps > 0 ? "text-yellow-500 fill-yellow-500" : ""} />
+          )}
         </div>
-        <span className={`text-xs ${zaps > 0 ? "text-yellow-600 dark:text-yellow-400 font-bold" : ""}`}>
-          {zaps > 0 ? formatCount(zaps) : ""}
+        <span className={`text-xs ${optimisticZaps > 0 ? "text-yellow-600 dark:text-yellow-400 font-bold" : ""}`}>
+          {optimisticZaps > 0 ? formatCount(optimisticZaps) : ""}
         </span>
       </button>
 
