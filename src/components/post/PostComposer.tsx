@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useAuthStore } from "@/store/auth";
 import { useNDK } from "@/hooks/useNDK";
-import { publishPost } from "@/lib/actions/post";
+import { publishPost, ZapSplit } from "@/lib/actions/post";
 import { createPoll, PollOption } from "@/lib/actions/poll";
 import { useUIStore } from "@/store/ui";
 import { useBlossom } from "@/hooks/useBlossom";
@@ -15,10 +15,12 @@ import {
   Smile, 
   X, 
   Loader2, 
-  BarChart2
+  BarChart2,
+  Users
 } from "lucide-react";
 import { Avatar } from "../common/Avatar";
 import { PollEditor } from "./PollEditor";
+import { CollaboratorEditor } from "./CollaboratorEditor";
 
 interface PostComposerProps {
   replyTo?: NDKEvent;
@@ -50,10 +52,13 @@ export const PostComposer: React.FC<PostComposerProps> = ({
   const [isUploading, setIsUploading] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showPollEditor, setShowPollEditor] = useState(false);
+  const [showCollaboratorEditor, setShowCollaboratorEditor] = useState(false);
+  
   const [pollOptions, setPollOptions] = useState<PollOption[]>([
     { id: "0", label: "" },
     { id: "1", label: "" }
   ]);
+  const [zapSplits, setZapSplits] = useState<ZapSplit[]>([]);
   const [mediaFiles, setMediaFiles] = useState<{ url: string; type: string; imeta?: NDKTag }[]>([]);
   
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -119,7 +124,8 @@ export const PostComposer: React.FC<PostComposerProps> = ({
         const options = {
           replyTo,
           quoteEvent,
-          tags
+          tags,
+          zapSplits
         };
 
         event = await publishPost(ndk, finalContent, options);
@@ -130,7 +136,9 @@ export const PostComposer: React.FC<PostComposerProps> = ({
         setContent("");
         setMediaFiles([]);
         setShowPollEditor(false);
+        setShowCollaboratorEditor(false);
         setPollOptions([{ id: "0", label: "" }, { id: "1", label: "" }]);
+        setZapSplits([]);
         clearDraft();
         if (onSuccess) onSuccess();
       }
@@ -216,6 +224,14 @@ export const PostComposer: React.FC<PostComposerProps> = ({
             />
           )}
 
+          {showCollaboratorEditor && (
+            <CollaboratorEditor
+              splits={zapSplits}
+              setSplits={setZapSplits}
+              onClose={() => setShowCollaboratorEditor(false)}
+            />
+          )}
+
           {/* Media Previews */}
           {mediaFiles.length > 0 && (
             <div className={`grid gap-2 mb-3 ${mediaFiles.length > 1 ? "grid-cols-2" : "grid-cols-1"}`}>
@@ -271,13 +287,30 @@ export const PostComposer: React.FC<PostComposerProps> = ({
 
               <button
                 type="button"
-                onClick={() => setShowPollEditor(!showPollEditor)}
+                onClick={() => {
+                  setShowPollEditor(!showPollEditor);
+                  if (!showPollEditor) setShowCollaboratorEditor(false);
+                }}
                 className={`p-2 rounded-full transition-colors ${
                   showPollEditor ? "bg-blue-500 text-white" : "text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20"
                 }`}
                 title="Poll"
               >
                 <BarChart2 size={20} />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setShowCollaboratorEditor(!showCollaboratorEditor);
+                  if (!showCollaboratorEditor) setShowPollEditor(false);
+                }}
+                className={`p-2 rounded-full transition-colors ${
+                  showCollaboratorEditor ? "bg-purple-500 text-white" : "text-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/20"
+                }`}
+                title="Add Collaborator (Zap Split)"
+              >
+                <Users size={20} />
               </button>
             </div>
 

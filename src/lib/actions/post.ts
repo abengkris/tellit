@@ -3,12 +3,19 @@ import { nip19 } from "nostr-tools";
 
 import { createPoll, CreatePollOptions } from "./poll";
 
+export interface ZapSplit {
+  pubkey: string;
+  relay?: string;
+  weight: number;
+}
+
 interface PostOptions {
   replyTo?: NDKEvent;
   quoteEvent?: NDKEvent;
   pollOptions?: CreatePollOptions;
   tags?: NDKTag[];
   emojis?: Map<string, string>;
+  zapSplits?: ZapSplit[];
 }
 
 export const publishPost = async (
@@ -27,6 +34,14 @@ export const publishPost = async (
 
   if (options?.tags) {
     event.tags = [...options.tags];
+  }
+
+  // Handle Zap Splits (NIP-57 / NIP-01 zap tags)
+  if (options?.zapSplits && options.zapSplits.length > 0) {
+    options.zapSplits.forEach(split => {
+      // zap tag format: ["zap", pubkey, relay, weight]
+      event.tags.push(["zap", split.pubkey, split.relay || "", String(split.weight)]);
+    });
   }
 
   // 0. Handle Custom Emojis (NIP-30)
