@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.6.3] - 2026-03-07
+
+### Added
+- **Settings Page:** Introduced a dedicated settings page (`/settings`) to manage user preferences.
+- **Native Browser Notifications:** Added support for opt-in browser notifications for new messages and mentions.
+- **Preferences Management:** Users can now toggle Browser Notifications and Web of Trust Strict Mode from the settings page.
+
+### Improved
+- **Optimized DM Inbox:** Improved conversation loading and real-time updates in the message list.
+- **Reliable Unread Tracking:** Implemented more robust unread message detection using application state tracking.
+- **NIP-17 Read Receipts:** Added support for publishing Kind 15 read receipts when reading DMs.
+
 ## [0.6.2] - 2026-03-07
 
 ### Added

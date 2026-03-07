@@ -37,7 +37,12 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
   const [isReady, setIsReady] = useState(false);
   
   const { setUser, setLoginState } = useAuthStore();
-  const { incrementUnreadMessagesCount, addToast, activeChatPubkey } = useUIStore();
+  const { 
+    incrementUnreadMessagesCount, 
+    addToast, 
+    activeChatPubkey, 
+    browserNotificationsEnabled 
+  } = useUIStore();
   
   const messengerRef = useRef<NDKMessenger | null>(null);
   const sessionsRef = useRef<NDKSessionManager | null>(null);
@@ -201,6 +206,17 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
                   const isCurrentChat = activeChatPubkey === message.sender?.pubkey;
                   if (!isCurrentChat) {
                     incrementUnreadMessagesCount();
+
+                    // Send browser notification if enabled
+                    if (browserNotificationsEnabled && Notification.permission === "granted") {
+                      const sender = message.sender;
+                      sender.fetchProfile().then(() => {
+                        new Notification(sender.profile?.displayName || sender.profile?.name || "New Message", {
+                          body: message.content,
+                          icon: sender.profile?.image || "/favicon.ico"
+                        });
+                      });
+                    }
                   }
                 }
               });
@@ -224,7 +240,7 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
         try { messengerRef.current.destroy(); } catch (e) {}
       }
     };
-  }, [setUser, setLoginState, incrementUnreadMessagesCount, addToast, activeChatPubkey]);
+  }, [setUser, setLoginState, incrementUnreadMessagesCount, addToast, activeChatPubkey, browserNotificationsEnabled]);
 
   return (
     <NDKContext.Provider value={{ ndk, messenger, sessions, activeSession, isReady }}>
