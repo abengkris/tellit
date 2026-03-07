@@ -5,8 +5,10 @@ import NDK, { NDKUser, NDKEvent, NDKCacheAdapter, NDKRelay } from "@nostr-dev-ki
 import NDKCacheAdapterDexie from "@nostr-dev-kit/ndk-cache-dexie";
 import { NDKMessenger, CacheModuleStorage, NDKMessage } from "@nostr-dev-kit/messages";
 import { NDKSessionManager, LocalStorage, NDKSession } from "@nostr-dev-kit/sessions";
+import { NDKNWCWallet } from "@nostr-dev-kit/ndk-wallet";
 import { useAuthStore } from "@/store/auth";
 import { useUIStore } from "@/store/ui";
+import { useWalletStore } from "@/store/wallet";
 import { getNDK } from "@/lib/ndk";
 
 interface ExtendedCacheAdapter extends NDKCacheAdapter {
@@ -44,8 +46,11 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
     browserNotificationsEnabled 
   } = useUIStore();
   
+  const { nwcPairingCode, setBalance } = useWalletStore();
+  
   const messengerRef = useRef<NDKMessenger | null>(null);
   const sessionsRef = useRef<NDKSessionManager | null>(null);
+  const walletRef = useRef<NDKNWCWallet | null>(null);
 
   useEffect(() => {
     // Only run on client
@@ -104,6 +109,30 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
       console.error(`Event ${event.id} failed to publish:`, error);
       addToast(`Failed to publish event to relays. It will be retried automatically.`, "error");
     });
+
+    // Initialize Wallet (NWC)
+    if (nwcPairingCode) {
+      try {
+        const wallet = new NDKNWCWallet(instance, { 
+          pairingCode: nwcPairingCode,
+          timeout: 30000
+        });
+        
+        wallet.on("ready", () => {
+          console.log("NWC wallet ready");
+          addToast("Wallet connected", "success");
+        });
+
+        wallet.on("balance_updated", (balance) => {
+          setBalance(balance?.amount || 0);
+        });
+
+        instance.wallet = wallet;
+        walletRef.current = wallet;
+      } catch (err) {
+        console.error("Failed to initialize NWC wallet:", err);
+      }
+    }
 
     // Initialize Session Manager
     const sessionManager = new NDKSessionManager(instance, {
@@ -240,7 +269,7 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
         try { messengerRef.current.destroy(); } catch (e) {}
       }
     };
-  }, [setUser, setLoginState, incrementUnreadMessagesCount, addToast, activeChatPubkey, browserNotificationsEnabled]);
+  }, [setUser, setLoginState, incrementUnreadMessagesCount, addToast, activeChatPubkey, browserNotificationsEnabled, nwcPairingCode, setBalance]);
 
   return (
     <NDKContext.Provider value={{ ndk, messenger, sessions, activeSession, isReady }}>
