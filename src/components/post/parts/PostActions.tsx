@@ -4,7 +4,9 @@ import { useUIStore } from "@/store/ui";
 import { useLists } from "@/hooks/useLists";
 import { triggerConfetti, triggerZapConfetti } from "@/lib/utils/confetti";
 import { useNDK } from "@/hooks/useNDK";
-import { createZapInvoice, listenForZapReceipt } from "@/lib/actions/zap";
+import { createZapInvoice } from "@/lib/actions/zap";
+import { useReactions } from "@/hooks/useReactions";
+import { UserListModal } from "@/components/common/UserListModal";
 
 interface PostActionsProps {
   eventId: string;
@@ -50,9 +52,14 @@ export const PostActions: React.FC<PostActionsProps> = ({
   const [optimisticZaps, setOptimisticZaps] = useState(initialZaps || 0);
   const [isZapping, setIsZapping] = useState(false);
   
+  const [showReactionsModal, setShowReactionsModal] = useState(false);
+  const [reactionsTitle, setReactionsTitle] = useState("");
+  const [reactionsPubkeys, setReactionsPubkeys] = useState<string[]>([]);
+
   const { addToast, defaultZapAmount } = useUIStore();
   const { ndk } = useNDK();
   const { bookmarkedEventIds, bookmarkPost, unbookmarkPost } = useLists();
+  const { likes: reactorPubkeys, reposts: reposterPubkeys, zaps: zapperPubkeys, loading: loadingReactions } = useReactions(eventId);
 
   // Sync state with props when they change from relay updates
   useEffect(() => { setOptimisticLikes(initialLikes); }, [initialLikes]);
@@ -134,6 +141,30 @@ export const PostActions: React.FC<PostActionsProps> = ({
     onZapClick?.(e);
   };
 
+  const openLikesModal = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (optimisticLikes === 0) return;
+    setReactionsTitle("Liked by");
+    setReactionsPubkeys(reactorPubkeys);
+    setShowReactionsModal(true);
+  };
+
+  const openRepostsModal = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (optimisticReposts === 0) return;
+    setReactionsTitle("Reposted by");
+    setReactionsPubkeys(reposterPubkeys);
+    setShowReactionsModal(true);
+  };
+
+  const openZapsModal = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (optimisticZaps === 0) return;
+    setReactionsTitle("Zapped by");
+    setReactionsPubkeys(zapperPubkeys.map(z => z.pubkey));
+    setShowReactionsModal(true);
+  };
+
   const formatCount = (n: number) => {
     if (n >= 1000000) return `${(n / 1000000).toFixed(1)}M`;
     if (n >= 1000) return `${(n / 1000).toFixed(1)}k`;
@@ -141,109 +172,138 @@ export const PostActions: React.FC<PostActionsProps> = ({
   };
 
   return (
-    <div className="flex items-center justify-between max-w-lg text-gray-500 -ml-2">
-      {/* Reply */}
-      <button 
-        onClick={(e) => {
-          e.stopPropagation();
-          onReplyClick?.(e);
-        }}
-        aria-label="Reply"
-        className="group flex items-center space-x-1 hover:text-blue-500 transition-colors"
-      >
-        <div className="p-3 group-hover:bg-blue-50 dark:group-hover:bg-blue-900/20 rounded-full transition-colors">
-          <MessageCircle size={20} />
-        </div>
-        <span className="text-xs">{comments > 0 ? formatCount(comments) : ""}</span>
-      </button>
+    <>
+      <div className="flex items-center justify-between max-w-lg text-gray-500 -ml-2">
+        {/* Reply */}
+        <button 
+          onClick={(e) => {
+            e.stopPropagation();
+            onReplyClick?.(e);
+          }}
+          aria-label="Reply"
+          className="group flex items-center space-x-1 hover:text-blue-500 transition-colors"
+        >
+          <div className="p-3 group-hover:bg-blue-50 dark:group-hover:bg-blue-900/20 rounded-full transition-colors">
+            <MessageCircle size={20} />
+          </div>
+          <span className="text-xs">{comments > 0 ? formatCount(comments) : ""}</span>
+        </button>
 
-      {/* Repost */}
-      <button 
-        onClick={handleRepost}
-        aria-label="Repost"
-        className={`group flex items-center space-x-1 hover:text-green-500 transition-colors ${optimisticReposted ? 'text-green-500' : ''}`}
-      >
-        <div className="p-3 group-hover:bg-green-50 dark:group-hover:bg-green-900/20 rounded-full transition-colors">
-          <Repeat2 size={20} className={optimisticReposted ? "animate-in spin-in-180 duration-500" : ""} />
+        {/* Repost */}
+        <div className="flex items-center">
+          <button 
+            onClick={handleRepost}
+            aria-label="Repost"
+            className={`group flex items-center hover:text-green-500 transition-colors ${optimisticReposted ? 'text-green-500' : ''}`}
+          >
+            <div className="p-3 group-hover:bg-green-50 dark:group-hover:bg-green-900/20 rounded-full transition-colors">
+              <Repeat2 size={20} className={optimisticReposted ? "animate-in spin-in-180 duration-500" : ""} />
+            </div>
+          </button>
+          <span 
+            className="text-xs cursor-pointer hover:underline -ml-1 pr-2 py-2"
+            onClick={openRepostsModal}
+          >
+            {optimisticReposts > 0 ? formatCount(optimisticReposts) : ""}
+          </span>
         </div>
-        <span className="text-xs">{optimisticReposts > 0 ? formatCount(optimisticReposts) : ""}</span>
-      </button>
 
-      {/* Like */}
-      <button 
-        onClick={handleLike}
-        aria-label={optimisticReacted === '+' ? "Unlike" : "Like"}
-        className={`group flex items-center space-x-1 hover:text-pink-500 transition-colors ${optimisticReacted === '+' ? 'text-pink-500' : ''}`}
-      >
-        <div className="p-3 group-hover:bg-pink-50 dark:group-hover:bg-pink-900/20 rounded-full transition-colors">
-          <Heart size={20} fill={optimisticReacted === '+' ? 'currentColor' : 'none'} className={optimisticReacted === '+' ? "animate-in zoom-in-125 duration-300" : ""} />
+        {/* Like */}
+        <div className="flex items-center">
+          <button 
+            onClick={handleLike}
+            aria-label={optimisticReacted === '+' ? "Unlike" : "Like"}
+            className={`group flex items-center hover:text-pink-500 transition-colors ${optimisticReacted === '+' ? 'text-pink-500' : ''}`}
+          >
+            <div className="p-3 group-hover:bg-pink-50 dark:group-hover:bg-pink-900/20 rounded-full transition-colors">
+              <Heart size={20} fill={optimisticReacted === '+' ? 'currentColor' : 'none'} className={optimisticReacted === '+' ? "animate-in zoom-in-125 duration-300" : ""} />
+            </div>
+          </button>
+          <span 
+            className="text-xs cursor-pointer hover:underline -ml-1 pr-2 py-2"
+            onClick={openLikesModal}
+          >
+            {optimisticLikes > 0 ? formatCount(optimisticLikes) : ""}
+          </span>
         </div>
-        <span className="text-xs">{optimisticLikes > 0 ? formatCount(optimisticLikes) : ""}</span>
-      </button>
 
-      {/* Zap */}
-      <button 
-        onClick={handleZap}
-        onContextMenu={(e) => {
-          e.preventDefault();
-          onZapClick?.(e);
-        }}
-        aria-label="Zap"
-        className="group flex items-center space-x-1 hover:text-yellow-500 transition-colors"
-        disabled={isZapping}
-      >
-        <div className="p-3 group-hover:bg-yellow-50 dark:group-hover:bg-yellow-900/20 rounded-full transition-colors relative">
-          {isZapping ? (
-            <Loader2 size={20} className="animate-spin text-yellow-500" />
-          ) : (
-            <Zap size={20} className={optimisticZaps > 0 ? "text-yellow-500 fill-yellow-500" : ""} />
-          )}
+        {/* Zap */}
+        <div className="flex items-center">
+          <button 
+            onClick={handleZap}
+            onContextMenu={(e) => {
+              e.preventDefault();
+              onZapClick?.(e);
+            }}
+            aria-label="Zap"
+            className="group flex items-center hover:text-yellow-500 transition-colors"
+            disabled={isZapping}
+          >
+            <div className="p-3 group-hover:bg-yellow-50 dark:group-hover:bg-yellow-900/20 rounded-full transition-colors relative">
+              {isZapping ? (
+                <Loader2 size={20} className="animate-spin text-yellow-500" />
+              ) : (
+                <Zap size={20} className={optimisticZaps > 0 ? "text-yellow-500 fill-yellow-500" : ""} />
+              )}
+            </div>
+          </button>
+          <span 
+            className={`text-xs cursor-pointer hover:underline -ml-1 pr-2 py-2 ${optimisticZaps > 0 ? "text-yellow-600 dark:text-yellow-400 font-bold" : ""}`}
+            onClick={openZapsModal}
+          >
+            {optimisticZaps > 0 ? formatCount(optimisticZaps) : ""}
+          </span>
         </div>
-        <span className={`text-xs ${optimisticZaps > 0 ? "text-yellow-600 dark:text-yellow-400 font-bold" : ""}`}>
-          {optimisticZaps > 0 ? formatCount(optimisticZaps) : ""}
-        </span>
-      </button>
 
-      {/* Quote */}
-      <button 
-        onClick={(e) => {
-          e.stopPropagation();
-          onQuoteClick?.(e);
-        }}
-        aria-label="Quote"
-        className="group flex items-center space-x-1 hover:text-blue-400 transition-colors"
-      >
-        <div className="p-3 group-hover:bg-blue-50 dark:group-hover:bg-blue-900/10 rounded-full transition-colors">
-          <Quote size={18} />
-        </div>
-        <span className="text-xs">{quotes > 0 ? formatCount(quotes) : ""}</span>
-      </button>
+        {/* Quote */}
+        <button 
+          onClick={(e) => {
+            e.stopPropagation();
+            onQuoteClick?.(e);
+          }}
+          aria-label="Quote"
+          className="group flex items-center space-x-1 hover:text-blue-400 transition-colors"
+        >
+          <div className="p-3 group-hover:bg-blue-50 dark:group-hover:bg-blue-900/10 rounded-full transition-colors">
+            <Quote size={18} />
+          </div>
+          <span className="text-xs">{quotes > 0 ? formatCount(quotes) : ""}</span>
+        </button>
 
-      {/* Bookmark */}
-      <button 
-        onClick={handleBookmark}
-        aria-label={isBookmarked ? "Remove Bookmark" : "Bookmark"}
-        className={`group flex items-center space-x-1 hover:text-blue-500 transition-colors ${isBookmarked ? 'text-blue-500' : ''}`}
-      >
-        <div className="p-3 group-hover:bg-blue-50 dark:group-hover:bg-blue-900/20 rounded-full transition-colors">
-          <Bookmark size={20} fill={isBookmarked ? 'currentColor' : 'none'} className={isBookmarked ? "animate-in zoom-in-125 duration-300" : ""} />
-        </div>
-        <span className="text-xs">{bookmarks > 0 ? formatCount(bookmarks) : ""}</span>
-      </button>
+        {/* Bookmark */}
+        <button 
+          onClick={handleBookmark}
+          aria-label={isBookmarked ? "Remove Bookmark" : "Bookmark"}
+          className={`group flex items-center space-x-1 hover:text-blue-500 transition-colors ${isBookmarked ? 'text-blue-500' : ''}`}
+        >
+          <div className="p-3 group-hover:bg-blue-50 dark:group-hover:bg-blue-900/20 rounded-full transition-colors">
+            <Bookmark size={20} fill={isBookmarked ? 'currentColor' : 'none'} className={isBookmarked ? "animate-in zoom-in-125 duration-300" : ""} />
+          </div>
+          <span className="text-xs">{bookmarks > 0 ? formatCount(bookmarks) : ""}</span>
+        </button>
 
-      {/* Share */}
-      <button 
-        onClick={(e) => {
-          e.stopPropagation();
-          onShareClick?.(e);
-        }}
-        aria-label="Share"
-        className="group flex items-center space-x-1 hover:text-blue-500 transition-colors"
-      >
-        <div className="p-3 group-hover:bg-blue-50 dark:group-hover:bg-blue-900/20 rounded-full transition-colors">
-          <Share size={20} />
-        </div>
-      </button>
-    </div>
+        {/* Share */}
+        <button 
+          onClick={(e) => {
+            e.stopPropagation();
+            onShareClick?.(e);
+          }}
+          aria-label="Share"
+          className="group flex items-center space-x-1 hover:text-blue-500 transition-colors"
+        >
+          <div className="p-3 group-hover:bg-blue-50 dark:group-hover:bg-blue-900/20 rounded-full transition-colors">
+            <Share size={20} />
+          </div>
+        </button>
+      </div>
+
+      <UserListModal
+        isOpen={showReactionsModal}
+        onClose={() => setShowReactionsModal(false)}
+        title={reactionsTitle}
+        pubkeys={reactionsPubkeys}
+        loading={loadingReactions}
+      />
+    </>
   );
 };
