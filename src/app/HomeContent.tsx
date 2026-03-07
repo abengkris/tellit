@@ -7,21 +7,23 @@ import { useAuthStore } from "@/store/auth";
 import { useNDK } from "@/hooks/useNDK";
 import { NDKKind } from "@nostr-dev-kit/ndk";
 import { useRouter } from "next/navigation";
-import { Loader2, Sparkles, Users, Globe } from "lucide-react";
+import { Loader2, Sparkles, Users, Globe, Hash } from "lucide-react";
 import { FeedList } from "@/components/feed/FeedList";
 import { NewPostsIsland } from "@/components/feed/NewPostsIsland";
 import { usePausedFeed } from "@/hooks/usePausedFeed";
 import { useForYouFeed } from "@/hooks/useForYouFeed";
 import { ProfileSetupCard } from "@/components/profile/ProfileSetupCard";
 import { useUIStore } from "@/store/ui";
+import { useLists } from "@/hooks/useLists";
 
-type FeedTab = "following" | "forYou" | "global";
+type FeedTab = "following" | "forYou" | "global" | "interests";
 
 export function HomeContent() {
   const { isLoggedIn, user, isLoading: isAuthLoading, _hasHydrated } = useAuthStore();
   const { ndk, isReady } = useNDK();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<FeedTab>("forYou");
+  const { interests } = useLists();
 
   const [followingPubkeys, setFollowingPubkeys] = useState<string[]>([]);
 
@@ -55,6 +57,8 @@ export function HomeContent() {
 
   if (!isLoggedIn || !user) return null;
 
+  const hasInterests = interests.size > 0;
+
   return (
     <MainLayout>
       <div className="sticky top-0 z-10 bg-white/80 dark:bg-black/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800">
@@ -62,12 +66,12 @@ export function HomeContent() {
           <h1 className="text-xl font-bold">Home</h1>
         </div>
         
-        <div className="flex w-full" role="tablist">
+        <div className="flex w-full overflow-x-auto scrollbar-hide" role="tablist">
           <button
             role="tab"
             aria-selected={activeTab === "forYou"}
             onClick={() => setActiveTab("forYou")}
-            className={`flex-1 py-4 text-sm font-bold transition-colors hover:bg-gray-100 dark:hover:bg-gray-900 relative ${
+            className={`flex-1 min-w-[100px] py-4 text-sm font-bold transition-colors hover:bg-gray-100 dark:hover:bg-gray-900 relative ${
               activeTab === "forYou" ? "text-blue-500" : "text-gray-500"
             }`}
           >
@@ -84,7 +88,7 @@ export function HomeContent() {
             role="tab"
             aria-selected={activeTab === "following"}
             onClick={() => setActiveTab("following")}
-            className={`flex-1 py-4 text-sm font-bold transition-colors hover:bg-gray-100 dark:hover:bg-gray-900 relative ${
+            className={`flex-1 min-w-[100px] py-4 text-sm font-bold transition-colors hover:bg-gray-100 dark:hover:bg-gray-900 relative ${
               activeTab === "following" ? "text-blue-500" : "text-gray-500"
             }`}
           >
@@ -97,11 +101,30 @@ export function HomeContent() {
             )}
           </button>
 
+          {hasInterests && (
+            <button
+              role="tab"
+              aria-selected={activeTab === "interests"}
+              onClick={() => setActiveTab("interests")}
+              className={`flex-1 min-w-[100px] py-4 text-sm font-bold transition-colors hover:bg-gray-100 dark:hover:bg-gray-900 relative ${
+                activeTab === "interests" ? "text-blue-500" : "text-gray-500"
+              }`}
+            >
+              <div className="flex items-center justify-center space-x-2">
+                <Hash size={16} />
+                <span>Interests</span>
+              </div>
+              {activeTab === "interests" && (
+                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-16 h-1 bg-blue-500 rounded-full" />
+              )}
+            </button>
+          )}
+
           <button
             role="tab"
             aria-selected={activeTab === "global"}
             onClick={() => setActiveTab("global")}
-            className={`flex-1 py-4 text-sm font-bold transition-colors hover:bg-gray-100 dark:hover:bg-gray-900 relative ${
+            className={`flex-1 min-w-[100px] py-4 text-sm font-bold transition-colors hover:bg-gray-100 dark:hover:bg-gray-900 relative ${
               activeTab === "global" ? "text-blue-500" : "text-gray-500"
             }`}
           >
@@ -133,11 +156,46 @@ export function HomeContent() {
             followingList={followingPubkeys} 
             viewerPubkey={user.pubkey}
           />
+        ) : activeTab === "interests" ? (
+          <InterestsFeedTab interestList={Array.from(interests)} />
         ) : (
           <GlobalFeedTab />
         )}
       </div>
     </MainLayout>
+  );
+}
+
+function InterestsFeedTab({ interestList }: { interestList: string[] }) {
+  const { posts, newCount, isLoading, flushNewPosts, loadMore, hasMore } =
+    usePausedFeed({
+      filter: {
+        kinds: [1, 6, 16, 1068, 30023] as NDKKind[],
+        "#t": interestList,
+      },
+    });
+
+  const handleFlush = useCallback(() => {
+    flushNewPosts();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [flushNewPosts]);
+
+  return (
+    <div className="relative">
+      <NewPostsIsland count={newCount} onFlush={handleFlush} />
+      
+      <div className="flex items-center gap-2 px-4 py-3 bg-blue-50/30 dark:bg-blue-900/5 text-[10px] text-blue-600 dark:text-blue-400 border-b border-gray-100 dark:border-gray-900 font-bold uppercase tracking-widest">
+        <span>Posts matching your interests: {interestList.join(", ")}</span>
+      </div>
+
+      <FeedList 
+        posts={posts}
+        isLoading={isLoading}
+        loadMore={loadMore}
+        hasMore={hasMore}
+        emptyMessage="No posts found matching your interests. Try adding more in your profile!"
+      />
+    </div>
   );
 }
 
