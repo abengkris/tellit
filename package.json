@@ -1,6 +1,6 @@
 {
   "name": "tellit",
-  "version": "0.7.1",
+  "version": "0.7.2",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -32,6 +32,7 @@
     "canvas-confetti": "^1.9.4",
     "date-fns": "^4.1.0",
     "dexie": "^4.3.0",
+    "framer-motion": "^12.35.1",
     "lucide-react": "^0.575.0",
     "next": "16.1.6",
     "qrcode.react": "^4.2.0",

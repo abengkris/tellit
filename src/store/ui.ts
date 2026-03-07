@@ -1,10 +1,17 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 
-interface Toast {
+export interface ToastAction {
+  label: string;
+  onClick: () => void;
+}
+
+export interface Toast {
   id: string;
   message: string;
   type: "success" | "error" | "info";
+  duration?: number;
+  action?: ToastAction;
 }
 
 interface UIState {
@@ -14,7 +21,7 @@ interface UIState {
   wotStrictMode: boolean;
   browserNotificationsEnabled: boolean;
   defaultZapAmount: number;
-  addToast: (message: string, type?: "success" | "error" | "info") => void;
+  addToast: (message: string, type?: "success" | "error" | "info", duration?: number, action?: ToastAction) => void;
   removeToast: (id: string) => void;
   setUnreadMessagesCount: (count: number) => void;
   incrementUnreadMessagesCount: () => void;
@@ -33,16 +40,11 @@ export const useUIStore = create<UIState>()(
       wotStrictMode: false,
       browserNotificationsEnabled: false,
       defaultZapAmount: 21,
-      addToast: (message, type = "info") => {
+      addToast: (message, type = "info", duration = 4000, action) => {
         const id = Math.random().toString(36).substring(7);
         set((state) => ({
-          toasts: [...state.toasts, { id, message, type }],
+          toasts: [...state.toasts, { id, message, type, duration, action }],
         }));
-        setTimeout(() => {
-          set((state) => ({
-            toasts: state.toasts.filter((t) => t.id !== id),
-          }));
-        }, 3000);
       },
       removeToast: (id) =>
         set((state) => ({

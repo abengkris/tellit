@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.7.2] - 2026-03-07
+
+### Improved
+- **Refined Toast System:** Overhauled the toast notification system with smoother animations using `framer-motion`.
+- **Toast Features:** Added support for custom display durations and optional action buttons within toast notifications.
+- **Modern UI:** Updated toast styling with glassmorphism effects, informative icons, and a countdown progress bar.
+
 ## [0.7.1] - 2026-03-07
 
 ### Added
