@@ -2,7 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
-## [0.7.5] - 2026-03-07
+## [0.7.7] - 2026-03-07
+
+### Added
+- **Reactions Modal:** Users can now click on interaction counts (likes, reposts, zaps) to see exactly who reacted to a post.
+- **Trending Hashtags:** Added a live trending section to the sidebar that displays popular tags from across the Nostr network, powered by `nostr.band`.
+
+### Improved
+- **Discovery:** Integrated "Who to Follow" into the sidebar for better user discovery.
+- **Stability:** Fixed cascading render issues in reaction tracking.
+
+## [0.7.6] - 2026-03-07
 
 ### Fixed
 - **Robust Avatar Loading:** Re-implemented the `Avatar` component with a multi-stage fallback system (Optimized -> Original -> Robohash) and a native `onError` handler to eliminate broken images.

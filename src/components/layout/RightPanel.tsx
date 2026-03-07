@@ -3,10 +3,14 @@
 import React, { useState } from "react";
 import { Search } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { TrendingTags } from "./TrendingTags";
+import { WhoToFollow } from "../profile/WhoToFollow";
+import { useAuthStore } from "@/store/auth";
 
 export const RightPanel = () => {
   const [query, setQuery] = useState("");
   const router = useRouter();
+  const { isLoggedIn } = useAuthStore();
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -17,7 +21,7 @@ export const RightPanel = () => {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 sticky top-4">
       <section className="relative group">
         <form onSubmit={handleSearch}>
           <label htmlFor="right-panel-search" className="sr-only">Search Nostr</label>
@@ -35,24 +39,21 @@ export const RightPanel = () => {
         </form>
       </section>
 
-      <section className="bg-gray-50 dark:bg-gray-900 rounded-2xl overflow-hidden border border-gray-100 dark:border-gray-800">
-        <h2 className="text-xl font-bold p-4 pb-2">What&apos;s happening</h2>
-        <div className="divide-y divide-gray-100 dark:divide-gray-800">
-          <div className="p-4 hover:bg-gray-100 dark:hover:bg-gray-800/50 cursor-pointer transition-colors">
-            <p className="text-xs text-gray-500 mb-0.5">Trending in Nostr</p>
-            <p className="font-bold text-sm">#TellIt</p>
-            <p className="text-xs text-gray-500 mt-0.5">1.2K notes</p>
-          </div>
-          <div className="p-4 hover:bg-gray-100 dark:hover:bg-gray-800/50 cursor-pointer transition-colors">
-            <p className="text-xs text-gray-500 mb-0.5">Protocol</p>
-            <p className="font-bold text-sm">NIP-07</p>
-            <p className="text-xs text-gray-500 mt-0.5">856 notes</p>
-          </div>
-          <div className="p-4 hover:bg-gray-100 dark:hover:bg-gray-800/50 cursor-pointer transition-colors">
-            <button className="text-blue-500 text-sm hover:underline font-medium">Show more</button>
-          </div>
+      <TrendingTags />
+
+      {isLoggedIn && (
+        <WhoToFollow />
+      )}
+
+      <footer className="px-4 text-[11px] text-gray-500 space-y-1">
+        <div className="flex flex-wrap gap-x-3 gap-y-1">
+          <a href="#" className="hover:underline">Terms of Service</a>
+          <a href="#" className="hover:underline">Privacy Policy</a>
+          <a href="#" className="hover:underline">Cookie Policy</a>
+          <a href="#" className="hover:underline">Accessibility</a>
         </div>
-      </section>
+        <p>© 2026 Tell it! Inc.</p>
+      </footer>
     </div>
   );
 };

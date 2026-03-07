@@ -27,7 +27,7 @@ export function useReactions(eventId?: string) {
 
   useEffect(() => {
     if (!ndk || !isReady || !eventId) {
-      setReactions(prev => ({ ...prev, loading: false }));
+      Promise.resolve().then(() => setReactions(prev => ({ ...prev, loading: false })));
       return;
     }
 
