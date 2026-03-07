@@ -126,6 +126,12 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({ isOpen, onClose, onO
               label="Write Article" 
               onClick={onClose} 
             />
+            <DrawerItem 
+              href="/settings" 
+              icon={<Settings size={22} />} 
+              label="Settings" 
+              onClick={onClose} 
+            />
             <button
               onClick={() => { onClose(); onOpenRelays(); }}
               className="w-full flex items-center space-x-4 p-4 rounded-2xl hover:bg-gray-100 dark:hover:bg-gray-900 transition-colors text-left"
