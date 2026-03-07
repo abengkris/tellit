@@ -1,10 +1,10 @@
 "use client";
 
 import React from "react";
-import Image from "next/image";
 import { NDKUser } from "@nostr-dev-kit/ndk";
 import { shortenPubkey } from "@/lib/utils/nip19";
 import { CheckCircle2 } from "lucide-react";
+import { Avatar } from "./Avatar";
 
 interface UserRecommendationProps {
   users: NDKUser[];
@@ -43,13 +43,11 @@ export const UserRecommendation: React.FC<UserRecommendationProps> = ({
               className="w-full flex items-center gap-3 p-3 hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-colors text-left group"
             >
               <div className="relative shrink-0">
-                <Image
-                  src={user.profile?.picture || `https://robohash.org/${user.pubkey}?set=set1`}
-                  alt={user.profile?.name || "User"}
-                  width={40}
-                  height={40}
-                  className="w-10 h-10 rounded-xl object-cover bg-gray-100 dark:bg-zinc-800 shadow-sm group-hover:scale-105 transition-transform"
-                  unoptimized
+                <Avatar 
+                  pubkey={user.pubkey} 
+                  src={user.profile?.picture || (user.profile as { image?: string })?.image} 
+                  size={40} 
+                  className="rounded-xl group-hover:scale-105 transition-transform" 
                 />
                 {user.profile?.nip05 && (
                   <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-blue-500 text-white rounded-full flex items-center justify-center border-2 border-white dark:border-zinc-900 shadow-sm">

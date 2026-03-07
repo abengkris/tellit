@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.7.5] - 2026-03-07
+
+### Fixed
+- **Robust Avatar Loading:** Re-implemented the `Avatar` component with a multi-stage fallback system (Optimized -> Original -> Robohash) and a native `onError` handler to eliminate broken images.
+- **Profile Data Resilience:** Improved `useProfile` hook to provide loading states and consistent metadata objects even when relay fetches fail.
+- **Mobile UI Polish:** Fixed profile and avatar rendering in the mobile drawer and header for a smoother user experience.
+
+### Improved
+- **Metadata Compatibility:** Standardized property access for profile pictures across all components, supporting both `picture` and legacy `image` fields.
+
 ## [0.7.4] - 2026-03-07
 
 ### Fixed

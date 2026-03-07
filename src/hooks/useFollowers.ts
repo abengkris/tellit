@@ -6,7 +6,7 @@ import { NDKEvent } from "@nostr-dev-kit/ndk";
 import { getNDK } from "@/lib/ndk";
 
 // Relay yang support query #p pada kind:3 (tidak semua relay support)
-/* eslint-disable-line @typescript-eslint/no-unused-vars */
+ 
 const FOLLOWER_RELAYS = [
   "wss://relay.nostr.band",   // support NIP-45 COUNT + #p query
   "wss://relay.damus.io",
@@ -113,7 +113,7 @@ export function useFollowerCount(pubkey: string | undefined): {
     });
 
     sub.on("eose", () => {
-      setLoading(false);
+      Promise.resolve().then(() => setLoading(false));
       sub.stop();
     });
 

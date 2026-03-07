@@ -9,11 +9,26 @@ import { useNDK } from "@/hooks/useNDK";
 import { useNotifications } from "@/hooks/useNotifications";
 import { useRelayStatus } from "@/hooks/useRelayStatus";
 import { useUIStore } from "@/store/ui";
+import { useProfile } from "@/hooks/useProfile";
 import { RelayModal } from "@/components/common/RelayModal";
+import { Avatar } from "@/components/common/Avatar";
 
-const SidebarItem = ({ href, icon: Icon, label, badge }: { href: string; icon: React.ElementType; label: string; badge?: number }) => {
+const SidebarItem = ({ 
+  href, 
+  icon: Icon, 
+  label, 
+  badge,
+  isLoading = false,
+  pubkey
+}: { 
+  href: string; 
+  icon?: React.ElementType; 
+  label: string; 
+  badge?: number;
+  isLoading?: boolean;
+  pubkey?: string;
+}) => {
   const pathname = usePathname();
-  // More robust active state check for nested routes
   const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
 
   return (
@@ -26,7 +41,12 @@ const SidebarItem = ({ href, icon: Icon, label, badge }: { href: string; icon: R
       }`}
     >
       <div className="relative">
-        <Icon size={26} className={active ? "text-blue-500" : ""} strokeWidth={active ? 3 : 2} />
+        {pubkey ? (
+          <Avatar pubkey={pubkey} size={26} isLoading={isLoading} />
+        ) : Icon ? (
+          <Icon size={26} className={active ? "text-blue-500" : ""} strokeWidth={active ? 3 : 2} />
+        ) : null}
+        
         {badge !== undefined && badge > 0 && (
           <div className="absolute -top-1 -right-1 bg-blue-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full border-2 border-white dark:border-black">
             {badge > 9 ? "9+" : badge}
@@ -41,6 +61,7 @@ const SidebarItem = ({ href, icon: Icon, label, badge }: { href: string; icon: R
 export const Sidebar = () => {
   const { user, isLoggedIn, login, logout } = useAuthStore();
   const { ndk, sessions } = useNDK();
+  const { profile, loading: profileLoading } = useProfile(user?.pubkey);
   const { unreadCount } = useNotifications();
   const { unreadMessagesCount } = useUIStore();
   const { connectedCount, totalCount } = useRelayStatus();
@@ -63,7 +84,12 @@ export const Sidebar = () => {
             <SidebarItem href="/article/new" icon={PenTool} label="Write" />
             <SidebarItem href="/bookmarks" icon={Bookmark} label="Bookmarks" />
             <SidebarItem href="/settings" icon={Settings} label="Settings" />
-            <SidebarItem href={`/${user?.npub}`} icon={User} label="Profile" />
+            <SidebarItem 
+              href={`/${user?.npub}`} 
+              label="Profile" 
+              pubkey={user?.pubkey} 
+              isLoading={profileLoading} 
+            />
           </>
         )}
       </div>

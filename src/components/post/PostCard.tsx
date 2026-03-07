@@ -62,7 +62,7 @@ export const PostCard: React.FC<PostCardProps> = ({
   const displayEvent = isRepost && repostedEvent ? repostedEvent : event;
   const isArticle = displayEvent.kind === 30023;
   const isPoll = displayEvent.kind === 1068;
-  const { profile } = useProfile(displayEvent.pubkey);
+  const { profile, loading: profileLoading } = useProfile(displayEvent.pubkey);
   const { 
     likes, 
     reposts, 
@@ -112,9 +112,7 @@ export const PostCard: React.FC<PostCardProps> = ({
     profile?.name || profile?.displayName || shortenPubkey(displayEvent.pubkey),
   [profile, displayEvent.pubkey]);
 
-  const avatar = useMemo(() => 
-    profile?.picture || `https://robohash.org/${displayEvent.pubkey}?set=set1`,
-  [profile, displayEvent.pubkey]);
+  const avatar = profile?.picture || (profile as { image?: string })?.image;
 
   const repostAuthorName = useMemo(() => {
     return event.pubkey === currentUser?.pubkey 
@@ -256,7 +254,7 @@ export const PostCard: React.FC<PostCardProps> = ({
   if (isRepost && repostLoading) {
     return (
       <div className="p-4 border-b border-gray-200 dark:border-gray-800 animate-pulse">
-        <div className="flex items-center space-x-2 text-gray-500 text-xs font-bold mb-2 ml-10">
+        <div className="flex items-center space-x-2 text-gray-500 text-xs font-bold mb-2 ml-10 truncate min-w-0">
           <div className="w-4 h-4 bg-gray-200 dark:bg-gray-800 rounded" />
           <div className="w-32 h-3 bg-gray-200 dark:bg-gray-800 rounded" />
         </div>
@@ -298,6 +296,7 @@ export const PostCard: React.FC<PostCardProps> = ({
           <PostHeader
             displayName={displayName}
             avatar={avatar}
+            isLoading={profileLoading}
             userNpub={userNpub}
             pubkey={displayEvent.pubkey}
             nip05={profile?.nip05}

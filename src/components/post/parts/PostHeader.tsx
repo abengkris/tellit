@@ -15,15 +15,16 @@ import {
   BarChart2
 } from "lucide-react";
 import Link from "next/link";
-import Image from "next/image";
 
 import { UserIdentity } from "@/components/common/UserIdentity";
 import { DropdownMenu } from "@/components/common/DropdownMenu";
 import { formatCompactDate } from "@/lib/utils/date";
+import { Avatar } from "@/components/common/Avatar";
 
 interface PostHeaderProps {
   displayName: string;
-  avatar: string;
+  avatar?: string;
+  isLoading?: boolean;
   userNpub: string;
   pubkey: string;
   nip05?: string;
@@ -48,6 +49,7 @@ interface PostHeaderProps {
 export const PostHeader: React.FC<PostHeaderProps> = ({
   displayName,
   avatar,
+  isLoading = false,
   userNpub,
   pubkey,
   nip05,
@@ -123,13 +125,12 @@ export const PostHeader: React.FC<PostHeaderProps> = ({
         <div className="flex items-center space-x-1 truncate min-w-0" onClick={(e) => e.stopPropagation()}>
           <div className="mr-3 shrink-0 z-10">
             <Link href={`/${userNpub}`}>
-              <Image
-                src={avatar}
-                alt={displayName}
-                width={48}
-                height={48}
-                className="w-12 h-12 rounded-full object-cover bg-gray-200 ring-4 ring-white dark:ring-black"
-                unoptimized={true}
+              <Avatar 
+                pubkey={pubkey} 
+                src={avatar} 
+                isLoading={isLoading} 
+                size={48} 
+                className="w-12 h-12 ring-4 ring-white dark:ring-black" 
               />
             </Link>
           </div>
