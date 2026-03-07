@@ -2,15 +2,16 @@
 
 import React, { useEffect } from "react";
 import Link from "next/link";
-import { X, User, Bookmark, Activity, LogOut, Settings, MessageSquare, PenTool, Users } from "lucide-react";
+import { X, User, Bookmark, Activity, LogOut, Settings, MessageSquare, PenTool } from "lucide-react";
 import { useAuthStore } from "@/store/auth";
 import { useNDK } from "@/hooks/useNDK";
 import { useRelayStatus } from "@/hooks/useRelayStatus";
 import { useUIStore } from "@/store/ui";
-import Image from "next/image";
+import { Avatar } from "../common/Avatar";
 import { shortenPubkey } from "@/lib/utils/nip19";
 import { useFollowingList } from "@/hooks/useFollowingList";
 import { useFollowerCount } from "@/hooks/useFollowers";
+import { useProfile } from "@/hooks/useProfile";
 
 interface MobileDrawerProps {
   isOpen: boolean;
@@ -23,6 +24,7 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({ isOpen, onClose, onO
   const { sessions } = useNDK();
   const { unreadMessagesCount } = useUIStore();
   const { connectedCount, totalCount } = useRelayStatus();
+  const { profile, loading: profileLoading } = useProfile(user?.pubkey);
   const { count: followingCount } = useFollowingList(user?.pubkey);
   const { count: followerCount } = useFollowerCount(user?.pubkey);
 
@@ -69,22 +71,29 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({ isOpen, onClose, onO
           {/* User Profile Summary */}
           <div className="p-5">
             <Link href={`/${user?.npub}`} onClick={onClose} className="block mb-4">
-              <Image
-                src={user?.profile?.picture || `https://robohash.org/${user?.pubkey}?set=set1`}
-                alt="Profile"
-                width={64}
-                height={64}
-                className="w-16 h-16 rounded-full bg-gray-200 border-2 border-white dark:border-black shadow-sm object-cover"
-                unoptimized
+              <Avatar 
+                pubkey={user?.pubkey || ""} 
+                src={profile?.picture} 
+                size={64} 
+                className="border-2 border-white dark:border-black shadow-sm"
               />
             </Link>
-            <div className="mb-4">
-              <h2 className="font-black text-xl truncate">
-                {user?.profile?.name || user?.profile?.displayName || "Anonymous"}
-              </h2>
-              <p className="text-gray-500 text-sm font-mono">
-                @{shortenPubkey(user?.pubkey || "")}
-              </p>
+            <div className="mb-4 min-w-0">
+              {profileLoading && !profile ? (
+                <div className="space-y-2 animate-pulse">
+                  <div className="h-6 bg-gray-200 dark:bg-gray-800 rounded w-3/4" />
+                  <div className="h-4 bg-gray-200 dark:bg-gray-800 rounded w-1/2" />
+                </div>
+              ) : (
+                <>
+                  <h2 className="font-black text-xl truncate text-gray-900 dark:text-white">
+                    {profile?.displayName || profile?.name || "Nostrich"}
+                  </h2>
+                  <p className="text-gray-500 text-sm font-mono truncate">
+                    @{shortenPubkey(user?.pubkey || "")}
+                  </p>
+                </>
+              )}
             </div>
 
             <div className="flex items-center gap-4 text-sm mb-6">
@@ -136,9 +145,9 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({ isOpen, onClose, onO
               onClick={() => { onClose(); onOpenRelays(); }}
               className="w-full flex items-center space-x-4 p-4 rounded-2xl hover:bg-gray-100 dark:hover:bg-gray-900 transition-colors text-left"
             >
-              <Activity size={22} />
-              <div className="flex-1">
-                <p className="font-bold text-base">Relay Status</p>
+              <Activity size={22} className="text-gray-500" />
+              <div className="flex-1 min-w-0">
+                <p className="font-bold text-base text-gray-900 dark:text-white">Relay Status</p>
                 <p className="text-xs text-gray-500">{connectedCount}/{totalCount} connected</p>
               </div>
             </button>
@@ -164,7 +173,7 @@ const DrawerItem = ({ href, icon, label, onClick, badge }: { href: string; icon:
   <Link
     href={href}
     onClick={onClick}
-    className="flex items-center space-x-4 p-4 rounded-2xl hover:bg-gray-100 dark:hover:bg-gray-900 transition-colors font-bold text-base relative"
+    className="flex items-center space-x-4 p-4 rounded-2xl hover:bg-gray-100 dark:hover:bg-gray-900 transition-colors font-bold text-base relative text-gray-900 dark:text-white"
   >
     <div className="relative">
       {icon}

@@ -9,6 +9,7 @@ import { useUIStore } from "@/store/ui";
 import { useBlossom } from "@/hooks/useBlossom";
 import { useEmojis } from "@/hooks/useEmojis";
 import { useDrafts } from "@/hooks/useDrafts";
+import { useProfile } from "@/hooks/useProfile";
 import { NDKEvent, NDKTag } from "@nostr-dev-kit/ndk";
 import { 
   ImageIcon, 
@@ -42,6 +43,7 @@ export const PostComposer: React.FC<PostComposerProps> = ({
   const { addToast } = useUIStore();
   const { uploadFile } = useBlossom();
   const { emojis } = useEmojis();
+  const { profile } = useProfile(user?.pubkey);
   
   // Create a unique key for the draft
   const draftKey = replyTo ? `reply-${replyTo.id}` : quoteEvent ? `quote-${quoteEvent.id}` : 'main-composer';
@@ -203,7 +205,7 @@ export const PostComposer: React.FC<PostComposerProps> = ({
   return (
     <div className={`p-4 ${replyTo ? "" : "border-b border-gray-100 dark:border-gray-800"}`}>
       <div className="flex gap-3">
-        <Avatar pubkey={user?.pubkey || ""} src={user?.profile?.image} size={48} />
+        <Avatar pubkey={user?.pubkey || ""} src={profile?.picture} size={48} />
         
         <div className="flex-1 min-w-0">
           <textarea

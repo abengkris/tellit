@@ -3,13 +3,14 @@
 import React, { useState } from "react";
 import { Sidebar } from "./Sidebar";
 import { RightPanel } from "./RightPanel";
-import { Plus, Bell, Search, Home, PenTool, LucideIcon, MessageSquare } from "lucide-react";
+import { Plus, Bell, Search, Home, LucideIcon, MessageSquare } from "lucide-react";
 import { useAuthStore } from "@/store/auth";
 import { MobileDrawer } from "./MobileDrawer";
 import { RelayModal } from "@/components/common/RelayModal";
 import { useNotifications } from "@/hooks/useNotifications";
 import { useUIStore } from "@/store/ui";
-import Image from "next/image";
+import { useProfile } from "@/hooks/useProfile";
+import { Avatar } from "../common/Avatar";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -20,6 +21,7 @@ export const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }
   const pathname = usePathname();
   const { unreadCount } = useNotifications();
   const { unreadMessagesCount } = useUIStore();
+  const { profile } = useProfile(user?.pubkey);
 
   return (
     <div className="min-h-screen bg-white dark:bg-black text-black dark:text-white">
@@ -27,13 +29,11 @@ export const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }
       <div className="sm:hidden sticky top-0 z-20 bg-white/80 dark:bg-black/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 flex items-center justify-between px-4 py-3">
         {isLoggedIn ? (
           <button onClick={() => setIsDrawerOpen(true)} className="outline-none relative">
-            <Image
-              src={user?.profile?.picture || `https://robohash.org/${user?.pubkey}?set=set1`}
-              alt="Profile"
-              width={32}
-              height={32}
-              className="w-8 h-8 rounded-full bg-gray-200 object-cover border border-gray-100 dark:border-gray-900"
-              unoptimized={true}
+            <Avatar 
+              pubkey={user?.pubkey || ""} 
+              src={profile?.picture} 
+              size={32} 
+              className="border border-gray-100 dark:border-gray-900"
             />
             {unreadMessagesCount > 0 && (
               <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-blue-500 rounded-full border-2 border-white dark:border-black" />

@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.7.3] - 2026-03-07
+
+### Added
+- **Poll Creation:** Users can now create interactive polls directly from the post composer.
+- **Zap Splits (Collaborators):** Creators can now add collaborators to their posts to automatically split zap proceeds.
+
+### Fixed
+- **Mobile Drawer Rendering:** Fixed an issue where the user's avatar and display name were not rendering correctly in the mobile navigation drawer.
+- **App-wide Profile Consistency:** Standardized the use of the `Avatar` component and `useProfile` hook across the mobile header, sidebar, and profile pages for optimized metadata fetching and display.
+- **Build Compatibility:** Fixed a Vercel deployment error by explicitly forcing the Webpack build engine for PWA compatibility.
+
 ## [0.7.2] - 2026-03-07
 
 ### Improved

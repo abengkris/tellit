@@ -28,6 +28,7 @@ import { ExternalIdentities } from "@/components/profile/ExternalIdentities";
 import { PostCard } from "@/components/post/PostCard";
 import { MediaGrid } from "@/components/profile/MediaGrid";
 import { FormattedAbout } from "@/components/profile/FormattedAbout";
+import { Avatar } from "@/components/common/Avatar";
 
 import Image from "next/image";
 import Link from "next/link";
@@ -117,7 +118,6 @@ export function ProfileContent({ npubParam }: { npubParam: string }) {
     }
   };
 
-  const avatar = profile?.picture || `https://robohash.org/${hexPubkey}?set=set1`;
   const displayName = profile?.name || profile?.displayName || shortenPubkey(npubParam);
 
   const handleShare = async () => {
@@ -188,13 +188,11 @@ export function ProfileContent({ npubParam }: { npubParam: string }) {
       <div className="px-4 pb-4 border-b border-gray-200 dark:border-gray-800">
         <div className="relative flex justify-between items-end -mt-16 mb-4">
           <div className="p-1 bg-white dark:bg-black rounded-full ring-4 ring-white dark:ring-black shrink-0">
-            <Image 
-              src={avatar} 
-              alt={displayName} 
-              width={128} 
-              height={128} 
-              className="w-32 h-32 rounded-full object-cover bg-gray-200" 
-              unoptimized
+            <Avatar 
+              pubkey={hexPubkey} 
+              src={profile?.picture} 
+              size={128} 
+              className="border-none shadow-none" 
             />
           </div>
           
