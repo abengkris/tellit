@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from "react";
-import { NDKEvent, NDKFilter, NDKSubscription, NDKKind } from "@nostr-dev-kit/ndk";
+import { NDKEvent, NDKFilter, NDKSubscription, NDKKind, NDKSubscriptionCacheUsage } from "@nostr-dev-kit/ndk";
 import { useNDK } from "@/hooks/useNDK";
 import { useLists } from "@/hooks/useLists";
 import { tokenize } from "@/lib/content/tokenizer";
@@ -83,7 +83,6 @@ export function useFeed(authors: string[], kinds: number[] = [1, 20, 1063, 1068,
       return;
     }
 
-    // Optimization: If authors changed, we must reset and stop old history subscription
     const authorsChanged = JSON.stringify(authors) !== JSON.stringify(lastAuthorsRef.current);
     
     if (!isLoadMore || authorsChanged) {
@@ -110,6 +109,23 @@ export function useFeed(authors: string[], kinds: number[] = [1, 20, 1063, 1068,
       filter.until = oldestTimestampRef.current - 1;
     }
 
+    // Optimization: First attempt to load from cache ONLY for instant display
+    if (!isLoadMore && ndk.cacheAdapter) {
+      const cachedEvents = await ndk.fetchEvents(filter, { 
+        cacheUsage: NDKSubscriptionCacheUsage.ONLY_CACHE 
+      });
+      if (cachedEvents.size > 0) {
+        const sorted = Array.from(cachedEvents)
+          .filter(e => !mutedRef.current.has(e.pubkey) && matchesFilter(e))
+          .sort((a, b) => (b.created_at ?? 0) - (a.created_at ?? 0));
+        
+        setPosts(sorted.slice(0, MAX_POSTS));
+        if (sorted.length > 0) {
+          oldestTimestampRef.current = sorted[sorted.length - 1].created_at;
+        }
+      }
+    }
+
     const loadingTimeout = setTimeout(() => {
       setLoading(false);
     }, 8000);
@@ -120,7 +136,8 @@ export function useFeed(authors: string[], kinds: number[] = [1, 20, 1063, 1068,
       filter, 
       { 
         closeOnEose: true, 
-        groupable: true, // Batch these requests if multiple feeds load
+        groupable: true,
+        cacheUsage: NDKSubscriptionCacheUsage.PARALLEL,
         onEvent: (event) => {
           clearTimeout(loadingTimeout);
           eventsReceived++;
@@ -169,7 +186,8 @@ export function useFeed(authors: string[], kinds: number[] = [1, 20, 1063, 1068,
 
     const sub = ndk.subscribe(realtimeFilter, { 
       closeOnEose: false,
-      groupable: true 
+      groupable: true,
+      cacheUsage: NDKSubscriptionCacheUsage.ONLY_RELAY // Only listen for NEW events from relays
     });
     realtimeSubRef.current = sub;
 

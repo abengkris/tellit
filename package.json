@@ -1,6 +1,6 @@
 {
   "name": "tellit",
-  "version": "0.6.8",
+  "version": "0.6.9",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -19,6 +19,7 @@
     ]
   },
   "dependencies": {
+    "@ducanh2912/next-pwa": "^10.2.9",
     "@nostr-dev-kit/messages": "^2.0.0",
     "@nostr-dev-kit/ndk": "^3.0.3",
     "@nostr-dev-kit/ndk-blossom": "^2.0.2",

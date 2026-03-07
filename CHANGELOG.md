@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.6.9] - 2026-03-07
+
+### Performance Optimizations
+- **Instant Feed Loading:** Optimized `useFeed` to fetch from local Dexie cache immediately on app start, providing instant UI feedback while relay connections establish.
+- **PWA Service Worker:** Integrated `@ducanh2912/next-pwa` to enable offline support and faster asset loading via a background service worker.
+
+### Improved
+- **PWA Configuration:** Enhanced `manifest.ts` and `next.config.ts` for a better standalone "app-like" experience.
+
 ## [0.6.8] - 2026-03-07
 
 ### Added
