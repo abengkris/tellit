@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { useNDK } from "@/hooks/useNDK";
-import { NDKUserProfile } from "@nostr-dev-kit/ndk";
 
 export interface ProfileMetadata {
   pubkey?: string;
@@ -36,20 +35,22 @@ export function useProfile(pubkey?: string) {
       try {
         const user = ndk.getUser({ pubkey });
         // fetchProfile handles fetching from cache first, then relays
+        // It also populates the raw event (Kind 0) in the user object
         const userProfile = await user.fetchProfile();
         
         if (isMounted && userProfile) {
           const metadata: ProfileMetadata = { ...userProfile, pubkey };
           
-          // Try to get published_at from kind 0 event tags
-          const kind0 = await ndk.fetchEvent({ kinds: [0], authors: [pubkey] });
+          // Optimization: NDK caches the kind 0 event after fetchProfile.
+          // We can access it directly instead of fetching it again.
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const kind0 = (user as any).kind0;
           if (kind0) {
             metadata.tags = kind0.tags;
-            const publishedAtTag = kind0.tags.find(t => t[0] === 'published_at');
+            const publishedAtTag = kind0.tags.find((t: string[]) => t[0] === 'published_at');
             if (publishedAtTag && publishedAtTag[1]) {
               metadata.published_at = parseInt(publishedAtTag[1]);
             } else {
-              // Fallback to event created_at if published_at tag is missing
               metadata.published_at = kind0.created_at;
             }
           }

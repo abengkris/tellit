@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { NDKEvent, NDKFilter, NDKRelaySet } from "@nostr-dev-kit/ndk";
 import { useNDK } from "@/hooks/useNDK";
@@ -48,7 +50,7 @@ export function useThread(focalId?: string, hintRelays?: string[]) {
           const eTags = ev.tags.filter(t => t[0] === 'e');
           return eTags[eTags.length - 1]?.[1] === targetId;
         })
-        .sort((a, b) => (a.created_at ?? 0) - (a.created_at ?? 0));
+        .sort((a, b) => (a.created_at ?? 0) - (b.created_at ?? 0));
 
       setReplies((prev) => {
         const combined = isLoadMore ? [...prev, ...directReplies] : directReplies;
@@ -79,25 +81,25 @@ export function useThread(focalId?: string, hintRelays?: string[]) {
       }
       setFocalPost(focal);
 
-      // 2. Build Ancestor Chain (Recursive Upwards)
-      const chain: NDKEvent[] = [];
-      let currentEvent = focal;
-      const visited = new Set<string>([focal.id]);
+      // 2. Identify and Batch Fetch Ancestors
+      // We look for 'root' and 'reply' markers first (NIP-10)
+      const rootId = focal.tags.find(t => t[0] === 'e' && t[3] === 'root')?.[1];
+      const replyId = focal.tags.find(t => t[0] === 'e' && t[3] === 'reply')?.[1];
+      
+      // Fallback: search for any 'e' tags if NIP-10 markers are missing
+      const eTags = focal.tags.filter(t => t[0] === 'e');
+      const fallbackRootId = eTags[0]?.[1];
+      const fallbackReplyId = eTags.length > 1 ? eTags[eTags.length - 1]?.[1] : undefined;
 
-      for (let i = 0; i < 10; i++) {
-        const parentId = currentEvent.tags.find(t => t[0] === 'e' && (t[3] === 'reply' || t[3] === 'root'))?.[1] || 
-                         currentEvent.tags.filter(t => t[0] === 'e')[0]?.[1];
-
-        if (!parentId || visited.has(parentId)) break;
-        
-        visited.add(parentId);
-        const parent = await ndk.fetchEvent(parentId, undefined, relaySet);
-        if (!parent) break;
-        
-        chain.unshift(parent);
-        currentEvent = parent;
+      const idsToFetch = Array.from(new Set([rootId, replyId, fallbackRootId, fallbackReplyId].filter(Boolean) as string[]));
+      
+      if (idsToFetch.length > 0) {
+        const ancestorEvents = await ndk.fetchEvents({ ids: idsToFetch }, undefined, relaySet);
+        const sortedAncestors = Array.from(ancestorEvents).sort((a, b) => (a.created_at ?? 0) - (b.created_at ?? 0));
+        setAncestors(sortedAncestors);
+      } else {
+        setAncestors([]);
       }
-      setAncestors(chain);
 
       // 3. Initial Fetch Direct Replies
       await fetchMoreReplies(false, focalId);
@@ -109,11 +111,14 @@ export function useThread(focalId?: string, hintRelays?: string[]) {
   }, [ndk, isReady, focalId, fetchMoreReplies, relaySet]);
 
   useEffect(() => {
-    oldestReplyTimestampRef.current = undefined;
+    // Only reset state if the focalId actually changed to prevent flickering
+    setFocalPost(null);
     setAncestors([]);
     setReplies([]);
+    oldestReplyTimestampRef.current = undefined;
+    
     fetchThread();
-  }, [fetchThread]);
+  }, [focalId, fetchThread]);
 
   const loadMoreReplies = () => {
     if (!loadingReplies && hasMoreReplies) {
@@ -141,7 +146,7 @@ export function useThread(focalId?: string, hintRelays?: string[]) {
           const eTags = ev.tags.filter(t => t[0] === 'e');
           return eTags[eTags.length - 1]?.[1] === eventId;
         })
-        .sort((a, b) => (a.created_at ?? 0) - (a.created_at ?? 0));
+        .sort((a, b) => (a.created_at ?? 0) - (b.created_at ?? 0));
     } catch (e) {
       console.error("Error fetching nested replies:", e);
       return [];

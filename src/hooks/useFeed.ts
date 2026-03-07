@@ -14,10 +14,6 @@ export type FeedFilterType = "all" | "posts" | "replies" | "media";
 /**
  * Robust hook to manage and provide a stream of Nostr events.
  * Handles initial loading, pagination (load more), and real-time updates.
- * 
- * @param authors List of pubkeys to include in the feed (empty for global).
- * @param kinds List of event kinds to fetch (default: [1]).
- * @param filterType Client-side filter to apply (used for profile sub-feeds).
  */
 export function useFeed(authors: string[], kinds: number[] = [1, 20, 1063, 1068, 30023] as NDKKind[], filterType: FeedFilterType = "all") {
   const { ndk, isReady } = useNDK();
@@ -29,8 +25,8 @@ export function useFeed(authors: string[], kinds: number[] = [1, 20, 1063, 1068,
   const subscriptionRef = useRef<NDKSubscription | null>(null);
   const realtimeSubRef = useRef<NDKSubscription | null>(null);
   const oldestTimestampRef = useRef<number | undefined>(undefined);
+  const lastAuthorsRef = useRef<string[]>([]);
   
-  // Use a ref for mutedPubkeys to avoid re-triggering fetchFeed when they change
   const mutedRef = useRef(mutedPubkeys);
   useEffect(() => {
     mutedRef.current = mutedPubkeys;
@@ -50,30 +46,21 @@ export function useFeed(authors: string[], kinds: number[] = [1, 20, 1063, 1068,
   const matchesFilter = useCallback((event: NDKEvent) => {
     if (filterType === "all") return true;
     
-    // Media filter improvement
     if (filterType === "media") {
-      // 1. Kind 20 or 1063 (NIP-92, NIP-94)
       if (event.kind === 20 || event.kind === 1063) {
         return event.tags.some(t => t[0] === 'url');
       }
-
-      // 2. Kind 30023 (Articles)
       if (event.kind === 30023) {
         return event.tags.some(t => t[0] === 'image');
       }
-
-      // 3. Kind 1 (Notes) - Use tokenizer for accuracy
       if (event.kind === 1) {
         const tokens = tokenize(event.content);
         const hasMediaToken = tokens.some(t => t.type === 'image' || t.type === 'video');
         if (hasMediaToken) return true;
-
-        // Check tags (imeta, image)
         const hasImeta = event.tags.some(t => t[0] === 'imeta');
         const hasImageTag = event.tags.some(t => t[0] === 'image');
         return hasImeta || hasImageTag;
       }
-
       return false;
     }
 
@@ -83,7 +70,6 @@ export function useFeed(authors: string[], kinds: number[] = [1, 20, 1063, 1068,
       if (filterType === "replies") return hasETags;
     }
 
-    // Reposts (6, 16) are always "posts" in the profile tab context
     if (event.kind === 6 || event.kind === 16) {
       return filterType === "posts";
     }
@@ -97,10 +83,15 @@ export function useFeed(authors: string[], kinds: number[] = [1, 20, 1063, 1068,
       return;
     }
 
-    if (!isLoadMore) {
+    // Optimization: If authors changed, we must reset and stop old history subscription
+    const authorsChanged = JSON.stringify(authors) !== JSON.stringify(lastAuthorsRef.current);
+    
+    if (!isLoadMore || authorsChanged) {
+      if (subscriptionRef.current) subscriptionRef.current.stop();
       setPosts([]);
       setHasMore(true);
       oldestTimestampRef.current = undefined;
+      lastAuthorsRef.current = authors;
     }
 
     setLoading(true);
@@ -124,42 +115,30 @@ export function useFeed(authors: string[], kinds: number[] = [1, 20, 1063, 1068,
     }, 8000);
 
     let eventsReceived = 0;
-    const batch: NDKEvent[] = [];
-
-    const handleBatch = (events: NDKEvent[]) => {
-      setPosts((prev) => {
-        const filtered = events.filter(e => {
-          if (mutedRef.current.has(e.pubkey)) return false;
-          if (!kinds.includes(e.kind!)) return false;
-          return matchesFilter(e);
-        });
-
-        const combined = isLoadMore ? [...prev, ...filtered] : filtered;
-        const unique = Array.from(new Map(combined.map(p => [p.id, p])).values());
-        const sorted = unique.sort((a, b) => (b.created_at ?? 0) - (a.created_at ?? 0));
-        
-        if (sorted.length > 0) {
-          oldestTimestampRef.current = sorted[sorted.length - 1].created_at;
-        }
-        
-        return sorted.slice(0, MAX_POSTS);
-      });
-    };
 
     const sub = ndk.subscribe(
       filter, 
       { 
         closeOnEose: true, 
-        groupable: false,
-        onEvents: (events) => {
-          clearTimeout(loadingTimeout);
-          eventsReceived += events.length;
-          handleBatch(events);
-        },
+        groupable: true, // Batch these requests if multiple feeds load
         onEvent: (event) => {
           clearTimeout(loadingTimeout);
           eventsReceived++;
-          handleBatch([event]);
+          
+          if (mutedRef.current.has(event.pubkey)) return;
+          if (!matchesFilter(event)) return;
+
+          setPosts((prev) => {
+            if (prev.find(p => p.id === event.id)) return prev;
+            const combined = [...prev, event];
+            const sorted = combined.sort((a, b) => (b.created_at ?? 0) - (a.created_at ?? 0));
+            
+            if (sorted.length > 0) {
+              oldestTimestampRef.current = sorted[sorted.length - 1].created_at;
+            }
+            
+            return sorted.slice(0, MAX_POSTS);
+          });
         },
         onEose: () => {
           clearTimeout(loadingTimeout);
@@ -173,9 +152,11 @@ export function useFeed(authors: string[], kinds: number[] = [1, 20, 1063, 1068,
     subscriptionRef.current = sub;
   }, [ndk, isReady, authors, kinds, filterType, matchesFilter]);
 
-  // Real-time listener
+  // Real-time listener: starts immediately, independent of loading history
   useEffect(() => {
-    if (!ndk || !isReady || loading) return;
+    if (!ndk || !isReady) return;
+
+    if (realtimeSubRef.current) realtimeSubRef.current.stop();
 
     const realtimeFilter: NDKFilter = {
       kinds: kinds,
@@ -186,7 +167,10 @@ export function useFeed(authors: string[], kinds: number[] = [1, 20, 1063, 1068,
       realtimeFilter.authors = authors;
     }
 
-    const sub = ndk.subscribe(realtimeFilter, { closeOnEose: false });
+    const sub = ndk.subscribe(realtimeFilter, { 
+      closeOnEose: false,
+      groupable: true 
+    });
     realtimeSubRef.current = sub;
 
     sub.on("event", (event: NDKEvent) => {
@@ -203,7 +187,7 @@ export function useFeed(authors: string[], kinds: number[] = [1, 20, 1063, 1068,
     return () => {
       if (realtimeSubRef.current) realtimeSubRef.current.stop();
     };
-  }, [ndk, isReady, authors, kinds, filterType, matchesFilter, loading]);
+  }, [ndk, isReady, authors, kinds, filterType, matchesFilter]);
 
   useEffect(() => {
     fetchFeed();

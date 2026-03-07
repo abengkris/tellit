@@ -12,7 +12,6 @@ export interface PostStats {
   quotes: number;
   bookmarks: number;
   totalSats: number;
-  zapCount: number;
   userLiked: boolean;
   userReposted: boolean;
 }
@@ -30,46 +29,32 @@ export function usePostStats(eventId?: string) {
     quotes: 0,
     bookmarks: 0,
     totalSats: 0,
-    zapCount: 0,
     userLiked: false,
     userReposted: false,
   });
 
-  // Track event IDs to avoid double counting during live subscription
-  const seenEvents = useRef(new Set<string>());
+  const seenEvents = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     if (!ndk || !isReady || !eventId) return;
 
     // Reset stats when eventId changes
-    Promise.resolve().then(() => {
-      setStats({
-        likes: 0,
-        reposts: 0,
-        comments: 0,
-        quotes: 0,
-        bookmarks: 0,
-        totalSats: 0,
-        zapCount: 0,
-        userLiked: false,
-        userReposted: false,
-      });
+    setStats({
+      likes: 0,
+      reposts: 0,
+      comments: 0,
+      quotes: 0,
+      bookmarks: 0,
+      totalSats: 0,
+      userLiked: false,
+      userReposted: false,
     });
     seenEvents.current.clear();
 
     const filter: NDKFilter = {
-      kinds: [1, 6, 7, 9735, 10003, 1111],
+      kinds: [1, 6, 7, 16, 1111, 9735, 10003],
       "#e": [eventId],
     };
-
-    const sub = ndk.subscribe(
-      filter,
-      { 
-        closeOnEose: false, 
-        groupableDelay: 500,
-        groupableDelayType: "at-most",
-      }
-    );
 
     const handleEvent = (event: NDKEvent) => {
       if (seenEvents.current.has(event.id)) return;
@@ -86,48 +71,36 @@ export function usePostStats(eventId?: string) {
             if (isMe) newStats.userLiked = true;
           }
         } 
-        
-        // 2. Reposts
-        else if (event.kind === 6) {
+        // 2. Reposts (6, 16)
+        else if (event.kind === 6 || event.kind === 16) {
           newStats.reposts++;
           if (isMe) newStats.userReposted = true;
-        } 
-        
-        // 3. Comments (Replies) and Quotes
+        }
+        // 3. Comments (1, 1111)
         else if (event.kind === 1 || event.kind === 1111) {
-          const eTags = event.tags.filter(t => t[0] === 'e');
-          const isReply = event.kind === 1111 || 
-                          event.tags.some(t => t[0] === 'e' && (t[3] === 'reply' || t[3] === 'root')) || 
-                          eTags[eTags.length - 1]?.[1] === eventId;
-          
-          const isQuote = event.kind === 1 && (
-                          event.tags.some(t => t[0] === 'e' && t[1] === eventId && t[3] === 'mention') ||
-                          (event.content.includes(`nostr:${eventId}`) && !isReply)
-          );
-
+          const isReply = event.tags.some(t => t[0] === 'e' && t[1] === eventId && (t[3] === 'reply' || !t[3]));
           if (isReply) {
             newStats.comments++;
-          } else if (isQuote) {
+          } else {
+            // Probably a quote if it's kind 1 but not a direct reply
             newStats.quotes++;
           }
-        } 
-        
+        }
         // 4. Zaps
         else if (event.kind === 9735) {
-          newStats.zapCount++;
-          const descriptionTag = event.tags.find(t => t[0] === "description");
-          if (descriptionTag) {
-            try {
-              const zapRequest = JSON.parse(descriptionTag[1]);
-              const amountTag = zapRequest.tags.find((t: string[]) => t[0] === "amount");
+          try {
+            const description = event.tags.find(t => t[0] === 'description')?.[1];
+            if (description) {
+              const zapRequest = JSON.parse(description);
+              const amountTag = zapRequest.tags.find((t: string[]) => t[0] === 'amount');
               if (amountTag) {
-                const msats = parseInt(amountTag[1]);
-                newStats.totalSats += msats / 1000;
+                newStats.totalSats += Math.floor(parseInt(amountTag[1]) / 1000);
               }
-            } catch (e) {}
+            }
+          } catch (e) {
+            // Ignore parse errors
           }
         }
-
         // 5. Bookmarks
         else if (event.kind === 10003) {
           newStats.bookmarks++;
@@ -137,10 +110,16 @@ export function usePostStats(eventId?: string) {
       });
     };
 
+    const sub = ndk.subscribe(filter, { 
+      closeOnEose: false,
+      groupable: true,
+      groupableDelay: 250 // Wait a bit longer to batch more cards together
+    });
+
     sub.on("event", handleEvent);
 
     return () => sub.stop();
-  }, [ndk, isReady, eventId]);
+  }, [ndk, isReady, eventId, publicKey]);
 
   return stats;
 }

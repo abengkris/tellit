@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.6.4] - 2026-03-07
+
+### Performance Optimizations
+- **Batch Ancestor Fetching:** Optimized `useThread` to fetch all thread ancestors in a single batch request instead of sequential loop, significantly reducing thread load times.
+- **Redundant Fetch Removal:** Streamlined `useProfile` to utilize NDK's cached Kind 0 data, eliminating duplicate network requests for profile metadata.
+- **Subscription Hardening:** Improved `useFeed` and `usePostStats` with better subscription management, ensuring old subscriptions are stopped and enabling NDK's `groupable` feature for better relay scaling.
+- **Render Optimization:** Fixed cascading renders in `Avatar` and `PostCard` by improving state initialization and memoization.
+
+### Fixed
+- **Thread Sorting:** Fixed a bug where replies in a thread were not correctly sorted by time.
+- **Real-time Feed Gap:** Fixed a delay where real-time posts were missed during the initial feed history fetch.
+
 ## [0.6.3] - 2026-03-07
 
 ### Added
