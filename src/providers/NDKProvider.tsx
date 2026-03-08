@@ -219,8 +219,40 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
             // Initialize Nutzap Monitor for automated redemption
             if (instance.signer) {
               instance.signer.user().then((user) => {
-                const monitor = new NDKNutzapMonitor(instance, user, {});
+                const monitor = new NDKNutzapMonitor(instance, user, {
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  store: instance.cacheAdapter as any 
+                });
                 monitor.wallet = wallet;
+
+                // Performance Optimization: Cache mint info and keys in Dexie
+                monitor.onMintInfoNeeded = async (mint: string) => {
+                  const entry = await db.mintInfo.get(mint);
+                  // Refresh cache if older than 24 hours
+                  if (entry && Date.now() - entry.timestamp < 24 * 60 * 60 * 1000) {
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    return entry.info as any;
+                  }
+                  return undefined;
+                };
+
+                monitor.onMintInfoLoaded = (mint: string, info: unknown) => {
+                  db.mintInfo.put({ url: mint, info, timestamp: Date.now() });
+                };
+
+                monitor.onMintKeysNeeded = async (mint: string) => {
+                  const entry = await db.mintKeys.get(mint);
+                  if (entry && Date.now() - entry.timestamp < 24 * 60 * 60 * 1000) {
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    return entry.keysets as any;
+                  }
+                  return undefined;
+                };
+
+                monitor.onMintKeysLoaded = (mint: string, keysets: unknown) => {
+                  db.mintKeys.put({ url: mint, keysets, timestamp: Date.now() });
+                };
+
                 monitor.on("redeemed", (nutzap) => {
                   console.log("Nutzap redeemed:", nutzap);
                   addToast(`Received and redeemed a nutzap!`, "success");

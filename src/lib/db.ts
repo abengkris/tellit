@@ -12,15 +12,31 @@ export interface NutzapStateEntry {
   state: unknown; // NDKNutzapState (serialized)
 }
 
+export interface MintInfoEntry {
+  url: string;
+  info: unknown; // GetInfoResponse
+  timestamp: number;
+}
+
+export interface MintKeysEntry {
+  url: string;
+  keysets: unknown; // Map<string, MintKeys> or object
+  timestamp: number;
+}
+
 export class TellItDB extends Dexie {
   wotCache!: Table<WoTCacheEntry>;
   nutzapStates!: Table<NutzapStateEntry>;
+  mintInfo!: Table<MintInfoEntry>;
+  mintKeys!: Table<MintKeysEntry>;
 
   constructor() {
     super("TellItDB");
-    this.version(2).stores({
+    this.version(3).stores({
       wotCache: "pubkey, timestamp",
-      nutzapStates: "id"
+      nutzapStates: "id",
+      mintInfo: "url",
+      mintKeys: "url"
     });
   }
 }
