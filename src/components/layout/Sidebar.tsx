@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Search, User, LogIn, LogOut, Bell, MessageSquare, Activity, Bookmark, PenTool, Settings, Wallet } from "lucide-react";
+import { Home, Search, LogIn, LogOut, Bell, MessageSquare, Activity, Bookmark, PenTool, Settings, Wallet } from "lucide-react";
 import { useAuthStore } from "@/store/auth";
 import { useNDK } from "@/hooks/useNDK";
 import { useNotifications } from "@/hooks/useNotifications";
@@ -62,7 +62,7 @@ const SidebarItem = ({
 export const Sidebar = () => {
   const { user, isLoggedIn, login, logout } = useAuthStore();
   const { ndk, sessions } = useNDK();
-  const { profile, loading: profileLoading } = useProfile(user?.pubkey);
+  const { loading: profileLoading } = useProfile(user?.pubkey);
   const { unreadCount } = useNotifications();
   const { unreadMessagesCount } = useUIStore();
   const { connectedCount, totalCount } = useRelayStatus();
@@ -100,7 +100,7 @@ export const Sidebar = () => {
         {/* Wallet Indicator (if connected) */}
         {isLoggedIn && nwcPairingCode && (
           <Link
-            href="/settings"
+            href="/wallet"
             className="hidden sm:flex items-center space-x-4 p-3 rounded-full hover:bg-yellow-50 dark:hover:bg-yellow-900/10 text-yellow-600 dark:text-yellow-500 transition-colors w-full"
           >
             <Wallet size={26} fill={balance !== null ? "currentColor" : "none"} />

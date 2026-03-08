@@ -84,7 +84,7 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({ isOpen, onClose, onO
               
               {nwcPairingCode && (
                 <Link 
-                  href="/settings" 
+                  href="/wallet" 
                   onClick={onClose}
                   className="flex items-center gap-1.5 px-3 py-1.5 bg-yellow-50 dark:bg-yellow-900/20 text-yellow-600 dark:text-yellow-500 rounded-full text-xs font-black border border-yellow-100 dark:border-yellow-900/30 transition-all active:scale-95"
                 >
@@ -136,6 +136,12 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({ isOpen, onClose, onO
               href="/bookmarks" 
               icon={<Bookmark size={22} />} 
               label="Bookmarks" 
+              onClick={onClose} 
+            />
+            <DrawerItem 
+              href="/wallet" 
+              icon={<Wallet size={22} />} 
+              label="Wallet" 
               onClick={onClose} 
             />
             <DrawerItem 

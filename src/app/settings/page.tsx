@@ -4,9 +4,9 @@ import React, { useEffect, useState } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useUIStore } from "@/store/ui";
 import { useAuthStore } from "@/store/auth";
-import { useWalletStore } from "@/store/wallet";
-import { Bell, Shield, User, Globe, Zap, Wallet, Trash2, ExternalLink } from "lucide-react";
+import { Bell, Shield, User, Globe, Wallet } from "lucide-react";
 import { Avatar } from "@/components/common/Avatar";
+import Link from "next/link";
 
 export default function SettingsPage() {
   const { isLoggedIn, user } = useAuthStore();
@@ -15,13 +15,8 @@ export default function SettingsPage() {
     setBrowserNotificationsEnabled,
     wotStrictMode,
     setWotStrictMode,
-    defaultZapAmount,
-    setDefaultZapAmount,
     addToast
   } = useUIStore();
-
-  const { nwcPairingCode, setNwcPairingCode, balance } = useWalletStore();
-  const [pairingInput, setPairingInput] = useState(nwcPairingCode || "");
 
   const [permissionStatus, setPermissionStatus] = useState<NotificationPermission>("default");
 
@@ -58,25 +53,6 @@ export default function SettingsPage() {
     }
   };
 
-  const handleSaveWallet = () => {
-    if (!pairingInput.trim()) return;
-    if (!pairingInput.startsWith("nostr+walletconnect://")) {
-      addToast("Invalid NWC pairing code", "error");
-      return;
-    }
-    setNwcPairingCode(pairingInput.trim());
-    addToast("Wallet connection string saved", "success");
-    // Reload to re-init NDK with wallet
-    window.location.reload();
-  };
-
-  const handleDisconnectWallet = () => {
-    setNwcPairingCode(null);
-    setPairingInput("");
-    addToast("Wallet disconnected", "info");
-    window.location.reload();
-  };
-
   return (
     <MainLayout>
       <div className="max-w-2xl mx-auto p-4 sm:p-6 pb-32">
@@ -101,96 +77,19 @@ export default function SettingsPage() {
         {/* Wallet Section (NWC) */}
         <section className="mb-10">
           <h2 className="text-sm font-bold uppercase tracking-widest text-gray-500 mb-4 flex items-center gap-2">
-            <Wallet size={16} /> Wallet (NWC)
+            <Wallet size={16} /> Wallet & Zaps
           </h2>
-          <div className="p-4 bg-white dark:bg-black border border-gray-100 dark:border-gray-800 rounded-3xl space-y-4">
-            {nwcPairingCode ? (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between p-4 bg-blue-50 dark:bg-blue-900/10 rounded-2xl border border-blue-100 dark:border-blue-900/20">
-                  <div>
-                    <p className="text-xs text-blue-600 dark:text-blue-400 font-bold uppercase">Connected Wallet</p>
-                    <p className="font-black text-xl">{balance !== null ? `${balance.toLocaleString()} sats` : "Connected"}</p>
-                  </div>
-                  <div className="p-3 bg-blue-500 text-white rounded-full">
-                    <Wallet size={24} />
-                  </div>
-                </div>
-                <button
-                  onClick={handleDisconnectWallet}
-                  className="w-full py-3 flex items-center justify-center gap-2 text-red-500 font-bold text-sm hover:bg-red-50 dark:hover:bg-red-900/10 rounded-xl transition-all"
-                >
-                  <Trash2 size={16} />
-                  Disconnect Wallet
-                </button>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <p className="text-sm text-gray-500">
-                  Connect your wallet using Nostr Wallet Connect (NIP-47) to enable one-tap zapping from any device.
-                </p>
-                <input
-                  type="text"
-                  value={pairingInput}
-                  onChange={(e) => setPairingInput(e.target.value)}
-                  placeholder="nostr+walletconnect://..."
-                  className="w-full p-4 bg-gray-50 dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm font-mono"
-                />
-                <div className="flex gap-2">
-                  <button
-                    onClick={handleSaveWallet}
-                    disabled={!pairingInput.trim()}
-                    className="flex-1 py-3 bg-blue-500 text-white font-black rounded-xl disabled:opacity-50 hover:bg-blue-600 transition-all shadow-lg shadow-blue-500/20"
-                  >
-                    Connect Wallet
-                  </button>
-                  <a 
-                    href="https://getalby.com" 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="p-3 border border-gray-200 dark:border-gray-800 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-900 transition-all text-gray-500"
-                    title="Get Alby"
-                  >
-                    <ExternalLink size={20} />
-                  </a>
-                </div>
-              </div>
-            )}
-          </div>
-        </section>
-
-        {/* Zap Settings Section */}
-        <section className="mb-10">
-          <h2 className="text-sm font-bold uppercase tracking-widest text-gray-500 mb-4 flex items-center gap-2">
-            <Zap size={16} /> Zaps
-          </h2>
-          <div className="p-4 bg-white dark:bg-black border border-gray-100 dark:border-gray-800 rounded-3xl space-y-4">
-            <div>
-              <label className="block text-sm font-bold mb-2">Default Zap Amount (Sats)</label>
-              <div className="grid grid-cols-4 gap-2 mb-3">
-                {[21, 100, 1000, 5000].map((val) => (
-                  <button
-                    key={val}
-                    onClick={() => setDefaultZapAmount(val)}
-                    className={`py-2 rounded-xl text-sm font-bold border transition-all ${
-                      defaultZapAmount === val 
-                        ? "bg-yellow-500 border-yellow-500 text-white shadow-lg shadow-yellow-500/20" 
-                        : "border-gray-200 dark:border-gray-800 hover:border-yellow-500"
-                    }`}
-                  >
-                    {val}
-                  </button>
-                ))}
-              </div>
-              <input
-                type="number"
-                value={defaultZapAmount}
-                onChange={(e) => setDefaultZapAmount(Number(e.target.value))}
-                className="w-full p-3 bg-gray-50 dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-500 text-sm"
-              />
-              <p className="text-[10px] text-gray-500 mt-2">
-                This amount will be used as the default in the Zap modal and for one-tap zaps.
-              </p>
-            </div>
+          <div className="p-4 bg-white dark:bg-black border border-gray-100 dark:border-gray-800 rounded-3xl">
+            <p className="text-sm text-gray-500 mb-6">
+              Manage your Nostr Wallet Connect (NWC) settings, view your balance, and set default zap amounts in the wallet dashboard.
+            </p>
+            <Link 
+              href="/wallet"
+              className="w-full py-4 bg-blue-500 hover:bg-blue-600 text-white font-black rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-blue-500/20"
+            >
+              <Wallet size={20} />
+              Open Wallet Dashboard
+            </Link>
           </div>
         </section>
 
