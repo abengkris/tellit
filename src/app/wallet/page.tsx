@@ -6,6 +6,7 @@ import { useWalletStore } from "@/store/wallet";
 import { useNDK } from "@/hooks/useNDK";
 import { useAuthStore } from "@/store/auth";
 import { useUIStore } from "@/store/ui";
+import { useProfile } from "@/hooks/useProfile";
 import { 
   Wallet, 
   RefreshCw,
@@ -17,7 +18,8 @@ import {
   Plus, 
   Info,
   History,
-  Settings
+  Settings,
+  Copy
 } from "lucide-react";
 import { NDKEvent, NDKFilter } from "@nostr-dev-kit/ndk";
 import { format } from "date-fns";
@@ -27,12 +29,20 @@ export default function WalletPage() {
   const { nwcPairingCode, setNwcPairingCode, balance } = useWalletStore();
   const { ndk, isReady, refreshBalance } = useNDK();
   const { isLoggedIn, user } = useAuthStore();
+  const { profile } = useProfile(user?.pubkey);
   const { addToast, defaultZapAmount, setDefaultZapAmount } = useUIStore();
 
   const [pairingInput, setPairingInput] = useState("");
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [recentZaps, setRecentZaps] = useState<NDKEvent[]>([]);
   const [isLoadingZaps, setIsLoadingZaps] = useState(false);
+
+  const handleCopyAddress = () => {
+    if (profile?.lud16) {
+      navigator.clipboard.writeText(profile.lud16);
+      addToast("Zap address copied!", "success");
+    }
+  };
 
   // Fetch recent zaps (kind 9735)
   useEffect(() => {
@@ -201,6 +211,36 @@ export default function WalletPage() {
             </div>
           </div>
         )}
+
+        {/* Lightning Address Section */}
+        <section className="mb-10">
+          <h2 className="text-sm font-black uppercase tracking-widest text-gray-500 mb-4 flex items-center gap-2">
+            <Zap size={16} /> Zap Address
+          </h2>
+          <div className="bg-white dark:bg-black border border-gray-100 dark:border-gray-800 rounded-[1.5rem] p-6 shadow-sm">
+            <p className="text-sm text-gray-500 mb-4">
+              This is your public lightning address where people can send you zaps.
+            </p>
+            {profile?.lud16 ? (
+              <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800">
+                <code className="text-blue-500 font-bold break-all">{profile.lud16}</code>
+                <button 
+                  onClick={handleCopyAddress}
+                  className="p-2 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-xl transition-all text-gray-500 ml-4 shrink-0"
+                  title="Copy Address"
+                >
+                  <Copy size={18} />
+                </button>
+              </div>
+            ) : (
+              <div className="p-4 bg-yellow-500/5 border border-yellow-500/20 rounded-2xl">
+                <p className="text-sm text-yellow-600 dark:text-yellow-500 font-medium">
+                  You haven&apos;t set up a Lightning Address yet. Update your profile to start receiving zaps!
+                </p>
+              </div>
+            )}
+          </div>
+        </section>
 
         {/* Quick Settings */}
         <section className="mb-10">
