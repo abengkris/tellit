@@ -376,8 +376,8 @@ export function ProfileContent({ npubParam }: { npubParam: string }) {
           <div className="flex items-center space-x-1">
             <Calendar size={16} />
             <span>
-              {profile?.published_at 
-                ? `Updated ${format(new Date(profile.published_at * 1000), "MMM yyyy")}` 
+              {profile?.created_at 
+                ? `Updated ${format(new Date(profile.created_at * 1000), "MMM yyyy")}` 
                 : "-"
               }
             </span>

@@ -13,6 +13,7 @@ export interface ProfileMetadata {
   website?: string;
   pronouns?: string;
   bot?: boolean | string;
+  created_at?: number;
   published_at?: number;
   tags?: string[][];
 }
@@ -64,6 +65,7 @@ export function useProfile(pubkey?: string) {
           const kind0 = (user as any).kind0;
           if (kind0) {
             metadata.tags = kind0.tags;
+            metadata.created_at = kind0.created_at;
             const publishedAtTag = kind0.tags.find((t: string[]) => t[0] === 'published_at');
             metadata.published_at = publishedAtTag && publishedAtTag[1] 
               ? parseInt(publishedAtTag[1]) 
