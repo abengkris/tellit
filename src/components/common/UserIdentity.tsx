@@ -88,11 +88,12 @@ export const UserIdentity: React.FC<UserIdentityProps> = ({
         )}
       </div>
 
-      {isProfile && name && (
+      {/* Remove @name display below for profile variant as requested */}
+      {/* {isProfile && name && (
         <span className="text-sm text-zinc-500 font-medium lowercase leading-tight">
           @{name}
         </span>
-      )}
+      )} */}
 
       {/* Affiliation Modal */}
       {isModalOpen && affiliationPubkey && (
