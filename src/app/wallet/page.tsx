@@ -335,7 +335,7 @@ export default function WalletPage() {
               {/* P2PK Address */}
               <div>
                 <label className="block text-sm font-bold mb-2 flex items-center gap-2">
-                  P2PK Address <Info size={14} className="text-gray-400" title="Used for receiving Nutzaps (NIP-61)" />
+                  P2PK Address <span title="Used for receiving Nutzaps (NIP-61)"><Info size={14} className="text-gray-400" /></span>
                 </label>
                 <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800">
                   <code className="text-xs font-mono text-blue-500 truncate mr-4">

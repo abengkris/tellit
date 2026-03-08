@@ -324,7 +324,9 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
     if (walletRef.current) {
       try {
         // NDKNWCWallet might have a getBalance or similar, or it triggers balance_updated automatically
-        await walletRef.current.updateBalance();
+        if (typeof walletRef.current.updateBalance === 'function') {
+          await walletRef.current.updateBalance();
+        }
       } catch (e) {
         console.error("Failed to refresh wallet balance:", e);
       }
