@@ -26,7 +26,8 @@ import {
   Share2,
   CheckCircle2,
   CreditCard,
-  Loader2
+  Loader2,
+  Shield
 } from "lucide-react";
 import { NDKEvent, NDKFilter } from "@nostr-dev-kit/ndk";
 import { NDKCashuWallet } from "@nostr-dev-kit/wallet";
@@ -191,8 +192,7 @@ export default function WalletPage() {
       addToast("New Cashu wallet created and backed up to Nostr!", "success");
       setWalletType('cashu');
       setTimeout(() => window.location.reload(), 1000);
-    } catch (err) {
-      console.error(err);
+    } catch {
       addToast("Failed to create Cashu wallet", "error");
     } finally {
       setIsPublishing(false);
@@ -240,6 +240,8 @@ export default function WalletPage() {
     navigator.clipboard.writeText(text);
     addToast(`${label} copied!`, "success");
   };
+
+  const [showFaq, setShowFaq] = useState(false);
 
   if (!isLoggedIn) {
     return (
@@ -289,6 +291,60 @@ export default function WalletPage() {
             </button>
           ))}
         </div>
+
+        {/* Safety Status & Info Toggle */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
+          <div 
+            onClick={() => setShowFaq(!showFaq)}
+            className="p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 flex items-center gap-3 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-all group"
+          >
+            <div className="p-2 bg-blue-500/10 text-blue-500 rounded-lg group-hover:scale-110 transition-transform">
+              <Info size={18} />
+            </div>
+            <div>
+              <p className="text-[10px] font-black uppercase text-gray-400 tracking-widest">Knowledge Base</p>
+              <p className="text-xs font-bold">How Cashu & NWC work?</p>
+            </div>
+          </div>
+          <div className="p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 flex items-center gap-3">
+            <div className="p-2 bg-green-500/10 text-green-500 rounded-lg">
+              <Shield size={18} />
+            </div>
+            <div>
+              <p className="text-[10px] font-black uppercase text-gray-400 tracking-widest">Safety Status</p>
+              <p className="text-xs font-bold">{nwcPairingCode || walletType === 'cashu' ? 'Connected & Secured' : 'No Active Wallet'}</p>
+            </div>
+          </div>
+        </div>
+
+        {showFaq && (
+          <div className="mb-10 p-6 bg-blue-500/5 rounded-3xl border border-blue-500/10 animate-in fade-in slide-in-from-top-2 duration-300">
+            <h3 className="text-sm font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest mb-4">Cashu Guide</h3>
+            <div className="space-y-4">
+              <div className="flex gap-3">
+                <div className="w-5 h-5 bg-blue-500 text-white rounded-full flex items-center justify-center text-[10px] font-black shrink-0 mt-0.5">1</div>
+                <div>
+                  <p className="text-xs font-black mb-1">Tokens = Physical Cash</p>
+                  <p className="text-[11px] text-gray-500 leading-relaxed">Cashu is not a bank account. Your money is stored as encrypted &quot;tokens&quot; in this browser. If you clear your browser data without a backup, your money is gone.</p>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <div className="w-5 h-5 bg-blue-500 text-white rounded-full flex items-center justify-center text-[10px] font-black shrink-0 mt-0.5">2</div>
+                <div>
+                  <p className="text-xs font-black mb-1">Mints are Gateways</p>
+                  <p className="text-[11px] text-gray-500 leading-relaxed">Your money lives at specific &quot;Mints&quot;. They are private and blinded, meaning the mint owner doesn&apos;t know who you are, but you must trust that the mint stays online.</p>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <div className="w-5 h-5 bg-blue-500 text-white rounded-full flex items-center justify-center text-[10px] font-black shrink-0 mt-0.5">3</div>
+                <div>
+                  <p className="text-xs font-black mb-1">Always Backup to Nostr</p>
+                  <p className="text-[11px] text-gray-500 leading-relaxed">Use the &quot;Backup to Nostr&quot; button. It encrypts your tokens and saves them to your Nostr identity. This allows you to restore your wallet on any device.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Balance Card */}
         {walletType !== 'none' && (nwcPairingCode || walletType === 'cashu') ? (
