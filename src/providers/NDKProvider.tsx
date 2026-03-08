@@ -10,10 +10,11 @@ import { useAuthStore } from "@/store/auth";
 import { useUIStore } from "@/store/ui";
 import { useWalletStore } from "@/store/wallet";
 import { getNDK } from "@/lib/ndk";
-import { DexieNutzapStore } from "@/lib/nutzapStore";
 
 interface ExtendedCacheAdapter extends NDKCacheAdapter {
   getUnpublishedEvents?: () => Promise<{ event: NDKEvent; relays?: string[]; lastTryAt?: number }[]>;
+  getAllNutzapStates?: () => Promise<Map<string, unknown>>;
+  setNutzapState?: (id: string, stateChange: unknown) => Promise<void>;
 }
 
 export interface NDKContextType {
@@ -71,7 +72,47 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
     
     // Set cache adapter if not already set
     if (!instance.cacheAdapter && dexieAdapter) {
-      instance.cacheAdapter = dexieAdapter as unknown as NDKCacheAdapter;
+      const adapter = dexieAdapter as unknown as ExtendedCacheAdapter;
+      
+      // Implement Nutzap state persistence methods on the adapter
+      adapter.getAllNutzapStates = async () => {
+        const states = new Map<string, unknown>();
+        try {
+          const entries = await db.nutzapStates.toArray();
+          for (const entry of entries) {
+            states.set(entry.id, entry.state);
+          }
+        } catch {
+          // Ignore errors
+        }
+        return states;
+      };
+
+      adapter.setNutzapState = async (id: string, stateChange: unknown) => {
+        try {
+          await db.transaction("rw", db.nutzapStates, async () => {
+            const existing = await db.nutzapStates.get(id);
+            const newState = {
+              ...((existing?.state as object) || {}),
+              ...(stateChange as object)
+            } as { nutzap?: unknown };
+            
+            // Remove the nutzap event object before saving to avoid serialization issues
+            if (newState.nutzap) {
+              delete newState.nutzap;
+            }
+
+            await db.nutzapStates.put({
+              id,
+              state: newState
+            });
+          });
+        } catch {
+          // Ignore errors
+        }
+      };
+
+      instance.cacheAdapter = adapter;
     }
 
     // Performance Optimization: Validation Sampling
@@ -177,9 +218,7 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
             // Initialize Nutzap Monitor for automated redemption
             if (instance.signer) {
               instance.signer.user().then((user) => {
-                const monitor = new NDKNutzapMonitor(instance, user, {
-                  store: new DexieNutzapStore()
-                });
+                const monitor = new NDKNutzapMonitor(instance, user, {});
                 monitor.wallet = wallet;
                 monitor.on("redeemed", (nutzap) => {
                   console.log("Nutzap redeemed:", nutzap);
@@ -342,10 +381,10 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
     return () => {
       unsubscribeSessions();
       if (messengerRef.current) {
-        try { messengerRef.current.destroy(); } catch (e) {}
+        try { messengerRef.current.destroy(); } catch { /* ignore */ }
       }
       if (monitorRef.current) {
-        try { monitorRef.current.stop(); } catch (e) {}
+        try { monitorRef.current.stop(); } catch { /* ignore */ }
       }
     };
   }, [setUser, setLoginState, incrementUnreadMessagesCount, addToast, activeChatPubkey, browserNotificationsEnabled, nwcPairingCode, cashuMints, setBalance, setInfo, walletType]);
