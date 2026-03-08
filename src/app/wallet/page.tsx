@@ -254,7 +254,9 @@ export default function WalletPage() {
                 onClick={() => handleCopy(walletInfo.lud16!, "Address")}
                 className="flex items-center gap-2 text-blue-100/80 hover:text-white transition-colors mb-6 sm:mb-8 group/addr max-w-full"
               >
-                <span className="text-xs sm:text-sm font-mono truncate">{walletInfo.lud16}</span>
+                <span className="text-xs sm:text-sm font-mono truncate">
+                  {walletInfo.lud16.length > 25 ? `${walletInfo.lud16.slice(0, 15)}...${walletInfo.lud16.slice(-8)}` : walletInfo.lud16}
+                </span>
                 <Copy size={14} className="opacity-50 group-hover/addr:opacity-100 transition-opacity shrink-0" />
               </button>
             )}
@@ -341,7 +343,7 @@ export default function WalletPage() {
                 </label>
                 <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 overflow-hidden">
                   <code className="text-[10px] sm:text-xs font-mono text-blue-500 truncate mr-2">
-                    {p2pk || "Generating..."}
+                    {p2pk ? `${p2pk.slice(0, 12)}...${p2pk.slice(-12)}` : "Generating..."}
                   </code>
                   {p2pk && (
                     <button onClick={() => handleCopy(p2pk, "P2PK")} className="text-gray-400 hover:text-blue-500 transition-colors shrink-0">
