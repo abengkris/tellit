@@ -18,13 +18,16 @@ export const createZapInvoice = async (
     const zapper = new NDKZapper(target, amount, "msat", { comment, ndk });
 
     return new Promise((resolve, reject) => {
-      let invoiceSent = false;
+      let capturedInvoice: string | null = null;
+      let isResolved = false;
 
       // Listen for the invoice event
       zapper.on("ln_invoice", (invoice: { pr: string }) => {
-        invoiceSent = true;
-        // If NWC is NOT active, we return the invoice immediately for manual/WebLN payment
-        if (!ndk.wallet) {
+        capturedInvoice = invoice.pr;
+        
+        // If NWC is NOT active, we resolve immediately with the invoice
+        if (!ndk.wallet && !isResolved) {
+          isResolved = true;
           resolve({ invoice: invoice.pr, alreadyPaid: false });
         }
       });
@@ -35,32 +38,45 @@ export const createZapInvoice = async (
       });
 
       // Start the zap process
-      zapper.zap().then((receipt) => {
-        // If we have a receipt, it means NDK successfully zapped (likely via NWC)
-        if (receipt) {
-          resolve({ invoice: null, alreadyPaid: true });
-        } else if (!invoiceSent) {
-          // Fallback if no receipt and no invoice event yet
-          resolve({ invoice: null, alreadyPaid: false });
-        }
-      }).catch((err) => {
-        // If it's a wallet error but we have an invoice, the user can still pay manually
-        if (invoiceSent && !ndk.wallet) {
-           // already resolved
-        } else if (invoiceSent) {
-          resolve({ invoice: null, alreadyPaid: false }); // Avoid double resolving if possible
-        } else {
-          console.error("Zapper.zap error:", err);
-          reject(err);
-        }
-      });
+      zapper.zap()
+        .then((receipt) => {
+          if (isResolved) return;
+          
+          if (receipt) {
+            isResolved = true;
+            resolve({ invoice: null, alreadyPaid: true });
+          } else {
+            // No receipt, but maybe we got an invoice?
+            isResolved = true;
+            resolve({ invoice: capturedInvoice, alreadyPaid: false });
+          }
+        })
+        .catch((err) => {
+          if (isResolved) return;
+          
+          console.warn("Zapper.zap error (might fallback to manual):", err);
+          
+          // If we have an invoice, resolve with it so user can pay manually
+          if (capturedInvoice) {
+            isResolved = true;
+            resolve({ invoice: capturedInvoice, alreadyPaid: false });
+          } else {
+            isResolved = true;
+            reject(err);
+          }
+        });
       
       // Safety timeout
       setTimeout(() => {
-        if (!invoiceSent) {
-          reject(new Error("Zap invoice timeout"));
+        if (!isResolved) {
+          isResolved = true;
+          if (capturedInvoice) {
+            resolve({ invoice: capturedInvoice, alreadyPaid: false });
+          } else {
+            reject(new Error("Zap invoice timeout"));
+          }
         }
-      }, 20000);
+      }, 30000);
     });
   } catch (error) {
     console.error("Zap error:", error);
