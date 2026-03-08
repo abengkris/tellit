@@ -16,7 +16,7 @@ export function FollowButton({
   size = "md",
 }: FollowButtonProps) {
   const currentUser = useAuthStore((s) => s.user);
-  const { isFollowing, isLoading, isPending, toggle } =
+  const { isFollowing, followsMe, isLoading, isPending, toggle } =
     useFollowState(targetPubkey);
 
   // Don't show button for current user
@@ -63,13 +63,15 @@ export function FollowButton({
       {isPending ? (
         <span className="flex items-center gap-1.5">
           <Loader2 size={14} className="animate-spin" />
-          {isFollowing ? "Unfollowing…" : "Following…"}
+          {isFollowing ? "Following…" : "Unfollowing…"}
         </span>
       ) : isFollowing ? (
         <>
           <span className="group-hover:hidden">Following</span>
           <span className="hidden group-hover:inline">Unfollow</span>
         </>
+      ) : followsMe ? (
+        "Follow back"
       ) : (
         "Follow"
       )}

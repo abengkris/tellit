@@ -8,18 +8,20 @@ import { useAuthStore } from "@/store/auth";
 
 interface UseFollowStateReturn {
   isFollowing: boolean;
-  isLoading: boolean;  // true saat sedang follow/unfollow
-  isPending: boolean;  // optimistic update sedang berlangsung
+  followsMe: boolean;
+  isLoading: boolean; // true saat sedang initial load
+  isPending: boolean; // optimistic update sedang berlangsung
   toggle: () => Promise<void>;
 }
 
 export function useFollowState(targetPubkey: string): UseFollowStateReturn {
   const user = useAuthStore((s) => s.user);
   const [isFollowing, setIsFollowing] = useState(false);
+  const [followsMe, setFollowsMe] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isPending, setIsPending] = useState(false);
 
-  // Cek initial state dari kind:3 viewer
+  // Cek initial state dari kind:3 viewer & target
   useEffect(() => {
     if (!user?.pubkey || !targetPubkey) {
       setIsLoading(false);
@@ -27,17 +29,34 @@ export function useFollowState(targetPubkey: string): UseFollowStateReturn {
     }
 
     const ndk = getNDK();
-    ndk
-      .fetchEvent({ kinds: [3], authors: [user.pubkey] })
-      .then((contactList) => {
-        if (!contactList) {
-          setIsFollowing(false);
-          return;
+
+    // Parallel fetch: check if current user follows target, and if target follows current user
+    const checkFollowing = ndk.fetchEvent({
+      kinds: [3],
+      authors: [user.pubkey],
+    });
+    const checkFollowsMe = ndk.fetchEvent({
+      kinds: [3],
+      authors: [targetPubkey],
+    });
+
+    Promise.allSettled([checkFollowing, checkFollowsMe])
+      .then(([followingResult, followsMeResult]) => {
+        if (followingResult.status === "fulfilled" && followingResult.value) {
+          const contactList = followingResult.value;
+          const isF = contactList.tags.some(
+            (t) => t[0] === "p" && t[1] === targetPubkey
+          );
+          setIsFollowing(isF);
         }
-        const following = contactList.tags.some(
-          (t) => t[0] === "p" && t[1] === targetPubkey
-        );
-        setIsFollowing(following);
+
+        if (followsMeResult.status === "fulfilled" && followsMeResult.value) {
+          const contactList = followsMeResult.value;
+          const isFM = contactList.tags.some(
+            (t) => t[0] === "p" && t[1] === user.pubkey
+          );
+          setFollowsMe(isFM);
+        }
       })
       .finally(() => setIsLoading(false));
   }, [user?.pubkey, targetPubkey]);
@@ -69,5 +88,5 @@ export function useFollowState(targetPubkey: string): UseFollowStateReturn {
     }
   }, [user, targetPubkey, isFollowing, isPending]);
 
-  return { isFollowing, isLoading, isPending, toggle };
+  return { isFollowing, followsMe, isLoading, isPending, toggle };
 }

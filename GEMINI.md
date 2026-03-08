@@ -31,3 +31,9 @@ Domain: tellit.id
 - **Pre-commit:** Melakukan linting dan testing pada file yang berubah.
 - **Pre-push:** Melakukan full test suite (`npm test`). Pushing akan gagal jika ada test yang error.
 
+# Project Instructions
+
+- **Framework:** We use Next.js.
+- **Styling:** Use Tailwind CSS for all styling. Do not write custom CSS.
+- **Testing:** All new components must include a Vitest unit test.
+- **Tone:** Be concise. Don't explain basic React concepts.
