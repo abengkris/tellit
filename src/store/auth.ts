@@ -3,6 +3,7 @@ import { persist, createJSONStorage } from "zustand/middleware";
 import NDK, { NDKUser, NDKNip07Signer, NDKPrivateKeySigner } from "@nostr-dev-kit/ndk";
 import { NDKSessionManager } from "@nostr-dev-kit/sessions";
 import { resetWoT } from "@/hooks/useWoT";
+import { useWalletStore } from "./wallet";
 
 interface AuthState {
   user: NDKUser | null;
@@ -106,6 +107,7 @@ export const useAuthStore = create<AuthState>()(
 
       logout: (sessions) => {
         resetWoT();
+        useWalletStore.getState().resetWallet();
         if (sessions) {
           sessions.logout();
         }

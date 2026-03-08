@@ -26,6 +26,7 @@ interface WalletState {
   setCashuMints: (mints: string[]) => void;
   setBalance: (balance: number | null) => void;
   setInfo: (info: WalletInfo | null) => void;
+  resetWallet: () => void;
 }
 
 export const useWalletStore = create<WalletState>()(
@@ -42,6 +43,12 @@ export const useWalletStore = create<WalletState>()(
       setCashuMints: (cashuMints) => set({ cashuMints }),
       setBalance: (balance) => set({ balance }),
       setInfo: (info) => set({ info }),
+      resetWallet: () => set({ 
+        walletType: 'none', 
+        nwcPairingCode: null, 
+        balance: null, 
+        info: null 
+      }),
     }),
     {
       name: "tellit-wallet-storage",
