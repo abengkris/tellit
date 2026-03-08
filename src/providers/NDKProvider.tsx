@@ -171,13 +171,13 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
             // Initialize Nutzap Monitor for automated redemption
             if (instance.signer) {
               instance.signer.user().then((user) => {
-                const monitor = new NDKNutzapMonitor(instance, user);
+                const monitor = new NDKNutzapMonitor(instance, user, {});
                 monitor.wallet = wallet;
-                monitor.on("redeem", (nutzap) => {
+                monitor.on("redeemed", (nutzap) => {
                   console.log("Nutzap redeemed:", nutzap);
                   addToast(`Received and redeemed a nutzap!`, "success");
                 });
-                monitor.start().then(() => {
+                monitor.start({}).then(() => {
                   console.log("Nutzap monitor started");
                   monitorRef.current = monitor;
                 }).catch((err) => {

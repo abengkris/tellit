@@ -164,8 +164,7 @@ export default function WalletPage() {
       await ndk.wallet.publish();
       await ndk.wallet.publishMintList();
       addToast("Cashu wallet and mint list published to Nostr!", "success");
-    } catch (err) {
-      console.error(err);
+    } catch {
       addToast("Failed to publish Cashu info", "error");
     } finally {
       setIsPublishing(false);
