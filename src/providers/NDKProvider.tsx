@@ -5,7 +5,7 @@ import NDK, { NDKUser, NDKEvent, NDKCacheAdapter, NDKRelay, NDKKind } from "@nos
 import NDKCacheAdapterDexie from "@nostr-dev-kit/ndk-cache-dexie";
 import { NDKMessenger, CacheModuleStorage, NDKMessage } from "@nostr-dev-kit/messages";
 import { NDKSessionManager, LocalStorage, NDKSession } from "@nostr-dev-kit/sessions";
-import { NDKNWCWallet, NDKCashuWallet } from "@nostr-dev-kit/wallet";
+import { NDKNWCWallet, NDKCashuWallet, NDKNutzapMonitor } from "@nostr-dev-kit/wallet";
 import { useAuthStore } from "@/store/auth";
 import { useUIStore } from "@/store/ui";
 import { useWalletStore } from "@/store/wallet";
@@ -53,6 +53,7 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
   const messengerRef = useRef<NDKMessenger | null>(null);
   const sessionsRef = useRef<NDKSessionManager | null>(null);
   const walletRef = useRef<NDKNWCWallet | NDKCashuWallet | null>(null);
+  const monitorRef = useRef<NDKNutzapMonitor | null>(null);
 
   useEffect(() => {
     // Only run on client
@@ -166,6 +167,24 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
             console.log("Cashu wallet ready");
             addToast("Cashu Wallet active", "success");
             setInfo({ alias: "Cashu Wallet", methods: ["cashuPay"] });
+
+            // Initialize Nutzap Monitor for automated redemption
+            if (instance.signer) {
+              instance.signer.user().then((user) => {
+                const monitor = new NDKNutzapMonitor(instance, user);
+                monitor.wallet = wallet;
+                monitor.on("redeem", (nutzap) => {
+                  console.log("Nutzap redeemed:", nutzap);
+                  addToast(`Received and redeemed a nutzap!`, "success");
+                });
+                monitor.start().then(() => {
+                  console.log("Nutzap monitor started");
+                  monitorRef.current = monitor;
+                }).catch((err) => {
+                  console.error("Failed to start Nutzap monitor:", err);
+                });
+              });
+            }
           });
 
           wallet.on("balance_updated", (balance?: { amount: number }) => {
@@ -316,6 +335,9 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
       unsubscribeSessions();
       if (messengerRef.current) {
         try { messengerRef.current.destroy(); } catch (e) {}
+      }
+      if (monitorRef.current) {
+        try { monitorRef.current.stop(); } catch (e) {}
       }
     };
   }, [setUser, setLoginState, incrementUnreadMessagesCount, addToast, activeChatPubkey, browserNotificationsEnabled, nwcPairingCode, setBalance]);

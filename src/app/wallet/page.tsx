@@ -389,16 +389,31 @@ export default function WalletPage() {
                   onClick={handlePublishCashu}
                   disabled={isPublishing}
                   className="flex-1 py-3 bg-gray-900 dark:bg-white text-white dark:text-black rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 hover:opacity-90 transition-all disabled:opacity-50"
+                  title="Backup your wallet configuration to Nostr (Kind 37375)"
                 >
                   {isPublishing ? <RefreshCw size={16} className="animate-spin" /> : <Share2 size={16} />}
                   Backup to Nostr
                 </button>
                 <button 
-                  onClick={() => addToast("Already active!", "info")}
+                  onClick={async () => {
+                    if (ndk?.wallet instanceof NDKCashuWallet) {
+                      try {
+                        setIsPublishing(true);
+                        await ndk.wallet.publishMintList();
+                        addToast("Mint list published! You can now receive Nutzaps.", "success");
+                      } catch (err) {
+                        addToast("Failed to publish mint list", "error");
+                      } finally {
+                        setIsPublishing(false);
+                      }
+                    }
+                  }}
+                  disabled={isPublishing}
                   className="flex-1 py-3 border border-gray-200 dark:border-gray-800 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-900 transition-all"
+                  title="Announce your mints to receive Nutzaps (Kind 10019)"
                 >
                   <CheckCircle2 size={16} className="text-green-500" />
-                  Nutzaps Active
+                  Enable Nutzaps
                 </button>
               </div>
             </div>
