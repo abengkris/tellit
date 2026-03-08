@@ -56,6 +56,8 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
   
   const messengerRef = useRef<NDKMessenger | null>(null);
   const sessionsRef = useRef<NDKSessionManager | null>(null);
+  const nwcRef = useRef<NDKNWCWallet | null>(null);
+  const cashuRef = useRef<NDKCashuWallet | null>(null);
   const walletRef = useRef<NDKNWCWallet | NDKCashuWallet | null>(null);
   const monitorRef = useRef<NDKNutzapMonitor | null>(null);
 
@@ -174,37 +176,41 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
 
     // Initialize Wallet (NWC or Cashu)
     const initWallet = async () => {
-      if (walletType === 'nwc' && nwcPairingCode) {
+      // 1. Always attempt to init NWC if code exists
+      if (nwcPairingCode) {
         try {
-          const wallet = new NDKNWCWallet(instance, { 
+          const nwc = new NDKNWCWallet(instance, { 
             pairingCode: nwcPairingCode,
             timeout: 30000
           });
           
-          wallet.on("ready", () => {
+          nwc.on("ready", () => {
             console.log("NWC wallet ready");
-            addToast("NWC Wallet connected", "success");
-            
-            wallet.getInfo().then((info) => {
-              if (info) setInfo(info);
-            }).catch(() => {});
-
-            wallet.updateBalance().catch(() => {});
+            if (walletType === 'nwc') {
+              addToast("NWC Wallet connected", "success");
+              nwc.getInfo().then((info) => { if (info) setInfo(info); }).catch(() => {});
+              nwc.updateBalance().catch(() => {});
+            }
           });
 
-          wallet.on("balance_updated", (balance?: { amount: number }) => {
-            setBalance(balance?.amount || 0);
+          nwc.on("balance_updated", (balance?: { amount: number }) => {
+            if (walletType === 'nwc') setBalance(balance?.amount || 0);
           });
 
-          instance.wallet = wallet;
-          walletRef.current = wallet;
-        } catch {
-          // Ignore
+          nwcRef.current = nwc;
+          if (walletType === 'nwc') {
+            instance.wallet = nwc;
+            walletRef.current = nwc;
+          }
+        } catch (err) {
+          console.error("Failed to initialize NWC wallet:", err);
         }
-      } else if (walletType === 'cashu') {
+      }
+
+      // 2. Always attempt to init Cashu if configured
+      if (walletType === 'cashu' || (cashuMints && cashuMints.length > 0)) {
         try {
-          // Attempt to find existing Cashu wallet event (Kind 17375)
-          let wallet: NDKCashuWallet | undefined;
+          let cashu: NDKCashuWallet | undefined;
           
           if (instance.signer) {
             const user = await instance.signer.user();
@@ -215,83 +221,57 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
             
             if (event) {
               console.log("Restoring Cashu wallet from Nostr event");
-              wallet = await NDKCashuWallet.from(event);
+              cashu = await NDKCashuWallet.from(event);
             }
           }
 
-          // If no wallet found on Nostr, but user selected 'cashu' type,
-          // we create a local-only instance. It will be officially "created"
-          // and published when the user clicks "Create New Cashu Wallet" in the UI.
-          if (!wallet) {
-            wallet = new NDKCashuWallet(instance);
-            wallet.mints = cashuMints;
+          if (!cashu && walletType === 'cashu') {
+            cashu = new NDKCashuWallet(instance);
+            cashu.mints = cashuMints;
           }
 
-          wallet.on("ready", () => {
-            console.log("Cashu wallet ready");
-            addToast("Cashu Wallet active", "success");
-            setInfo({ alias: "Cashu Wallet", methods: ["cashuPay"] });
+          if (cashu) {
+            cashu.on("ready", () => {
+              console.log("Cashu wallet ready");
+              if (walletType === 'cashu') {
+                addToast("Cashu Wallet active", "success");
+                setInfo({ alias: "Cashu Wallet", methods: ["cashuPay"] });
+              }
 
-            // Initialize Nutzap Monitor for automated redemption
-            if (instance.signer) {
-              instance.signer.user().then((user) => {
-                const monitor = new NDKNutzapMonitor(instance, user, {
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  store: instance.cacheAdapter as any 
-                });
-                monitor.wallet = wallet;
-
-                // Performance Optimization: Cache mint info and keys in Dexie
-                monitor.onMintInfoNeeded = async (mint: string) => {
-                  const entry = await db.mintInfo.get(mint);
-                  // Refresh cache if older than 24 hours
-                  if (entry && Date.now() - entry.timestamp < 24 * 60 * 60 * 1000) {
+              // Initialize Nutzap Monitor for automated redemption
+              if (instance.signer) {
+                instance.signer.user().then((user) => {
+                  const monitor = new NDKNutzapMonitor(instance, user, {
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    return entry.info as any;
-                  }
-                  return undefined;
-                };
-
-                monitor.onMintInfoLoaded = (mint: string, info: unknown) => {
-                  db.mintInfo.put({ url: mint, info, timestamp: Date.now() });
-                };
-
-                monitor.onMintKeysNeeded = async (mint: string) => {
-                  const entry = await db.mintKeys.get(mint);
-                  if (entry && Date.now() - entry.timestamp < 24 * 60 * 60 * 1000) {
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    return entry.keysets as any;
-                  }
-                  return undefined;
-                };
-
-                monitor.onMintKeysLoaded = (mint: string, keysets: unknown) => {
-                  db.mintKeys.put({ url: mint, keysets, timestamp: Date.now() });
-                };
-
-                monitor.on("redeemed", (nutzap) => {
-                  console.log("Nutzap redeemed:", nutzap);
-                  addToast(`Received and redeemed a nutzap!`, "success");
+                    store: instance.cacheAdapter as any 
+                  });
+                  // IMPORTANT: monitor uses cashu wallet even if NWC is primary
+                  monitor.wallet = cashu!;
+                  monitor.on("redeemed", (nutzap) => {
+                    console.log("Nutzap redeemed:", nutzap);
+                    addToast(`Received and redeemed a nutzap!`, "success");
+                  });
+                  monitor.start({}).then(() => {
+                    console.log("Nutzap monitor started");
+                    monitorRef.current = monitor;
+                  }).catch(() => { /* ignore */ });
                 });
-                monitor.start({}).then(() => {
-                  console.log("Nutzap monitor started");
-                  monitorRef.current = monitor;
-                }).catch(() => {
-                  // Ignore
-                });
-              });
+              }
+            });
+
+            cashu.on("balance_updated", (balance?: { amount: number }) => {
+              if (walletType === 'cashu') setBalance(balance?.amount || 0);
+            });
+
+            cashuRef.current = cashu;
+            if (walletType === 'cashu') {
+              instance.wallet = cashu;
+              walletRef.current = cashu;
             }
-          });
-
-          wallet.on("balance_updated", (balance?: { amount: number }) => {
-            setBalance(balance?.amount || 0);
-          });
-
-          instance.wallet = wallet;
-          walletRef.current = wallet;
-          wallet.start();
-        } catch {
-          // Ignore
+            cashu.start();
+          }
+        } catch (err) {
+          console.error("Failed to initialize Cashu wallet:", err);
         }
       }
     };
@@ -430,7 +410,7 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
           console.warn("NDK connection partial or timed out:", err.message);
           setIsReady(true);
           if (sessionManager.activePubkey && msgInstance) {
-            try { await msgInstance.start(); } catch (e) {}
+            try { await msgInstance.start(); } catch { /* ignore */ }
           }
         });
     });
@@ -454,7 +434,7 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
           await walletRef.current.updateBalance();
         }
       } catch {
-        // Ignore error
+        // Ignore
       }
     }
   };

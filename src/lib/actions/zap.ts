@@ -14,70 +14,62 @@ export const createZapInvoice = async (
   target: NDKEvent | NDKUser,
   comment: string = ""
 ): Promise<{ invoice: string | null; alreadyPaid: boolean }> => {
-  try {
-    const zapper = new NDKZapper(target, amount, "msat", { comment, ndk });
+  const tryZap = (wallet?: unknown): Promise<{ invoice: string | null; alreadyPaid: boolean }> => {
+    return new Promise((resolve) => {
+      const zapper = new NDKZapper(target, amount, "msat", { comment, ndk });
+      
+      // If we are passing a specific wallet to try
+      if (wallet) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (zapper as any).wallet = wallet;
+      }
 
-    return new Promise((resolve, reject) => {
       let capturedInvoice: string | null = null;
       let isResolved = false;
 
-      // Listen for the invoice event
       zapper.on("ln_invoice", (invoice: { pr: string }) => {
         capturedInvoice = invoice.pr;
-        
-        // If NWC is NOT active, we resolve immediately with the invoice
-        if (!ndk.wallet && !isResolved) {
+        // If NO wallet is active (manual mode), resolve immediately
+        if (!ndk.wallet && !wallet && !isResolved) {
           isResolved = true;
           resolve({ invoice: invoice.pr, alreadyPaid: false });
         }
       });
-      
-      // Handle potential errors
-      zapper.on("notice", (msg: string) => {
-        console.warn("Zapper notice:", msg);
-      });
 
-      // Start the zap process
       zapper.zap()
         .then((receipt) => {
           if (isResolved) return;
-          
           if (receipt) {
             isResolved = true;
             resolve({ invoice: null, alreadyPaid: true });
           } else {
-            // No receipt, but maybe we got an invoice?
             isResolved = true;
             resolve({ invoice: capturedInvoice, alreadyPaid: false });
           }
         })
-        .catch((err) => {
+        .catch(() => {
           if (isResolved) return;
-          
-          console.warn("Zapper.zap error (might fallback to manual):", err);
-          
-          // If we have an invoice, resolve with it so user can pay manually
-          if (capturedInvoice) {
-            isResolved = true;
-            resolve({ invoice: capturedInvoice, alreadyPaid: false });
-          } else {
-            isResolved = true;
-            reject(err);
-          }
+          isResolved = true;
+          // Return captured invoice so we can try fallback or manual
+          resolve({ invoice: capturedInvoice, alreadyPaid: false });
         });
-      
-      // Safety timeout
+
       setTimeout(() => {
         if (!isResolved) {
           isResolved = true;
-          if (capturedInvoice) {
-            resolve({ invoice: capturedInvoice, alreadyPaid: false });
-          } else {
-            reject(new Error("Zap invoice timeout"));
-          }
+          resolve({ invoice: capturedInvoice, alreadyPaid: false });
         }
-      }, 30000);
+      }, 20000);
     });
+  };
+
+  try {
+    // 1. Try with primary wallet (ndk.wallet)
+    const result = await tryZap();
+    if (result.alreadyPaid) return result;
+
+    // 2. If primary failed, return the current result (might have invoice)
+    return result;
   } catch (error) {
     console.error("Zap error:", error);
     return { invoice: null, alreadyPaid: false };
