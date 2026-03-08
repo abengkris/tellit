@@ -2,11 +2,12 @@
 
 import React, { useEffect } from "react";
 import Link from "next/link";
-import { X, User, Bookmark, Activity, LogOut, Settings, MessageSquare, PenTool } from "lucide-react";
+import { X, User, Bookmark, Activity, LogOut, Settings, MessageSquare, PenTool, Wallet } from "lucide-react";
 import { useAuthStore } from "@/store/auth";
 import { useNDK } from "@/hooks/useNDK";
 import { useRelayStatus } from "@/hooks/useRelayStatus";
 import { useUIStore } from "@/store/ui";
+import { useWalletStore } from "@/store/wallet";
 import { Avatar } from "../common/Avatar";
 import { shortenPubkey } from "@/lib/utils/nip19";
 import { useFollowingList } from "@/hooks/useFollowingList";
@@ -27,6 +28,7 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({ isOpen, onClose, onO
   const { profile, loading: profileLoading } = useProfile(user?.pubkey);
   const { count: followingCount } = useFollowingList(user?.pubkey);
   const { count: followerCount } = useFollowerCount(user?.pubkey);
+  const { balance, nwcPairingCode } = useWalletStore();
 
   // Close on Escape key
   useEffect(() => {
@@ -70,14 +72,28 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({ isOpen, onClose, onO
         <div className="flex-1 overflow-y-auto">
           {/* User Profile Summary */}
           <div className="p-5">
-            <Link href={`/${user?.npub}`} onClick={onClose} className="block mb-4">
-              <Avatar 
-                pubkey={user?.pubkey || ""} 
-                src={profile?.picture || (profile as { image?: string })?.image} 
-                size={64} 
-                className="border-2 border-white dark:border-black shadow-sm"
-              />
-            </Link>
+            <div className="flex justify-between items-start mb-4">
+              <Link href={`/${user?.npub}`} onClick={onClose} className="block">
+                <Avatar 
+                  pubkey={user?.pubkey || ""} 
+                  src={profile?.picture || (profile as { image?: string })?.image} 
+                  size={64} 
+                  className="border-2 border-white dark:border-black shadow-sm"
+                />
+              </Link>
+              
+              {nwcPairingCode && (
+                <Link 
+                  href="/settings" 
+                  onClick={onClose}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-yellow-50 dark:bg-yellow-900/20 text-yellow-600 dark:text-yellow-500 rounded-full text-xs font-black border border-yellow-100 dark:border-yellow-900/30 transition-all active:scale-95"
+                >
+                  <Wallet size={14} fill={balance !== null ? "currentColor" : "none"} />
+                  <span>{balance !== null ? `${balance.toLocaleString()}` : "Wallet"}</span>
+                </Link>
+              )}
+            </div>
+
             <div className="mb-4 min-w-0">
               {profileLoading && !profile ? (
                 <div className="space-y-2 animate-pulse">
@@ -178,7 +194,7 @@ const DrawerItem = ({ href, icon, label, onClick, badge }: { href: string; icon:
     <div className="relative">
       {icon}
       {badge !== undefined && badge > 0 && (
-        <div className="absolute -top-1 -right-1 bg-blue-500 text-white text-[8px] font-bold px-1 py-0.5 rounded-full border border-white dark:border-black">
+        <div className="absolute -top-1 -right-1 bg-blue-500 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full border border-white dark:border-black">
           {badge > 9 ? "9+" : badge}
         </div>
       )}
