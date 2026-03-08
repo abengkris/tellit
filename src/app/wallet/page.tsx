@@ -83,6 +83,8 @@ export default function WalletPage() {
   useEffect(() => {
     if (!ndk || !user?.pubkey || !isReady) return;
 
+    let isMounted = true;
+
     const fetchZaps = async () => {
       setIsLoadingZaps(true);
       try {
@@ -97,10 +99,29 @@ export default function WalletPage() {
           limit: 20
         };
 
+        // Fetch with a timeout to prevent infinite loading if relays are slow
+        const fetchWithTimeout = async (f: NDKFilter) => {
+          return new Promise<Set<NDKEvent>>((resolve) => {
+            const events = new Set<NDKEvent>();
+            const sub = ndk.subscribe(f, { closeOnEose: true });
+            
+            sub.on("event", (e) => events.add(e));
+            sub.on("eose", () => resolve(events));
+            
+            // Force resolve after 5 seconds
+            setTimeout(() => {
+              sub.stop();
+              resolve(events);
+            }, 5000);
+          });
+        };
+
         const [sent, received] = await Promise.all([
-          ndk.fetchEvents(filter),
-          ndk.fetchEvents(receivedFilter)
+          fetchWithTimeout(filter),
+          fetchWithTimeout(receivedFilter)
         ]);
+
+        if (!isMounted) return;
 
         const allZaps = Array.from(new Set([...Array.from(sent), ...Array.from(received)]))
           .sort((a, b) => (b.created_at || 0) - (a.created_at || 0))
@@ -110,11 +131,12 @@ export default function WalletPage() {
       } catch (err) {
         console.error("Failed to fetch zaps:", err);
       } finally {
-        setIsLoadingZaps(false);
+        if (isMounted) setIsLoadingZaps(false);
       }
     };
 
     fetchZaps();
+    return () => { isMounted = false; };
   }, [ndk, user?.pubkey, isReady]);
 
   const handleRefresh = async () => {
