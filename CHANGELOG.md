@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.7.8] - 2026-03-08
+
+### Added
+- **Nostr Wallet Connect (NWC):** Integrated `@nostr-dev-kit/wallet` to support secure, cross-device wallet connections via NIP-47.
+- **Mobile One-tap Zaps:** Users on mobile can now perform instant zaps using their connected NWC wallet, bypassing the need for browser extensions.
+- **Wallet Settings:** Added a dedicated wallet management section in Settings to pair NWC strings and view real-time balances.
+
+### Improved
+- **Build Reliability:** Switched to the more stable `@nostr-dev-kit/wallet` package to resolve Vercel deployment and dependency issues.
+
 ## [0.7.7] - 2026-03-07
 
 ### Added

@@ -5,7 +5,7 @@ import NDK, { NDKUser, NDKEvent, NDKCacheAdapter, NDKRelay } from "@nostr-dev-ki
 import NDKCacheAdapterDexie from "@nostr-dev-kit/ndk-cache-dexie";
 import { NDKMessenger, CacheModuleStorage, NDKMessage } from "@nostr-dev-kit/messages";
 import { NDKSessionManager, LocalStorage, NDKSession } from "@nostr-dev-kit/sessions";
-import { NDKNWCWallet } from "@nostr-dev-kit/ndk-wallet";
+import { NDKNWCWallet } from "@nostr-dev-kit/wallet";
 import { useAuthStore } from "@/store/auth";
 import { useUIStore } from "@/store/ui";
 import { useWalletStore } from "@/store/wallet";
@@ -113,8 +113,7 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
     // Initialize Wallet (NWC)
     if (nwcPairingCode) {
       try {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const wallet = new NDKNWCWallet(instance as any, { 
+        const wallet = new NDKNWCWallet(instance, { 
           pairingCode: nwcPairingCode,
           timeout: 30000
         });
@@ -124,12 +123,11 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
           addToast("Wallet connected", "success");
         });
 
-        wallet.on("balance_updated", (balance: { amount: number }) => {
+        wallet.on("balance_updated", (balance?: { amount: number }) => {
           setBalance(balance?.amount || 0);
         });
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (instance as any).wallet = wallet;
+        instance.wallet = wallet;
         walletRef.current = wallet;
       } catch (err) {
         console.error("Failed to initialize NWC wallet:", err);
