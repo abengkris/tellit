@@ -65,7 +65,7 @@ export const NewMessageModal: React.FC<NewMessageModalProps> = ({ onClose }) => 
                   <Avatar pubkey={user.pubkey} src={user.profile?.image} size={44} />
                   <div className="min-w-0 flex-1">
                     <div className="font-bold truncate text-gray-900 dark:text-white">
-                      {user.profile?.displayName || user.profile?.name || "Unknown"}
+                      {user.profile?.display_name || user.profile?.name || "Unknown"}
                     </div>
                     {user.profile?.nip05 && (
                       <div className="text-xs text-blue-500 truncate">{user.profile.nip05}</div>

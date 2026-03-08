@@ -103,7 +103,7 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({ isOpen, onClose, onO
               ) : (
                 <>
                   <h2 className="font-black text-xl truncate text-gray-900 dark:text-white">
-                    {profile?.displayName || profile?.name || "Nostrich"}
+                    {profile?.display_name || profile?.name || "Nostrich"}
                   </h2>
                   <p className="text-gray-500 text-sm font-mono truncate">
                     @{shortenPubkey(user?.pubkey || "")}

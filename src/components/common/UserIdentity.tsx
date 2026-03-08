@@ -13,7 +13,8 @@ import Image from 'next/image';
 
 interface UserIdentityProps {
   pubkey: string;
-  displayName?: string;
+  display_name?: string;
+  name?: string;
   nip05?: string;
   variant?: 'post' | 'profile';
   className?: string;
@@ -22,7 +23,8 @@ interface UserIdentityProps {
 
 export const UserIdentity: React.FC<UserIdentityProps> = ({
   pubkey,
-  displayName,
+  display_name,
+  name,
   nip05,
   variant = 'post',
   className = '',
@@ -32,9 +34,9 @@ export const UserIdentity: React.FC<UserIdentityProps> = ({
   const status = useNIP05(pubkey, nip05);
   const affiliationPubkey = useAffiliation(nip05);
 
-  const [name, domain] = nip05?.split('@') || [];
+  const [nip05Name, domain] = nip05?.split('@') || [];
   const domainPart = domain?.split('.')[0];
-  const isOrg = name === '_' || name === domainPart;
+  const isOrg = nip05Name === '_' || nip05Name === domainPart;
   
   // Only fetch org profile when modal is open to save resources
   const { profile: orgProfile } = useProfile(isModalOpen ? (affiliationPubkey || undefined) : undefined);
@@ -42,14 +44,14 @@ export const UserIdentity: React.FC<UserIdentityProps> = ({
   const isPost = variant === 'post';
   const isProfile = variant === 'profile';
   
-  // Use shortenPubkey helper instead of manual slicing
-  const processedName = displayName || (pubkey ? shortenPubkey(pubkey) : "Anonymous");
+  // Use display_name first, then name, then pubkey
+  const processedName = display_name || name || (pubkey ? shortenPubkey(pubkey) : "Anonymous");
 
-  const orgName = orgProfile?.name || orgProfile?.displayName || (affiliationPubkey ? shortenPubkey(affiliationPubkey) : '');
+  const orgName = orgProfile?.display_name || orgProfile?.name || (affiliationPubkey ? shortenPubkey(affiliationPubkey) : '');
   const orgNpub = affiliationPubkey ? toNpub(affiliationPubkey) : '';
 
   return (
-    <div className={`flex flex-col min-w-0 ${isPost ? 'gap-0' : 'gap-1'} ${className}`}>
+    <div className={`flex flex-col min-w-0 ${isPost ? 'gap-0' : 'gap-0.5'} ${className}`}>
       <div className="flex items-center gap-1 min-w-0">
         <span 
           className={`font-bold truncate ${isPost ? 'text-sm' : 'text-xl'} ${isProfile && affiliationPubkey ? 'cursor-pointer hover:underline' : ''}`}
@@ -85,6 +87,12 @@ export const UserIdentity: React.FC<UserIdentityProps> = ({
           />
         )}
       </div>
+
+      {isProfile && name && (
+        <span className="text-sm text-zinc-500 font-medium lowercase leading-tight">
+          @{name}
+        </span>
+      )}
 
       {/* Affiliation Modal */}
       {isModalOpen && affiliationPubkey && (

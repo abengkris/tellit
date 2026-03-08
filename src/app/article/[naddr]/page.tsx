@@ -151,7 +151,7 @@ export default function ArticleDetailPage({ params }: { params: Promise<{ naddr:
                 />
               </div>
               <span className="font-bold text-gray-900 dark:text-gray-100 group-hover:text-blue-500 transition-colors">
-                {profile?.name || profile?.displayName || shortenPubkey(article.pubkey)}
+                {profile?.display_name || profile?.name || shortenPubkey(article.pubkey)}
               </span>
             </Link>
             {publishedAt && (

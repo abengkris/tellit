@@ -76,7 +76,7 @@ export default function MessagesPage() {
 
 const ConversationItem = ({ conversation }: { conversation: Conversation }) => {
   const { profile } = useProfile(conversation.pubkey);
-  const displayName = profile?.name || profile?.displayName || shortenPubkey(conversation.pubkey);
+  const display_name = profile?.display_name || profile?.name || shortenPubkey(conversation.pubkey);
   const npub = toNpub(conversation.pubkey);
 
   return (
@@ -101,7 +101,7 @@ const ConversationItem = ({ conversation }: { conversation: Conversation }) => {
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between mb-1">
           <span className="font-black text-gray-900 dark:text-white truncate group-hover:text-blue-500 transition-colors">
-            {displayName}
+            {display_name}
           </span>
           <span className="text-xs text-gray-500 whitespace-nowrap">
             {formatDistanceToNow(new Date(conversation.lastMessage.timestamp * 1000), { addSuffix: false })}

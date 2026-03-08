@@ -144,7 +144,7 @@ export default function ChatPage({ params }: { params: Promise<{ pubkey: string 
             <Avatar pubkey={hexPubkey} src={profile?.picture} size={40} className="mr-3" />
             <div className="min-w-0">
               <h2 className="font-bold truncate">
-                {profile?.displayName || profile?.name || "Unknown"}
+                {profile?.display_name || profile?.name || "Unknown"}
               </h2>
               {profile?.nip05 && (
                 <p className="text-xs text-gray-500 truncate">{profile.nip05}</p>

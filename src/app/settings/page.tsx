@@ -75,7 +75,7 @@ export default function SettingsPage() {
               <div className="flex items-center gap-4">
                 <Avatar pubkey={user.pubkey} src={user.profile?.image} size={60} />
                 <div className="flex-1 min-w-0">
-                  <div className="font-bold text-lg truncate">{user.profile?.displayName || user.profile?.name || "Nostrich"}</div>
+                  <div className="font-bold text-lg truncate">{user.profile?.display_name || user.profile?.name || "Nostrich"}</div>
                   <div className="text-gray-500 text-sm truncate font-mono">{user.npub.slice(0, 12)}...{user.npub.slice(-8)}</div>
                 </div>
               </div>

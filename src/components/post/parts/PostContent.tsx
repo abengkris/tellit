@@ -36,11 +36,11 @@ interface PostContentRendererProps {
 
 const ReplyRecipient: React.FC<{ pubkey: string }> = ({ pubkey }) => {
   const { profile } = useProfile(pubkey);
-  const displayName = profile?.name || profile?.displayName || shortenPubkey(pubkey);
+  const display_name = profile?.display_name || profile?.name || shortenPubkey(pubkey);
   
   return (
     <Link href={`/${toNpub(pubkey)}`} className="text-blue-500 hover:underline font-bold">
-      @{displayName}
+      @{display_name}
     </Link>
   );
 };

@@ -92,7 +92,7 @@ export function FollowList({
       {pubkeys.map((pubkey) => {
         const user = users.get(pubkey);
         const npub = user?.npub ?? nip19.npubEncode(pubkey);
-        const displayName = user?.name ?? shortenPubkey(npub);
+        const display_name = user?.name ?? shortenPubkey(npub);
 
         return (
           <div
@@ -113,7 +113,7 @@ export function FollowList({
             <div className="flex-1 min-w-0">
               <Link href={`/${npub}`} className="block">
                 <p className="font-semibold text-white hover:underline truncate">
-                  {displayName}
+                  {display_name}
                 </p>
                 <p className="text-zinc-500 text-sm truncate">
                   @{shortenPubkey(npub, 16)}

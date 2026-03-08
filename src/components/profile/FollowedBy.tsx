@@ -21,7 +21,7 @@ export const FollowedBy = ({ pubkey }: { pubkey: string }) => {
         return {
           pubkey: user.pubkey,
           npub: user.npub,
-          name: user.profile?.name || user.profile?.displayName,
+          name: user.profile?.display_name || user.profile?.name,
           picture: user.profile?.picture
         };
       })).then(setDisplayUsers);

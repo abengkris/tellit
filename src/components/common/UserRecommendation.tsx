@@ -58,7 +58,7 @@ export const UserRecommendation: React.FC<UserRecommendationProps> = ({
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1">
                   <span className="font-bold text-sm truncate text-gray-900 dark:text-zinc-100">
-                    {user.profile?.name || user.profile?.displayName || shortenPubkey(user.pubkey)}
+                    {user.profile?.display_name || user.profile?.name || shortenPubkey(user.pubkey)}
                   </span>
                   {user.profile?.nip05 && (
                     <span className="text-[10px] text-blue-500 font-medium truncate opacity-70">

@@ -39,7 +39,8 @@ export const SuggestionCard: React.FC<SuggestionCardProps> = ({
         <Link href={`/${npub}`} className="block">
           <UserIdentity 
             pubkey={pubkey}
-            displayName={profile?.name || profile?.displayName}
+            display_name={profile?.display_name}
+            name={profile?.name}
             nip05={profile?.nip05}
             variant="post"
             tags={profile?.tags}

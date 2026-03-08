@@ -19,7 +19,7 @@ interface ReplyModalProps {
 export const ReplyModal: React.FC<ReplyModalProps> = ({ event, onClose }) => {
   const { profile } = useProfile(event.pubkey);
   
-  const displayName = profile?.name || profile?.displayName || shortenPubkey(event.pubkey);
+  const display_name = profile?.display_name || profile?.name || shortenPubkey(event.pubkey);
   const avatar = profile?.picture || `https://robohash.org/${event.pubkey}?set=set1`;
   const isArticle = event.kind === 30023;
 
@@ -47,7 +47,7 @@ export const ReplyModal: React.FC<ReplyModalProps> = ({ event, onClose }) => {
             <div className="relative w-12 h-12 rounded-full overflow-hidden bg-gray-200">
               <Image 
                 src={avatar} 
-                alt={displayName} 
+                alt={display_name} 
                 fill
                 className="object-cover"
                 unoptimized
@@ -57,7 +57,7 @@ export const ReplyModal: React.FC<ReplyModalProps> = ({ event, onClose }) => {
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1 mb-1">
-              <span className="font-bold truncate">{displayName}</span>
+              <span className="font-bold truncate">{display_name}</span>
               <span className="text-gray-500 text-sm">@{shortenPubkey(event.pubkey)}</span>
             </div>
             <div className="text-gray-600 dark:text-gray-300 line-clamp-3 overflow-hidden">
@@ -70,7 +70,7 @@ export const ReplyModal: React.FC<ReplyModalProps> = ({ event, onClose }) => {
               />
             </div>
             <div className="mt-2 text-sm text-gray-500">
-              Replying to <Link href={`/${toNpub(event.pubkey)}`} className="text-blue-500 font-bold hover:underline">@{displayName}</Link>
+              Replying to <Link href={`/${toNpub(event.pubkey)}`} className="text-blue-500 font-bold hover:underline">@{display_name}</Link>
             </div>
           </div>
         </div>

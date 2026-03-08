@@ -9,7 +9,7 @@ export interface ProfileMetadata {
   nip05?: string;
   lud16?: string;
   banner?: string;
-  displayName?: string;
+  display_name?: string;
   website?: string;
   pronouns?: string;
   bot?: boolean | string;

@@ -38,7 +38,7 @@ export function SearchContent() {
     return followingUsers
       .filter(u => 
         u.profile?.name?.toLowerCase().includes(q) || 
-        u.profile?.displayName?.toLowerCase().includes(q) ||
+        u.profile?.display_name?.toLowerCase().includes(q) ||
         u.profile?.nip05?.toLowerCase().includes(q)
       )
       .slice(0, 8);
@@ -155,12 +155,12 @@ export function SearchContent() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <h3 className="font-black text-lg truncate">
-                    {directResult.user.profile?.name || directResult.user.profile?.displayName || shortenPubkey(directResult.user.npub)}
+                    {directResult.user.profile?.display_name || directResult.user.profile?.name || shortenPubkey(directResult.user.npub)}
                   </h3>
                   <p className="text-sm text-gray-500 font-mono truncate">
                     {directResult.user.profile?.nip05 
                       ? (directResult.user.profile.nip05.startsWith('_@') ? directResult.user.profile.nip05.substring(1) : directResult.user.profile.nip05)
-                      : shortenPubkey(directResult.user.npub, 12)}
+                      : `@${directResult.user.profile?.name || shortenPubkey(directResult.user.npub, 12)}`}
                   </p>
                 </div>
                 <div className="bg-blue-500 text-white text-xs font-black px-4 py-2 rounded-xl shadow-lg shadow-blue-500/20">
@@ -253,12 +253,12 @@ export function SearchContent() {
                     )}
                   </div>
                   <p className="font-black text-sm truncate w-full text-gray-900 dark:text-white px-1">
-                    {user.profile?.name || shortenPubkey(user.npub)}
+                    {user.profile?.display_name || user.profile?.name || shortenPubkey(user.npub)}
                   </p>
-                  <p className="text-[10px] text-gray-500 font-mono truncate w-full mt-1 px-1">
+                  <p className="text-[10px] text-gray-500 font-mono truncate w-full mt-1 px-1 lowercase">
                     {user.profile?.nip05 
                       ? (user.profile.nip05.startsWith('_@') ? user.profile.nip05.substring(1) : user.profile.nip05)
-                      : shortenPubkey(user.npub, 10)}
+                      : `@${user.profile?.name || shortenPubkey(user.npub, 10)}`}
                   </p>
                 </Link>
               ))}

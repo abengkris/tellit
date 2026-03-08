@@ -19,21 +19,21 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const user = ndk.getUser({ pubkey: hexPubkey });
     const profile = await user.fetchProfile();
     
-    const displayName = profile?.name || profile?.displayName || shortenPubkey(npub);
-    const about = profile?.about || `Check out ${displayName}'s profile on Tell it!`;
+    const display_name = profile?.display_name || profile?.name || shortenPubkey(npub);
+    const about = profile?.about || `Check out ${display_name}'s profile on Tell it!`;
     const image = profile?.picture || `https://robohash.org/${hexPubkey}?set=set1`;
 
     return {
-      title: displayName,
+      title: display_name,
       description: about,
       openGraph: {
-        title: `${displayName} (@${shortenPubkey(npub)})`,
+        title: `${display_name} (@${shortenPubkey(npub)})`,
         description: about,
         images: [image],
       },
       twitter: {
         card: "summary",
-        title: displayName,
+        title: display_name,
         description: about,
         images: [image],
       },

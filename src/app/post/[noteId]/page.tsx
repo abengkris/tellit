@@ -22,20 +22,20 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     if (!event) return { title: "Post" };
 
     const profile = await event.author.fetchProfile();
-    const displayName = profile?.name || profile?.displayName || "Someone";
+    const display_name = profile?.display_name || profile?.name || "Someone";
     const content = event.content.slice(0, 160) + (event.content.length > 160 ? "..." : "");
 
     return {
-      title: `${displayName}: "${content}"`,
+      title: `${display_name}: "${content}"`,
       description: event.content.slice(0, 300),
       openGraph: {
-        title: `Post by ${displayName}`,
+        title: `Post by ${display_name}`,
         description: event.content.slice(0, 300),
         type: "article",
       },
       twitter: {
         card: "summary",
-        title: `Post by ${displayName}`,
+        title: `Post by ${display_name}`,
         description: event.content.slice(0, 300),
       },
     };

@@ -12,7 +12,7 @@ export const ProfileSetupCard = ({ pubkey, npub }: { pubkey: string; npub: strin
   const steps = useMemo(() => {
     if (!profile) return [];
     return [
-      { id: "name", label: "Display Name", completed: !!(profile.name || profile.displayName) },
+      { id: "name", label: "Display Name", completed: !!(profile.display_name || profile.name) },
       { id: "picture", label: "Profile Picture", completed: !!profile.picture },
       { id: "banner", label: "Profile Banner", completed: !!profile.banner },
       { id: "about", label: "Short Bio", completed: !!profile.about },

@@ -44,7 +44,7 @@ export const ProfileEditModal: React.FC<ProfileEditModalProps> = ({
 
   const [formData, setFormData] = useState<ProfileMetadata>({
     name: "",
-    displayName: "",
+    display_name: "",
     about: "",
     picture: "",
     banner: "",
@@ -64,7 +64,7 @@ export const ProfileEditModal: React.FC<ProfileEditModalProps> = ({
     if (currentProfile) {
       setFormData({
         name: currentProfile.name || "",
-        displayName: currentProfile.displayName || "",
+        display_name: currentProfile.display_name || "",
         about: currentProfile.about || "",
         picture: currentProfile.picture || "",
         banner: currentProfile.banner || "",
@@ -140,7 +140,8 @@ export const ProfileEditModal: React.FC<ProfileEditModalProps> = ({
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    const processedValue = name === "name" ? value.toLowerCase() : value;
+    setFormData(prev => ({ ...prev, [name]: processedValue }));
   };
 
   return (
@@ -280,8 +281,8 @@ export const ProfileEditModal: React.FC<ProfileEditModalProps> = ({
                 <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Display Name</label>
                 <input
                   type="text"
-                  name="displayName"
-                  value={formData.displayName}
+                  name="display_name"
+                  value={formData.display_name}
                   onChange={handleChange}
                   placeholder="e.g. Satoshi Nakamoto"
                   className="w-full bg-transparent border border-gray-200 dark:border-gray-800 rounded-xl p-3 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"

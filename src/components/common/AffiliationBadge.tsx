@@ -48,7 +48,7 @@ export const AffiliationBadge: React.FC<AffiliationBadgeProps> = ({
       href={`/${npub}`}
       className="shrink-0 transition-transform hover:scale-110 active:scale-95"
       onClick={(e) => e.stopPropagation()}
-      title={`Affiliated with ${profile.name || profile.displayName || 'Organization'}`}
+      title={`Affiliated with ${profile.display_name || profile.name || 'Organization'}`}
     >
       {content}
     </Link>

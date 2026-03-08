@@ -118,7 +118,7 @@ export function ProfileContent({ npubParam }: { npubParam: string }) {
     }
   };
 
-  const displayName = profile?.name || profile?.displayName || shortenPubkey(npubParam);
+  const display_name = profile?.display_name || profile?.name || shortenPubkey(npubParam);
 
   const handleShare = async () => {
     const shareUrl = typeof window !== 'undefined' ? window.location.href : '';
@@ -126,8 +126,8 @@ export function ProfileContent({ npubParam }: { npubParam: string }) {
     if (navigator.share) {
       try {
         await navigator.share({
-          title: `${displayName} on Tell it!`,
-          text: profile?.about?.slice(0, 100) || `Check out ${displayName}'s profile on Tell it!`,
+          title: `${display_name} on Tell it!`,
+          text: profile?.about?.slice(0, 100) || `Check out ${display_name}'s profile on Tell it!`,
           url: shareUrl,
         });
       } catch (err) {
@@ -266,7 +266,8 @@ export function ProfileContent({ npubParam }: { npubParam: string }) {
           <div className="flex items-center gap-2 min-w-0">
             <UserIdentity 
               pubkey={hexPubkey}
-              displayName={profile?.name || profile?.displayName}
+              display_name={profile?.display_name}
+              name={profile?.name}
               nip05={profile?.nip05}
               variant="profile"
               tags={profile?.tags}

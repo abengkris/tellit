@@ -17,7 +17,7 @@ interface QuoteModalProps {
 export const QuoteModal: React.FC<QuoteModalProps> = ({ event, onClose }) => {
   const { profile } = useProfile(event.pubkey);
   
-  const displayName = profile?.name || profile?.displayName || shortenPubkey(event.pubkey);
+  const display_name = profile?.display_name || profile?.name || shortenPubkey(event.pubkey);
   const avatar = profile?.picture || `https://robohash.org/${event.pubkey}?set=set1`;
   const isArticle = event.kind === 30023;
 
@@ -56,7 +56,7 @@ export const QuoteModal: React.FC<QuoteModalProps> = ({ event, onClose }) => {
               <div className="relative w-6 h-6 rounded-full overflow-hidden bg-gray-200 shrink-0">
                 <Image 
                   src={avatar} 
-                  alt={displayName} 
+                  alt={display_name} 
                   fill
                   className="object-cover"
                   unoptimized
@@ -64,7 +64,7 @@ export const QuoteModal: React.FC<QuoteModalProps> = ({ event, onClose }) => {
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1 mb-1 text-sm">
-                  <span className="font-bold truncate">{displayName}</span>
+                  <span className="font-bold truncate">{display_name}</span>
                   <span className="text-gray-500 truncate">@{shortenPubkey(event.pubkey)}</span>
                 </div>
                 <div className="text-gray-600 dark:text-gray-300 text-sm line-clamp-4 overflow-hidden">

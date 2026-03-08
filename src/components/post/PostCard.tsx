@@ -108,8 +108,8 @@ export const PostCard: React.FC<PostCardProps> = ({
     }
   }, [isRepost, event, isReady, ndk]);
 
-  const displayName = useMemo(() => 
-    profile?.name || profile?.displayName || shortenPubkey(displayEvent.pubkey),
+  const display_name = useMemo(() => 
+    profile?.display_name || profile?.name || shortenPubkey(displayEvent.pubkey),
   [profile, displayEvent.pubkey]);
 
   const avatar = profile?.picture || (profile as { image?: string })?.image;
@@ -117,7 +117,7 @@ export const PostCard: React.FC<PostCardProps> = ({
   const repostAuthorName = useMemo(() => {
     return event.pubkey === currentUser?.pubkey 
       ? "You" 
-      : (repostAuthorProfile?.name || repostAuthorProfile?.displayName || shortenPubkey(event.pubkey));
+      : (repostAuthorProfile?.display_name || repostAuthorProfile?.name || shortenPubkey(event.pubkey));
   }, [event.pubkey, currentUser?.pubkey, repostAuthorProfile]);
 
   const userNpub = displayEvent.author.npub;
@@ -205,10 +205,10 @@ export const PostCard: React.FC<PostCardProps> = ({
   const handleMute = async () => {
     if (isMuted(displayEvent.pubkey)) {
       const success = await unmuteUser(displayEvent.pubkey);
-      if (success) addToast(`Unmuted ${displayName}`, "success");
+      if (success) addToast(`Unmuted ${display_name}`, "success");
     } else {
       const success = await muteUser(displayEvent.pubkey);
-      if (success) addToast(`Muted ${displayName}. They will no longer appear in your feeds.`, "success");
+      if (success) addToast(`Muted ${display_name}. They will no longer appear in your feeds.`, "success");
     }
   };
 
@@ -229,7 +229,7 @@ export const PostCard: React.FC<PostCardProps> = ({
     if (navigator.share) {
       try {
         await navigator.share({
-          title: `Post by ${displayName} on Tell it!`,
+          title: `Post by ${display_name} on Tell it!`,
           text: displayEvent.content.slice(0, 100) + (displayEvent.content.length > 100 ? '...' : ''),
           url: shareUrl,
         });
@@ -279,7 +279,7 @@ export const PostCard: React.FC<PostCardProps> = ({
       <Link 
         href={navigationHref}
         className="absolute inset-0 z-0"
-        aria-label={`View post by ${displayName}`}
+        aria-label={`View post by ${display_name}`}
       />
 
       <div className="flex relative min-w-0 z-10 pointer-events-none">
@@ -294,7 +294,8 @@ export const PostCard: React.FC<PostCardProps> = ({
         {/* Content Area */}
         <div className="flex-1 min-w-0 overflow-hidden pointer-events-auto">
           <PostHeader
-            displayName={displayName}
+            display_name={display_name}
+            name={profile?.name}
             avatar={avatar}
             isLoading={profileLoading}
             userNpub={userNpub}

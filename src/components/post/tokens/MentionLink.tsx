@@ -18,10 +18,10 @@ export function MentionLink({ pubkey, raw }: MentionLinkProps) {
   const nip05Name = profile?.nip05?.split("@")[0];
   const nip05Domain = profile?.nip05?.split("@")[1];
   
-  const displayName = loading
+  const display_name = loading
     ? shortenPubkey(pubkey)
     : profile?.name
-    ?? profile?.displayName
+    ?? profile?.display_name
     ?? (nip05Name === "_" ? nip05Domain : nip05Name)
     ?? shortenPubkey(pubkey);
 
@@ -33,7 +33,7 @@ export function MentionLink({ pubkey, raw }: MentionLinkProps) {
       className="text-blue-500 hover:text-blue-600 hover:underline font-medium min-w-0 truncate inline-block align-bottom max-w-[150px]"
       onClick={e => e.stopPropagation()} // jangan trigger PostCard click
     >
-      @{displayName}
+      @{display_name}
     </Link>
   );
 }

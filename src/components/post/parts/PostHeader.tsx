@@ -22,7 +22,8 @@ import { formatCompactDate } from "@/lib/utils/date";
 import { Avatar } from "@/components/common/Avatar";
 
 interface PostHeaderProps {
-  displayName: string;
+  display_name: string;
+  name?: string;
   avatar?: string;
   isLoading?: boolean;
   userNpub: string;
@@ -47,7 +48,7 @@ interface PostHeaderProps {
 }
 
 export const PostHeader: React.FC<PostHeaderProps> = ({
-  displayName,
+  display_name,
   avatar,
   isLoading = false,
   userNpub,
@@ -68,7 +69,8 @@ export const PostHeader: React.FC<PostHeaderProps> = ({
   bot,
   isArticle,
   isPoll,
-  tags
+  tags,
+  name
 }) => {
   const formattedTime = formatCompactDate(createdAt);
 
@@ -84,7 +86,7 @@ export const PostHeader: React.FC<PostHeaderProps> = ({
       onClick: onBookmarkClick
     }] : []),
     ...(onMuteClick ? [{
-      label: isMuted ? `Unmute @${displayName}` : `Mute @${displayName}`,
+      label: isMuted ? `Unmute @${display_name}` : `Mute @${display_name}`,
       icon: isMuted ? <Volume2 size={16} /> : <VolumeX size={16} />,
       variant: isMuted ? undefined : "danger" as const,
       onClick: onMuteClick
@@ -138,7 +140,8 @@ export const PostHeader: React.FC<PostHeaderProps> = ({
             <Link href={`/${userNpub}`} className="flex items-center gap-1 truncate min-w-0 hover:underline">
               <UserIdentity 
                 pubkey={pubkey}
-                displayName={displayName}
+                display_name={display_name}
+                name={name}
                 nip05={nip05}
                 variant="post"
                 tags={tags}

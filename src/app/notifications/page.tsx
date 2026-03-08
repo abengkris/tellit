@@ -28,7 +28,7 @@ const NotificationIcon = ({ type }: { type: string }) => {
 const NotificationItem = ({ event }: { event: TellItNotification }) => {
   const { profile } = useProfile(event.pubkey);
   const router = useRouter();
-  const displayName = profile?.name || profile?.displayName || shortenPubkey(event.pubkey);
+  const display_name = profile?.display_name || profile?.name || shortenPubkey(event.pubkey);
   const avatar = profile?.picture || `https://robohash.org/${event.pubkey}?set=set1`;
 
   const getTargetHref = () => {
@@ -86,13 +86,13 @@ const NotificationItem = ({ event }: { event: TellItNotification }) => {
                 width={32}
                 height={32}
                 className="w-8 h-8 rounded-full bg-gray-200 object-cover"
-                alt={displayName}
+                alt={display_name}
                 unoptimized
               />
             </Link>
             <div className="flex flex-wrap items-center gap-x-1 min-w-0">
               <Link href={`/${event.author.npub}`} className="font-bold hover:underline truncate max-w-[150px] z-10" onClick={e => e.stopPropagation()}>
-                {displayName}
+                {display_name}
               </Link>
               <span className="text-gray-500 text-sm whitespace-nowrap">
                 {event.type === 'like' && "liked your post"}
