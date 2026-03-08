@@ -26,7 +26,7 @@ import { format } from "date-fns";
 import { shortenPubkey } from "@/lib/utils/nip19";
 
 export default function WalletPage() {
-  const { nwcPairingCode, setNwcPairingCode, balance } = useWalletStore();
+  const { nwcPairingCode, setNwcPairingCode, balance, info: walletInfo } = useWalletStore();
   const { ndk, isReady, refreshBalance } = useNDK();
   const { isLoggedIn, user } = useAuthStore();
   const { profile } = useProfile(user?.pubkey);
@@ -37,11 +37,9 @@ export default function WalletPage() {
   const [recentZaps, setRecentZaps] = useState<NDKEvent[]>([]);
   const [isLoadingZaps, setIsLoadingZaps] = useState(false);
 
-  const handleCopyAddress = () => {
-    if (profile?.lud16) {
-      navigator.clipboard.writeText(profile.lud16);
-      addToast("Zap address copied!", "success");
-    }
+  const handleCopyAddress = (address: string) => {
+    navigator.clipboard.writeText(address);
+    addToast("Address copied!", "success");
   };
 
   // Fetch recent zaps (kind 9735)
@@ -145,13 +143,32 @@ export default function WalletPage() {
               <Zap size={120} fill="currentColor" />
             </div>
             
-            <p className="text-blue-100 font-bold uppercase tracking-wider text-xs mb-2">Available Balance</p>
-            <div className="flex items-baseline gap-2 mb-8">
-              <span className="text-5xl font-black">{balance !== null ? balance.toLocaleString() : "---"}</span>
-              <span className="text-xl font-bold text-blue-200">sats</span>
+            <div className="flex justify-between items-start mb-2">
+              <div>
+                <p className="text-blue-100 font-bold uppercase tracking-wider text-[10px]">Available Balance</p>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-5xl font-black">{balance !== null ? balance.toLocaleString() : "---"}</span>
+                  <span className="text-xl font-bold text-blue-200">sats</span>
+                </div>
+              </div>
+              {walletInfo?.alias && (
+                <div className="bg-white/10 backdrop-blur-md px-3 py-1 rounded-full border border-white/10 text-[10px] font-black uppercase tracking-widest">
+                  {walletInfo.alias}
+                </div>
+              )}
             </div>
 
-            <div className="flex gap-3">
+            {walletInfo?.lud16 && (
+              <button 
+                onClick={() => handleCopyAddress(walletInfo.lud16!)}
+                className="flex items-center gap-2 text-blue-100/80 hover:text-white transition-colors mb-8 group/addr"
+              >
+                <span className="text-sm font-mono truncate max-w-[200px]">{walletInfo.lud16}</span>
+                <Copy size={14} className="opacity-50 group-hover/addr:opacity-100 transition-opacity" />
+              </button>
+            )}
+
+            <div className="flex gap-3 mt-4">
               <button 
                 onClick={() => addToast("Deposit coming soon!", "info")}
                 className="flex-1 py-3 bg-white/20 hover:bg-white/30 backdrop-blur-md rounded-2xl font-bold flex items-center justify-center gap-2 transition-all"
@@ -225,7 +242,7 @@ export default function WalletPage() {
               <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800">
                 <code className="text-blue-500 font-bold break-all">{profile.lud16}</code>
                 <button 
-                  onClick={handleCopyAddress}
+                  onClick={() => handleCopyAddress(profile.lud16!)}
                   className="p-2 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-xl transition-all text-gray-500 ml-4 shrink-0"
                   title="Copy Address"
                 >

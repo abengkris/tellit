@@ -48,7 +48,7 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
     browserNotificationsEnabled 
   } = useUIStore();
   
-  const { nwcPairingCode, setBalance } = useWalletStore();
+  const { nwcPairingCode, setBalance, setInfo } = useWalletStore();
   
   const messengerRef = useRef<NDKMessenger | null>(null);
   const sessionsRef = useRef<NDKSessionManager | null>(null);
@@ -123,6 +123,13 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
         wallet.on("ready", () => {
           console.log("NWC wallet ready");
           addToast("Wallet connected", "success");
+          
+          // Fetch wallet info (alias, lud16, etc)
+          wallet.getInfo().then((info) => {
+            if (info) setInfo(info);
+          }).catch((err) => {
+            console.warn("Failed to fetch wallet info:", err);
+          });
         });
 
         wallet.on("balance_updated", (balance?: { amount: number }) => {
