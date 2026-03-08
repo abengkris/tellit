@@ -57,7 +57,7 @@ export const PostActions: React.FC<PostActionsProps> = ({
   const [reactionsPubkeys, setReactionsPubkeys] = useState<string[]>([]);
 
   const { addToast, defaultZapAmount } = useUIStore();
-  const { ndk } = useNDK();
+  const { ndk, refreshBalance } = useNDK();
   const { bookmarkedEventIds, bookmarkPost, unbookmarkPost } = useLists();
   const { likes: reactorPubkeys, reposts: reposterPubkeys, zaps: zapperPubkeys, loading: loadingReactions } = useReactions(eventId);
 
@@ -119,8 +119,16 @@ export const PostActions: React.FC<PostActionsProps> = ({
         if (!event) throw new Error("Could not find event to zap");
 
         const amount = defaultZapAmount || 21;
-        const bolt11 = await createZapInvoice(ndk, amount * 1000, event);
+        const { invoice: bolt11, alreadyPaid } = await createZapInvoice(ndk, amount * 1000, event);
         
+        if (alreadyPaid) {
+          triggerZapConfetti();
+          setOptimisticZaps(prev => prev + amount); // Add sats to counter
+          addToast(`Zapped ${amount} sats via wallet!`, "success");
+          refreshBalance();
+          return;
+        }
+
         if (bolt11) {
           const response = await window.webln.sendPayment(bolt11);
           if (response.preimage) {
