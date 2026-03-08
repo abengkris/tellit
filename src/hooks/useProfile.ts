@@ -54,6 +54,8 @@ export function useProfile(pubkey?: string) {
           // Construct metadata object
           const metadata: ProfileMetadata = { 
             ...(userProfile || {}), 
+            name: userProfile?.name ? String(userProfile.name) : undefined,
+            display_name: userProfile?.display_name ? String(userProfile.display_name) : undefined,
             pubkey 
           };
           
