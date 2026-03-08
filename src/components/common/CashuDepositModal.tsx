@@ -5,21 +5,25 @@ import { X, Loader2, Zap, CheckCircle2, Copy } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { NDKCashuWallet } from "@nostr-dev-kit/wallet";
 import { useUIStore } from "@/store/ui";
+import { useNDK } from "@/hooks/useNDK";
 
 interface CashuDepositModalProps {
   isOpen: boolean;
   onClose: () => void;
   wallet: NDKCashuWallet;
   mint?: string;
+  onSuccess?: () => void;
 }
 
 export const CashuDepositModal: React.FC<CashuDepositModalProps> = ({ 
   isOpen, 
   onClose, 
   wallet,
-  mint 
+  mint,
+  onSuccess
 }) => {
   const { addToast } = useUIStore();
+  const { refreshBalance } = useNDK();
   const [amount, setAmount] = useState(1000);
   const [invoice, setInvoice] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -55,6 +59,8 @@ export const CashuDepositModal: React.FC<CashuDepositModalProps> = ({
         console.log("Deposit successful, received token:", token);
         setPaid(true);
         addToast("Deposit successful! Wallet updated.", "success");
+        refreshBalance();
+        if (onSuccess) onSuccess();
       });
 
     } catch (err) {
