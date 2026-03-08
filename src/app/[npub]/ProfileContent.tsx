@@ -4,7 +4,7 @@ import React from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useProfile } from "@/hooks/useProfile";
 import { useFeed } from "@/hooks/useFeed";
-import { Calendar, Link as LinkIcon, Zap, Activity, Mail, Share, Copy, MoreVertical, Edit2, X, Music, Tag } from "lucide-react";
+import { Calendar, Link as LinkIcon, Zap, Activity, Mail, Share, Copy, MoreVertical, Edit2, X, Music, Tag, Clock, RefreshCw } from "lucide-react";
 import { useAuthStore } from "@/store/auth";
 import { useUIStore } from "@/store/ui";
 import { useNDK } from "@/hooks/useNDK";
@@ -106,6 +106,7 @@ export function ProfileContent({ npubParam }: { npubParam: string }) {
   const [isEditModalOpen, setIsEditModalOpen] = React.useState(false);
   const [isStatusModalOpen, setIsStatusModalOpen] = React.useState(false);
   const [showZapModal, setShowZapModal] = React.useState(false);
+  const [showDatesModal, setShowDatesModal] = React.useState(false);
   const isOwnProfile = currentUser?.pubkey === hexPubkey;
 
   const handleCopyNpub = async () => {
@@ -373,15 +374,18 @@ export function ProfileContent({ npubParam }: { npubParam: string }) {
               <span>{safeHostname(profile.website)}</span>
             </a>
           )}
-          <div className="flex items-center space-x-1">
+          <button 
+            onClick={() => setShowDatesModal(true)}
+            className="flex items-center space-x-1 hover:text-blue-500 transition-colors cursor-pointer"
+          >
             <Calendar size={16} />
             <span>
-              {profile?.created_at 
-                ? `Updated ${format(new Date(profile.created_at * 1000), "MMM yyyy")}` 
-                : "-"
+              {profile?.published_at 
+                ? format(new Date(profile.published_at * 1000), "MMM yyyy")
+                : (profile?.created_at ? format(new Date(profile.created_at * 1000), "MMM yyyy") : "-")
               }
             </span>
-          </div>
+          </button>
           {profile?.lud16 && (
             <button 
               onClick={() => setShowZapModal(true)}
@@ -498,6 +502,65 @@ export function ProfileContent({ npubParam }: { npubParam: string }) {
           user={ndk.getUser({ pubkey: hexPubkey })}
           onClose={() => setShowZapModal(false)}
         />
+      )}
+
+      {/* Profile History Modal */}
+      {showDatesModal && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+          onClick={() => setShowDatesModal(false)}
+        >
+          <div 
+            className="bg-white dark:bg-zinc-900 w-full max-w-xs rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-5 border-b border-gray-100 dark:border-zinc-800 flex items-center justify-between">
+              <h2 className="text-lg font-black flex items-center gap-2">
+                <Clock className="text-blue-500" size={18} />
+                Profile History
+              </h2>
+              <button onClick={() => setShowDatesModal(false)} className="p-2 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-full transition-colors">
+                <X size={18} />
+              </button>
+            </div>
+            <div className="p-6 space-y-6">
+              <div className="flex items-center gap-4">
+                <div className="p-2.5 bg-blue-500/10 text-blue-500 rounded-xl">
+                  <Calendar size={20} />
+                </div>
+                <div>
+                  <p className="text-[10px] font-black uppercase text-gray-400 tracking-widest">Joined</p>
+                  <p className="text-sm font-bold">
+                    {profile?.published_at 
+                      ? format(new Date(profile.published_at * 1000), "MMMM d, yyyy")
+                      : "Unknown"}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-4">
+                <div className="p-2.5 bg-green-500/10 text-green-500 rounded-xl">
+                  <RefreshCw size={20} />
+                </div>
+                <div>
+                  <p className="text-[10px] font-black uppercase text-gray-400 tracking-widest">Last Updated</p>
+                  <p className="text-sm font-bold">
+                    {profile?.created_at 
+                      ? format(new Date(profile.created_at * 1000), "MMMM d, yyyy · HH:mm")
+                      : "Unknown"}
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="p-4 bg-gray-50 dark:bg-zinc-900/50">
+              <button 
+                onClick={() => setShowDatesModal(false)}
+                className="w-full py-3 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-2xl font-bold text-sm hover:bg-gray-50 transition-all active:scale-95"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </MainLayout>
   );
