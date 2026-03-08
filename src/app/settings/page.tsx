@@ -4,12 +4,14 @@ import React, { useEffect, useState } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useUIStore } from "@/store/ui";
 import { useAuthStore } from "@/store/auth";
+import { useNDK } from "@/hooks/useNDK";
 import { Bell, Shield, User, Globe, Wallet, Clock, LogOut } from "lucide-react";
 import { Avatar } from "@/components/common/Avatar";
 import Link from "next/link";
 
 export default function SettingsPage() {
-  const { isLoggedIn, user } = useAuthStore();
+  const { isLoggedIn, user, logout } = useAuthStore();
+  const { sessions } = useNDK();
   const { 
     browserNotificationsEnabled, 
     setBrowserNotificationsEnabled,
@@ -51,6 +53,11 @@ export default function SettingsPage() {
       setBrowserNotificationsEnabled(false);
       addToast("Notifications disabled", "info");
     }
+  };
+
+  const handleLogout = () => {
+    logout(sessions);
+    addToast("Logged out successfully", "info");
   };
 
   return (
