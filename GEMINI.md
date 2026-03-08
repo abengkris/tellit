@@ -37,3 +37,13 @@ Domain: tellit.id
 - **Styling:** Use Tailwind CSS for all styling. Do not write custom CSS.
 - **Testing:** All new components must include a Vitest unit test.
 - **Tone:** Be concise. Don't explain basic React concepts.
+
+## Local-First Mandates (NDK)
+
+As a "Tell it!" developer, you MUST adhere to local-first principles to ensure a responsive and resilient user experience:
+
+- **Optimistic Publishing:** Prefer `event.publish()` over `await event.publish()`. Use "fire and forget" patterns for most user actions (posts, follows, reactions) to keep the UI snappy.
+- **Cache-First Pattern:** Always ensure `NDKCacheAdapterDexie` is active. Trust that NDK will handle background publishing and retries.
+- **Handling Failures:** Always listen to `event:publish-failed` globally to notify users. UI components should handle local state rollbacks if a persistent failure is detected.
+- **Resilience:** Ensure the application checks for unpublished events on boot-up and re-attempts to sync them with relays.
+- **Non-Blocking UI:** Avoid long-running spinners for network operations that NDK can handle asynchronously in the background. Update the local UI state immediately.
