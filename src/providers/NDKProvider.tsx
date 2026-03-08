@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useEffect, useState, ReactNode, useRef } from "react";
-import NDK, { NDKEvent, NDKCacheAdapter, NDKRelay, NDKKind, NDKNutzapState } from "@nostr-dev-kit/ndk";
+import NDK, { NDKEvent, NDKCacheAdapter, NDKRelay, NDKKind, NDKNutzapState, NDKPrivateKeySigner } from "@nostr-dev-kit/ndk";
 import NDKCacheAdapterDexie from "@nostr-dev-kit/ndk-cache-dexie";
 import { NDKMessenger, CacheModuleStorage, NDKMessage } from "@nostr-dev-kit/messages";
 import { NDKSessionManager, LocalStorage, NDKSession } from "@nostr-dev-kit/sessions";
@@ -236,17 +236,28 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
           if (!cashu && walletType === 'cashu') {
             cashu = new NDKCashuWallet(instance);
             cashu.mints = cashuMints;
-            
-            // Apply existing key if we have it
-            if (cashuPrivateKey) {
-              cashu.privateKey = cashuPrivateKey;
-            }
           }
 
           if (cashu) {
-            // Save the key if it's new or restored
-            if (cashu.privateKey && cashu.privateKey !== cashuPrivateKey) {
-              setCashuPrivateKey(cashu.privateKey);
+            // Ensure we have a stable private key for P2PK
+            // 1. Check if wallet already has keys (restored from Nostr)
+            const walletKeys = Array.from(cashu.privkeys.values());
+            
+            if (walletKeys.length > 0) {
+              // Sync the restored key to our store for local persistence
+              const firstKey = walletKeys[0].privateKey;
+              if (firstKey && firstKey !== cashuPrivateKey) {
+                setCashuPrivateKey(firstKey);
+              }
+            } else {
+              // Fresh local instance: use store key or generate new one
+              let keyToUse = cashuPrivateKey;
+              if (!keyToUse) {
+                const signer = NDKPrivateKeySigner.generate();
+                keyToUse = signer.privateKey;
+                setCashuPrivateKey(keyToUse);
+              }
+              await cashu.addPrivkey(keyToUse);
             }
 
             cashu.on("ready", () => {
