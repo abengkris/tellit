@@ -193,10 +193,10 @@ export default function WalletPage() {
 
   return (
     <MainLayout>
-      <div className="max-w-2xl mx-auto p-4 sm:p-6 pb-32">
-        <header className="flex items-center justify-between mb-8">
-          <h1 className="text-3xl font-black flex items-center gap-3">
-            <Wallet className="text-blue-500" size={32} /> Wallet
+      <div className="max-w-2xl mx-auto px-4 py-6 sm:p-6 pb-32">
+        <header className="flex items-center justify-between mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl font-black flex items-center gap-3">
+            <Wallet className="text-blue-500" size={28} /> Wallet
           </h1>
           {walletType !== 'none' && (
             <button 
@@ -228,20 +228,22 @@ export default function WalletPage() {
 
         {/* Balance Card */}
         {walletType !== 'none' && (nwcPairingCode || walletType === 'cashu') ? (
-          <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-[2rem] p-8 text-white shadow-xl shadow-blue-500/20 mb-8 relative overflow-hidden group">
-            <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform duration-500">
+          <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-3xl p-6 sm:p-8 text-white shadow-xl shadow-blue-500/20 mb-8 relative overflow-hidden group">
+            <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform duration-500 pointer-events-none">
               <Zap size={120} fill="currentColor" />
             </div>
             
-            <div className="flex justify-between items-start mb-2">
+            <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-4 sm:mb-2">
               <div>
                 <p className="text-blue-100 font-bold uppercase tracking-wider text-[10px]">Available Balance</p>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-5xl font-black">{balance !== null ? balance.toLocaleString() : "---"}</span>
-                  <span className="text-xl font-bold text-blue-200">sats</span>
+                  <span className="text-4xl sm:text-5xl font-black truncate max-w-[200px] sm:max-w-none">
+                    {balance !== null ? balance.toLocaleString() : "---"}
+                  </span>
+                  <span className="text-lg sm:text-xl font-bold text-blue-200">sats</span>
                 </div>
               </div>
-              <div className="bg-white/10 backdrop-blur-md px-3 py-1 rounded-full border border-white/10 text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
+              <div className="bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 text-[10px] font-black uppercase tracking-widest flex items-center gap-2 self-start sm:self-auto">
                 <div className={`w-2 h-2 rounded-full ${balance !== null ? 'bg-green-400' : 'bg-yellow-400 animate-pulse'}`} />
                 {walletInfo?.alias || walletType}
               </div>
@@ -250,23 +252,23 @@ export default function WalletPage() {
             {walletInfo?.lud16 && (
               <button 
                 onClick={() => handleCopy(walletInfo.lud16!, "Address")}
-                className="flex items-center gap-2 text-blue-100/80 hover:text-white transition-colors mb-8 group/addr"
+                className="flex items-center gap-2 text-blue-100/80 hover:text-white transition-colors mb-6 sm:mb-8 group/addr max-w-full"
               >
-                <span className="text-sm font-mono truncate max-w-[200px]">{walletInfo.lud16}</span>
-                <Copy size={14} className="opacity-50 group-hover/addr:opacity-100 transition-opacity" />
+                <span className="text-xs sm:text-sm font-mono truncate">{walletInfo.lud16}</span>
+                <Copy size={14} className="opacity-50 group-hover/addr:opacity-100 transition-opacity shrink-0" />
               </button>
             )}
 
             <div className="flex gap-3 mt-4">
               <button 
                 onClick={() => addToast("Deposit coming soon!", "info")}
-                className="flex-1 py-3 bg-white/20 hover:bg-white/30 backdrop-blur-md rounded-2xl font-bold flex items-center justify-center gap-2 transition-all"
+                className="flex-1 py-3 bg-white/20 hover:bg-white/30 backdrop-blur-md rounded-2xl font-bold text-sm sm:text-base flex items-center justify-center gap-2 transition-all active:scale-95"
               >
                 <Plus size={18} /> Receive
               </button>
               <button 
                 onClick={() => handleSwitchType('none')}
-                className="p-3 bg-white/10 hover:bg-red-500/40 backdrop-blur-md rounded-2xl transition-all"
+                className="p-3 bg-white/10 hover:bg-red-500/40 backdrop-blur-md rounded-2xl transition-all active:scale-95"
                 title="Disconnect Wallet"
               >
                 <Trash2 size={20} />
@@ -274,11 +276,11 @@ export default function WalletPage() {
             </div>
           </div>
         ) : (
-          <div className="bg-gray-50 dark:bg-gray-900 border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-[2rem] p-10 text-center mb-8">
-            <div className="w-20 h-20 bg-blue-500/10 text-blue-500 rounded-3xl flex items-center justify-center mx-auto mb-6">
-              {walletType === 'nwc' ? <CreditCard size={40} /> : <Database size={40} />}
+          <div className="bg-gray-50 dark:bg-gray-900 border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-3xl p-6 sm:p-10 text-center mb-8">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 bg-blue-500/10 text-blue-500 rounded-2xl sm:rounded-3xl flex items-center justify-center mx-auto mb-6">
+              {walletType === 'nwc' ? <CreditCard size={32} /> : <Database size={32} />}
             </div>
-            <h2 className="text-xl font-bold mb-2">
+            <h2 className="text-lg sm:text-xl font-bold mb-2">
               {walletType === 'nwc' ? 'Connect NWC Wallet' : 'Initialize Cashu Wallet'}
             </h2>
             
@@ -289,13 +291,13 @@ export default function WalletPage() {
                   placeholder="nostr+walletconnect://..."
                   value={pairingInput}
                   onChange={(e) => setPairingInput(e.target.value)}
-                  className="w-full p-4 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-2xl text-sm font-mono focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  className="w-full p-3 sm:p-4 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-2xl text-xs sm:text-sm font-mono focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 />
-                <div className="flex gap-2">
+                <div className="flex flex-col sm:flex-row gap-2">
                   <button 
                     onClick={handleConnectNWC}
                     disabled={!pairingInput.startsWith("nostr+walletconnect://")}
-                    className="flex-1 py-4 bg-blue-500 hover:bg-blue-600 text-white font-black rounded-2xl shadow-lg shadow-blue-500/20 transition-all disabled:opacity-50"
+                    className="flex-1 py-3 sm:py-4 bg-blue-500 hover:bg-blue-600 text-white font-black rounded-2xl shadow-lg shadow-blue-500/20 transition-all disabled:opacity-50"
                   >
                     Connect NWC
                   </button>
@@ -303,7 +305,7 @@ export default function WalletPage() {
                     href="https://getalby.com" 
                     target="_blank" 
                     rel="noopener noreferrer"
-                    className="p-4 border border-gray-200 dark:border-gray-800 rounded-2xl hover:bg-white dark:hover:bg-gray-900 transition-all text-gray-500"
+                    className="p-3 sm:p-4 border border-gray-200 dark:border-gray-800 rounded-2xl hover:bg-white dark:hover:bg-gray-900 transition-all text-gray-500 flex items-center justify-center"
                   >
                     <ExternalLink size={20} />
                   </a>
@@ -316,7 +318,7 @@ export default function WalletPage() {
                 </p>
                 <button 
                   onClick={() => { setWalletType('cashu'); window.location.reload(); }}
-                  className="w-full max-w-sm py-4 bg-blue-500 hover:bg-blue-600 text-white font-black rounded-2xl shadow-lg shadow-blue-500/20 transition-all"
+                  className="w-full max-w-sm py-3 sm:py-4 bg-blue-500 hover:bg-blue-600 text-white font-black rounded-2xl shadow-lg shadow-blue-500/20 transition-all"
                 >
                   Create New Cashu Wallet
                 </button>
@@ -331,18 +333,18 @@ export default function WalletPage() {
             <h2 className="text-sm font-black uppercase tracking-widest text-gray-500 mb-4 flex items-center gap-2">
               <Database size={16} /> Cashu Management
             </h2>
-            <div className="bg-white dark:bg-black border border-gray-100 dark:border-gray-800 rounded-[1.5rem] p-6 space-y-6 shadow-sm">
+            <div className="bg-white dark:bg-black border border-gray-100 dark:border-gray-800 rounded-2xl p-5 sm:p-6 space-y-6 shadow-sm">
               {/* P2PK Address */}
               <div>
-                <label className="block text-sm font-bold mb-2 flex items-center gap-2">
+                <label className="block text-xs sm:text-sm font-bold mb-2 flex items-center gap-2">
                   P2PK Address <span title="Used for receiving Nutzaps (NIP-61)"><Info size={14} className="text-gray-400" /></span>
                 </label>
-                <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800">
-                  <code className="text-xs font-mono text-blue-500 truncate mr-4">
+                <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 overflow-hidden">
+                  <code className="text-[10px] sm:text-xs font-mono text-blue-500 truncate mr-2">
                     {p2pk || "Generating..."}
                   </code>
                   {p2pk && (
-                    <button onClick={() => handleCopy(p2pk, "P2PK")} className="text-gray-400 hover:text-blue-500 transition-colors">
+                    <button onClick={() => handleCopy(p2pk, "P2PK")} className="text-gray-400 hover:text-blue-500 transition-colors shrink-0">
                       <Copy size={16} />
                     </button>
                   )}
@@ -351,14 +353,14 @@ export default function WalletPage() {
 
               {/* Mints */}
               <div>
-                <label className="block text-sm font-bold mb-3">Managed Mints</label>
+                <label className="block text-xs sm:text-sm font-bold mb-3">Managed Mints</label>
                 <div className="space-y-2">
                   {cashuMints.map(mint => (
-                    <div key={mint} className="flex items-center justify-between p-3 border border-gray-100 dark:border-gray-800 rounded-xl group">
-                      <span className="text-xs font-medium truncate">{mint}</span>
+                    <div key={mint} className="flex items-center justify-between p-2.5 sm:p-3 border border-gray-100 dark:border-gray-800 rounded-xl group overflow-hidden">
+                      <span className="text-[10px] sm:text-xs font-medium truncate mr-2">{mint}</span>
                       <button 
                         onClick={() => handleRemoveMint(mint)}
-                        className="text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"
+                        className="text-gray-300 hover:text-red-500 transition-all shrink-0"
                       >
                         <XCircle size={16} />
                       </button>
@@ -371,9 +373,9 @@ export default function WalletPage() {
                     placeholder="https://mint-url..."
                     value={newMint}
                     onChange={(e) => setNewMint(e.target.value)}
-                    className="flex-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="flex-1 p-2.5 sm:p-3 bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl text-[10px] sm:text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
                   />
-                  <button onClick={handleAddMint} className="p-3 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors">
+                  <button onClick={handleAddMint} className="p-2.5 sm:p-3 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors shrink-0">
                     <PlusCircle size={18} />
                   </button>
                 </div>
@@ -384,14 +386,14 @@ export default function WalletPage() {
                 <button 
                   onClick={handlePublishCashu}
                   disabled={isPublishing}
-                  className="flex-1 py-3 bg-gray-900 dark:bg-white text-white dark:text-black rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:opacity-90 transition-all disabled:opacity-50"
+                  className="flex-1 py-3 bg-gray-900 dark:bg-white text-white dark:text-black rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 hover:opacity-90 transition-all disabled:opacity-50"
                 >
                   {isPublishing ? <RefreshCw size={16} className="animate-spin" /> : <Share2 size={16} />}
                   Backup to Nostr
                 </button>
                 <button 
                   onClick={() => addToast("Already active!", "info")}
-                  className="flex-1 py-3 border border-gray-200 dark:border-gray-800 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-900 transition-all"
+                  className="flex-1 py-3 border border-gray-200 dark:border-gray-800 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-900 transition-all"
                 >
                   <CheckCircle2 size={16} className="text-green-500" />
                   Nutzaps Active
@@ -406,23 +408,23 @@ export default function WalletPage() {
           <h2 className="text-sm font-black uppercase tracking-widest text-gray-500 mb-4 flex items-center gap-2">
             <Zap size={16} /> Zap Address
           </h2>
-          <div className="bg-white dark:bg-black border border-gray-100 dark:border-gray-800 rounded-[1.5rem] p-6 shadow-sm">
-            <p className="text-sm text-gray-500 mb-4">
+          <div className="bg-white dark:bg-black border border-gray-100 dark:border-gray-800 rounded-2xl p-5 sm:p-6 shadow-sm">
+            <p className="text-xs sm:text-sm text-gray-500 mb-4">
               This is your public lightning address from your Nostr profile.
             </p>
             {profile?.lud16 ? (
-              <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800">
-                <code className="text-blue-500 font-bold break-all">{profile.lud16}</code>
+              <div className="flex items-center justify-between p-3 sm:p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 overflow-hidden">
+                <code className="text-[10px] sm:text-sm text-blue-500 font-bold break-all mr-2">{profile.lud16}</code>
                 <button 
                   onClick={() => handleCopy(profile.lud16!, "Zap Address")}
-                  className="p-2 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-xl transition-all text-gray-500 ml-4 shrink-0"
+                  className="p-2 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-xl transition-all text-gray-500 shrink-0"
                 >
                   <Copy size={18} />
                 </button>
               </div>
             ) : (
               <div className="p-4 bg-yellow-500/5 border border-yellow-500/20 rounded-2xl">
-                <p className="text-sm text-yellow-600 dark:text-yellow-500 font-medium">
+                <p className="text-xs sm:text-sm text-yellow-600 dark:text-yellow-500 font-medium">
                   You haven&apos;t set up a Lightning Address yet. Update your profile to start receiving zaps!
                 </p>
               </div>
@@ -474,15 +476,15 @@ export default function WalletPage() {
             </h2>
           </div>
 
-          <div className="bg-white dark:bg-black border border-gray-100 dark:border-gray-800 rounded-[1.5rem] overflow-hidden shadow-sm">
+          <div className="bg-white dark:bg-black border border-gray-100 dark:border-gray-800 rounded-2xl overflow-hidden shadow-sm">
             {isLoadingZaps ? (
-              <div className="p-8 space-y-4">
+              <div className="p-6 sm:p-8 space-y-4">
                 {[1, 2, 3].map(i => (
                   <div key={i} className="flex gap-4 animate-pulse">
-                    <div className="w-10 h-10 bg-gray-100 dark:bg-gray-900 rounded-full" />
+                    <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gray-100 dark:bg-gray-900 rounded-full" />
                     <div className="flex-1 space-y-2">
-                      <div className="h-4 bg-gray-100 dark:bg-gray-900 rounded w-1/4" />
-                      <div className="h-3 bg-gray-100 dark:bg-gray-900 rounded w-1/2" />
+                      <div className="h-3 sm:h-4 bg-gray-100 dark:bg-gray-900 rounded w-1/4" />
+                      <div className="h-2 sm:h-3 bg-gray-100 dark:bg-gray-900 rounded w-1/2" />
                     </div>
                   </div>
                 ))}
@@ -508,37 +510,37 @@ export default function WalletPage() {
                     : zap.pubkey;
 
                   return (
-                    <div key={zap.id} className="p-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-900/50 transition-colors">
-                      <div className="flex items-center gap-4 min-w-0">
-                        <div className={`p-2 rounded-full ${isSent ? 'bg-orange-500/10 text-orange-600' : 'bg-green-500/10 text-green-600'}`}>
-                          {isSent ? <ArrowUpRight size={20} /> : <ArrowDownLeft size={20} />}
+                    <div key={zap.id} className="p-3 sm:p-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-900/50 transition-colors">
+                      <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+                        <div className={`p-1.5 sm:p-2 rounded-full shrink-0 ${isSent ? 'bg-orange-500/10 text-orange-600' : 'bg-green-500/10 text-green-600'}`}>
+                          {isSent ? <ArrowUpRight size={16} className="sm:w-5 sm:h-5" /> : <ArrowDownLeft size={16} className="sm:w-5 sm:h-5" />}
                         </div>
                         <div className="min-w-0">
-                          <div className="flex items-center gap-1.5 font-bold text-sm">
+                          <div className="flex items-center gap-1.5 font-bold text-[11px] sm:text-sm">
                             <span>{isSent ? 'Sent to' : 'Received from'}</span>
-                            <span className="text-blue-500">
+                            <span className="text-blue-500 truncate">
                               {targetPubkey ? shortenPubkey(targetPubkey) : 'Unknown'}
                             </span>
                           </div>
-                          <p className="text-[10px] text-gray-500 font-medium">
-                            {format(new Date((zap.created_at || 0) * 1000), "MMM d, yyyy · HH:mm")}
+                          <p className="text-[9px] sm:text-[10px] text-gray-500 font-medium">
+                            {format(new Date((zap.created_at || 0) * 1000), "MMM d, HH:mm")}
                           </p>
                         </div>
                       </div>
-                      <div className="flex flex-col items-end">
-                        <span className={`font-black text-lg ${isSent ? 'text-gray-900 dark:text-white' : 'text-green-500'}`}>
+                      <div className="flex flex-col items-end shrink-0 ml-2">
+                        <span className={`font-black text-sm sm:text-lg ${isSent ? 'text-gray-900 dark:text-white' : 'text-green-500'}`}>
                           {isSent ? '-' : '+'}{amount}
                         </span>
-                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">sats</span>
+                        <span className="text-[8px] sm:text-[10px] font-bold text-gray-400 uppercase tracking-widest">sats</span>
                       </div>
                     </div>
                   );
                 })}
               </div>
             ) : (
-              <div className="p-12 text-center text-gray-500">
-                <Zap className="mx-auto mb-3 opacity-20" size={40} />
-                <p className="text-sm font-bold">No recent zap activity</p>
+              <div className="p-10 sm:p-12 text-center text-gray-500">
+                <Zap className="mx-auto mb-3 opacity-20 w-8 h-8 sm:w-10 sm:h-10" />
+                <p className="text-xs sm:text-sm font-bold">No recent zap activity</p>
               </div>
             )}
           </div>
