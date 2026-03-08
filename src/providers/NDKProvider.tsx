@@ -113,7 +113,8 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
     // Initialize Wallet (NWC)
     if (nwcPairingCode) {
       try {
-        const wallet = new NDKNWCWallet(instance, { 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const wallet = new NDKNWCWallet(instance as any, { 
           pairingCode: nwcPairingCode,
           timeout: 30000
         });
@@ -123,11 +124,12 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
           addToast("Wallet connected", "success");
         });
 
-        wallet.on("balance_updated", (balance) => {
+        wallet.on("balance_updated", (balance: { amount: number }) => {
           setBalance(balance?.amount || 0);
         });
 
-        instance.wallet = wallet;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (instance as any).wallet = wallet;
         walletRef.current = wallet;
       } catch (err) {
         console.error("Failed to initialize NWC wallet:", err);
