@@ -324,23 +324,6 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
       
       setNdk(instance);
 
-      // Retry unpublished events from cache
-      if (instance.cacheAdapter && (instance.cacheAdapter as ExtendedCacheAdapter).getUnpublishedEvents) {
-        try {
-          const unpublished = await (instance.cacheAdapter as ExtendedCacheAdapter).getUnpublishedEvents!();
-          if (unpublished && unpublished.length > 0) {
-            console.log(`Retrying ${unpublished.length} unpublished events from cache...`);
-            unpublished.forEach((item) => {
-              const event = item.event;
-              event.ndk = instance;
-              event.publish();
-            });
-          }
-        } catch {
-          // Ignore
-        }
-      }
-
       // Initialize Messenger safely if we have an active user
       const currentPubkey = sessionManager.activePubkey;
       let msgInstance: NDKMessenger | null = null;
@@ -372,6 +355,31 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
         .then(async () => {
           setIsReady(true);
           console.log("NDK connected and sessions restored");
+
+          // PROPER RETRY: Run after connection is established
+          if (instance.cacheAdapter && (instance.cacheAdapter as ExtendedCacheAdapter).getUnpublishedEvents) {
+            try {
+              const unpublished = await (instance.cacheAdapter as ExtendedCacheAdapter).getUnpublishedEvents!();
+              if (unpublished && unpublished.length > 0) {
+                console.log(`[NDK] Found ${unpublished.length} unpublished events in cache. Retrying...`);
+                
+                for (const item of unpublished) {
+                  const event = item.event;
+                  event.ndk = instance;
+                  
+                  event.publish().then((relays) => {
+                    if (relays.size > 0) {
+                      console.log(`[NDK] Successfully published event ${event.id.slice(0, 8)} (Kind: ${event.kind}) to ${relays.size} relays.`);
+                    }
+                  }).catch((err) => {
+                    console.error(`[NDK] Retry failed for event ${event.id.slice(0, 8)}:`, err.message);
+                  });
+                }
+              }
+            } catch (err) {
+              console.warn("[NDK] Error during unpublished events fetch:", err);
+            }
+          }
           
           if (sessionManager.activePubkey && msgInstance) {
             try {
