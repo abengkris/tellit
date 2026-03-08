@@ -76,14 +76,18 @@ export function useFollowState(targetPubkey: string): UseFollowStateReturn {
         : await followUser(ndk, targetPubkey);
 
       if (!result.success) {
-        // Rollback jika gagal
+        // Rollback jika gagal (biasanya karena gagal sign atau fetch initial list)
         setIsFollowing(prevState);
         console.error("Follow/unfollow gagal:", result.error);
+        setIsPending(false);
+      } else {
+        // Berikan delay kecil agar user "merasakan" aksi terjadi,
+        // tapi tidak perlu menunggu relay response penuh.
+        setTimeout(() => setIsPending(false), 500);
       }
     } catch {
       // Rollback
       setIsFollowing(prevState);
-    } finally {
       setIsPending(false);
     }
   }, [user, targetPubkey, isFollowing, isPending]);

@@ -37,6 +37,9 @@ describe("follow/unfollow with NDK Test Utils", () => {
 
     await followUser(ndk, "target-pubkey");
 
+    // Wait for event to appear in relay log since publishing is now optimistic/async
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
     const sentEvents = relay?.messageLog
       .filter((m: { direction: string }) => m.direction === "out")
       .map((m: { message: string }) => JSON.parse(m.message))
@@ -66,6 +69,9 @@ describe("follow/unfollow with NDK Test Utils", () => {
     });
 
     await unfollowUser(ndk, "target-pubkey");
+
+    // Wait for event to appear in relay log since publishing is now optimistic/async
+    await new Promise((resolve) => setTimeout(resolve, 100));
 
     const sentEvents = relay?.messageLog
       .filter((m: { direction: string }) => m.direction === "out")
