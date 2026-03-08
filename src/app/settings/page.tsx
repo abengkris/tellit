@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useUIStore } from "@/store/ui";
 import { useAuthStore } from "@/store/auth";
-import { Bell, Shield, User, Globe, Wallet } from "lucide-react";
+import { Bell, Shield, User, Globe, Wallet, Clock, LogOut } from "lucide-react";
 import { Avatar } from "@/components/common/Avatar";
 import Link from "next/link";
 
@@ -64,11 +64,31 @@ export default function SettingsPage() {
             <h2 className="text-sm font-bold uppercase tracking-widest text-gray-500 mb-4 flex items-center gap-2">
               <User size={16} /> Account
             </h2>
-            <div className="bg-gray-50 dark:bg-gray-900 rounded-3xl p-4 flex items-center gap-4">
-              <Avatar pubkey={user.pubkey} src={user.profile?.image} size={60} />
-              <div className="flex-1 min-w-0">
-                <div className="font-bold text-lg truncate">{user.profile?.displayName || user.profile?.name || "Nostrich"}</div>
-                <div className="text-gray-500 text-sm truncate font-mono">{user.npub.slice(0, 12)}...{user.npub.slice(-8)}</div>
+            <div className="bg-gray-50 dark:bg-gray-900 rounded-3xl p-4 flex flex-col gap-4">
+              <div className="flex items-center gap-4">
+                <Avatar pubkey={user.pubkey} src={user.profile?.image} size={60} />
+                <div className="flex-1 min-w-0">
+                  <div className="font-bold text-lg truncate">{user.profile?.displayName || user.profile?.name || "Nostrich"}</div>
+                  <div className="text-gray-500 text-sm truncate font-mono">{user.npub.slice(0, 12)}...{user.npub.slice(-8)}</div>
+                </div>
+              </div>
+              
+              <div className="flex flex-col gap-2 border-t border-gray-200 dark:border-gray-800 pt-4">
+                <Link 
+                  href="/settings/unpublished"
+                  className="w-full py-3 bg-white dark:bg-black hover:bg-blue-50 dark:hover:bg-blue-900/10 text-gray-700 dark:text-gray-300 font-bold text-sm rounded-2xl flex items-center justify-center gap-2 transition-all border border-gray-100 dark:border-gray-800 shadow-sm"
+                >
+                  <Clock size={18} className="text-blue-500" />
+                  View Local Outbox
+                </Link>
+                
+                <button
+                  onClick={handleLogout}
+                  className="w-full py-3 text-red-500 font-bold text-sm hover:bg-red-50 dark:hover:bg-red-900/10 rounded-2xl transition-all flex items-center justify-center gap-2"
+                >
+                  <LogOut size={18} />
+                  Logout
+                </button>
               </div>
             </div>
           </section>
@@ -156,8 +176,8 @@ export default function SettingsPage() {
         </section>
 
         {/* Footer info */}
-        <div className="text-center text-gray-500 text-sm mt-20">
-          Tell it! v0.7.7<br/>
+        <div className="text-center text-gray-500 text-xs mt-20">
+          Tell it! v0.7.8<br/>
           Built with NDK & Next.js
         </div>
       </div>

@@ -14,6 +14,7 @@ import { db } from "@/lib/db";
 
 interface ExtendedCacheAdapter extends NDKCacheAdapter {
   getUnpublishedEvents?: () => Promise<{ event: NDKEvent; relays?: string[]; lastTryAt?: number }[]>;
+  discardUnpublishedEvent?: (eventId: string) => Promise<void>;
   getAllNutzapStates?: () => Promise<Map<string, NDKNutzapState>>;
   setNutzapState?: (id: string, stateChange: Partial<NDKNutzapState>) => Promise<void>;
 }
@@ -114,6 +115,21 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
       };
 
       instance.cacheAdapter = adapter;
+
+      // Implement discard method
+      adapter.discardUnpublishedEvent = async (eventId: string) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        if (dexieAdapter && (dexieAdapter as any).db) {
+          try {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const dbInstance = (dexieAdapter as any).db;
+            await dbInstance.unpublishedEvents.delete(eventId);
+            console.log(`[NDK] Discarded unpublished event: ${eventId}`);
+          } catch {
+            // Ignore
+          }
+        }
+      };
     }
 
     // Performance Optimization: Validation Sampling
