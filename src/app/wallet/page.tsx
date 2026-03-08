@@ -134,7 +134,7 @@ export default function WalletPage() {
     }
   };
 
-  const handleAddMint = () => {
+  const handleAddMint = async () => {
     if (!newMint.trim().startsWith("http")) {
       addToast("Invalid mint URL", "error");
       return;
@@ -143,29 +143,66 @@ export default function WalletPage() {
       addToast("Mint already added", "info");
       return;
     }
-    setCashuMints([...cashuMints, newMint.trim()]);
+    
+    const updatedMints = [...cashuMints, newMint.trim()];
+    setCashuMints(updatedMints);
     setNewMint("");
-    addToast("Mint added. Reload to apply.", "success");
+
+    // If wallet is active, update it live
+    if (ndk?.wallet instanceof NDKCashuWallet) {
+      ndk.wallet.mints = updatedMints;
+      await ndk.wallet.publish();
+      addToast("Mint added and wallet updated", "success");
+    } else {
+      addToast("Mint added. Connect wallet to sync.", "success");
+    }
   };
 
-  const handleRemoveMint = (mint: string) => {
+  const handleRemoveMint = async (mint: string) => {
     if (cashuMints.length <= 1) {
       addToast("You need at least one mint", "error");
       return;
     }
-    setCashuMints(cashuMints.filter(m => m !== mint));
-    addToast("Mint removed. Reload to apply.", "success");
+    const updatedMints = cashuMints.filter(m => m !== mint);
+    setCashuMints(updatedMints);
+
+    // If wallet is active, update it live
+    if (ndk?.wallet instanceof NDKCashuWallet) {
+      ndk.wallet.mints = updatedMints;
+      await ndk.wallet.publish();
+      addToast("Mint removed and wallet updated", "success");
+    } else {
+      addToast("Mint removed. Connect wallet to sync.", "success");
+    }
+  };
+
+  const handleCreateCashuWallet = async () => {
+    if (!ndk) return;
+    setIsPublishing(true);
+    try {
+      // Use static create() as recommended
+      const wallet = await NDKCashuWallet.create(ndk, cashuMints);
+      addToast("New Cashu wallet created and backed up to Nostr!", "success");
+      setWalletType('cashu');
+      setTimeout(() => window.location.reload(), 1000);
+    } catch (err) {
+      console.error(err);
+      addToast("Failed to create Cashu wallet", "error");
+    } finally {
+      setIsPublishing(false);
+    }
   };
 
   const handlePublishCashu = async () => {
     if (!(ndk?.wallet instanceof NDKCashuWallet)) return;
     setIsPublishing(true);
     try {
+      // Direct publish as recommended for saving config
       await ndk.wallet.publish();
       await ndk.wallet.publishMintList();
-      addToast("Cashu wallet and mint list published to Nostr!", "success");
+      addToast("Wallet configuration and mint list synced to Nostr!", "success");
     } catch {
-      addToast("Failed to publish Cashu info", "error");
+      addToast("Failed to sync wallet info", "error");
     } finally {
       setIsPublishing(false);
     }
@@ -318,10 +355,11 @@ export default function WalletPage() {
                   Native eCash wallet using NIP-60. Fast, private, and built directly into Nostr.
                 </p>
                 <button 
-                  onClick={() => { setWalletType('cashu'); window.location.reload(); }}
-                  className="w-full max-w-sm py-3 sm:py-4 bg-blue-500 hover:bg-blue-600 text-white font-black rounded-2xl shadow-lg shadow-blue-500/20 transition-all"
+                  onClick={handleCreateCashuWallet}
+                  disabled={isPublishing}
+                  className="w-full max-w-sm py-3 sm:py-4 bg-blue-500 hover:bg-blue-600 text-white font-black rounded-2xl shadow-lg shadow-blue-500/20 transition-all disabled:opacity-50"
                 >
-                  Create New Cashu Wallet
+                  {isPublishing ? <RefreshCw size={20} className="animate-spin mx-auto" /> : "Create New Cashu Wallet"}
                 </button>
               </div>
             )}

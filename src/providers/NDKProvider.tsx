@@ -144,7 +144,7 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
         }
       } else if (walletType === 'cashu') {
         try {
-          // Attempt to find existing Cashu wallet event
+          // Attempt to find existing Cashu wallet event (Kind 17375)
           let wallet: NDKCashuWallet | undefined;
           
           if (instance.signer) {
@@ -153,11 +153,16 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
               kinds: [NDKKind.CashuWallet],
               authors: [user.pubkey]
             });
+            
             if (event) {
+              console.log("Restoring Cashu wallet from Nostr event");
               wallet = await NDKCashuWallet.from(event);
             }
           }
 
+          // If no wallet found on Nostr, but user selected 'cashu' type,
+          // we create a local-only instance. It will be officially "created"
+          // and published when the user clicks "Create New Cashu Wallet" in the UI.
           if (!wallet) {
             wallet = new NDKCashuWallet(instance);
             wallet.mints = cashuMints;
