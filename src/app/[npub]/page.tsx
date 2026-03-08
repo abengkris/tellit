@@ -19,7 +19,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const user = ndk.getUser({ pubkey: hexPubkey });
     const profile = await user.fetchProfile();
     
-    const display_name = profile?.display_name || profile?.name || shortenPubkey(npub);
+    const display_name = profile?.display_name ? String(profile.display_name) : (profile?.name ? String(profile.name) : shortenPubkey(npub));
     const about = profile?.about || `Check out ${display_name}'s profile on Tell it!`;
     const image = profile?.picture || `https://robohash.org/${hexPubkey}?set=set1`;
 

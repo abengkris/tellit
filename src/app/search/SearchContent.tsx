@@ -37,9 +37,9 @@ export function SearchContent() {
     const q = mentionQuery.toLowerCase();
     return followingUsers
       .filter(u => 
-        u.profile?.name?.toLowerCase().includes(q) || 
-        u.profile?.display_name?.toLowerCase().includes(q) ||
-        u.profile?.nip05?.toLowerCase().includes(q)
+        String(u.profile?.name || "").toLowerCase().includes(q) || 
+        String(u.profile?.display_name || "").toLowerCase().includes(q) ||
+        String(u.profile?.nip05 || "").toLowerCase().includes(q)
       )
       .slice(0, 8);
   }, [followingUsers, mentionQuery]);

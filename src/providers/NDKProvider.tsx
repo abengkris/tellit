@@ -424,9 +424,10 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
                     if (browserNotificationsEnabled && Notification.permission === "granted") {
                       const sender = message.sender;
                       sender.fetchProfile().then(() => {
-                        new Notification(sender.profile?.display_name || sender.profile?.name || "New Message", {
-                          body: message.content,
-                          icon: sender.profile?.image || "/favicon.ico"
+                        const title = String(sender.profile?.display_name || sender.profile?.name || "New Message");
+                        new Notification(title, {
+                          body: message.content.slice(0, 100),
+                          icon: sender.profile?.picture || "/favicon.ico"
                         });
                       });
                     }
