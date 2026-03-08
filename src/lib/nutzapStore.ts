@@ -1,5 +1,5 @@
-import { NDKNutzapMonitorStore, NDKNutzapState } from "@nostr-dev-kit/wallet";
-import { NDKEventId } from "@nostr-dev-kit/ndk";
+import { NDKNutzapMonitorStore } from "@nostr-dev-kit/wallet";
+import { NDKEventId, NDKNutzapState } from "@nostr-dev-kit/ndk";
 import { db } from "./db";
 
 export class DexieNutzapStore implements NDKNutzapMonitorStore {
