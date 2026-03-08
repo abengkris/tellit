@@ -37,6 +37,13 @@ export default function WalletPage() {
   const [recentZaps, setRecentZaps] = useState<NDKEvent[]>([]);
   const [isLoadingZaps, setIsLoadingZaps] = useState(false);
 
+  // Auto-refresh balance if missing
+  useEffect(() => {
+    if (nwcPairingCode && balance === null && isReady) {
+      refreshBalance();
+    }
+  }, [nwcPairingCode, balance, isReady, refreshBalance]);
+
   const handleCopyAddress = (address: string) => {
     navigator.clipboard.writeText(address);
     addToast("Address copied!", "success");

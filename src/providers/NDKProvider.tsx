@@ -130,6 +130,11 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
           }).catch((err) => {
             console.warn("Failed to fetch wallet info:", err);
           });
+
+          // Explicitly trigger balance update for wallets that don't broadcast it automatically
+          wallet.updateBalance().catch((err) => {
+            console.warn("Initial balance fetch failed:", err);
+          });
         });
 
         wallet.on("balance_updated", (balance?: { amount: number }) => {
