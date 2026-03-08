@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useEffect, useState, ReactNode, useRef } from "react";
-import NDK, { NDKUser, NDKEvent, NDKCacheAdapter, NDKRelay, NDKKind } from "@nostr-dev-kit/ndk";
+import NDK, { NDKEvent, NDKCacheAdapter, NDKRelay, NDKKind } from "@nostr-dev-kit/ndk";
 import NDKCacheAdapterDexie from "@nostr-dev-kit/ndk-cache-dexie";
 import { NDKMessenger, CacheModuleStorage, NDKMessage } from "@nostr-dev-kit/messages";
 import { NDKSessionManager, LocalStorage, NDKSession } from "@nostr-dev-kit/sessions";
@@ -10,6 +10,7 @@ import { useAuthStore } from "@/store/auth";
 import { useUIStore } from "@/store/ui";
 import { useWalletStore } from "@/store/wallet";
 import { getNDK } from "@/lib/ndk";
+import { DexieNutzapStore } from "@/lib/nutzapStore";
 
 interface ExtendedCacheAdapter extends NDKCacheAdapter {
   getUnpublishedEvents?: () => Promise<{ event: NDKEvent; relays?: string[]; lastTryAt?: number }[]>;
@@ -176,7 +177,9 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
             // Initialize Nutzap Monitor for automated redemption
             if (instance.signer) {
               instance.signer.user().then((user) => {
-                const monitor = new NDKNutzapMonitor(instance, user, {});
+                const monitor = new NDKNutzapMonitor(instance, user, {
+                  store: new DexieNutzapStore()
+                });
                 monitor.wallet = wallet;
                 monitor.on("redeemed", (nutzap) => {
                   console.log("Nutzap redeemed:", nutzap);
@@ -345,7 +348,7 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
         try { monitorRef.current.stop(); } catch (e) {}
       }
     };
-  }, [setUser, setLoginState, incrementUnreadMessagesCount, addToast, activeChatPubkey, browserNotificationsEnabled, nwcPairingCode, setBalance]);
+  }, [setUser, setLoginState, incrementUnreadMessagesCount, addToast, activeChatPubkey, browserNotificationsEnabled, nwcPairingCode, cashuMints, setBalance, setInfo, walletType]);
 
   const refreshBalance = async () => {
     if (walletRef.current) {
