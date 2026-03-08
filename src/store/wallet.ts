@@ -16,6 +16,7 @@ interface WalletState {
   nwcPairingCode: string | null;
   // Cashu
   cashuMints: string[];
+  cashuPrivateKey: string | null; // Added for P2PK stability
   // Shared
   balance: number | null;
   info: WalletInfo | null;
@@ -24,6 +25,7 @@ interface WalletState {
   setWalletType: (type: WalletType) => void;
   setNwcPairingCode: (code: string | null) => void;
   setCashuMints: (mints: string[]) => void;
+  setCashuPrivateKey: (key: string | null) => void; // Added
   setBalance: (balance: number | null) => void;
   setInfo: (info: WalletInfo | null) => void;
   resetWallet: () => void;
@@ -35,17 +37,20 @@ export const useWalletStore = create<WalletState>()(
       walletType: 'none',
       nwcPairingCode: null,
       cashuMints: ['https://8333.space:3338'],
+      cashuPrivateKey: null,
       balance: null,
       info: null,
 
       setWalletType: (walletType) => set({ walletType, balance: null, info: null }),
       setNwcPairingCode: (code) => set({ nwcPairingCode: code, walletType: code ? 'nwc' : 'none' }),
       setCashuMints: (cashuMints) => set({ cashuMints }),
+      setCashuPrivateKey: (cashuPrivateKey) => set({ cashuPrivateKey }),
       setBalance: (balance) => set({ balance }),
       setInfo: (info) => set({ info }),
       resetWallet: () => set({ 
         walletType: 'none', 
         nwcPairingCode: null, 
+        cashuPrivateKey: null,
         balance: null, 
         info: null 
       }),
@@ -57,6 +62,7 @@ export const useWalletStore = create<WalletState>()(
         walletType: state.walletType,
         nwcPairingCode: state.nwcPairingCode,
         cashuMints: state.cashuMints,
+        cashuPrivateKey: state.cashuPrivateKey,
       }),
     }
   )

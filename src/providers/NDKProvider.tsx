@@ -52,7 +52,15 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
     browserNotificationsEnabled 
   } = useUIStore();
   
-  const { walletType, nwcPairingCode, cashuMints, setBalance, setInfo } = useWalletStore();
+  const { 
+    walletType, 
+    nwcPairingCode, 
+    cashuMints, 
+    cashuPrivateKey,
+    setCashuPrivateKey,
+    setBalance, 
+    setInfo 
+  } = useWalletStore();
   
   const messengerRef = useRef<NDKMessenger | null>(null);
   const sessionsRef = useRef<NDKSessionManager | null>(null);
@@ -228,9 +236,19 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
           if (!cashu && walletType === 'cashu') {
             cashu = new NDKCashuWallet(instance);
             cashu.mints = cashuMints;
+            
+            // Apply existing key if we have it
+            if (cashuPrivateKey) {
+              cashu.privateKey = cashuPrivateKey;
+            }
           }
 
           if (cashu) {
+            // Save the key if it's new or restored
+            if (cashu.privateKey && cashu.privateKey !== cashuPrivateKey) {
+              setCashuPrivateKey(cashu.privateKey);
+            }
+
             cashu.on("ready", () => {
               console.log("Cashu wallet ready");
               if (walletType === 'cashu') {
