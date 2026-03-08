@@ -276,7 +276,7 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
       }
     };
 
-    initWallet();
+    // initWallet() is now called inside initApp() after session restore
 
     // Initialize Session Manager
     const sessionManager = new NDKSessionManager(instance, {
@@ -317,6 +317,9 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
     const initApp = async () => {
       // Restore sessions first
       await sessionManager.restore();
+      
+      // Now that session is restored, we can init wallets with signer
+      await initWallet();
       
       setNdk(instance);
 
