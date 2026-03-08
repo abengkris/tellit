@@ -25,12 +25,14 @@ import {
   Database,
   Share2,
   CheckCircle2,
-  CreditCard
+  CreditCard,
+  Loader2
 } from "lucide-react";
 import { NDKEvent, NDKFilter } from "@nostr-dev-kit/ndk";
 import { NDKCashuWallet } from "@nostr-dev-kit/wallet";
 import { format } from "date-fns";
 import { shortenPubkey } from "@/lib/utils/nip19";
+import { CashuDepositModal } from "@/components/common/CashuDepositModal";
 
 export default function WalletPage() {
   const { 
@@ -57,6 +59,10 @@ export default function WalletPage() {
   const [newMint, setNewMint] = useState("");
   const [p2pk, setP2pk] = useState<string | null>(null);
   const [isPublishing, setIsPublishing] = useState(false);
+  
+  const [showDepositModal, setShowDepositModal] = useState(false);
+  const [tokenInput, setTokenInput] = useState("");
+  const [isReceivingToken, setIsReceivingToken] = useState(false);
 
   // Auto-refresh balance if missing
   useEffect(() => {
@@ -181,7 +187,7 @@ export default function WalletPage() {
     setIsPublishing(true);
     try {
       // Use static create() as recommended
-      const wallet = await NDKCashuWallet.create(ndk, cashuMints);
+      await NDKCashuWallet.create(ndk, cashuMints);
       addToast("New Cashu wallet created and backed up to Nostr!", "success");
       setWalletType('cashu');
       setTimeout(() => window.location.reload(), 1000);
@@ -205,6 +211,28 @@ export default function WalletPage() {
       addToast("Failed to sync wallet info", "error");
     } finally {
       setIsPublishing(false);
+    }
+  };
+
+  const handleReceiveToken = async () => {
+    if (!tokenInput.trim() || !(ndk?.wallet instanceof NDKCashuWallet)) return;
+    
+    setIsReceivingToken(true);
+    try {
+      const token = tokenInput.trim();
+      const result = await ndk.wallet.receiveToken(token);
+      if (result) {
+        addToast("Token received and added to wallet!", "success");
+        setTokenInput("");
+        refreshBalance();
+      } else {
+        addToast("Failed to receive token. Check if the mint is supported.", "error");
+      }
+    } catch (err) {
+      console.error(err);
+      addToast("Error receiving token.", "error");
+    } finally {
+      setIsReceivingToken(false);
     }
   };
 
@@ -299,7 +327,13 @@ export default function WalletPage() {
 
             <div className="flex gap-3 mt-4">
               <button 
-                onClick={() => addToast("Deposit coming soon!", "info")}
+                onClick={() => {
+                  if (walletType === 'cashu') {
+                    setShowDepositModal(true);
+                  } else {
+                    addToast("Deposit coming soon for NWC!", "info");
+                  }
+                }}
                 className="flex-1 py-3 bg-white/20 hover:bg-white/30 backdrop-blur-md rounded-2xl font-bold text-sm sm:text-base flex items-center justify-center gap-2 transition-all active:scale-95"
               >
                 <Plus size={18} /> Receive
@@ -416,6 +450,27 @@ export default function WalletPage() {
                   />
                   <button onClick={handleAddMint} className="p-2.5 sm:p-3 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors shrink-0">
                     <PlusCircle size={18} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Redeem Token */}
+              <div className="pt-6 border-t border-gray-100 dark:border-gray-800">
+                <label className="block text-xs sm:text-sm font-bold mb-3">Redeem Cashu Token</label>
+                <div className="flex gap-2">
+                  <input 
+                    type="text" 
+                    placeholder="cashuA..."
+                    value={tokenInput}
+                    onChange={(e) => setTokenInput(e.target.value)}
+                    className="flex-1 p-2.5 sm:p-3 bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl text-[10px] sm:text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 font-mono"
+                  />
+                  <button 
+                    onClick={handleReceiveToken}
+                    disabled={isReceivingToken || !tokenInput.trim()}
+                    className="p-2.5 sm:p-3 bg-gray-900 dark:bg-white text-white dark:text-black rounded-xl hover:opacity-90 transition-colors shrink-0 font-bold text-xs disabled:opacity-50"
+                  >
+                    {isReceivingToken ? <Loader2 size={18} className="animate-spin" /> : "Redeem"}
                   </button>
                 </div>
               </div>
@@ -600,6 +655,14 @@ export default function WalletPage() {
           </div>
         </section>
       </div>
+
+      {showDepositModal && ndk?.wallet instanceof NDKCashuWallet && (
+        <CashuDepositModal
+          isOpen={showDepositModal}
+          onClose={() => setShowDepositModal(false)}
+          wallet={ndk.wallet}
+        />
+      )}
     </MainLayout>
   );
 }
