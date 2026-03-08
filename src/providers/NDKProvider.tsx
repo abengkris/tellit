@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useEffect, useState, ReactNode, useRef } from "react";
-import NDK, { NDKEvent, NDKCacheAdapter, NDKRelay, NDKKind } from "@nostr-dev-kit/ndk";
+import NDK, { NDKEvent, NDKCacheAdapter, NDKRelay, NDKKind, NDKNutzapState } from "@nostr-dev-kit/ndk";
 import NDKCacheAdapterDexie from "@nostr-dev-kit/ndk-cache-dexie";
 import { NDKMessenger, CacheModuleStorage, NDKMessage } from "@nostr-dev-kit/messages";
 import { NDKSessionManager, LocalStorage, NDKSession } from "@nostr-dev-kit/sessions";
@@ -10,11 +10,12 @@ import { useAuthStore } from "@/store/auth";
 import { useUIStore } from "@/store/ui";
 import { useWalletStore } from "@/store/wallet";
 import { getNDK } from "@/lib/ndk";
+import { db } from "@/lib/db";
 
 interface ExtendedCacheAdapter extends NDKCacheAdapter {
   getUnpublishedEvents?: () => Promise<{ event: NDKEvent; relays?: string[]; lastTryAt?: number }[]>;
-  getAllNutzapStates?: () => Promise<Map<string, unknown>>;
-  setNutzapState?: (id: string, stateChange: unknown) => Promise<void>;
+  getAllNutzapStates?: () => Promise<Map<string, NDKNutzapState>>;
+  setNutzapState?: (id: string, stateChange: Partial<NDKNutzapState>) => Promise<void>;
 }
 
 export interface NDKContextType {
@@ -64,8 +65,8 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
     let dexieAdapter: NDKCacheAdapterDexie | null = null;
     try {
       dexieAdapter = new NDKCacheAdapterDexie({ dbName: "ndk-cache" });
-    } catch (e) {
-      console.error("Failed to initialize Dexie adapter:", e);
+    } catch {
+      // Ignore
     }
 
     const instance = getNDK();
@@ -76,11 +77,11 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
       
       // Implement Nutzap state persistence methods on the adapter
       adapter.getAllNutzapStates = async () => {
-        const states = new Map<string, unknown>();
+        const states = new Map<string, NDKNutzapState>();
         try {
           const entries = await db.nutzapStates.toArray();
           for (const entry of entries) {
-            states.set(entry.id, entry.state);
+            states.set(entry.id, entry.state as NDKNutzapState);
           }
         } catch {
           // Ignore errors
@@ -88,14 +89,14 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
         return states;
       };
 
-      adapter.setNutzapState = async (id: string, stateChange: unknown) => {
+      adapter.setNutzapState = async (id: string, stateChange: Partial<NDKNutzapState>) => {
         try {
           await db.transaction("rw", db.nutzapStates, async () => {
             const existing = await db.nutzapStates.get(id);
             const newState = {
               ...((existing?.state as object) || {}),
-              ...(stateChange as object)
-            } as { nutzap?: unknown };
+              ...stateChange
+            } as Partial<NDKNutzapState>;
             
             // Remove the nutzap event object before saving to avoid serialization issues
             if (newState.nutzap) {
@@ -181,8 +182,8 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
 
           instance.wallet = wallet;
           walletRef.current = wallet;
-        } catch (err) {
-          console.error("Failed to initialize NWC wallet:", err);
+        } catch {
+          // Ignore
         }
       } else if (walletType === 'cashu') {
         try {
@@ -227,8 +228,8 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
                 monitor.start({}).then(() => {
                   console.log("Nutzap monitor started");
                   monitorRef.current = monitor;
-                }).catch((err) => {
-                  console.error("Failed to start Nutzap monitor:", err);
+                }).catch(() => {
+                  // Ignore
                 });
               });
             }
@@ -241,8 +242,8 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
           instance.wallet = wallet;
           walletRef.current = wallet;
           wallet.start();
-        } catch (err) {
-          console.error("Failed to initialize Cashu wallet:", err);
+        } catch {
+          // Ignore
         }
       }
     };
@@ -303,8 +304,8 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
               event.publish();
             });
           }
-        } catch (e) {
-          console.warn("Failed to retry unpublished events:", e);
+        } catch {
+          // Ignore
         }
       }
 
@@ -396,8 +397,8 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
         if (typeof walletRef.current.updateBalance === 'function') {
           await walletRef.current.updateBalance();
         }
-      } catch (e) {
-        console.error("Failed to refresh wallet balance:", e);
+      } catch {
+        // Ignore error
       }
     }
   };
