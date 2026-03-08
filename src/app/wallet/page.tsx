@@ -32,6 +32,7 @@ import {
 import { NDKEvent, NDKFilter } from "@nostr-dev-kit/ndk";
 import { NDKCashuWallet } from "@nostr-dev-kit/wallet";
 import { format } from "date-fns";
+import Link from "next/link";
 import { shortenPubkey } from "@/lib/utils/nip19";
 import { CashuDepositModal } from "@/components/common/CashuDepositModal";
 
@@ -592,15 +593,23 @@ export default function WalletPage() {
 
         {/* Zap Address Section (For Profile lud16) */}
         <section className="mb-10">
-          <h2 className="text-sm font-black uppercase tracking-widest text-gray-500 mb-4 flex items-center gap-2">
-            <Zap size={16} /> Zap Address
-          </h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-sm font-black uppercase tracking-widest text-gray-500 flex items-center gap-2">
+              <Zap size={16} /> Zap Address
+            </h2>
+            <Link 
+              href={`/${user?.npub}`}
+              className="text-[10px] font-black text-blue-500 uppercase tracking-widest hover:underline"
+            >
+              Edit Profile
+            </Link>
+          </div>
           <div className="bg-white dark:bg-black border border-gray-100 dark:border-gray-800 rounded-2xl p-5 sm:p-6 shadow-sm">
             <p className="text-xs sm:text-sm text-gray-500 mb-4">
-              This is your public lightning address from your Nostr profile.
+              This is your public lightning address from your Nostr profile. 
             </p>
             {profile?.lud16 ? (
-              <div className="flex items-center justify-between p-3 sm:p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 overflow-hidden">
+              <div className="flex items-center justify-between p-3 sm:p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 overflow-hidden mb-4">
                 <code className="text-[10px] sm:text-sm text-blue-500 font-bold break-all mr-2">{profile.lud16}</code>
                 <button 
                   onClick={() => handleCopy(profile.lud16!, "Zap Address")}
@@ -610,12 +619,22 @@ export default function WalletPage() {
                 </button>
               </div>
             ) : (
-              <div className="p-4 bg-yellow-500/5 border border-yellow-500/20 rounded-2xl">
+              <div className="p-4 bg-yellow-500/5 border border-yellow-500/20 rounded-2xl mb-4">
                 <p className="text-xs sm:text-sm text-yellow-600 dark:text-yellow-500 font-medium">
                   You haven&apos;t set up a Lightning Address yet. Update your profile to start receiving zaps!
                 </p>
               </div>
             )}
+
+            <div className="p-4 bg-blue-500/5 rounded-2xl border border-blue-500/10">
+              <h4 className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                <Info size={12} /> Pro Tip: Cashu-Linked Addresses
+              </h4>
+              <p className="text-[11px] text-gray-500 leading-relaxed">
+                Use a Lightning Address from providers like <span className="font-bold text-gray-700 dark:text-gray-300">cashu.me</span> or <span className="font-bold text-gray-700 dark:text-gray-300">minibits.cash</span>. 
+                Any sats sent to those addresses will automatically arrive as Nutzaps in this wallet!
+              </p>
+            </div>
           </div>
         </section>
 
