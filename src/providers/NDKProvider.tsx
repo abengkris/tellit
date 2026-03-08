@@ -21,6 +21,7 @@ export interface NDKContextType {
   sessions: NDKSessionManager | null;
   activeSession: NDKSession | null;
   isReady: boolean;
+  refreshBalance: () => Promise<void>;
 }
 
 export const NDKContext = createContext<NDKContextType>({
@@ -29,6 +30,7 @@ export const NDKContext = createContext<NDKContextType>({
   sessions: null,
   activeSession: null,
   isReady: false,
+  refreshBalance: async () => {},
 });
 
 export const NDKProvider = ({ children }: { children: ReactNode }) => {
@@ -271,8 +273,19 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
     };
   }, [setUser, setLoginState, incrementUnreadMessagesCount, addToast, activeChatPubkey, browserNotificationsEnabled, nwcPairingCode, setBalance]);
 
+  const refreshBalance = async () => {
+    if (walletRef.current) {
+      try {
+        // NDKNWCWallet might have a getBalance or similar, or it triggers balance_updated automatically
+        await walletRef.current.updateBalance();
+      } catch (e) {
+        console.error("Failed to refresh wallet balance:", e);
+      }
+    }
+  };
+
   return (
-    <NDKContext.Provider value={{ ndk, messenger, sessions, activeSession, isReady }}>
+    <NDKContext.Provider value={{ ndk, messenger, sessions, activeSession, isReady, refreshBalance }}>
       {children}
     </NDKContext.Provider>
   );

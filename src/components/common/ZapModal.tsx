@@ -28,7 +28,7 @@ interface ZapModalProps {
 }
 
 export const ZapModal: React.FC<ZapModalProps> = ({ event, user, onClose, onSuccess }) => {
-  const { ndk } = useNDK();
+  const { ndk, refreshBalance } = useNDK();
   const { addToast, defaultZapAmount } = useUIStore();
   const [amount, setAmount] = useState<number>(defaultZapAmount || 21);
   const [comment, setComment] = useState("");
@@ -50,6 +50,7 @@ export const ZapModal: React.FC<ZapModalProps> = ({ event, user, onClose, onSucc
       setPaid(true);
       triggerZapConfetti();
       addToast("Zap received!", "success");
+      refreshBalance(); // Update balance in store
       if (onSuccess) onSuccess();
     }, !!user);
 
@@ -62,8 +63,17 @@ export const ZapModal: React.FC<ZapModalProps> = ({ event, user, onClose, onSucc
     setLoading(true);
     try {
       // Amount in millisats (1 sat = 1000 millisats)
-      const bolt11 = await createZapInvoice(ndk, amount * 1000, target, comment);
+      const { invoice: bolt11, alreadyPaid } = await createZapInvoice(ndk, amount * 1000, target, comment);
       
+      if (alreadyPaid) {
+        setPaid(true);
+        triggerZapConfetti();
+        addToast("Zap sent via connected wallet!", "success");
+        refreshBalance(); // Update balance in store
+        if (onSuccess) onSuccess();
+        return;
+      }
+
       if (bolt11) {
         setInvoice(bolt11);
         
