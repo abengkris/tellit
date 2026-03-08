@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
-import { useWalletStore } from "@/store/wallet";
+import { useWalletStore, WalletType } from "@/store/wallet";
 import { useNDK } from "@/hooks/useNDK";
 import { useAuthStore } from "@/store/auth";
 import { useUIStore } from "@/store/ui";
@@ -19,14 +19,31 @@ import {
   Info,
   History,
   Settings,
-  Copy
+  Copy,
+  PlusCircle,
+  XCircle,
+  Database,
+  Share2,
+  CheckCircle2,
+  CreditCard
 } from "lucide-react";
 import { NDKEvent, NDKFilter } from "@nostr-dev-kit/ndk";
+import { NDKCashuWallet } from "@nostr-dev-kit/wallet";
 import { format } from "date-fns";
 import { shortenPubkey } from "@/lib/utils/nip19";
 
 export default function WalletPage() {
-  const { nwcPairingCode, setNwcPairingCode, balance, info: walletInfo } = useWalletStore();
+  const { 
+    walletType, 
+    setWalletType, 
+    nwcPairingCode, 
+    setNwcPairingCode, 
+    cashuMints, 
+    setCashuMints, 
+    balance, 
+    info: walletInfo 
+  } = useWalletStore();
+  
   const { ndk, isReady, refreshBalance } = useNDK();
   const { isLoggedIn, user } = useAuthStore();
   const { profile } = useProfile(user?.pubkey);
@@ -36,18 +53,24 @@ export default function WalletPage() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [recentZaps, setRecentZaps] = useState<NDKEvent[]>([]);
   const [isLoadingZaps, setIsLoadingZaps] = useState(false);
+  
+  const [newMint, setNewMint] = useState("");
+  const [p2pk, setP2pk] = useState<string | null>(null);
+  const [isPublishing, setIsPublishing] = useState(false);
 
   // Auto-refresh balance if missing
   useEffect(() => {
-    if (nwcPairingCode && balance === null && isReady) {
+    if (walletType !== 'none' && balance === null && isReady) {
       refreshBalance();
     }
-  }, [nwcPairingCode, balance, isReady, refreshBalance]);
+  }, [walletType, balance, isReady, refreshBalance]);
 
-  const handleCopyAddress = (address: string) => {
-    navigator.clipboard.writeText(address);
-    addToast("Address copied!", "success");
-  };
+  // Get P2PK for Cashu
+  useEffect(() => {
+    if (walletType === 'cashu' && ndk?.wallet instanceof NDKCashuWallet) {
+      ndk.wallet.getP2pk().then(setP2pk).catch(console.error);
+    }
+  }, [walletType, ndk?.wallet]);
 
   // Fetch recent zaps (kind 9735)
   useEffect(() => {
@@ -93,22 +116,65 @@ export default function WalletPage() {
     setTimeout(() => setIsRefreshing(false), 1000);
   };
 
-  const handleConnect = () => {
+  const handleConnectNWC = () => {
     if (!pairingInput.trim().startsWith("nostr+walletconnect://")) {
       addToast("Invalid NWC pairing code", "error");
       return;
     }
     setNwcPairingCode(pairingInput.trim());
-    addToast("Wallet connected!", "success");
+    addToast("NWC Wallet connected!", "success");
     window.location.reload();
   };
 
-  const handleDisconnect = () => {
-    if (confirm("Disconnect your wallet? You will need to reconnect to use one-tap zapping.")) {
-      setNwcPairingCode(null);
-      addToast("Wallet disconnected", "info");
+  const handleSwitchType = (type: WalletType) => {
+    if (type === walletType) return;
+    if (confirm(`Switch to ${type.toUpperCase()} wallet? Current session will reload.`)) {
+      setWalletType(type);
       window.location.reload();
     }
+  };
+
+  const handleAddMint = () => {
+    if (!newMint.trim().startsWith("http")) {
+      addToast("Invalid mint URL", "error");
+      return;
+    }
+    if (cashuMints.includes(newMint.trim())) {
+      addToast("Mint already added", "info");
+      return;
+    }
+    setCashuMints([...cashuMints, newMint.trim()]);
+    setNewMint("");
+    addToast("Mint added. Reload to apply.", "success");
+  };
+
+  const handleRemoveMint = (mint: string) => {
+    if (cashuMints.length <= 1) {
+      addToast("You need at least one mint", "error");
+      return;
+    }
+    setCashuMints(cashuMints.filter(m => m !== mint));
+    addToast("Mint removed. Reload to apply.", "success");
+  };
+
+  const handlePublishCashu = async () => {
+    if (!(ndk?.wallet instanceof NDKCashuWallet)) return;
+    setIsPublishing(true);
+    try {
+      await ndk.wallet.publish();
+      await ndk.wallet.publishMintList();
+      addToast("Cashu wallet and mint list published to Nostr!", "success");
+    } catch (err) {
+      console.error(err);
+      addToast("Failed to publish Cashu info", "error");
+    } finally {
+      setIsPublishing(false);
+    }
+  };
+
+  const handleCopy = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    addToast(`${label} copied!`, "success");
   };
 
   if (!isLoggedIn) {
@@ -132,7 +198,7 @@ export default function WalletPage() {
           <h1 className="text-3xl font-black flex items-center gap-3">
             <Wallet className="text-blue-500" size={32} /> Wallet
           </h1>
-          {nwcPairingCode && (
+          {walletType !== 'none' && (
             <button 
               onClick={handleRefresh}
               disabled={isRefreshing}
@@ -143,8 +209,25 @@ export default function WalletPage() {
           )}
         </header>
 
+        {/* Wallet Type Switcher */}
+        <div className="flex p-1 bg-gray-100 dark:bg-gray-900 rounded-2xl mb-8">
+          {(['nwc', 'cashu'] as WalletType[]).map((type) => (
+            <button
+              key={type}
+              onClick={() => handleSwitchType(type)}
+              className={`flex-1 py-3 text-sm font-black rounded-xl transition-all uppercase tracking-widest ${
+                walletType === type 
+                  ? "bg-white dark:bg-gray-800 shadow-sm text-blue-500" 
+                  : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+              }`}
+            >
+              {type}
+            </button>
+          ))}
+        </div>
+
         {/* Balance Card */}
-        {nwcPairingCode ? (
+        {walletType !== 'none' && (nwcPairingCode || walletType === 'cashu') ? (
           <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-[2rem] p-8 text-white shadow-xl shadow-blue-500/20 mb-8 relative overflow-hidden group">
             <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform duration-500">
               <Zap size={120} fill="currentColor" />
@@ -158,16 +241,15 @@ export default function WalletPage() {
                   <span className="text-xl font-bold text-blue-200">sats</span>
                 </div>
               </div>
-              {walletInfo?.alias && (
-                <div className="bg-white/10 backdrop-blur-md px-3 py-1 rounded-full border border-white/10 text-[10px] font-black uppercase tracking-widest">
-                  {walletInfo.alias}
-                </div>
-              )}
+              <div className="bg-white/10 backdrop-blur-md px-3 py-1 rounded-full border border-white/10 text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
+                <div className={`w-2 h-2 rounded-full ${balance !== null ? 'bg-green-400' : 'bg-yellow-400 animate-pulse'}`} />
+                {walletInfo?.alias || walletType}
+              </div>
             </div>
 
             {walletInfo?.lud16 && (
               <button 
-                onClick={() => handleCopyAddress(walletInfo.lud16!)}
+                onClick={() => handleCopy(walletInfo.lud16!, "Address")}
                 className="flex items-center gap-2 text-blue-100/80 hover:text-white transition-colors mb-8 group/addr"
               >
                 <span className="text-sm font-mono truncate max-w-[200px]">{walletInfo.lud16}</span>
@@ -183,7 +265,7 @@ export default function WalletPage() {
                 <Plus size={18} /> Receive
               </button>
               <button 
-                onClick={handleDisconnect}
+                onClick={() => handleSwitchType('none')}
                 className="p-3 bg-white/10 hover:bg-red-500/40 backdrop-blur-md rounded-2xl transition-all"
                 title="Disconnect Wallet"
               >
@@ -194,64 +276,146 @@ export default function WalletPage() {
         ) : (
           <div className="bg-gray-50 dark:bg-gray-900 border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-[2rem] p-10 text-center mb-8">
             <div className="w-20 h-20 bg-blue-500/10 text-blue-500 rounded-3xl flex items-center justify-center mx-auto mb-6">
-              <Plus size={40} />
+              {walletType === 'nwc' ? <CreditCard size={40} /> : <Database size={40} />}
             </div>
-            <h2 className="text-xl font-bold mb-2">Connect your wallet</h2>
-            <p className="text-gray-500 text-sm mb-8 max-w-xs mx-auto">
-              Use Nostr Wallet Connect (NWC) to enable one-tap zapping and manage your sats directly.
-            </p>
+            <h2 className="text-xl font-bold mb-2">
+              {walletType === 'nwc' ? 'Connect NWC Wallet' : 'Initialize Cashu Wallet'}
+            </h2>
             
-            <div className="space-y-4 max-w-sm mx-auto">
-              <input 
-                type="text"
-                placeholder="nostr+walletconnect://..."
-                value={pairingInput}
-                onChange={(e) => setPairingInput(e.target.value)}
-                className="w-full p-4 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-2xl text-sm font-mono focus:ring-2 focus:ring-blue-500 focus:outline-none"
-              />
-              <div className="flex gap-2">
-                <button 
-                  onClick={handleConnect}
-                  disabled={!pairingInput.startsWith("nostr+walletconnect://")}
-                  className="flex-1 py-4 bg-blue-500 hover:bg-blue-600 text-white font-black rounded-2xl shadow-lg shadow-blue-500/20 transition-all disabled:opacity-50"
-                >
-                  Connect NWC
-                </button>
-                <a 
-                  href="https://getalby.com" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="p-4 border border-gray-200 dark:border-gray-800 rounded-2xl hover:bg-white dark:hover:bg-gray-900 transition-all text-gray-500"
-                  title="Get Alby Wallet"
-                >
-                  <ExternalLink size={20} />
-                </a>
+            {walletType === 'nwc' ? (
+              <div className="space-y-4 max-w-sm mx-auto mt-6">
+                <input 
+                  type="text"
+                  placeholder="nostr+walletconnect://..."
+                  value={pairingInput}
+                  onChange={(e) => setPairingInput(e.target.value)}
+                  className="w-full p-4 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-2xl text-sm font-mono focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                />
+                <div className="flex gap-2">
+                  <button 
+                    onClick={handleConnectNWC}
+                    disabled={!pairingInput.startsWith("nostr+walletconnect://")}
+                    className="flex-1 py-4 bg-blue-500 hover:bg-blue-600 text-white font-black rounded-2xl shadow-lg shadow-blue-500/20 transition-all disabled:opacity-50"
+                  >
+                    Connect NWC
+                  </button>
+                  <a 
+                    href="https://getalby.com" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="p-4 border border-gray-200 dark:border-gray-800 rounded-2xl hover:bg-white dark:hover:bg-gray-900 transition-all text-gray-500"
+                  >
+                    <ExternalLink size={20} />
+                  </a>
+                </div>
               </div>
-            </div>
-            
-            <div className="mt-8 flex items-center justify-center gap-2 text-xs text-gray-400">
-              <Info size={14} />
-              <span>Standard NIP-47 protocol supported</span>
-            </div>
+            ) : (
+              <div className="mt-6">
+                <p className="text-gray-500 text-sm mb-8 max-w-xs mx-auto">
+                  Native eCash wallet using NIP-60. Fast, private, and built directly into Nostr.
+                </p>
+                <button 
+                  onClick={() => { setWalletType('cashu'); window.location.reload(); }}
+                  className="w-full max-w-sm py-4 bg-blue-500 hover:bg-blue-600 text-white font-black rounded-2xl shadow-lg shadow-blue-500/20 transition-all"
+                >
+                  Create New Cashu Wallet
+                </button>
+              </div>
+            )}
           </div>
         )}
 
-        {/* Lightning Address Section */}
+        {/* Cashu Specific Settings */}
+        {walletType === 'cashu' && (
+          <section className="mb-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <h2 className="text-sm font-black uppercase tracking-widest text-gray-500 mb-4 flex items-center gap-2">
+              <Database size={16} /> Cashu Management
+            </h2>
+            <div className="bg-white dark:bg-black border border-gray-100 dark:border-gray-800 rounded-[1.5rem] p-6 space-y-6 shadow-sm">
+              {/* P2PK Address */}
+              <div>
+                <label className="block text-sm font-bold mb-2 flex items-center gap-2">
+                  P2PK Address <Info size={14} className="text-gray-400" title="Used for receiving Nutzaps (NIP-61)" />
+                </label>
+                <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800">
+                  <code className="text-xs font-mono text-blue-500 truncate mr-4">
+                    {p2pk || "Generating..."}
+                  </code>
+                  {p2pk && (
+                    <button onClick={() => handleCopy(p2pk, "P2PK")} className="text-gray-400 hover:text-blue-500 transition-colors">
+                      <Copy size={16} />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Mints */}
+              <div>
+                <label className="block text-sm font-bold mb-3">Managed Mints</label>
+                <div className="space-y-2">
+                  {cashuMints.map(mint => (
+                    <div key={mint} className="flex items-center justify-between p-3 border border-gray-100 dark:border-gray-800 rounded-xl group">
+                      <span className="text-xs font-medium truncate">{mint}</span>
+                      <button 
+                        onClick={() => handleRemoveMint(mint)}
+                        className="text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"
+                      >
+                        <XCircle size={16} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-3 flex gap-2">
+                  <input 
+                    type="text" 
+                    placeholder="https://mint-url..."
+                    value={newMint}
+                    onChange={(e) => setNewMint(e.target.value)}
+                    className="flex-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                  <button onClick={handleAddMint} className="p-3 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors">
+                    <PlusCircle size={18} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Sync/Publish */}
+              <div className="pt-4 border-t border-gray-100 dark:border-gray-800 flex flex-col sm:flex-row gap-3">
+                <button 
+                  onClick={handlePublishCashu}
+                  disabled={isPublishing}
+                  className="flex-1 py-3 bg-gray-900 dark:bg-white text-white dark:text-black rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:opacity-90 transition-all disabled:opacity-50"
+                >
+                  {isPublishing ? <RefreshCw size={16} className="animate-spin" /> : <Share2 size={16} />}
+                  Backup to Nostr
+                </button>
+                <button 
+                  onClick={() => addToast("Already active!", "info")}
+                  className="flex-1 py-3 border border-gray-200 dark:border-gray-800 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-900 transition-all"
+                >
+                  <CheckCircle2 size={16} className="text-green-500" />
+                  Nutzaps Active
+                </button>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* Zap Address Section (For Profile lud16) */}
         <section className="mb-10">
           <h2 className="text-sm font-black uppercase tracking-widest text-gray-500 mb-4 flex items-center gap-2">
             <Zap size={16} /> Zap Address
           </h2>
           <div className="bg-white dark:bg-black border border-gray-100 dark:border-gray-800 rounded-[1.5rem] p-6 shadow-sm">
             <p className="text-sm text-gray-500 mb-4">
-              This is your public lightning address where people can send you zaps.
+              This is your public lightning address from your Nostr profile.
             </p>
             {profile?.lud16 ? (
               <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800">
                 <code className="text-blue-500 font-bold break-all">{profile.lud16}</code>
                 <button 
-                  onClick={() => handleCopyAddress(profile.lud16!)}
+                  onClick={() => handleCopy(profile.lud16!, "Zap Address")}
                   className="p-2 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-xl transition-all text-gray-500 ml-4 shrink-0"
-                  title="Copy Address"
                 >
                   <Copy size={18} />
                 </button>

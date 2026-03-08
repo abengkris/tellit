@@ -1,11 +1,11 @@
 "use client";
 
 import { createContext, useEffect, useState, ReactNode, useRef } from "react";
-import NDK, { NDKUser, NDKEvent, NDKCacheAdapter, NDKRelay } from "@nostr-dev-kit/ndk";
+import NDK, { NDKUser, NDKEvent, NDKCacheAdapter, NDKRelay, NDKKind } from "@nostr-dev-kit/ndk";
 import NDKCacheAdapterDexie from "@nostr-dev-kit/ndk-cache-dexie";
 import { NDKMessenger, CacheModuleStorage, NDKMessage } from "@nostr-dev-kit/messages";
 import { NDKSessionManager, LocalStorage, NDKSession } from "@nostr-dev-kit/sessions";
-import { NDKNWCWallet } from "@nostr-dev-kit/wallet";
+import { NDKNWCWallet, NDKCashuWallet } from "@nostr-dev-kit/wallet";
 import { useAuthStore } from "@/store/auth";
 import { useUIStore } from "@/store/ui";
 import { useWalletStore } from "@/store/wallet";
@@ -48,11 +48,11 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
     browserNotificationsEnabled 
   } = useUIStore();
   
-  const { nwcPairingCode, setBalance, setInfo } = useWalletStore();
+  const { walletType, nwcPairingCode, cashuMints, setBalance, setInfo } = useWalletStore();
   
   const messengerRef = useRef<NDKMessenger | null>(null);
   const sessionsRef = useRef<NDKSessionManager | null>(null);
-  const walletRef = useRef<NDKNWCWallet | null>(null);
+  const walletRef = useRef<NDKNWCWallet | NDKCashuWallet | null>(null);
 
   useEffect(() => {
     // Only run on client
@@ -112,41 +112,76 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
       addToast(`Failed to publish event to relays. It will be retried automatically.`, "error");
     });
 
-    // Initialize Wallet (NWC)
-    if (nwcPairingCode) {
-      try {
-        const wallet = new NDKNWCWallet(instance, { 
-          pairingCode: nwcPairingCode,
-          timeout: 30000
-        });
-        
-        wallet.on("ready", () => {
-          console.log("NWC wallet ready");
-          addToast("Wallet connected", "success");
+    // Initialize Wallet (NWC or Cashu)
+    const initWallet = async () => {
+      if (walletType === 'nwc' && nwcPairingCode) {
+        try {
+          const wallet = new NDKNWCWallet(instance, { 
+            pairingCode: nwcPairingCode,
+            timeout: 30000
+          });
           
-          // Fetch wallet info (alias, lud16, etc)
-          wallet.getInfo().then((info) => {
-            if (info) setInfo(info);
-          }).catch((err) => {
-            console.warn("Failed to fetch wallet info:", err);
+          wallet.on("ready", () => {
+            console.log("NWC wallet ready");
+            addToast("NWC Wallet connected", "success");
+            
+            wallet.getInfo().then((info) => {
+              if (info) setInfo(info);
+            }).catch(() => {});
+
+            wallet.updateBalance().catch(() => {});
           });
 
-          // Explicitly trigger balance update for wallets that don't broadcast it automatically
-          wallet.updateBalance().catch((err) => {
-            console.warn("Initial balance fetch failed:", err);
+          wallet.on("balance_updated", (balance?: { amount: number }) => {
+            setBalance(balance?.amount || 0);
           });
-        });
 
-        wallet.on("balance_updated", (balance?: { amount: number }) => {
-          setBalance(balance?.amount || 0);
-        });
+          instance.wallet = wallet;
+          walletRef.current = wallet;
+        } catch (err) {
+          console.error("Failed to initialize NWC wallet:", err);
+        }
+      } else if (walletType === 'cashu') {
+        try {
+          // Attempt to find existing Cashu wallet event
+          let wallet: NDKCashuWallet | undefined;
+          
+          if (instance.signer) {
+            const user = await instance.signer.user();
+            const event = await instance.fetchEvent({
+              kinds: [NDKKind.CashuWallet],
+              authors: [user.pubkey]
+            });
+            if (event) {
+              wallet = await NDKCashuWallet.from(event);
+            }
+          }
 
-        instance.wallet = wallet;
-        walletRef.current = wallet;
-      } catch (err) {
-        console.error("Failed to initialize NWC wallet:", err);
+          if (!wallet) {
+            wallet = new NDKCashuWallet(instance);
+            wallet.mints = cashuMints;
+          }
+
+          wallet.on("ready", () => {
+            console.log("Cashu wallet ready");
+            addToast("Cashu Wallet active", "success");
+            setInfo({ alias: "Cashu Wallet", methods: ["cashuPay"] });
+          });
+
+          wallet.on("balance_updated", (balance?: { amount: number }) => {
+            setBalance(balance?.amount || 0);
+          });
+
+          instance.wallet = wallet;
+          walletRef.current = wallet;
+          wallet.start();
+        } catch (err) {
+          console.error("Failed to initialize Cashu wallet:", err);
+        }
       }
-    }
+    };
+
+    initWallet();
 
     // Initialize Session Manager
     const sessionManager = new NDKSessionManager(instance, {
