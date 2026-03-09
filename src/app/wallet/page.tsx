@@ -29,7 +29,8 @@ import {
   Loader2,
   Shield,
   Eye,
-  EyeOff
+  EyeOff,
+  Key
 } from "lucide-react";
 import { NDKEvent, NDKFilter } from "@nostr-dev-kit/ndk";
 import { NDKCashuWallet } from "@nostr-dev-kit/wallet";
@@ -37,6 +38,7 @@ import { format } from "date-fns";
 import Link from "next/link";
 import { shortenPubkey } from "@/lib/utils/nip19";
 import { CashuDepositModal } from "@/components/common/CashuDepositModal";
+import { generateMnemonic, validateMnemonic, mnemonicToPrivateKey } from "@/lib/utils/wallet";
 
 export default function WalletPage() {
   const { 
@@ -46,6 +48,10 @@ export default function WalletPage() {
     setNwcPairingCode, 
     cashuMints, 
     setCashuMints, 
+    cashuPrivateKey,
+    setCashuPrivateKey,
+    cashuMnemonic,
+    setCashuMnemonic,
     balance, 
     info: walletInfo 
   } = useWalletStore();
@@ -213,13 +219,117 @@ export default function WalletPage() {
     if (!ndk) return;
     setIsPublishing(true);
     try {
+      // Generate mnemonic and derive key
+      const mnemonic = generateMnemonic();
+      const privateKey = mnemonicToPrivateKey(mnemonic);
+      
+      setCashuMnemonic(mnemonic);
+      setCashuPrivateKey(privateKey);
+
       // Use static create() as recommended
-      await NDKCashuWallet.create(ndk, cashuMints);
+      const wallet = await NDKCashuWallet.create(ndk, cashuMints);
+      // Ensure the wallet uses our derived key
+      await wallet.addPrivkey(privateKey);
+      await wallet.publish();
+
       addToast("New Cashu wallet created and backed up to Nostr!", "success");
       setWalletType('cashu');
       setTimeout(() => window.location.reload(), 1000);
-    } catch {
+    } catch (err) {
+      console.error("Create wallet error:", err);
       addToast("Failed to create Cashu wallet", "error");
+    } finally {
+      setIsPublishing(false);
+    }
+  };
+
+  const handleRestoreWallet = async () => {
+    if (!ndk) return;
+    const input = restoreInput.trim();
+    if (!input) return;
+
+    setIsRestoring(true);
+    try {
+      let privateKey = "";
+      let mnemonic = null;
+
+      if (input.split(" ").length >= 12) {
+        // Mnemonic
+        if (!validateMnemonic(input)) {
+          addToast("Invalid seed phrase", "error");
+          setIsRestoring(false);
+          return;
+        }
+        mnemonic = input;
+        privateKey = mnemonicToPrivateKey(input);
+      } else if (/^[0-9a-fA-F]{64}$/.test(input)) {
+        // Hex Key
+        privateKey = input;
+      } else {
+        addToast("Invalid input. Please enter a 12-word seed phrase or hex key.", "error");
+        setIsRestoring(false);
+        return;
+      }
+
+      setCashuMnemonic(mnemonic);
+      setCashuPrivateKey(privateKey);
+      setWalletType('cashu');
+
+      // Initialize wallet with this key
+      const wallet = new NDKCashuWallet(ndk);
+      wallet.mints = cashuMints;
+      await wallet.addPrivkey(privateKey);
+      
+      // Try to find existing wallet on Nostr to sync mints/tokens
+      const user = await ndk.signer?.user();
+      if (user) {
+        const event = await ndk.fetchEvent({
+          kinds: [37375] as number[],
+          authors: [user.pubkey]
+        });
+        if (event) {
+          addToast("Wallet found on Nostr! Syncing...", "info");
+        }
+      }
+
+      addToast("Wallet restored! Reloading session...", "success");
+      setTimeout(() => window.location.reload(), 1000);
+    } catch (err) {
+      console.error(err);
+      addToast("Failed to restore wallet", "error");
+    } finally {
+      setIsRestoring(false);
+    }
+  };
+
+  const handleRestoreFromNostr = async () => {
+    if (!ndk || !ndk.signer) return;
+    setIsPublishing(true);
+    try {
+      const user = await ndk.signer.user();
+      const event = await ndk.fetchEvent({
+        kinds: [37375] as number[],
+        authors: [user.pubkey]
+      });
+
+      if (event) {
+        const wallet = await NDKCashuWallet.from(event);
+        if (wallet) {
+          const keys = Array.from(wallet.privkeys.values());
+          if (keys.length > 0) {
+            setCashuPrivateKey(keys[0].privateKey);
+          }
+          setCashuMints(wallet.mints);
+          setWalletType('cashu');
+          addToast("Wallet restored from Nostr!", "success");
+          setTimeout(() => window.location.reload(), 1000);
+          return;
+        }
+      }
+      addToast("No wallet backup found on Nostr.", "info");
+    } catch (err) {
+      console.error(err);
+      addToast("Failed to restore from Nostr", "error");
     } finally {
       setIsPublishing(false);
     }
@@ -267,7 +377,9 @@ export default function WalletPage() {
     addToast(`${label} copied!`, "success");
   };
 
-  const [showFaq, setShowFaq] = useState(false);
+  const [showRecovery, setShowRecovery] = useState(false);
+  const [restoreInput, setRestoreInput] = useState("");
+  const [isRestoring, setIsRestoring] = useState(false);
 
   if (!isLoggedIn) {
     return (
@@ -348,35 +460,6 @@ export default function WalletPage() {
             </div>
           </div>
         </div>
-
-        {showFaq && (
-          <div className="mb-10 p-6 bg-blue-500/5 rounded-3xl border border-blue-500/10 animate-in fade-in slide-in-from-top-2 duration-300">
-            <h3 className="text-sm font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest mb-4">Cashu Guide</h3>
-            <div className="space-y-4">
-              <div className="flex gap-3">
-                <div className="w-5 h-5 bg-blue-500 text-white rounded-full flex items-center justify-center text-[10px] font-black shrink-0 mt-0.5">1</div>
-                <div>
-                  <p className="text-xs font-black mb-1">Tokens = Physical Cash</p>
-                  <p className="text-[11px] text-gray-500 leading-relaxed">Cashu is not a bank account. Your money is stored as encrypted &quot;tokens&quot; in this browser. If you clear your browser data without a backup, your money is gone.</p>
-                </div>
-              </div>
-              <div className="flex gap-3">
-                <div className="w-5 h-5 bg-blue-500 text-white rounded-full flex items-center justify-center text-[10px] font-black shrink-0 mt-0.5">2</div>
-                <div>
-                  <p className="text-xs font-black mb-1">Mints are Gateways</p>
-                  <p className="text-[11px] text-gray-500 leading-relaxed">Your money lives at specific &quot;Mints&quot;. They are private and blinded, meaning the mint owner doesn&apos;t know who you are, but you must trust that the mint stays online.</p>
-                </div>
-              </div>
-              <div className="flex gap-3">
-                <div className="w-5 h-5 bg-blue-500 text-white rounded-full flex items-center justify-center text-[10px] font-black shrink-0 mt-0.5">3</div>
-                <div>
-                  <p className="text-xs font-black mb-1">Always Backup to Nostr</p>
-                  <p className="text-[11px] text-gray-500 leading-relaxed">Use the &quot;Backup to Nostr&quot; button. It encrypts your tokens and saves them to your Nostr identity. This allows you to restore your wallet on any device.</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Balance Card */}
         {walletType !== 'none' && (nwcPairingCode || walletType === 'cashu') ? (
@@ -480,17 +563,45 @@ export default function WalletPage() {
                 </div>
               </div>
             ) : (
-              <div className="mt-6">
-                <p className="text-gray-500 text-sm mb-8 max-w-xs mx-auto">
+              <div className="mt-6 space-y-6">
+                <p className="text-gray-500 text-sm mb-4 max-w-xs mx-auto">
                   Native eCash wallet using NIP-60. Fast, private, and built directly into Nostr.
                 </p>
-                <button 
-                  onClick={handleCreateCashuWallet}
-                  disabled={isPublishing}
-                  className="w-full max-w-sm py-3 sm:py-4 bg-blue-500 hover:bg-blue-600 text-white font-black rounded-2xl shadow-lg shadow-blue-500/20 transition-all disabled:opacity-50"
-                >
-                  {isPublishing ? <RefreshCw size={20} className="animate-spin mx-auto" /> : "Create New Cashu Wallet"}
-                </button>
+                <div className="space-y-3 max-w-sm mx-auto">
+                  <button 
+                    onClick={handleCreateCashuWallet}
+                    disabled={isPublishing}
+                    className="w-full py-4 bg-blue-500 hover:bg-blue-600 text-white font-black rounded-2xl shadow-lg shadow-blue-500/20 transition-all disabled:opacity-50"
+                  >
+                    {isPublishing ? <RefreshCw size={20} className="animate-spin mx-auto" /> : "Create New Cashu Wallet"}
+                  </button>
+                  <button 
+                    onClick={handleRestoreFromNostr}
+                    disabled={isPublishing}
+                    className="w-full py-4 border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-900 rounded-2xl font-bold transition-all"
+                  >
+                    Restore from Nostr
+                  </button>
+                </div>
+
+                <div className="pt-6 border-t border-gray-100 dark:border-gray-800">
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Manual Restore</p>
+                  <div className="space-y-3 max-w-sm mx-auto">
+                    <textarea 
+                      placeholder="Enter 12-word seed phrase or hex private key..."
+                      value={restoreInput}
+                      onChange={(e) => setRestoreInput(e.target.value)}
+                      className="w-full p-4 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-2xl text-xs font-mono focus:ring-2 focus:ring-blue-500 focus:outline-none h-24 resize-none"
+                    />
+                    <button 
+                      onClick={handleRestoreWallet}
+                      disabled={isRestoring || !restoreInput.trim()}
+                      className="w-full py-3 bg-gray-900 dark:bg-white text-white dark:text-black font-black rounded-2xl transition-all disabled:opacity-50"
+                    >
+                      {isRestoring ? <Loader2 size={18} className="animate-spin mx-auto" /> : "Restore Wallet"}
+                    </button>
+                  </div>
+                </div>
               </div>
             )}
           </div>
@@ -503,6 +614,58 @@ export default function WalletPage() {
               <Database size={16} /> Cashu Management
             </h2>
             <div className="bg-white dark:bg-black border border-gray-100 dark:border-gray-800 rounded-2xl p-5 sm:p-6 space-y-6 shadow-sm">
+              {/* Recovery Seed */}
+              <div>
+                <button 
+                  onClick={() => setShowRecovery(!showRecovery)}
+                  className="flex items-center justify-between w-full p-4 bg-orange-500/5 hover:bg-orange-500/10 border border-orange-500/20 rounded-2xl transition-all group"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-orange-500 text-white rounded-lg">
+                      <Key size={18} />
+                    </div>
+                    <div className="text-left">
+                      <p className="text-xs font-black uppercase tracking-widest text-orange-600">Recovery Seed</p>
+                      <p className="text-[10px] text-orange-500 font-medium">Backup your wallet safely</p>
+                    </div>
+                  </div>
+                  <div className="text-orange-500">
+                    {showRecovery ? <EyeOff size={20} /> : <Eye size={20} />}
+                  </div>
+                </button>
+
+                {showRecovery && (
+                  <div className="mt-4 p-5 bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-900/30 rounded-2xl animate-in slide-in-from-top-2 duration-300">
+                    <p className="text-[11px] text-orange-800 dark:text-orange-300 mb-4 leading-relaxed font-medium">
+                      Write these 12 words down on paper. Anyone with this phrase can access all your eCash funds. <strong>Never share this phrase.</strong>
+                    </p>
+                    
+                    {cashuMnemonic ? (
+                      <div className="grid grid-cols-3 gap-2 mb-4">
+                        {cashuMnemonic.split(" ").map((word, i) => (
+                          <div key={i} className="flex gap-1.5 items-center p-2 bg-white dark:bg-black rounded-lg border border-orange-200 dark:border-orange-900/30 shadow-sm">
+                            <span className="text-[9px] font-black text-orange-400">{i + 1}</span>
+                            <span className="text-xs font-bold font-mono">{word}</span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="p-3 bg-white dark:bg-black rounded-xl border border-orange-200 dark:border-orange-900/30 mb-4 overflow-hidden">
+                        <p className="text-[10px] text-gray-400 uppercase tracking-widest mb-1 font-black">Private Key (Hex)</p>
+                        <code className="text-[10px] font-mono text-blue-500 break-all">{cashuPrivateKey}</code>
+                      </div>
+                    )}
+                    
+                    <button 
+                      onClick={() => handleCopy(cashuMnemonic || cashuPrivateKey || "", "Seed phrase")}
+                      className="w-full py-2.5 bg-orange-500 hover:bg-orange-600 text-white text-xs font-black rounded-xl shadow-lg shadow-orange-500/20 transition-all flex items-center justify-center gap-2"
+                    >
+                      <Copy size={14} /> Copy to Clipboard
+                    </button>
+                  </div>
+                )}
+              </div>
+
               {/* P2PK Address */}
               <div>
                 <label className="block text-xs sm:text-sm font-bold mb-2 flex items-center gap-2">
@@ -590,6 +753,7 @@ export default function WalletPage() {
                         await ndk.wallet.publishMintList();
                         addToast("Mint list published! You can now receive Nutzaps.", "success");
                       } catch (err) {
+                        console.error("Failed to publish mint list:", err);
                         addToast("Failed to publish mint list", "error");
                       } finally {
                         setIsPublishing(false);
