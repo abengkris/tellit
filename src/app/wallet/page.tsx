@@ -53,7 +53,8 @@ export default function WalletPage() {
     cashuMnemonic,
     setCashuMnemonic,
     balance, 
-    info: walletInfo 
+    info: walletInfo,
+    resetWallet
   } = useWalletStore();
   
   const { ndk, isReady, refreshBalance } = useNDK();
@@ -650,9 +651,31 @@ export default function WalletPage() {
                         ))}
                       </div>
                     ) : (
-                      <div className="p-3 bg-white dark:bg-black rounded-xl border border-orange-200 dark:border-orange-900/30 mb-4 overflow-hidden">
-                        <p className="text-[10px] text-gray-400 uppercase tracking-widest mb-1 font-black">Private Key (Hex)</p>
-                        <code className="text-[10px] font-mono text-blue-500 break-all">{cashuPrivateKey}</code>
+                      <div className="space-y-4">
+                        <div className="p-3 bg-white dark:bg-black rounded-xl border border-orange-200 dark:border-orange-900/30 overflow-hidden">
+                          <p className="text-[10px] text-gray-400 uppercase tracking-widest mb-1 font-black">Private Key (Hex)</p>
+                          <code className="text-[10px] font-mono text-blue-500 break-all">{cashuPrivateKey}</code>
+                        </div>
+                        <div className="p-4 bg-orange-500/10 rounded-2xl border border-orange-500/20">
+                          <p className="text-[11px] text-orange-600 dark:text-orange-400 font-bold mb-2 flex items-center gap-1.5">
+                            <Info size={14} /> No Seed Phrase
+                          </p>
+                          <p className="text-[10px] text-gray-500 leading-relaxed mb-3">
+                            This wallet was created using an older method and doesn&apos;t have a 12-word seed phrase. 
+                            You should backup the Private Key Hex above.
+                          </p>
+                          <button 
+                            onClick={() => {
+                              if (confirm("WARNING: This will delete your current wallet. Make sure you have backed up your funds or they will be lost! Are you sure you want to reset and create a new wallet with a seed phrase?")) {
+                                resetWallet();
+                                window.location.reload();
+                              }
+                            }}
+                            className="w-full py-2 border border-orange-500/30 text-orange-600 dark:text-orange-500 text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-orange-500 hover:text-white transition-all"
+                          >
+                            Reset & Create New Wallet
+                          </button>
+                        </div>
                       </div>
                     )}
                     

@@ -11,6 +11,7 @@ import { useUIStore } from "@/store/ui";
 import { useWalletStore } from "@/store/wallet";
 import { getNDK } from "@/lib/ndk";
 import { db } from "@/lib/db";
+import { generateMnemonic, mnemonicToPrivateKey } from "@/lib/utils/wallet";
 
 interface ExtendedCacheAdapter extends NDKCacheAdapter {
   getUnpublishedEvents?: () => Promise<{ event: NDKEvent; relays?: string[]; lastTryAt?: number }[]>;
@@ -57,7 +58,9 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
     nwcPairingCode, 
     cashuMints, 
     cashuPrivateKey,
+    cashuMnemonic,
     setCashuPrivateKey,
+    setCashuMnemonic,
     setBalance, 
     setInfo 
   } = useWalletStore();
@@ -253,8 +256,10 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
               // Fresh local instance: use store key or generate new one
               let keyToUse = cashuPrivateKey;
               if (!keyToUse) {
-                const signer = NDKPrivateKeySigner.generate();
-                keyToUse = signer.privateKey;
+                // Use NIP-06 mnemonic for fresh generation
+                const mnemonic = generateMnemonic();
+                keyToUse = mnemonicToPrivateKey(mnemonic);
+                setCashuMnemonic(mnemonic);
                 setCashuPrivateKey(keyToUse);
               }
               await cashu.addPrivkey(keyToUse);
