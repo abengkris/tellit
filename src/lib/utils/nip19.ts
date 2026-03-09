@@ -1,4 +1,4 @@
-import { nip19 } from "nostr-tools";
+import * as nip19 from "nostr-tools/nip19";
 
 /**
  * Decodes a NIP-19 string and returns its ID and any associated relays.
@@ -46,7 +46,7 @@ export function decodeNip19(nip19String: string): {
       default:
         return { id: nip19String };
     }
-  } catch (e) {
+  } catch {
     return { id: nip19String };
   }
 }
@@ -66,7 +66,7 @@ export function toNpub(pubkey: string): string {
   try {
     if (!pubkey || pubkey.startsWith("npub")) return pubkey;
     return nip19.npubEncode(pubkey);
-  } catch (e) {
+  } catch {
     return pubkey;
   }
 }
@@ -77,7 +77,7 @@ export function toNpub(pubkey: string): string {
 export function toNProfile(pubkey: string, relays?: string[]): string {
   try {
     return nip19.nprofileEncode({ pubkey, relays });
-  } catch (e) {
+  } catch {
     return toNpub(pubkey);
   }
 }
@@ -89,7 +89,7 @@ export function toNote(eventId: string): string {
   try {
     if (!eventId || eventId.startsWith("note")) return eventId;
     return nip19.noteEncode(eventId);
-  } catch (e) {
+  } catch {
     return eventId;
   }
 }
@@ -100,7 +100,7 @@ export function toNote(eventId: string): string {
 export function toNEvent(id: string, author?: string, kind?: number, relays?: string[]): string {
   try {
     return nip19.neventEncode({ id, author, kind, relays });
-  } catch (e) {
+  } catch {
     return toNote(id);
   }
 }
