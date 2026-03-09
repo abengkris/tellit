@@ -7,6 +7,7 @@ interface DropdownItem {
   onClick: () => void;
   icon?: React.ReactNode;
   variant?: "default" | "danger";
+  description?: string;
 }
 
 interface DropdownMenuProps {
@@ -68,8 +69,13 @@ export const DropdownMenu: React.FC<DropdownMenuProps> = ({
                     : "text-gray-700 dark:text-gray-300"
                 }`}
               >
-                {item.icon && <span className="mr-3">{item.icon}</span>}
-                <span className="font-medium">{item.label}</span>
+                {item.icon && <span className="mr-3 shrink-0">{item.icon}</span>}
+                <div className="flex flex-col items-start min-w-0">
+                  <span className="font-bold">{item.label}</span>
+                  {item.description && (
+                    <span className="text-[10px] text-gray-500 font-medium">{item.description}</span>
+                  )}
+                </div>
               </button>
             ))}
           </div>

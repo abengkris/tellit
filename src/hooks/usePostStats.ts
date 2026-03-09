@@ -14,6 +14,7 @@ export interface PostStats {
   totalSats: number;
   userLiked: boolean;
   userReposted: boolean;
+  combinedReposts: number;
 }
 
 const INITIAL_STATS: PostStats = {
@@ -25,6 +26,7 @@ const INITIAL_STATS: PostStats = {
   totalSats: 0,
   userLiked: false,
   userReposted: false,
+  combinedReposts: 0,
 };
 
 /**
@@ -74,6 +76,7 @@ export function usePostStats(eventId?: string) {
         // 2. Reposts (6, 16)
         else if (event.kind === 6 || event.kind === 16) {
           newStats.reposts++;
+          newStats.combinedReposts++;
           if (isMe) newStats.userReposted = true;
         }
         // 3. Comments (1, 1111)
@@ -84,6 +87,7 @@ export function usePostStats(eventId?: string) {
           } else {
             // Probably a quote if it's kind 1 but not a direct reply
             newStats.quotes++;
+            newStats.combinedReposts++;
           }
         }
         // 4. Zaps

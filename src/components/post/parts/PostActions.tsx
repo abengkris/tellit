@@ -1,4 +1,3 @@
-import React, { useState, useMemo, useEffect } from "react";
 import { MessageCircle, Repeat2, Heart, Zap, Bookmark, Quote, Share, Loader2 } from "lucide-react";
 import { useUIStore } from "@/store/ui";
 import { useLists } from "@/hooks/useLists";
@@ -7,6 +6,7 @@ import { useNDK } from "@/hooks/useNDK";
 import { createZapInvoice } from "@/lib/actions/zap";
 import { useReactions } from "@/hooks/useReactions";
 import { UserListModal } from "@/components/common/UserListModal";
+import { DropdownMenu } from "@/components/common/DropdownMenu";
 
 interface PostActionsProps {
   eventId: string;
@@ -15,6 +15,7 @@ interface PostActionsProps {
   reposts: number;
   comments: number;
   quotes: number;
+  combinedReposts: number;
   bookmarks: number;
   zaps?: number;
   userReacted?: string | null;
@@ -33,7 +34,8 @@ export const PostActions: React.FC<PostActionsProps> = ({
   likes: initialLikes,
   reposts: initialReposts,
   comments,
-  quotes,
+  quotes: initialQuotes,
+  combinedReposts: initialCombined,
   bookmarks,
   zaps: initialZaps,
   userReacted: initialUserReacted,
@@ -49,6 +51,8 @@ export const PostActions: React.FC<PostActionsProps> = ({
   const [optimisticReacted, setOptimisticReacted] = useState(initialUserReacted);
   const [optimisticReposted, setOptimisticReposted] = useState(initialUserReposted);
   const [optimisticReposts, setOptimisticReposts] = useState(initialReposts);
+  const [optimisticQuotes, setOptimisticQuotes] = useState(initialQuotes);
+  const [optimisticCombined, setOptimisticCombined] = useState(initialCombined);
   const [optimisticZaps, setOptimisticZaps] = useState(initialZaps || 0);
   const [isZapping, setIsZapping] = useState(false);
   
@@ -65,7 +69,11 @@ export const PostActions: React.FC<PostActionsProps> = ({
   useEffect(() => { setOptimisticLikes(initialLikes); }, [initialLikes]);
   useEffect(() => { setOptimisticReacted(initialUserReacted); }, [initialUserReacted]);
   useEffect(() => { setOptimisticReposted(initialUserReposted); }, [initialUserReposted]);
-  useEffect(() => { setOptimisticReposts(initialReposts); }, [initialReposts]);
+  useEffect(() => { 
+    setOptimisticReposts(initialReposts); 
+    setOptimisticQuotes(initialQuotes);
+    setOptimisticCombined(initialCombined);
+  }, [initialReposts, initialQuotes, initialCombined]);
   useEffect(() => { setOptimisticZaps(initialZaps || 0); }, [initialZaps]);
 
   const isBookmarked = useMemo(() => bookmarkedEventIds.has(eventId), [bookmarkedEventIds, eventId]);
@@ -95,14 +103,21 @@ export const PostActions: React.FC<PostActionsProps> = ({
     }
   };
 
-  const handleRepost = (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleRepostAction = () => {
     if (!optimisticReposted) {
       setOptimisticReposted(true);
       setOptimisticReposts(prev => prev + 1);
+      setOptimisticCombined(prev => prev + 1);
       addToast("Reposted!", "success");
+      // Create a dummy event for the callback if needed
+      const e = { stopPropagation: () => {} } as React.MouseEvent;
       onRepostClick?.(e);
     }
+  };
+
+  const handleQuoteAction = () => {
+    const e = { stopPropagation: () => {} } as React.MouseEvent;
+    onQuoteClick?.(e);
   };
 
   const handleZap = async (e: React.MouseEvent) => {
@@ -159,7 +174,7 @@ export const PostActions: React.FC<PostActionsProps> = ({
 
   const openRepostsModal = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (optimisticReposts === 0) return;
+    if (optimisticCombined === 0) return;
     setReactionsTitle("Reposted by");
     setReactionsPubkeys(reposterPubkeys);
     setShowReactionsModal(true);
@@ -179,6 +194,21 @@ export const PostActions: React.FC<PostActionsProps> = ({
     return n.toString();
   };
 
+  const repostItems = [
+    {
+      label: "Repost",
+      description: `${optimisticReposts} reposts`,
+      icon: <Repeat2 size={18} />,
+      onClick: handleRepostAction
+    },
+    {
+      label: "Quote",
+      description: `${optimisticQuotes} quotes`,
+      icon: <Quote size={18} />,
+      onClick: handleQuoteAction
+    }
+  ];
+
   return (
     <>
       <div className="flex items-center justify-between max-w-lg text-gray-500 -ml-2">
@@ -197,22 +227,27 @@ export const PostActions: React.FC<PostActionsProps> = ({
           <span className="text-xs">{comments > 0 ? formatCount(comments) : ""}</span>
         </button>
 
-        {/* Repost */}
+        {/* Combined Repost & Quote */}
         <div className="flex items-center">
-          <button 
-            onClick={handleRepost}
-            aria-label="Repost"
-            className={`group flex items-center hover:text-green-500 transition-colors ${optimisticReposted ? 'text-green-500' : ''}`}
-          >
-            <div className="p-3 group-hover:bg-green-50 dark:group-hover:bg-green-900/20 rounded-full transition-colors">
-              <Repeat2 size={20} className={optimisticReposted ? "animate-in spin-in-180 duration-500" : ""} />
-            </div>
-          </button>
+          <DropdownMenu
+            align="left"
+            items={repostItems}
+            trigger={
+              <button 
+                aria-label="Repost and Quote options"
+                className={`group flex items-center hover:text-green-500 transition-colors ${optimisticReposted ? 'text-green-500' : ''}`}
+              >
+                <div className="p-3 group-hover:bg-green-50 dark:group-hover:bg-green-900/20 rounded-full transition-colors">
+                  <Repeat2 size={20} className={optimisticReposted ? "animate-in spin-in-180 duration-500" : ""} />
+                </div>
+              </button>
+            }
+          />
           <span 
             className="text-xs cursor-pointer hover:underline -ml-1 pr-2 py-2"
             onClick={openRepostsModal}
           >
-            {optimisticReposts > 0 ? formatCount(optimisticReposts) : ""}
+            {optimisticCombined > 0 ? formatCount(optimisticCombined) : ""}
           </span>
         </div>
 
@@ -262,21 +297,6 @@ export const PostActions: React.FC<PostActionsProps> = ({
             {optimisticZaps > 0 ? formatCount(optimisticZaps) : ""}
           </span>
         </div>
-
-        {/* Quote */}
-        <button 
-          onClick={(e) => {
-            e.stopPropagation();
-            onQuoteClick?.(e);
-          }}
-          aria-label="Quote"
-          className="group flex items-center space-x-1 hover:text-blue-400 transition-colors"
-        >
-          <div className="p-3 group-hover:bg-blue-50 dark:group-hover:bg-blue-900/10 rounded-full transition-colors">
-            <Quote size={18} />
-          </div>
-          <span className="text-xs">{quotes > 0 ? formatCount(quotes) : ""}</span>
-        </button>
 
         {/* Bookmark */}
         <button 

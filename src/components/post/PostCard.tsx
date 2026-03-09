@@ -339,6 +339,7 @@ export const PostCard: React.FC<PostCardProps> = ({
             reposts={reposts}
             comments={comments}
             quotes={quotes}
+            combinedReposts={combinedReposts}
             bookmarks={bookmarks}
             zaps={totalSats}
             userReacted={userLiked ? '+' : null}
