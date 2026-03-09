@@ -27,7 +27,8 @@ export const WalletPinModal: React.FC<WalletPinModalProps> = ({
     unlock,
     nwcPairingCode,
     cashuPrivateKey,
-    cashuMnemonic
+    cashuMnemonic,
+    resetWallet
   } = useWalletStore();
   const { addToast } = useUIStore();
 
@@ -54,22 +55,10 @@ export const WalletPinModal: React.FC<WalletPinModalProps> = ({
     setIsLoading(true);
     setError(null);
     try {
-      // 1. Hash the PIN for future verification
       const { hash, salt } = await hashPin(pin);
-      
-      // 2. Package current secrets
-      const secrets: EncryptedData = {
-        nwcPairingCode,
-        cashuPrivateKey,
-        cashuMnemonic
-      };
-      
-      // 3. Encrypt them
+      const secrets: EncryptedData = { nwcPairingCode, cashuPrivateKey, cashuMnemonic };
       const encrypted = await encryptData(JSON.stringify(secrets), pin);
-      
-      // 4. Save to store (and thus localStorage)
       setPin(hash, salt, encrypted);
-      
       addToast("Wallet PIN secured!", "success");
       if (onSuccess) onSuccess();
       onClose();
@@ -85,28 +74,18 @@ export const WalletPinModal: React.FC<WalletPinModalProps> = ({
     setIsLoading(true);
     setError(null);
     try {
-      // 1. Verify PIN hash first
-      const saltBytes = new Uint8Array(
-        atob(pinSalt!).split("").map((c) => c.charCodeAt(0))
-      );
+      const saltBytes = new Uint8Array(atob(pinSalt!).split("").map((c) => c.charCodeAt(0)));
       const { hash } = await hashPin(pin, saltBytes);
-      
-      if (hash !== pinHash) {
-        throw new Error("Invalid PIN");
-      }
-
-      // 2. Decrypt data
+      if (hash !== pinHash) throw new Error("Invalid PIN");
       if (encryptedData) {
         const decryptedStr = await decryptData(encryptedData, pin);
         const data: EncryptedData = JSON.parse(decryptedStr);
         unlock(data);
       }
-      
       addToast("Wallet unlocked", "success");
       if (onSuccess) onSuccess();
       onClose();
     } catch (err) {
-      console.error(err);
       setError("Invalid PIN. Please try again.");
     } finally {
       setIsLoading(false);
@@ -121,67 +100,27 @@ export const WalletPinModal: React.FC<WalletPinModalProps> = ({
             {mode === "setup" ? <ShieldCheck className="text-blue-500" /> : <Lock className="text-orange-500" />}
             {mode === "setup" ? "Secure Your Wallet" : "Unlock Wallet"}
           </h3>
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-900 rounded-full transition-colors">
-            <X size={20} />
-          </button>
+          <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-900 rounded-full transition-colors"><X size={20} /></button>
         </div>
 
         <div className="p-8">
-          <div className="text-center mb-8">
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              {mode === "setup" 
-                ? "Set a PIN to encrypt your wallet keys in local storage."
-                : "Enter your PIN to access your wallet keys."}
-            </p>
-          </div>
-
+          <div className="text-center mb-8"><p className="text-sm text-gray-500 dark:text-gray-400">{mode === "setup" ? "Set a PIN to encrypt your wallet keys locally." : "Enter your PIN to access your wallet."}</p></div>
           <div className="space-y-4">
             <div>
-              <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">
-                {mode === "setup" ? "Enter PIN" : "PIN"}
-              </label>
-              <input
-                type="password"
-                inputMode="numeric"
-                pattern="[0-9]*"
-                value={pin}
-                onChange={(e) => setPinInput(e.target.value.replace(/\D/g, ''))}
-                placeholder="••••"
-                className="w-full bg-gray-50 dark:bg-black border border-gray-200 dark:border-gray-800 rounded-2xl p-4 text-center text-2xl tracking-[1em] focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all"
-                autoFocus
-              />
+              <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">{mode === "setup" ? "Enter PIN" : "PIN"}</label>
+              <input type="password" inputMode="numeric" pattern="[0-9]*" value={pin} onChange={(e) => setPinInput(e.target.value.replace(/\D/g, ''))} placeholder="••••" className="w-full bg-gray-50 dark:bg-black border border-gray-200 dark:border-gray-800 rounded-2xl p-4 text-center text-2xl tracking-[1em] focus:ring-2 focus:ring-blue-500 focus:outline-none" autoFocus />
             </div>
-
             {mode === "setup" && (
               <div>
-                <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">
-                  Confirm PIN
-                </label>
-                <input
-                  type="password"
-                  inputMode="numeric"
-                  value={confirmPin}
-                  onChange={(e) => setConfirmPin(e.target.value.replace(/\D/g, ''))}
-                  placeholder="••••"
-                  className="w-full bg-gray-50 dark:bg-black border border-gray-200 dark:border-gray-800 rounded-2xl p-4 text-center text-2xl tracking-[1em] focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all"
-                />
+                <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Confirm PIN</label>
+                <input type="password" inputMode="numeric" value={confirmPin} onChange={(e) => setConfirmPin(e.target.value.replace(/\D/g, ''))} placeholder="••••" className="w-full bg-gray-50 dark:bg-black border border-gray-200 dark:border-gray-800 rounded-2xl p-4 text-center text-2xl tracking-[1em] focus:ring-2 focus:ring-blue-500 focus:outline-none" />
               </div>
             )}
-
-            {error && (
-              <div className="flex items-center gap-2 text-red-500 text-xs font-bold bg-red-500/5 p-3 rounded-xl border border-red-500/10">
-                <AlertCircle size={14} />
-                {error}
-              </div>
+            {error && <div className="flex items-center gap-2 text-red-500 text-xs font-bold bg-red-500/5 p-3 rounded-xl border border-red-500/10"><AlertCircle size={14} />{error}</div>}
+            <button onClick={mode === "setup" ? handleSetup : handleUnlock} disabled={isLoading || pin.length < 4} className="w-full py-4 bg-gray-900 dark:bg-white text-white dark:text-black font-black rounded-2xl shadow-xl transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2">{isLoading ? <Loader2 className="animate-spin" /> : (mode === "setup" ? "Enable Security" : "Unlock")}</button>
+            {mode === "unlock" && (
+              <button onClick={() => confirm("FORGOT PIN? This will PERMANENTLY DELETE your local wallet data. You can only recover your funds if you have your 12-word seed phrase or a Nostr backup. Are you sure you want to reset?") && (resetWallet(), onClose(), window.location.reload())} className="w-full py-2 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-red-500 transition-colors">Forgot PIN? Reset Wallet</button>
             )}
-
-            <button
-              onClick={mode === "setup" ? handleSetup : handleUnlock}
-              disabled={isLoading || pin.length < 4}
-              className="w-full py-4 bg-gray-900 dark:bg-white text-white dark:text-black font-black rounded-2xl shadow-xl transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
-            >
-              {isLoading ? <Loader2 className="animate-spin" /> : (mode === "setup" ? "Enable Security" : "Unlock")}
-            </button>
           </div>
         </div>
       </div>
