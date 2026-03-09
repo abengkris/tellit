@@ -7,7 +7,7 @@ import { useAuthStore } from "@/store/auth";
 import { useNDK } from "@/hooks/useNDK";
 import { NDKKind } from "@nostr-dev-kit/ndk";
 import { useRouter } from "next/navigation";
-import { Loader2, Sparkles, Users, Globe, Hash } from "lucide-react";
+import { Loader2, Sparkles, Users, Globe, Hash, Settings } from "lucide-react";
 import { FeedList } from "@/components/feed/FeedList";
 import { NewPostsIsland } from "@/components/feed/NewPostsIsland";
 import { usePausedFeed } from "@/hooks/usePausedFeed";
@@ -15,6 +15,8 @@ import { useForYouFeed } from "@/hooks/useForYouFeed";
 import { ProfileSetupCard } from "@/components/profile/ProfileSetupCard";
 import { useUIStore } from "@/store/ui";
 import { useLists } from "@/hooks/useLists";
+import { useProfile } from "@/hooks/useProfile";
+import { ProfileEditModal } from "@/components/profile/ProfileEditModal";
 
 type FeedTab = "following" | "forYou" | "global" | string;
 
@@ -24,8 +26,32 @@ export function HomeContent() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<FeedTab>("forYou");
   const { interests } = useLists();
+  const { profile } = useProfile(user?.pubkey);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   const [followingPubkeys, setFollowingPubkeys] = useState<string[]>([]);
+
+  // Load persisted tab
+  useEffect(() => {
+    if (_hasHydrated) {
+      const savedTab = localStorage.getItem("home_active_tab");
+      if (savedTab) {
+        // If it's a dynamic tag, verify it still exists in interests
+        if (["forYou", "following", "global"].includes(savedTab)) {
+          setActiveTab(savedTab);
+        } else if (interests.has(savedTab)) {
+          setActiveTab(savedTab);
+        }
+      }
+    }
+  }, [_hasHydrated, interests]);
+
+  // Save active tab
+  useEffect(() => {
+    if (_hasHydrated) {
+      localStorage.setItem("home_active_tab", activeTab);
+    }
+  }, [activeTab, _hasHydrated]);
 
   useEffect(() => {
     if (isReady && isLoggedIn && user) {
@@ -138,6 +164,14 @@ export function HomeContent() {
                 <div className="absolute bottom-0 left-0 right-0 h-1 bg-blue-500 rounded-full mx-3" />
               )}
             </button>
+
+            <button
+              onClick={() => setIsEditModalOpen(true)}
+              className="flex-none px-5 py-4 text-gray-400 hover:text-blue-500 transition-colors outline-none"
+              title="Manage Interests"
+            >
+              <Settings size={18} />
+            </button>
           </div>
         </nav>
       </div>
@@ -165,6 +199,12 @@ export function HomeContent() {
           <InterestsFeedTab interestList={[activeTab]} />
         )}
       </div>
+
+      <ProfileEditModal 
+        isOpen={isEditModalOpen} 
+        onClose={() => setIsEditModalOpen(false)} 
+        currentProfile={profile || null} 
+      />
     </MainLayout>
   );
 }

@@ -348,6 +348,40 @@ export default function WalletPage() {
             </div>
           )}
 
+          {nwcPairingCode && walletInfo && walletInfo.methods && (
+            <section className="mb-10 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-100">
+              <h2 className="text-sm font-black uppercase tracking-widest text-gray-500 mb-4 flex items-center gap-2">
+                <ShieldCheck size={16} /> Connection Details
+              </h2>
+              <div className="bg-white dark:bg-black border border-gray-100 dark:border-gray-800 rounded-2xl p-5 sm:p-6 shadow-sm">
+                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-3">Permissions granted by your wallet:</p>
+                <div className="flex flex-wrap gap-2">
+                  {walletInfo.methods.map((method) => {
+                    const labels: Record<string, string> = {
+                      'pay_invoice': 'Pay Invoices',
+                      'get_balance': 'View Balance',
+                      'get_info': 'View Wallet Info',
+                      'make_invoice': 'Create Invoices',
+                      'lookup_invoice': 'Check Invoice Status',
+                      'list_transactions': 'View History'
+                    };
+                    return (
+                      <span key={method} className="px-3 py-1 bg-green-500/10 text-green-600 dark:text-green-400 rounded-full text-[10px] font-bold border border-green-500/20">
+                        {labels[method] || method}
+                      </span>
+                    );
+                  })}
+                </div>
+                {walletInfo.network && (
+                  <div className="mt-4 pt-4 border-t border-gray-50 dark:border-gray-900 flex justify-between items-center">
+                    <span className="text-xs text-gray-500 font-bold uppercase">Network</span>
+                    <span className="text-xs font-black uppercase text-blue-500 bg-blue-500/10 px-2 py-0.5 rounded">{walletInfo.network}</span>
+                  </div>
+                )}
+              </div>
+            </section>
+          )}
+
           <section className="mb-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <h2 className="text-sm font-black uppercase tracking-widest text-gray-500 mb-4 flex items-center gap-2"><Shield size={16} /> Security</h2>
             <div className="bg-white dark:bg-black border border-gray-100 dark:border-gray-800 rounded-2xl p-5 sm:p-6 shadow-sm">
