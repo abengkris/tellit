@@ -5,16 +5,13 @@ All notable changes to this project will be documented in this file.
 ## [0.7.9] - 2026-03-09
 
 ### Added
-- **Wallet Encryption (Storage PIN):** Users can now secure their sensitive wallet data (NWC pairing codes, Cashu private keys, and mnemonics) with a PIN. This uses the Web Crypto API (AES-GCM) to encrypt data before it is stored in `localStorage`.
-- **Wallet Locking:** A manual "Lock" button allows users to clear sensitive keys from memory immediately. The wallet automatically locks on page reload if a PIN is set.
-- **Cashu Recovery Seeds:** Implemented NIP-06 mnemonic support (12 words) for Cashu wallets. Users can now backup and restore their eCash using a standard BIP-39 phrase.
+- **Wallet Encryption (Storage PIN):** Users can now secure their NWC wallet connection with a PIN. This uses the Web Crypto API (AES-GCM) to encrypt the pairing code before it is stored in `localStorage`.
+- **Wallet Locking:** A manual "Lock" button allows users to clear the pairing code from memory immediately. The wallet automatically locks on page reload if a PIN is set.
 - **Wallet Privacy Mode:** Added a global "Privacy Mode" toggle that masks wallet balances across the app (Sidebar, Mobile Drawer, Wallet Page).
-- **Manual Wallet Restore:** Added support for restoring Cashu wallets via both 12-word seed phrases and raw hex private keys.
-- **Nostr-Native Recovery:** Added a "Restore from Nostr" feature that pulls encrypted wallet configurations (Kind 37375) from relays.
 
 ### Improved
-- **Wallet Security:** Masked sensitive inputs like NWC pairing codes and private keys with a visibility toggle to prevent "over-the-shoulder" leakage.
-- **Wallet Migration:** Added a "Reset & Create" workflow for users with legacy hex-only wallets to migrate to secure mnemonic-based seeds.
+- **Wallet Security:** Masked sensitive inputs like NWC pairing codes with a visibility toggle to prevent "over-the-shoulder" leakage.
+- **NWC Integration:** Streamlined the wallet experience to focus exclusively on Nostr Wallet Connect (NWC).
 
 ## [0.7.8] - 2026-03-08
 

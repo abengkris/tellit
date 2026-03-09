@@ -10,7 +10,6 @@ import { VideoEmbed } from "../tokens/VideoEmbed";
 import { AudioEmbed } from "../tokens/AudioEmbed";
 import { QuoteEmbed } from "../tokens/QuoteEmbed";
 import { LightningCard } from "../tokens/LightningCard";
-import { CashuCard } from "../tokens/CashuCard";
 import { ShortenedUrl } from "../tokens/ShortenedUrl";
 import { UrlPreview } from "../tokens/UrlPreview";
 import { AsyncMediaEmbed } from "../tokens/AsyncMediaEmbed";
@@ -158,7 +157,7 @@ export function PostContentRenderer({
         audio.push(token);
       } else if (token.type === "note_ref" && renderQuotes) {
         quote.push(token);
-      } else if (token.type === "lightning" || token.type === "cashu") {
+      } else if (token.type === "lightning") {
         card.push(token);
       } else if (token.type === "url") {
         const cleanUrl = token.value.replace(/[.,;]$/, "");
@@ -332,9 +331,7 @@ export function PostContentRenderer({
           {cardTokens.length > 0 && (
             <div className="space-y-1">
               {cardTokens.map((token, i) => (
-                token.type === "lightning" 
-                  ? <LightningCard key={i} invoice={token.value} />
-                  : <CashuCard key={i} token={token.value} />
+                <LightningCard key={i} invoice={token.value} />
               ))}
             </div>
           )}

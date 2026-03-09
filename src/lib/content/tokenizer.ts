@@ -11,7 +11,6 @@ export type TokenType =
   | "audio"         // URL .mp3 .wav .aac .flac .m4a
   | "url"           // General URL
   | "lightning"     // lnbc...
-  | "cashu"         // cashu...
   | "linebreak"     // \n
   | "emoji"         // :emoji: (handled via custom logic usually, but kept here for tokenizer flexibility)
   | "nip08";        // #[0] (to be resolved before tokenization)
@@ -42,9 +41,6 @@ const PATTERNS: { re: RegExp; type: TokenType }[] = [
 
   // 2. Lightning invoice (SEBELUM URL)
   { re: /\blnbc[a-zA-Z0-9]{20,}\b/g,    type: "lightning"  },
-
-  // 3. Cashu token
-  { re: /\bcashu[AB][a-zA-Z0-9+/=]{20,}\b/g, type: "cashu" },
 
   // 4. Media URLs (SEBELUM URL biasa)
   { re: /https?:\/\/[^\s\])"'<>]+?\.(?:jpg|jpeg|png|gif|webp|avif|svg|jfif)(?:\?\S*)?/gi, type: "image" },

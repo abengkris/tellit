@@ -98,8 +98,6 @@ export default function UnpublishedPage() {
       case 7: return "Reaction";
       case 6: return "Repost";
       case 10002: return "Relay List";
-      case 17375: return "Cashu Wallet";
-      case 10019: return "Cashu Mint List";
       default: return `Kind ${kind}`;
     }
   };

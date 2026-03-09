@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 
-export type WalletType = 'nwc' | 'cashu' | 'none';
+export type WalletType = 'nwc' | 'none';
 
 interface WalletInfo {
   alias?: string;
@@ -12,23 +12,18 @@ interface WalletInfo {
 
 export interface EncryptedData {
   nwcPairingCode?: string | null;
-  cashuPrivateKey?: string | null;
-  cashuMnemonic?: string | null;
 }
 
 interface WalletState {
   walletType: WalletType;
   // Raw data (in-memory only, NOT persisted)
   nwcPairingCode: string | null;
-  cashuPrivateKey: string | null;
-  cashuMnemonic: string | null;
   
   // Persisted fields
   isLocked: boolean;
   pinHash: string | null;
   pinSalt: string | null;
   encryptedData: string | null; // Base64 of EncryptedData object
-  cashuMints: string[];
   
   // Shared UI state
   balance: number | null;
@@ -37,9 +32,6 @@ interface WalletState {
   // Actions
   setWalletType: (type: WalletType) => void;
   setNwcPairingCode: (code: string | null) => void;
-  setCashuMints: (mints: string[]) => void;
-  setCashuPrivateKey: (key: string | null) => void;
-  setCashuMnemonic: (mnemonic: string | null) => void;
   setBalance: (balance: number | null) => void;
   setInfo: (info: WalletInfo | null) => void;
   
@@ -55,9 +47,6 @@ export const useWalletStore = create<WalletState>()(
     (set) => ({
       walletType: 'none',
       nwcPairingCode: null,
-      cashuMints: ['https://8333.space:3338'],
-      cashuPrivateKey: null,
-      cashuMnemonic: null,
       balance: null,
       info: null,
       
@@ -68,9 +57,6 @@ export const useWalletStore = create<WalletState>()(
 
       setWalletType: (walletType) => set({ walletType, balance: null, info: null }),
       setNwcPairingCode: (code) => set({ nwcPairingCode: code, walletType: code ? 'nwc' : 'none' }),
-      setCashuMints: (cashuMints) => set({ cashuMints }),
-      setCashuPrivateKey: (cashuPrivateKey) => set({ cashuPrivateKey }),
-      setCashuMnemonic: (cashuMnemonic) => set({ cashuMnemonic }),
       setBalance: (balance) => set({ balance }),
       setInfo: (info) => set({ info }),
 
@@ -83,23 +69,17 @@ export const useWalletStore = create<WalletState>()(
       
       unlock: (data) => set({
         nwcPairingCode: data.nwcPairingCode || null,
-        cashuPrivateKey: data.cashuPrivateKey || null,
-        cashuMnemonic: data.cashuMnemonic || null,
         isLocked: false
       }),
 
       lock: () => set({
         nwcPairingCode: null,
-        cashuPrivateKey: null,
-        cashuMnemonic: null,
         isLocked: true
       }),
 
       resetWallet: () => set({ 
         walletType: 'none', 
         nwcPairingCode: null, 
-        cashuPrivateKey: null,
-        cashuMnemonic: null,
         balance: null, 
         info: null,
         isLocked: false,
@@ -113,11 +93,9 @@ export const useWalletStore = create<WalletState>()(
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
         walletType: state.walletType,
-        cashuMints: state.cashuMints,
         pinHash: state.pinHash,
         pinSalt: state.pinSalt,
         encryptedData: state.encryptedData,
-        // We only persist isLocked if a PIN is set
         isLocked: !!state.pinHash,
       }),
     }

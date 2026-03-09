@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { useWalletStore, EncryptedData } from "../wallet";
 
-describe("Wallet Store - Encryption", () => {
+describe("Wallet Store - NWC & Encryption", () => {
   beforeEach(() => {
     useWalletStore.getState().resetWallet();
   });
@@ -11,6 +11,7 @@ describe("Wallet Store - Encryption", () => {
     expect(state.isLocked).toBe(false);
     expect(state.pinHash).toBe(null);
     expect(state.encryptedData).toBe(null);
+    expect(state.walletType).toBe('none');
   });
 
   it("should handle setPin correctly", () => {
@@ -28,28 +29,23 @@ describe("Wallet Store - Encryption", () => {
   });
 
   it("should clear sensitive data when locked", () => {
-    // 1. Setup an unlocked state with data
     useWalletStore.setState({
       nwcPairingCode: "secret-nwc",
-      cashuPrivateKey: "secret-pk",
       isLocked: false,
       pinHash: "has-a-pin"
     });
 
-    // 2. Lock it
     useWalletStore.getState().lock();
 
     const state = useWalletStore.getState();
     expect(state.isLocked).toBe(true);
     expect(state.nwcPairingCode).toBe(null);
-    expect(state.cashuPrivateKey).toBe(null);
-    expect(state.pinHash).toBe("has-a-pin"); // Meta-data stays
+    expect(state.pinHash).toBe("has-a-pin");
   });
 
   it("should restore sensitive data when unlocked", () => {
     const secrets: EncryptedData = {
-      nwcPairingCode: "restored-nwc",
-      cashuPrivateKey: "restored-pk"
+      nwcPairingCode: "restored-nwc"
     };
 
     useWalletStore.getState().unlock(secrets);
@@ -57,11 +53,11 @@ describe("Wallet Store - Encryption", () => {
     const state = useWalletStore.getState();
     expect(state.isLocked).toBe(false);
     expect(state.nwcPairingCode).toBe("restored-nwc");
-    expect(state.cashuPrivateKey).toBe("restored-pk");
   });
 
   it("should fully clear everything on reset", () => {
     useWalletStore.setState({
+      nwcPairingCode: "secret-nwc",
       pinHash: "some-hash",
       encryptedData: "some-data",
       isLocked: true
@@ -70,8 +66,10 @@ describe("Wallet Store - Encryption", () => {
     useWalletStore.getState().resetWallet();
 
     const state = useWalletStore.getState();
+    expect(state.nwcPairingCode).toBe(null);
     expect(state.pinHash).toBe(null);
     expect(state.encryptedData).toBe(null);
     expect(state.isLocked).toBe(false);
+    expect(state.walletType).toBe('none');
   });
 });
