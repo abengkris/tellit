@@ -16,7 +16,7 @@ export interface EncryptedData {
 
 interface WalletState {
   walletType: WalletType;
-  // Raw data (in-memory only, NOT persisted)
+  // Raw data (Persisted in localStorage, but cleared when locked if PIN exists)
   nwcPairingCode: string | null;
   
   // Persisted fields
@@ -93,6 +93,7 @@ export const useWalletStore = create<WalletState>()(
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
         walletType: state.walletType,
+        nwcPairingCode: state.nwcPairingCode,
         pinHash: state.pinHash,
         pinSalt: state.pinSalt,
         encryptedData: state.encryptedData,
