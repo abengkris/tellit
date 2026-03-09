@@ -40,6 +40,46 @@ const ZapUser = ({ pubkey }: { pubkey: string }) => {
   );
 };
 
+interface ParsedZap {
+  otherPartyPubkey: string | null;
+  amount: number;
+  isSent: boolean;
+  timestamp: number;
+  id: string;
+}
+
+function parseZapReceipt(zap: NDKEvent, currentUserPubkey?: string): ParsedZap {
+  let senderPubkey: string | null = null;
+  const recipientPubkey: string | null = zap.tags.find(t => t[0] === 'p')?.[1] || null;
+  let amount = 0;
+
+  try {
+    const descriptionTag = zap.tags.find(t => t[0] === 'description');
+    if (descriptionTag?.[1]) {
+      const zapRequest = JSON.parse(descriptionTag[1]);
+      senderPubkey = zapRequest.pubkey;
+      
+      const amountTag = zapRequest.tags.find((t: string[]) => t[0] === 'amount');
+      if (amountTag?.[1]) {
+        amount = Math.floor(Number(amountTag[1]) / 1000);
+      }
+    }
+  } catch (e) {
+    console.error("Failed to parse zap description", e);
+  }
+
+  const isSent = senderPubkey === currentUserPubkey;
+  const otherPartyPubkey = isSent ? recipientPubkey : senderPubkey;
+
+  return {
+    otherPartyPubkey,
+    amount,
+    isSent,
+    timestamp: zap.created_at || 0,
+    id: zap.id
+  };
+}
+
 export default function WalletPage() {
   const { 
     walletType, 
@@ -347,24 +387,27 @@ export default function WalletPage() {
               ) : recentZaps.length > 0 ? (
                 <div className="divide-y divide-gray-50 dark:divide-gray-900">
                   {recentZaps.map((zap) => {
-                    const isSent = zap.pubkey === user?.pubkey;
-                    const zapAmountTag = zap.tags.find(t => t[0] === 'description');
-                    let amount = "---";
-                    try { if (zapAmountTag) { const desc = JSON.parse(zapAmountTag[1]); const amountTag = desc.tags.find((t: string[]) => t[0] === 'amount'); if (amountTag) amount = (Number(amountTag[1]) / 1000).toLocaleString(); } } catch { }
-                    const targetPubkey = isSent ? zap.tags.find(t => t[0] === 'p')?.[1] : zap.pubkey;
+                    const parsed = parseZapReceipt(zap, user?.pubkey);
                     return (
-                      <div key={zap.id} className="p-3 sm:p-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-900/50 transition-colors">
+                      <div key={parsed.id} className="p-3 sm:p-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-900/50 transition-colors">
                         <div className="flex items-center gap-3 sm:gap-4 min-w-0">
-                          <div className={`p-1.5 sm:p-2 rounded-full shrink-0 ${isSent ? 'bg-orange-500/10 text-orange-600' : 'bg-green-500/10 text-green-600'}`}>{isSent ? <ArrowUpRight size={16} /> : <ArrowDownLeft size={16} />}</div>
+                          <div className={`p-1.5 sm:p-2 rounded-full shrink-0 ${parsed.isSent ? 'bg-orange-500/10 text-orange-600' : 'bg-green-500/10 text-green-600'}`}>
+                            {parsed.isSent ? <ArrowUpRight size={16} /> : <ArrowDownLeft size={16} />}
+                          </div>
                           <div className="min-w-0">
                             <div className="flex items-center gap-1.5 font-bold text-[11px] sm:text-sm">
-                              <span>{isSent ? 'Sent to' : 'Received from'}</span>
-                              {targetPubkey ? <ZapUser pubkey={targetPubkey} /> : <span className="text-gray-400">Unknown</span>}
+                              <span>{parsed.isSent ? 'Sent to' : 'Received from'}</span>
+                              {parsed.otherPartyPubkey ? <ZapUser pubkey={parsed.otherPartyPubkey} /> : <span className="text-gray-400">Unknown</span>}
                             </div>
-                            <p className="text-[9px] sm:text-[10px] text-gray-500 font-medium">{format(new Date((zap.created_at || 0) * 1000), "MMM d, HH:mm")}</p>
+                            <p className="text-[9px] sm:text-[10px] text-gray-500 font-medium">{format(new Date(parsed.timestamp * 1000), "MMM d, HH:mm")}</p>
                           </div>
                         </div>
-                        <div className="flex flex-col items-end shrink-0 ml-2"><span className={`font-black text-sm sm:text-lg ${isSent ? 'text-gray-900 dark:text-white' : 'text-green-500'}`}>{isSent ? '-' : '+'}{amount}</span><span className="text-[8px] sm:text-[10px] font-bold text-gray-400 uppercase tracking-widest">sats</span></div>
+                        <div className="flex flex-col items-end shrink-0 ml-2">
+                          <span className={`font-black text-sm sm:text-lg ${parsed.isSent ? 'text-gray-900 dark:text-white' : 'text-green-500'}`}>
+                            {parsed.isSent ? '-' : '+'}{parsed.amount.toLocaleString()}
+                          </span>
+                          <span className="text-[8px] sm:text-[10px] font-bold text-gray-400 uppercase tracking-widest">sats</span>
+                        </div>
                       </div>
                     );
                   })}
