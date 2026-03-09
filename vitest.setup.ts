@@ -1,5 +1,13 @@
 import '@testing-library/jest-dom';
 import { vi } from 'vitest';
+import crypto from 'node:crypto';
+
+// Add Web Crypto support for tests
+if (!global.crypto) {
+  Object.defineProperty(global, 'crypto', {
+    value: crypto.webcrypto,
+  });
+}
 
 // No global NDK mock anymore because we'll use NDK Test Utils.
 // But we might need to mock browser-only things if necessary.

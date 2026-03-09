@@ -1,61 +1,77 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { useWalletStore } from "../wallet";
+import { useWalletStore, EncryptedData } from "../wallet";
 
-describe("Wallet Store", () => {
+describe("Wallet Store - Encryption", () => {
   beforeEach(() => {
     useWalletStore.getState().resetWallet();
   });
 
-  it("should have initial state", () => {
+  it("should initialize in an unlocked, unconfigured state", () => {
     const state = useWalletStore.getState();
-    expect(state.walletType).toBe('none');
-    expect(state.balance).toBe(null);
-    expect(state.cashuMints).toContain('https://8333.space:3338');
+    expect(state.isLocked).toBe(false);
+    expect(state.pinHash).toBe(null);
+    expect(state.encryptedData).toBe(null);
   });
 
-  it("should set wallet type", () => {
-    useWalletStore.getState().setWalletType('cashu');
-    expect(useWalletStore.getState().walletType).toBe('cashu');
-  });
-
-  it("should handle NWC pairing code and auto-set wallet type", () => {
-    const code = "nostr+walletconnect://test";
-    useWalletStore.getState().setNwcPairingCode(code);
+  it("should handle setPin correctly", () => {
+    const mockHash = "mock-hash";
+    const mockSalt = "mock-salt";
+    const mockEncrypted = "mock-encrypted-blob";
+    
+    useWalletStore.getState().setPin(mockHash, mockSalt, mockEncrypted);
     
     const state = useWalletStore.getState();
-    expect(state.nwcPairingCode).toBe(code);
-    expect(state.walletType).toBe('nwc');
+    expect(state.pinHash).toBe(mockHash);
+    expect(state.pinSalt).toBe(mockSalt);
+    expect(state.encryptedData).toBe(mockEncrypted);
+    expect(state.isLocked).toBe(false);
   });
 
-  it("should handle Cashu mints and keys", () => {
-    const mints = ["https://mint1.com", "https://mint2.com"];
-    const pk = "test-private-key";
-    const mnemonic = "test mnemonic phrase here";
-    
-    useWalletStore.getState().setCashuMints(mints);
-    useWalletStore.getState().setCashuPrivateKey(pk);
-    useWalletStore.getState().setCashuMnemonic(mnemonic);
-    
+  it("should clear sensitive data when locked", () => {
+    // 1. Setup an unlocked state with data
+    useWalletStore.setState({
+      nwcPairingCode: "secret-nwc",
+      cashuPrivateKey: "secret-pk",
+      isLocked: false,
+      pinHash: "has-a-pin"
+    });
+
+    // 2. Lock it
+    useWalletStore.getState().lock();
+
     const state = useWalletStore.getState();
-    expect(state.cashuMints).toEqual(mints);
-    expect(state.cashuPrivateKey).toBe(pk);
-    expect(state.cashuMnemonic).toBe(mnemonic);
-  });
-
-  it("should set balance", () => {
-    useWalletStore.getState().setBalance(1000);
-    expect(useWalletStore.getState().balance).toBe(1000);
-  });
-
-  it("should reset wallet", () => {
-    useWalletStore.getState().setWalletType('nwc');
-    useWalletStore.getState().setBalance(500);
-    
-    useWalletStore.getState().resetWallet();
-    
-    const state = useWalletStore.getState();
-    expect(state.walletType).toBe('none');
-    expect(state.balance).toBe(null);
+    expect(state.isLocked).toBe(true);
     expect(state.nwcPairingCode).toBe(null);
+    expect(state.cashuPrivateKey).toBe(null);
+    expect(state.pinHash).toBe("has-a-pin"); // Meta-data stays
+  });
+
+  it("should restore sensitive data when unlocked", () => {
+    const secrets: EncryptedData = {
+      nwcPairingCode: "restored-nwc",
+      cashuPrivateKey: "restored-pk"
+    };
+
+    useWalletStore.getState().unlock(secrets);
+
+    const state = useWalletStore.getState();
+    expect(state.isLocked).toBe(false);
+    expect(state.nwcPairingCode).toBe("restored-nwc");
+    expect(state.cashuPrivateKey).toBe("restored-pk");
+  });
+
+  it("should fully clear everything on reset", () => {
+    useWalletStore.setState({
+      pinHash: "some-hash",
+      encryptedData: "some-data",
+      isLocked: true
+    });
+
+    useWalletStore.getState().resetWallet();
+
+    const state = useWalletStore.getState();
+    expect(state.pinHash).toBe(null);
+    expect(state.encryptedData).toBe(null);
+    expect(state.isLocked).toBe(false);
   });
 });

@@ -10,15 +10,27 @@ interface WalletInfo {
   network?: string;
 }
 
+export interface EncryptedData {
+  nwcPairingCode?: string | null;
+  cashuPrivateKey?: string | null;
+  cashuMnemonic?: string | null;
+}
+
 interface WalletState {
   walletType: WalletType;
-  // NWC
+  // Raw data (in-memory only, NOT persisted)
   nwcPairingCode: string | null;
-  // Cashu
+  cashuPrivateKey: string | null;
+  cashuMnemonic: string | null;
+  
+  // Persisted fields
+  isLocked: boolean;
+  pinHash: string | null;
+  pinSalt: string | null;
+  encryptedData: string | null; // Base64 of EncryptedData object
   cashuMints: string[];
-  cashuPrivateKey: string | null; // Added for P2PK stability
-  cashuMnemonic: string | null; // Added for recovery
-  // Shared
+  
+  // Shared UI state
   balance: number | null;
   info: WalletInfo | null;
   
@@ -26,10 +38,15 @@ interface WalletState {
   setWalletType: (type: WalletType) => void;
   setNwcPairingCode: (code: string | null) => void;
   setCashuMints: (mints: string[]) => void;
-  setCashuPrivateKey: (key: string | null) => void; // Added
-  setCashuMnemonic: (mnemonic: string | null) => void; // Added
+  setCashuPrivateKey: (key: string | null) => void;
+  setCashuMnemonic: (mnemonic: string | null) => void;
   setBalance: (balance: number | null) => void;
   setInfo: (info: WalletInfo | null) => void;
+  
+  // Encryption Actions
+  setPin: (pinHash: string, pinSalt: string, encryptedData: string) => void;
+  unlock: (data: EncryptedData) => void;
+  lock: () => void;
   resetWallet: () => void;
 }
 
@@ -43,6 +60,11 @@ export const useWalletStore = create<WalletState>()(
       cashuMnemonic: null,
       balance: null,
       info: null,
+      
+      isLocked: false,
+      pinHash: null,
+      pinSalt: null,
+      encryptedData: null,
 
       setWalletType: (walletType) => set({ walletType, balance: null, info: null }),
       setNwcPairingCode: (code) => set({ nwcPairingCode: code, walletType: code ? 'nwc' : 'none' }),
@@ -51,13 +73,39 @@ export const useWalletStore = create<WalletState>()(
       setCashuMnemonic: (cashuMnemonic) => set({ cashuMnemonic }),
       setBalance: (balance) => set({ balance }),
       setInfo: (info) => set({ info }),
+
+      setPin: (pinHash, pinSalt, encryptedData) => set({ 
+        pinHash, 
+        pinSalt, 
+        encryptedData, 
+        isLocked: false 
+      }),
+      
+      unlock: (data) => set({
+        nwcPairingCode: data.nwcPairingCode || null,
+        cashuPrivateKey: data.cashuPrivateKey || null,
+        cashuMnemonic: data.cashuMnemonic || null,
+        isLocked: false
+      }),
+
+      lock: () => set({
+        nwcPairingCode: null,
+        cashuPrivateKey: null,
+        cashuMnemonic: null,
+        isLocked: true
+      }),
+
       resetWallet: () => set({ 
         walletType: 'none', 
         nwcPairingCode: null, 
         cashuPrivateKey: null,
         cashuMnemonic: null,
         balance: null, 
-        info: null 
+        info: null,
+        isLocked: false,
+        pinHash: null,
+        pinSalt: null,
+        encryptedData: null
       }),
     }),
     {
@@ -65,10 +113,12 @@ export const useWalletStore = create<WalletState>()(
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
         walletType: state.walletType,
-        nwcPairingCode: state.nwcPairingCode,
         cashuMints: state.cashuMints,
-        cashuPrivateKey: state.cashuPrivateKey,
-        cashuMnemonic: state.cashuMnemonic,
+        pinHash: state.pinHash,
+        pinSalt: state.pinSalt,
+        encryptedData: state.encryptedData,
+        // We only persist isLocked if a PIN is set
+        isLocked: !!state.pinHash,
       }),
     }
   )
