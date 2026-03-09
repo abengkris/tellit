@@ -68,7 +68,8 @@ export const PostCard: React.FC<PostCardProps> = ({
     reposts, 
     comments, 
     quotes, 
-    bookmarks,
+    combinedReposts,
+    bookmarks, 
     totalSats, 
     userLiked, 
     userReposted 

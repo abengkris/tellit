@@ -1,3 +1,4 @@
+import React, { useState, useMemo, useEffect } from "react";
 import { MessageCircle, Repeat2, Heart, Zap, Bookmark, Quote, Share, Loader2 } from "lucide-react";
 import { useUIStore } from "@/store/ui";
 import { useLists } from "@/hooks/useLists";
@@ -92,10 +93,10 @@ export const PostActions: React.FC<PostActionsProps> = ({
   const handleLike = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (optimisticReacted === '+') {
-      setOptimisticLikes(prev => Math.max(0, prev - 1));
+      setOptimisticLikes((prev: number) => Math.max(0, prev - 1));
       setOptimisticReacted(null);
     } else {
-      setOptimisticLikes(prev => prev + 1);
+      setOptimisticLikes((prev: number) => prev + 1);
       setOptimisticReacted('+');
       triggerConfetti();
       addToast("Liked!", "success");
@@ -106,8 +107,8 @@ export const PostActions: React.FC<PostActionsProps> = ({
   const handleRepostAction = () => {
     if (!optimisticReposted) {
       setOptimisticReposted(true);
-      setOptimisticReposts(prev => prev + 1);
-      setOptimisticCombined(prev => prev + 1);
+      setOptimisticReposts((prev: number) => prev + 1);
+      setOptimisticCombined((prev: number) => prev + 1);
       addToast("Reposted!", "success");
       // Create a dummy event for the callback if needed
       const e = { stopPropagation: () => {} } as React.MouseEvent;
@@ -138,7 +139,7 @@ export const PostActions: React.FC<PostActionsProps> = ({
         
         if (alreadyPaid) {
           triggerZapConfetti();
-          setOptimisticZaps(prev => prev + amount); // Add sats to counter
+          setOptimisticZaps((prev: number) => prev + amount); // Add sats to counter
           addToast(`Zapped ${amount} sats via wallet!`, "success");
           refreshBalance();
           return;
@@ -148,7 +149,7 @@ export const PostActions: React.FC<PostActionsProps> = ({
           const response = await window.webln.sendPayment(bolt11);
           if (response.preimage) {
             triggerZapConfetti();
-            setOptimisticZaps(prev => prev + amount); // Add sats to counter
+            setOptimisticZaps((prev: number) => prev + amount); // Add sats to counter
             addToast(`Zapped ${amount} sats!`, "success");
             return;
           }

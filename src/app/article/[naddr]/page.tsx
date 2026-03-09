@@ -32,6 +32,7 @@ export default function ArticleDetailPage({ params }: { params: Promise<{ naddr:
     reposts, 
     comments, 
     quotes, 
+    combinedReposts,
     bookmarks,
     totalSats, 
     userLiked, 
@@ -201,6 +202,7 @@ export default function ArticleDetailPage({ params }: { params: Promise<{ naddr:
               reposts={reposts}
               comments={comments}
               quotes={quotes}
+              combinedReposts={combinedReposts}
               bookmarks={bookmarks}
               zaps={totalSats}
               userReacted={userLiked ? '+' : null}
