@@ -61,7 +61,7 @@ export function HomeContent() {
 
   return (
     <MainLayout>
-      <div className="sticky top-14 sm:top-0 z-10 bg-white/80 dark:bg-black/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800">
+      <div className="sticky top-14 sm:top-0 z-10 w-full max-w-full overflow-hidden bg-white/80 dark:bg-black/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800">
         <div className="hidden sm:flex px-4 py-3">
           <h1 className="text-xl font-bold">Home</h1>
         </div>

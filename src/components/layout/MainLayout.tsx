@@ -60,7 +60,7 @@ export const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }
         </nav>
 
         {/* Main Feed */}
-        <main className="flex-1 min-h-screen border-r border-gray-200 dark:border-gray-800 pb-20 sm:pb-0">
+        <main className="flex-1 min-w-0 overflow-x-hidden min-h-screen border-r border-gray-200 dark:border-gray-800 pb-20 sm:pb-0">
           {children}
         </main>
 
