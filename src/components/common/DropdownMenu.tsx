@@ -14,12 +14,14 @@ interface DropdownMenuProps {
   trigger: React.ReactNode;
   items: DropdownItem[];
   align?: "left" | "right";
+  position?: "up" | "down";
 }
 
 export const DropdownMenu: React.FC<DropdownMenuProps> = ({ 
   trigger, 
   items, 
-  align = "right" 
+  align = "right",
+  position = "down"
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -40,6 +42,10 @@ export const DropdownMenu: React.FC<DropdownMenuProps> = ({
     };
   }, [isOpen]);
 
+  const positionClasses = position === "up" 
+    ? "bottom-full mb-2 origin-bottom" 
+    : "top-full mt-2 origin-top";
+
   return (
     <div className="relative inline-block text-left" ref={menuRef}>
       <div onClick={(e) => {
@@ -51,7 +57,7 @@ export const DropdownMenu: React.FC<DropdownMenuProps> = ({
 
       {isOpen && (
         <div 
-          className={`absolute ${align === "right" ? "right-0" : "left-0"} mt-2 w-56 origin-top-right rounded-xl bg-white dark:bg-gray-900 shadow-xl ring-1 ring-black ring-opacity-5 focus:outline-none z-50 overflow-hidden border border-gray-100 dark:border-gray-800 animate-in fade-in zoom-in-95 duration-100`}
+          className={`absolute ${align === "right" ? "right-0" : "left-0"} ${positionClasses} w-56 rounded-xl bg-white dark:bg-gray-900 shadow-xl ring-1 ring-black ring-opacity-5 focus:outline-none z-50 overflow-hidden border border-gray-100 dark:border-gray-800 animate-in fade-in zoom-in-95 duration-100`}
           onClick={(e) => e.stopPropagation()}
         >
           <div className="py-1">

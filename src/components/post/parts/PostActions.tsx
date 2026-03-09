@@ -232,6 +232,7 @@ export const PostActions: React.FC<PostActionsProps> = ({
         <div className="flex items-center">
           <DropdownMenu
             align="left"
+            position="up"
             items={repostItems}
             trigger={
               <button 
