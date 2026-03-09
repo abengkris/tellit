@@ -64,7 +64,7 @@ export const Sidebar = () => {
   const { ndk, sessions } = useNDK();
   const { loading: profileLoading } = useProfile(user?.pubkey);
   const { unreadCount } = useNotifications();
-  const { unreadMessagesCount } = useUIStore();
+  const { unreadMessagesCount, hideBalance } = useUIStore();
   const { connectedCount, totalCount } = useRelayStatus();
   const { balance, nwcPairingCode } = useWalletStore();
   const [isRelayModalOpen, setIsRelayModalOpen] = React.useState(false);
@@ -105,7 +105,7 @@ export const Sidebar = () => {
           >
             <Wallet size={26} fill={balance !== null ? "currentColor" : "none"} />
             <span className="hidden lg:block text-sm font-black">
-              {balance !== null ? `${balance.toLocaleString()} sats` : "Wallet"}
+              {hideBalance ? "**** sats" : (balance !== null ? `${balance.toLocaleString()} sats` : "Wallet")}
             </span>
           </Link>
         )}

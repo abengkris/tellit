@@ -27,7 +27,9 @@ import {
   CheckCircle2,
   CreditCard,
   Loader2,
-  Shield
+  Shield,
+  Eye,
+  EyeOff
 } from "lucide-react";
 import { NDKEvent, NDKFilter } from "@nostr-dev-kit/ndk";
 import { NDKCashuWallet } from "@nostr-dev-kit/wallet";
@@ -51,9 +53,10 @@ export default function WalletPage() {
   const { ndk, isReady, refreshBalance } = useNDK();
   const { isLoggedIn, user } = useAuthStore();
   const { profile } = useProfile(user?.pubkey);
-  const { addToast, defaultZapAmount, setDefaultZapAmount } = useUIStore();
+  const { addToast, defaultZapAmount, setDefaultZapAmount, hideBalance, setHideBalance } = useUIStore();
 
   const [pairingInput, setPairingInput] = useState("");
+  const [showPairing, setShowPairing] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [recentZaps, setRecentZaps] = useState<NDKEvent[]>([]);
   const [isLoadingZaps, setIsLoadingZaps] = useState(false);
@@ -318,15 +321,21 @@ export default function WalletPage() {
         {/* Safety Status & Info Toggle */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
           <div 
-            onClick={() => setShowFaq(!showFaq)}
-            className="p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 flex items-center gap-3 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-all group"
+            onClick={() => setHideBalance(!hideBalance)}
+            className={`p-4 rounded-2xl border flex items-center gap-3 cursor-pointer transition-all group ${
+              hideBalance 
+                ? "bg-blue-500/5 border-blue-500/20 text-blue-500" 
+                : "bg-gray-50 dark:bg-gray-900 border-gray-100 dark:border-gray-800"
+            }`}
           >
-            <div className="p-2 bg-blue-500/10 text-blue-500 rounded-lg group-hover:scale-110 transition-transform">
-              <Info size={18} />
+            <div className={`p-2 rounded-lg group-hover:scale-110 transition-transform ${
+              hideBalance ? "bg-blue-500 text-white" : "bg-blue-500/10 text-blue-500"
+            }`}>
+              {hideBalance ? <Eye size={18} /> : <EyeOff size={18} />}
             </div>
             <div>
-              <p className="text-[10px] font-black uppercase text-gray-400 tracking-widest">Knowledge Base</p>
-              <p className="text-xs font-bold">How Cashu & NWC work?</p>
+              <p className="text-[10px] font-black uppercase text-gray-400 tracking-widest">Privacy Mode</p>
+              <p className="text-xs font-bold">{hideBalance ? 'Balance Hidden' : 'Hide Balance'}</p>
             </div>
           </div>
           <div className="p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 flex items-center gap-3">
@@ -381,7 +390,7 @@ export default function WalletPage() {
                 <p className="text-blue-100 font-bold uppercase tracking-wider text-[10px]">Available Balance</p>
                 <div className="flex items-baseline gap-2">
                   <span className="text-4xl sm:text-5xl font-black truncate max-w-[200px] sm:max-w-none">
-                    {balance !== null ? balance.toLocaleString() : "---"}
+                    {hideBalance ? "****" : (balance !== null ? balance.toLocaleString() : "---")}
                   </span>
                   <span className="text-lg sm:text-xl font-bold text-blue-200">sats</span>
                 </div>
@@ -437,13 +446,21 @@ export default function WalletPage() {
             
             {walletType === 'nwc' ? (
               <div className="space-y-4 max-w-sm mx-auto mt-6">
-                <input 
-                  type="text"
-                  placeholder="nostr+walletconnect://..."
-                  value={pairingInput}
-                  onChange={(e) => setPairingInput(e.target.value)}
-                  className="w-full p-3 sm:p-4 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-2xl text-xs sm:text-sm font-mono focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                />
+                <div className="relative">
+                  <input 
+                    type={showPairing ? "text" : "password"}
+                    placeholder="nostr+walletconnect://..."
+                    value={pairingInput}
+                    onChange={(e) => setPairingInput(e.target.value)}
+                    className="w-full p-3 sm:p-4 pr-12 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-2xl text-xs sm:text-sm font-mono focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  />
+                  <button
+                    onClick={() => setShowPairing(!showPairing)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
+                  >
+                    {showPairing ? <EyeOff size={20} /> : <Eye size={20} />}
+                  </button>
+                </div>
                 <div className="flex flex-col sm:flex-row gap-2">
                   <button 
                     onClick={handleConnectNWC}

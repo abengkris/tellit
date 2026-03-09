@@ -23,7 +23,7 @@ interface MobileDrawerProps {
 export const MobileDrawer: React.FC<MobileDrawerProps> = ({ isOpen, onClose, onOpenRelays }) => {
   const { user, logout } = useAuthStore();
   const { sessions } = useNDK();
-  const { unreadMessagesCount } = useUIStore();
+  const { unreadMessagesCount, hideBalance } = useUIStore();
   const { connectedCount, totalCount } = useRelayStatus();
   const { profile, loading: profileLoading } = useProfile(user?.pubkey);
   const { count: followingCount } = useFollowingList(user?.pubkey);
@@ -89,7 +89,7 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({ isOpen, onClose, onO
                   className="flex items-center gap-1.5 px-3 py-1.5 bg-yellow-50 dark:bg-yellow-900/20 text-yellow-600 dark:text-yellow-500 rounded-full text-xs font-black border border-yellow-100 dark:border-yellow-900/30 transition-all active:scale-95"
                 >
                   <Wallet size={14} fill={balance !== null ? "currentColor" : "none"} />
-                  <span>{balance !== null ? `${balance.toLocaleString()}` : "Wallet"}</span>
+                  <span>{hideBalance ? "****" : (balance !== null ? `${balance.toLocaleString()}` : "Wallet")}</span>
                 </Link>
               )}
             </div>

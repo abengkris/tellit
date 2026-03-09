@@ -21,6 +21,7 @@ interface UIState {
   wotStrictMode: boolean;
   browserNotificationsEnabled: boolean;
   defaultZapAmount: number;
+  hideBalance: boolean;
   addToast: (message: string, type?: "success" | "error" | "info", duration?: number, action?: ToastAction) => void;
   removeToast: (id: string) => void;
   setUnreadMessagesCount: (count: number) => void;
@@ -29,6 +30,7 @@ interface UIState {
   setWotStrictMode: (enabled: boolean) => void;
   setBrowserNotificationsEnabled: (enabled: boolean) => void;
   setDefaultZapAmount: (amount: number) => void;
+  setHideBalance: (hide: boolean) => void;
 }
 
 export const useUIStore = create<UIState>()(
@@ -40,6 +42,7 @@ export const useUIStore = create<UIState>()(
       wotStrictMode: false,
       browserNotificationsEnabled: false,
       defaultZapAmount: 21,
+      hideBalance: false,
       addToast: (message, type = "info", duration = 4000, action) => {
         const id = Math.random().toString(36).substring(7);
         set((state) => ({
@@ -56,6 +59,7 @@ export const useUIStore = create<UIState>()(
       setWotStrictMode: (enabled) => set({ wotStrictMode: enabled }),
       setBrowserNotificationsEnabled: (enabled) => set({ browserNotificationsEnabled: enabled }),
       setDefaultZapAmount: (amount) => set({ defaultZapAmount: amount }),
+      setHideBalance: (hide) => set({ hideBalance: hide }),
     }),
     {
       name: "tellit-ui-storage",
@@ -64,6 +68,7 @@ export const useUIStore = create<UIState>()(
         wotStrictMode: state.wotStrictMode,
         browserNotificationsEnabled: state.browserNotificationsEnabled,
         defaultZapAmount: state.defaultZapAmount,
+        hideBalance: state.hideBalance,
       }),
     }
   )
