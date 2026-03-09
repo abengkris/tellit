@@ -21,6 +21,8 @@ export const reactToEvent = async (
     ["p", targetEvent.pubkey]
   ];
 
-  await reaction.publish();
+  await reaction.sign();
+  // Fire and forget (optimistic)
+  reaction.publish();
   return reaction;
 };

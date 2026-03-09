@@ -30,7 +30,8 @@ describe("publishPost with NDK Test Utils", () => {
     const relay = pool.getMockRelay("wss://relay.example.com");
 
     const content = "Hello Nostr!";
-    await publishPost(ndk, content);
+    const event = await publishPost(ndk, content);
+    await event.publish();
 
     const sentEvents = relay?.messageLog
       .filter((m: { direction: string }) => m.direction === "out")

@@ -71,7 +71,8 @@ export const createPoll = async (
 
     console.log("[Poll] Signing and publishing...");
     await event.sign();
-    await event.publish();
+    // Fire and forget (optimistic)
+    event.publish();
     
     return event;
   } catch (err) {
@@ -106,7 +107,8 @@ export const respondToPoll = async (
     }
 
     await event.sign();
-    await event.publish();
+    // Fire and forget (optimistic)
+    event.publish();
     return event;
   } catch (err) {
     console.error("[Poll] Error in respondToPoll:", err);

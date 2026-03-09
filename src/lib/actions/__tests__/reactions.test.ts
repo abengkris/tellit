@@ -31,7 +31,8 @@ describe("reactToEvent with NDK Test Utils", () => {
 
     const targetEvent = await EventGenerator.createEvent(1, "Original post", alice.pubkey);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await reactToEvent(ndk, targetEvent as any, "+");
+    const reaction = await reactToEvent(ndk, targetEvent as any, "+");
+    await reaction.publish();
 
     const sentEvents = relay?.messageLog
       .filter((m: { direction: string }) => m.direction === "out")
@@ -52,7 +53,8 @@ describe("reactToEvent with NDK Test Utils", () => {
 
     const targetEvent = await EventGenerator.createEvent(1, "Original post", alice.pubkey);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await reactToEvent(ndk, targetEvent as any, "-");
+    const reaction = await reactToEvent(ndk, targetEvent as any, "-");
+    await reaction.publish();
 
     const sentEvents = relay?.messageLog
       .filter((m: { direction: string }) => m.direction === "out")

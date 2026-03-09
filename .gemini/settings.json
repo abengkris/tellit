@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "httpServer": {
+      "httpUrl": "https://mcp.applesauce.build/mcp",
+      "timeout": 5000
+    }
+  }
+}

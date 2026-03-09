@@ -147,7 +147,8 @@ export const publishPost = async (
   try {
     console.log("[Post] Attempting to publish event kind:", event.kind);
     await event.sign();
-    await event.publish();
+    // Fire and forget (optimistic)
+    event.publish();
     return event;
   } catch (err) {
     console.error("[Post] Publish failed:", err);
@@ -203,7 +204,9 @@ export const publishArticle = async (
     }
   });
 
-  await event.publish();
+  await event.sign();
+  // Fire and forget (optimistic)
+  event.publish();
   return event;
 };
 
@@ -244,7 +247,9 @@ export const repostEvent = async (
   // Recommended unless NIP-70 protected (which we don't track specifically yet)
   repost.content = JSON.stringify(targetEvent.rawEvent());
 
-  await repost.publish();
+  await repost.sign();
+  // Fire and forget (optimistic)
+  repost.publish();
   return repost;
 };
 
@@ -262,7 +267,8 @@ export const deletePost = async (ndk: NDK, eventId: string): Promise<boolean> =>
     event.content = "Deletion request from Tell it!";
     
     await event.sign();
-    await event.publish();
+    // Fire and forget (optimistic)
+    event.publish();
     return true;
   } catch (err) {
     console.error("Failed to delete post:", err);
