@@ -22,6 +22,7 @@ export interface NDKContextType {
   sessions: NDKSessionManager | null;
   activeSession: NDKSession | null;
   isReady: boolean;
+  isWalletReady: boolean;
   refreshBalance: () => Promise<void>;
 }
 
@@ -31,6 +32,7 @@ export const NDKContext = createContext<NDKContextType>({
   sessions: null,
   activeSession: null,
   isReady: false,
+  isWalletReady: false,
   refreshBalance: async () => {},
 });
 
@@ -40,6 +42,7 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
   const [sessions, setSessions] = useState<NDKSessionManager | null>(null);
   const [activeSession, setActiveSession] = useState<NDKSession | null>(null);
   const [isReady, setIsReady] = useState(false);
+  const [isWalletReady, setIsWalletReady] = useState(false);
   
   const { setUser, setLoginState } = useAuthStore();
   const { 
@@ -58,7 +61,6 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
   
   const messengerRef = useRef<NDKMessenger | null>(null);
   const sessionsRef = useRef<NDKSessionManager | null>(null);
-  const nwcRef = useRef<NDKNWCWallet | null>(null);
   const walletRef = useRef<NDKNWCWallet | null>(null);
 
   useEffect(() => {
@@ -133,7 +135,11 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
           
           nwc.on("ready", () => {
             console.log("NWC wallet ready");
+            setIsWalletReady(true);
+            walletRef.current = nwc;
+            
             if (walletType === 'nwc') {
+              instance.wallet = nwc;
               addToast("NWC Wallet connected", "success");
               nwc.getInfo().then((info) => { if (info) setInfo(info); }).catch(() => {});
               nwc.updateBalance().catch(() => {});
@@ -143,12 +149,6 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
           nwc.on("balance_updated", (balance?: { amount: number }) => {
             if (walletType === 'nwc') setBalance(balance?.amount || 0);
           });
-
-          nwcRef.current = nwc;
-          if (walletType === 'nwc') {
-            instance.wallet = nwc;
-            walletRef.current = nwc;
-          }
         } catch (err) {
           console.error("Failed to initialize NWC wallet:", err);
         }
@@ -265,7 +265,7 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <NDKContext.Provider value={{ ndk, messenger, sessions, activeSession, isReady, refreshBalance }}>
+    <NDKContext.Provider value={{ ndk, messenger, sessions, activeSession, isReady, isWalletReady, refreshBalance }}>
       {children}
     </NDKContext.Provider>
   );

@@ -40,7 +40,7 @@ export default function WalletPage() {
     lock
   } = useWalletStore();
   
-  const { ndk, isReady, refreshBalance } = useNDK();
+  const { ndk, isReady, isWalletReady, refreshBalance } = useNDK();
   const { isLoggedIn, user } = useAuthStore();
   const { addToast, defaultZapAmount, setDefaultZapAmount, hideBalance, setHideBalance } = useUIStore();
 
@@ -53,10 +53,10 @@ export default function WalletPage() {
 
   // Auto-refresh balance if missing
   useEffect(() => {
-    if (walletType === 'nwc' && balance === null && isReady && !isLocked) {
+    if (walletType === 'nwc' && balance === null && isWalletReady && !isLocked) {
       refreshBalance();
     }
-  }, [walletType, balance, isReady, refreshBalance, isLocked]);
+  }, [walletType, balance, isWalletReady, refreshBalance, isLocked]);
 
   // Fetch recent zaps (kind 9735)
   useEffect(() => {
