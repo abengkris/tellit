@@ -61,83 +61,85 @@ export function HomeContent() {
 
   return (
     <MainLayout>
-      <div className="sticky top-0 z-10 bg-white/80 dark:bg-black/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800">
-        <div className="flex px-4 py-3">
+      <div className="sticky top-14 sm:top-0 z-10 bg-white/80 dark:bg-black/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800">
+        <div className="hidden sm:flex px-4 py-3">
           <h1 className="text-xl font-bold">Home</h1>
         </div>
         
-        <div className="flex w-full overflow-x-auto scrollbar-hide no-scrollbar" role="tablist">
-          <button
-            role="tab"
-            aria-selected={activeTab === "forYou"}
-            onClick={() => setActiveTab("forYou")}
-            className={`flex-none px-6 py-4 text-sm font-bold transition-colors hover:bg-gray-100 dark:hover:bg-gray-900 relative whitespace-nowrap ${
-              activeTab === "forYou" ? "text-blue-500" : "text-gray-500"
-            }`}
-          >
-            <div className="flex items-center justify-center space-x-2">
-              <Sparkles size={16} />
-              <span>For You</span>
-            </div>
-            {activeTab === "forYou" && (
-              <div className="absolute bottom-0 left-0 right-0 h-1 bg-blue-500 rounded-full mx-4" />
-            )}
-          </button>
-          
-          <button
-            role="tab"
-            aria-selected={activeTab === "following"}
-            onClick={() => setActiveTab("following")}
-            className={`flex-none px-6 py-4 text-sm font-bold transition-colors hover:bg-gray-100 dark:hover:bg-gray-900 relative whitespace-nowrap ${
-              activeTab === "following" ? "text-blue-500" : "text-gray-500"
-            }`}
-          >
-            <div className="flex items-center justify-center space-x-2">
-              <Users size={16} />
-              <span>Following</span>
-            </div>
-            {activeTab === "following" && (
-              <div className="absolute bottom-0 left-0 right-0 h-1 bg-blue-500 rounded-full mx-4" />
-            )}
-          </button>
-
-          {interestList.map((tag) => (
+        <nav className="flex w-full overflow-x-auto no-scrollbar scroll-smooth" role="tablist">
+          <div className="flex flex-nowrap min-w-full">
             <button
-              key={tag}
               role="tab"
-              aria-selected={activeTab === tag}
-              onClick={() => setActiveTab(tag)}
-              className={`flex-none px-6 py-4 text-sm font-bold transition-colors hover:bg-gray-100 dark:hover:bg-gray-900 relative whitespace-nowrap ${
-                activeTab === tag ? "text-blue-500" : "text-gray-500"
+              aria-selected={activeTab === "forYou"}
+              onClick={() => setActiveTab("forYou")}
+              className={`flex-none px-5 py-4 text-sm font-bold transition-colors hover:bg-gray-100 dark:hover:bg-gray-900 relative whitespace-nowrap outline-none focus-visible:bg-gray-100 dark:focus-visible:bg-gray-900 ${
+                activeTab === "forYou" ? "text-blue-500" : "text-gray-500"
               }`}
             >
               <div className="flex items-center justify-center space-x-2">
-                <Hash size={16} />
-                <span className="capitalize">{tag}</span>
+                <Sparkles size={16} />
+                <span>For You</span>
               </div>
-              {activeTab === tag && (
-                <div className="absolute bottom-0 left-0 right-0 h-1 bg-blue-500 rounded-full mx-4" />
+              {activeTab === "forYou" && (
+                <div className="absolute bottom-0 left-0 right-0 h-1 bg-blue-500 rounded-full mx-3" />
               )}
             </button>
-          ))}
+            
+            <button
+              role="tab"
+              aria-selected={activeTab === "following"}
+              onClick={() => setActiveTab("following")}
+              className={`flex-none px-5 py-4 text-sm font-bold transition-colors hover:bg-gray-100 dark:hover:bg-gray-900 relative whitespace-nowrap outline-none focus-visible:bg-gray-100 dark:focus-visible:bg-gray-900 ${
+                activeTab === "following" ? "text-blue-500" : "text-gray-500"
+              }`}
+            >
+              <div className="flex items-center justify-center space-x-2">
+                <Users size={16} />
+                <span>Following</span>
+              </div>
+              {activeTab === "following" && (
+                <div className="absolute bottom-0 left-0 right-0 h-1 bg-blue-500 rounded-full mx-3" />
+              )}
+            </button>
 
-          <button
-            role="tab"
-            aria-selected={activeTab === "global"}
-            onClick={() => setActiveTab("global")}
-            className={`flex-none px-6 py-4 text-sm font-bold transition-colors hover:bg-gray-100 dark:hover:bg-gray-900 relative whitespace-nowrap ${
-              activeTab === "global" ? "text-blue-500" : "text-gray-500"
-            }`}
-          >
-            <div className="flex items-center justify-center space-x-2">
-              <Globe size={16} />
-              <span>Global</span>
-            </div>
-            {activeTab === "global" && (
-              <div className="absolute bottom-0 left-0 right-0 h-1 bg-blue-500 rounded-full mx-4" />
-            )}
-          </button>
-        </div>
+            {interestList.map((tag) => (
+              <button
+                key={tag}
+                role="tab"
+                aria-selected={activeTab === tag}
+                onClick={() => setActiveTab(tag)}
+                className={`flex-none px-5 py-4 text-sm font-bold transition-colors hover:bg-gray-100 dark:hover:bg-gray-900 relative whitespace-nowrap outline-none focus-visible:bg-gray-100 dark:focus-visible:bg-gray-900 ${
+                  activeTab === tag ? "text-blue-500" : "text-gray-500"
+                }`}
+              >
+                <div className="flex items-center justify-center space-x-2">
+                  <Hash size={16} />
+                  <span className="capitalize">{tag}</span>
+                </div>
+                {activeTab === tag && (
+                  <div className="absolute bottom-0 left-0 right-0 h-1 bg-blue-500 rounded-full mx-3" />
+                )}
+              </button>
+            ))}
+
+            <button
+              role="tab"
+              aria-selected={activeTab === "global"}
+              onClick={() => setActiveTab("global")}
+              className={`flex-none px-5 py-4 text-sm font-bold transition-colors hover:bg-gray-100 dark:hover:bg-gray-900 relative whitespace-nowrap outline-none focus-visible:bg-gray-100 dark:focus-visible:bg-gray-900 ${
+                activeTab === "global" ? "text-blue-500" : "text-gray-500"
+              }`}
+            >
+              <div className="flex items-center justify-center space-x-2">
+                <Globe size={16} />
+                <span>Global</span>
+              </div>
+              {activeTab === "global" && (
+                <div className="absolute bottom-0 left-0 right-0 h-1 bg-blue-500 rounded-full mx-3" />
+              )}
+            </button>
+          </div>
+        </nav>
       </div>
 
       <PostComposer />

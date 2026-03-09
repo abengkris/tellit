@@ -26,7 +26,7 @@ export const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }
   return (
     <div className="min-h-screen bg-white dark:bg-black text-black dark:text-white">
       {/* Mobile Header */}
-      <div className="sm:hidden sticky top-0 z-20 bg-white/80 dark:bg-black/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 flex items-center justify-between px-4 py-3">
+      <div className="sm:hidden sticky top-0 z-20 bg-white/80 dark:bg-black/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 flex items-center justify-between px-4 h-14">
         {isLoggedIn ? (
           <button onClick={() => setIsDrawerOpen(true)} className="outline-none relative">
             <Avatar 
