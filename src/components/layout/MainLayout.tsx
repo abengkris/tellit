@@ -24,9 +24,9 @@ export const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }
   const { profile } = useProfile(user?.pubkey);
 
   return (
-    <div className="min-h-screen bg-white dark:bg-black text-black dark:text-white">
+    <div className="min-h-screen flex flex-col bg-white dark:bg-black text-black dark:text-white overflow-x-hidden">
       {/* Mobile Header */}
-      <div className="sm:hidden sticky top-0 z-20 bg-white/80 dark:bg-black/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 flex items-center justify-between px-4 h-14">
+      <header className="sm:hidden sticky top-0 z-20 bg-white/80 dark:bg-black/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 flex items-center justify-between px-4 h-14 flex-none">
         {isLoggedIn ? (
           <button onClick={() => setIsDrawerOpen(true)} className="outline-none relative">
             <Avatar 
@@ -51,16 +51,16 @@ export const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }
             <div className="absolute top-0 right-0 w-2.5 h-2.5 bg-blue-500 rounded-full border-2 border-white dark:border-black" />
           )}
         </Link>
-      </div>
+      </header>
 
-      <div className="max-w-7xl mx-auto flex h-full">
+      <div className="flex-1 flex max-w-7xl mx-auto w-full relative">
         {/* Sidebar (Desktop) */}
         <nav className="hidden sm:relative sm:flex sm:flex-col sm:w-20 lg:w-64 sm:border-r border-gray-200 dark:border-gray-800">
           <Sidebar />
         </nav>
 
         {/* Main Feed */}
-        <main className="flex-1 min-w-0 overflow-x-hidden min-h-screen border-r border-gray-200 dark:border-gray-800 pb-20 sm:pb-0">
+        <main className="flex-1 min-w-0 min-h-screen border-r border-gray-200 dark:border-gray-800 pb-20 sm:pb-0">
           {children}
         </main>
 

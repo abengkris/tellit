@@ -61,12 +61,12 @@ export function HomeContent() {
 
   return (
     <MainLayout>
-      <div className="sticky top-14 sm:top-0 z-10 w-full max-w-full overflow-hidden bg-white/80 dark:bg-black/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800">
+      <div className="sticky top-[56px] sm:top-0 z-10 w-full bg-white/80 dark:bg-black/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 overflow-hidden">
         <div className="hidden sm:flex px-4 py-3">
           <h1 className="text-xl font-bold">Home</h1>
         </div>
         
-        <nav className="flex w-full overflow-x-auto no-scrollbar scroll-smooth" role="tablist">
+        <nav className="flex w-full overflow-x-auto no-scrollbar scroll-smooth touch-pan-x" role="tablist">
           <div className="flex flex-nowrap min-w-full">
             <button
               role="tab"
