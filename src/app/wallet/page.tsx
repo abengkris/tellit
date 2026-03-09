@@ -381,7 +381,7 @@ export default function WalletPage() {
                 <p className="text-blue-100 font-bold uppercase tracking-wider text-[10px]">Available Balance</p>
                 <div className="flex items-baseline gap-2">
                   <span className="text-4xl sm:text-5xl font-black truncate max-w-[200px] sm:max-w-none">
-                    {balance !== null ? balance.toLocaleString() : "---"}
+                    {balance !== null ? balance?.amount.toLocaleString() : "---"}
                   </span>
                   <span className="text-lg sm:text-xl font-bold text-blue-200">sats</span>
                 </div>
