@@ -16,7 +16,7 @@ import { ProfileSetupCard } from "@/components/profile/ProfileSetupCard";
 import { useUIStore } from "@/store/ui";
 import { useLists } from "@/hooks/useLists";
 
-type FeedTab = "following" | "forYou" | "global" | "interests";
+type FeedTab = "following" | "forYou" | "global" | string;
 
 export function HomeContent() {
   const { isLoggedIn, user, isLoading: isAuthLoading, _hasHydrated } = useAuthStore();
@@ -57,7 +57,7 @@ export function HomeContent() {
 
   if (!isLoggedIn || !user) return null;
 
-  const hasInterests = interests.size > 0;
+  const interestList = Array.from(interests);
 
   return (
     <MainLayout>
@@ -66,12 +66,12 @@ export function HomeContent() {
           <h1 className="text-xl font-bold">Home</h1>
         </div>
         
-        <div className="flex w-full overflow-x-auto scrollbar-hide" role="tablist">
+        <div className="flex w-full overflow-x-auto scrollbar-hide no-scrollbar" role="tablist">
           <button
             role="tab"
             aria-selected={activeTab === "forYou"}
             onClick={() => setActiveTab("forYou")}
-            className={`flex-1 min-w-[100px] py-4 text-sm font-bold transition-colors hover:bg-gray-100 dark:hover:bg-gray-900 relative ${
+            className={`flex-none px-6 py-4 text-sm font-bold transition-colors hover:bg-gray-100 dark:hover:bg-gray-900 relative whitespace-nowrap ${
               activeTab === "forYou" ? "text-blue-500" : "text-gray-500"
             }`}
           >
@@ -80,7 +80,7 @@ export function HomeContent() {
               <span>For You</span>
             </div>
             {activeTab === "forYou" && (
-              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-16 h-1 bg-blue-500 rounded-full" />
+              <div className="absolute bottom-0 left-0 right-0 h-1 bg-blue-500 rounded-full mx-4" />
             )}
           </button>
           
@@ -88,7 +88,7 @@ export function HomeContent() {
             role="tab"
             aria-selected={activeTab === "following"}
             onClick={() => setActiveTab("following")}
-            className={`flex-1 min-w-[100px] py-4 text-sm font-bold transition-colors hover:bg-gray-100 dark:hover:bg-gray-900 relative ${
+            className={`flex-none px-6 py-4 text-sm font-bold transition-colors hover:bg-gray-100 dark:hover:bg-gray-900 relative whitespace-nowrap ${
               activeTab === "following" ? "text-blue-500" : "text-gray-500"
             }`}
           >
@@ -97,34 +97,35 @@ export function HomeContent() {
               <span>Following</span>
             </div>
             {activeTab === "following" && (
-              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-16 h-1 bg-blue-500 rounded-full" />
+              <div className="absolute bottom-0 left-0 right-0 h-1 bg-blue-500 rounded-full mx-4" />
             )}
           </button>
 
-          {hasInterests && (
+          {interestList.map((tag) => (
             <button
+              key={tag}
               role="tab"
-              aria-selected={activeTab === "interests"}
-              onClick={() => setActiveTab("interests")}
-              className={`flex-1 min-w-[100px] py-4 text-sm font-bold transition-colors hover:bg-gray-100 dark:hover:bg-gray-900 relative ${
-                activeTab === "interests" ? "text-blue-500" : "text-gray-500"
+              aria-selected={activeTab === tag}
+              onClick={() => setActiveTab(tag)}
+              className={`flex-none px-6 py-4 text-sm font-bold transition-colors hover:bg-gray-100 dark:hover:bg-gray-900 relative whitespace-nowrap ${
+                activeTab === tag ? "text-blue-500" : "text-gray-500"
               }`}
             >
               <div className="flex items-center justify-center space-x-2">
                 <Hash size={16} />
-                <span>Interests</span>
+                <span className="capitalize">{tag}</span>
               </div>
-              {activeTab === "interests" && (
-                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-16 h-1 bg-blue-500 rounded-full" />
+              {activeTab === tag && (
+                <div className="absolute bottom-0 left-0 right-0 h-1 bg-blue-500 rounded-full mx-4" />
               )}
             </button>
-          )}
+          ))}
 
           <button
             role="tab"
             aria-selected={activeTab === "global"}
             onClick={() => setActiveTab("global")}
-            className={`flex-1 min-w-[100px] py-4 text-sm font-bold transition-colors hover:bg-gray-100 dark:hover:bg-gray-900 relative ${
+            className={`flex-none px-6 py-4 text-sm font-bold transition-colors hover:bg-gray-100 dark:hover:bg-gray-900 relative whitespace-nowrap ${
               activeTab === "global" ? "text-blue-500" : "text-gray-500"
             }`}
           >
@@ -133,7 +134,7 @@ export function HomeContent() {
               <span>Global</span>
             </div>
             {activeTab === "global" && (
-              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-16 h-1 bg-blue-500 rounded-full" />
+              <div className="absolute bottom-0 left-0 right-0 h-1 bg-blue-500 rounded-full mx-4" />
             )}
           </button>
         </div>
@@ -156,10 +157,10 @@ export function HomeContent() {
             followingList={followingPubkeys} 
             viewerPubkey={user.pubkey}
           />
-        ) : activeTab === "interests" ? (
-          <InterestsFeedTab interestList={Array.from(interests)} />
-        ) : (
+        ) : activeTab === "global" ? (
           <GlobalFeedTab />
+        ) : (
+          <InterestsFeedTab interestList={[activeTab]} />
         )}
       </div>
     </MainLayout>
