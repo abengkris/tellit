@@ -25,8 +25,20 @@ import {
 } from "lucide-react";
 import { NDKEvent, NDKFilter } from "@nostr-dev-kit/ndk";
 import { format } from "date-fns";
-import { shortenPubkey } from "@/lib/utils/nip19";
+import Link from "next/link";
+import { shortenPubkey, toNpub } from "@/lib/utils/nip19";
 import { WalletPinModal } from "@/components/common/WalletPinModal";
+import { useProfile } from "@/hooks/useProfile";
+
+const ZapUser = ({ pubkey }: { pubkey: string }) => {
+  const { profile } = useProfile(pubkey);
+  const name = profile?.display_name || profile?.name || shortenPubkey(pubkey);
+  return (
+    <Link href={`/${toNpub(pubkey)}`} className="text-blue-500 hover:underline font-bold">
+      {name}
+    </Link>
+  );
+};
 
 export default function WalletPage() {
   const { 
@@ -344,7 +356,13 @@ export default function WalletPage() {
                       <div key={zap.id} className="p-3 sm:p-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-900/50 transition-colors">
                         <div className="flex items-center gap-3 sm:gap-4 min-w-0">
                           <div className={`p-1.5 sm:p-2 rounded-full shrink-0 ${isSent ? 'bg-orange-500/10 text-orange-600' : 'bg-green-500/10 text-green-600'}`}>{isSent ? <ArrowUpRight size={16} /> : <ArrowDownLeft size={16} />}</div>
-                          <div className="min-w-0"><div className="flex items-center gap-1.5 font-bold text-[11px] sm:text-sm"><span>{isSent ? 'Sent to' : 'Received from'}</span><span className="text-blue-500 truncate">{targetPubkey ? shortenPubkey(targetPubkey) : 'Unknown'}</span></div><p className="text-[9px] sm:text-[10px] text-gray-500 font-medium">{format(new Date((zap.created_at || 0) * 1000), "MMM d, HH:mm")}</p></div>
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-1.5 font-bold text-[11px] sm:text-sm">
+                              <span>{isSent ? 'Sent to' : 'Received from'}</span>
+                              {targetPubkey ? <ZapUser pubkey={targetPubkey} /> : <span className="text-gray-400">Unknown</span>}
+                            </div>
+                            <p className="text-[9px] sm:text-[10px] text-gray-500 font-medium">{format(new Date((zap.created_at || 0) * 1000), "MMM d, HH:mm")}</p>
+                          </div>
                         </div>
                         <div className="flex flex-col items-end shrink-0 ml-2"><span className={`font-black text-sm sm:text-lg ${isSent ? 'text-gray-900 dark:text-white' : 'text-green-500'}`}>{isSent ? '-' : '+'}{amount}</span><span className="text-[8px] sm:text-[10px] font-bold text-gray-400 uppercase tracking-widest">sats</span></div>
                       </div>
