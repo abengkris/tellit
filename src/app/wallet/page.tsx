@@ -42,7 +42,7 @@ export default function WalletPage() {
   
   const { ndk, isReady, refreshBalance } = useNDK();
   const { isLoggedIn, user } = useAuthStore();
-  const { addToast, hideBalance, setHideBalance } = useUIStore();
+  const { addToast, defaultZapAmount, setDefaultZapAmount, hideBalance, setHideBalance } = useUIStore();
 
   const [pairingInput, setPairingInput] = useState("");
   const [showPairing, setShowPairing] = useState(false);

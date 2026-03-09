@@ -26,8 +26,6 @@ export const WalletPinModal: React.FC<WalletPinModalProps> = ({
     setPin, 
     unlock,
     nwcPairingCode,
-    cashuPrivateKey,
-    cashuMnemonic,
     resetWallet
   } = useWalletStore();
   const { addToast } = useUIStore();
@@ -56,7 +54,7 @@ export const WalletPinModal: React.FC<WalletPinModalProps> = ({
     setError(null);
     try {
       const { hash, salt } = await hashPin(pin);
-      const secrets: EncryptedData = { nwcPairingCode, cashuPrivateKey, cashuMnemonic };
+      const secrets: EncryptedData = { nwcPairingCode };
       const encrypted = await encryptData(JSON.stringify(secrets), pin);
       setPin(hash, salt, encrypted);
       addToast("Wallet PIN secured!", "success");
@@ -119,7 +117,7 @@ export const WalletPinModal: React.FC<WalletPinModalProps> = ({
             {error && <div className="flex items-center gap-2 text-red-500 text-xs font-bold bg-red-500/5 p-3 rounded-xl border border-red-500/10"><AlertCircle size={14} />{error}</div>}
             <button onClick={mode === "setup" ? handleSetup : handleUnlock} disabled={isLoading || pin.length < 4} className="w-full py-4 bg-gray-900 dark:bg-white text-white dark:text-black font-black rounded-2xl shadow-xl transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2">{isLoading ? <Loader2 className="animate-spin" /> : (mode === "setup" ? "Enable Security" : "Unlock")}</button>
             {mode === "unlock" && (
-              <button onClick={() => confirm("FORGOT PIN? This will PERMANENTLY DELETE your local wallet data. You can only recover your funds if you have your 12-word seed phrase or a Nostr backup. Are you sure you want to reset?") && (resetWallet(), onClose(), window.location.reload())} className="w-full py-2 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-red-500 transition-colors">Forgot PIN? Reset Wallet</button>
+              <button onClick={() => confirm("FORGOT PIN? This will PERMANENTLY DELETE your local wallet data. Are you sure you want to reset?") && (resetWallet(), onClose(), window.location.reload())} className="w-full py-2 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-red-500 transition-colors">Forgot PIN? Reset Wallet</button>
             )}
           </div>
         </div>
