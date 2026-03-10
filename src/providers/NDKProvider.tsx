@@ -245,7 +245,10 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
           const storage = (dexieAdapter && currentPubkey) 
             ? new CacheModuleStorage(dexieAdapter as unknown as NDKCacheAdapter, currentPubkey) 
             : undefined;
-          msgInstance = new NDKMessenger(instance, { storage });
+          msgInstance = new NDKMessenger(instance, { 
+            storage,
+            enableGiftWrap: true // NIP-59
+          });
           messengerRef.current = msgInstance;
           setMessenger(msgInstance);
         } catch (e) { console.error("Failed to initialize NDKMessenger:", e); }

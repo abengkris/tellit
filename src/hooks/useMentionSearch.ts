@@ -22,10 +22,22 @@ export function useMentionSearch(query: string) {
 
     const searchUsers = async () => {
       try {
-        // NIP-50 search
-        const users = await ndk.fetchUsers({ search: debouncedQuery, limit: 5 });
+        // NIP-50 search for kind 0 events
+        // Note: Not all relays support "search" filter
+        const events = await ndk.fetchEvents({ 
+          kinds: [0], 
+          search: debouncedQuery, 
+          limit: 5 
+        }, { cacheUsage: NDKSubscriptionCacheUsage.PARALLEL });
+        
+        const users = Array.from(events).map(event => {
+          const user = ndk.getUser({ pubkey: event.pubkey });
+          user.profile = JSON.parse(event.content);
+          return user;
+        });
+
         if (isMounted) {
-          setResults(Array.from(users));
+          setResults(users);
         }
       } catch (err) {
         console.error("Mention search failed:", err);

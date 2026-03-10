@@ -165,11 +165,17 @@ export const PostComposer: React.FC<PostComposerProps> = ({
           }
         });
 
-        // Add emoji tags (NIP-30) - naive check
-        // A robust implementation would parse the content for :shortcode:
-        emojis.forEach(e => {
-          if (finalContent.includes(`:${e.shortcode}:`)) {
-            tags.push(["emoji", e.shortcode, e.url]);
+        // Add emoji tags (NIP-30)
+        // Extract :shortcodes: from content
+        const shortcodeRegex = /:(\w+):/g;
+        const shortcodesInContent = [...finalContent.matchAll(shortcodeRegex)].map(m => m[1]);
+        
+        // Add tags for each unique shortcode found
+        const uniqueShortcodes = new Set(shortcodesInContent);
+        uniqueShortcodes.forEach(code => {
+          const emoji = emojis.find(e => e.shortcode === code);
+          if (emoji) {
+            tags.push(["emoji", emoji.shortcode, emoji.url]);
           }
         });
 
