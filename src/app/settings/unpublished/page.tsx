@@ -91,14 +91,47 @@ export default function UnpublishedPage() {
 
   const getKindLabel = (kind?: number) => {
     switch (kind) {
-      case 1: return "Short Note";
       case 0: return "Profile Update";
+      case 1: return "Short Note";
       case 3: return "Follow List";
-      case 7: return "Reaction";
+      case 5: return "Deletion Request";
       case 6: return "Repost";
+      case 7: return "Reaction";
+      case 16: return "Generic Repost";
+      case 1068: return "Poll";
+      case 1111: return "Comment";
       case 10002: return "Relay List";
+      case 30023: return "Long-form Article";
+      case 30030: return "Emoji List";
+      case 31923: return "Community";
       default: return `Kind ${kind}`;
     }
+  };
+
+  const handlePublishAll = async () => {
+    if (!ndk || unpublished.length === 0) return;
+    
+    setIsProcessing("all");
+    let successCount = 0;
+    
+    for (const item of unpublished) {
+      try {
+        const event = item.event;
+        event.ndk = ndk;
+        const relays = await event.publish();
+        if (relays.size > 0) successCount++;
+      } catch (err) {
+        console.error(`Failed to publish event ${item.event.id}:`, err);
+      }
+    }
+    
+    if (successCount > 0) {
+      addToast(`Successfully published ${successCount} events!`, "success");
+      fetchEvents();
+    } else {
+      addToast("Failed to publish events. Check your connection.", "error");
+    }
+    setIsProcessing(null);
   };
 
   return (
@@ -114,13 +147,25 @@ export default function UnpublishedPage() {
           </Link>
           <div className="flex items-center justify-between">
             <h1 className="text-3xl font-black">Outbox</h1>
-            <button 
-              onClick={fetchEvents}
-              disabled={isLoading}
-              className={`p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-all ${isLoading ? 'animate-spin' : ''}`}
-            >
-              <RefreshCw size={20} />
-            </button>
+            <div className="flex items-center gap-2">
+              {unpublished.length > 1 && (
+                <button 
+                  onClick={handlePublishAll}
+                  disabled={!!isProcessing}
+                  className="px-4 py-2 bg-blue-500 hover:bg-blue-600 disabled:opacity-50 text-white text-xs font-black rounded-full transition-all flex items-center gap-2"
+                >
+                  {isProcessing === "all" ? <RefreshCw size={14} className="animate-spin" /> : <Send size={14} />}
+                  Publish All ({unpublished.length})
+                </button>
+              )}
+              <button 
+                onClick={fetchEvents}
+                disabled={isLoading}
+                className={`p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-all ${isLoading ? 'animate-spin' : ''}`}
+              >
+                <RefreshCw size={20} />
+              </button>
+            </div>
           </div>
           <p className="text-gray-500 text-sm mt-2">
             Events that are saved locally but haven&apos;t reached enough relays yet.

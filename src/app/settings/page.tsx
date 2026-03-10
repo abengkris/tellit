@@ -7,10 +7,15 @@ import { useNDK } from "@/hooks/useNDK";
 import { Bell, Shield, User, Globe, Wallet, Clock, LogOut } from "lucide-react";
 import { Avatar } from "@/components/common/Avatar";
 import Link from "next/link";
+import { NDKEvent } from "@nostr-dev-kit/ndk";
+
+interface ExtendedCacheAdapter {
+  getUnpublishedEvents?: () => Promise<{ event: NDKEvent; relays?: string[]; lastTryAt?: number }[]>;
+}
 
 export default function SettingsPage() {
   const { isLoggedIn, user, logout } = useAuthStore();
-  const { sessions } = useNDK();
+  const { sessions, ndk, isReady } = useNDK();
   const { 
     browserNotificationsEnabled, 
     setBrowserNotificationsEnabled,
@@ -20,6 +25,18 @@ export default function SettingsPage() {
   } = useUIStore();
 
   const [permissionStatus, setPermissionStatus] = useState<NotificationPermission>("default");
+  const [unpublishedCount, setUnpublishedCount] = useState(0);
+
+  useEffect(() => {
+    if (isReady && ndk?.cacheAdapter) {
+      const adapter = ndk.cacheAdapter as ExtendedCacheAdapter;
+      if (adapter.getUnpublishedEvents) {
+        adapter.getUnpublishedEvents().then((events) => {
+          setUnpublishedCount(events.length);
+        }).catch(() => {});
+      }
+    }
+  }, [isReady, ndk]);
 
   useEffect(() => {
     if (typeof window !== "undefined" && "Notification" in window) {
@@ -82,10 +99,15 @@ export default function SettingsPage() {
               <div className="flex flex-col gap-2 border-t border-gray-200 dark:border-gray-800 pt-4">
                 <Link 
                   href="/settings/unpublished"
-                  className="w-full py-3 bg-white dark:bg-black hover:bg-blue-50 dark:hover:bg-blue-900/10 text-gray-700 dark:text-gray-300 font-bold text-sm rounded-2xl flex items-center justify-center gap-2 transition-all border border-gray-100 dark:border-gray-800 shadow-sm"
+                  className="w-full py-3 bg-white dark:bg-black hover:bg-blue-50 dark:hover:bg-blue-900/10 text-gray-700 dark:text-gray-300 font-bold text-sm rounded-2xl flex items-center justify-center gap-2 transition-all border border-gray-100 dark:border-gray-800 shadow-sm relative"
                 >
                   <Clock size={18} className="text-blue-500" />
-                  View Local Outbox
+                  <span>View Local Outbox</span>
+                  {unpublishedCount > 0 && (
+                    <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center bg-red-500 text-[10px] text-white font-black rounded-full ring-2 ring-gray-50 dark:ring-gray-900 animate-in zoom-in duration-300">
+                      {unpublishedCount}
+                    </span>
+                  )}
                 </Link>
                 
                 <button
