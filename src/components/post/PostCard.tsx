@@ -272,7 +272,7 @@ export const PostCard: React.FC<PostCardProps> = ({
 
   return (
     <article 
-      className={`group relative flex flex-col p-4 border-b border-gray-200 hover:bg-gray-50 transition-colors dark:border-gray-800 dark:hover:bg-gray-900/50 ${
+      className={`group relative flex flex-col p-4 border-b border-gray-200 hover:bg-gray-50 transition-colors dark:border-gray-800 dark:hover:bg-gray-900/50 overflow-visible ${
         isFocal ? "bg-blue-50/5 dark:bg-blue-900/5 border-l-4 border-l-blue-500" : ""
       }`}
       style={{ paddingLeft: `${1 + indent * 1.5}rem` }}
@@ -293,7 +293,7 @@ export const PostCard: React.FC<PostCardProps> = ({
         )}
 
         {/* Content Area */}
-        <div className="flex-1 min-w-0 overflow-hidden pointer-events-auto">
+        <div className="flex-1 min-w-0 overflow-visible pointer-events-auto z-10">
           <PostHeader
             display_name={display_name}
             name={profile?.name}

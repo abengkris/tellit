@@ -34,7 +34,7 @@ export const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-white dark:bg-black text-black dark:text-white overflow-x-hidden">
+    <div className="min-h-screen flex flex-col bg-white dark:bg-black text-black dark:text-white overflow-clip">
       {/* Mobile Header */}
       <header className="sm:hidden sticky top-0 z-20 bg-white/80 dark:bg-black/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 flex items-center justify-between px-4 h-14 flex-none">
         {isLoggedIn ? (
@@ -63,7 +63,7 @@ export const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }
         </Link>
       </header>
 
-      <div className="flex-1 flex max-w-7xl mx-auto w-full relative">
+      <div className="flex-1 flex max-w-7xl mx-auto w-full relative overflow-visible">
         {/* Sidebar (Desktop) */}
         <nav className="hidden sm:relative sm:flex sm:flex-col sm:w-20 lg:w-64 sm:border-r border-gray-200 dark:border-gray-800">
           <Sidebar />
