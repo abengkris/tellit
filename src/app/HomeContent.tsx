@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo, memo } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { PostComposer } from "@/components/post/PostComposer";
 import { useAuthStore } from "@/store/auth";
@@ -29,6 +29,8 @@ export function HomeContent() {
   const { profile } = useProfile(user?.pubkey);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
+  const interestList = useMemo(() => Array.from(interests), [interests]);
+
   const [followingPubkeys, setFollowingPubkeys] = useState<string[]>([]);
 
   // Load persisted tab
@@ -38,9 +40,9 @@ export function HomeContent() {
       if (savedTab) {
         // If it's a dynamic tag, verify it still exists in interests
         if (["forYou", "following", "global"].includes(savedTab)) {
-          setActiveTab(savedTab);
+          Promise.resolve().then(() => setActiveTab(savedTab));
         } else if (interests.has(savedTab)) {
-          setActiveTab(savedTab);
+          Promise.resolve().then(() => setActiveTab(savedTab));
         }
       }
     }
@@ -82,8 +84,6 @@ export function HomeContent() {
   }
 
   if (!isLoggedIn || !user) return null;
-
-  const interestList = Array.from(interests);
 
   return (
     <MainLayout>
@@ -217,14 +217,14 @@ export function HomeContent() {
   );
 }
 
-function InterestsFeedTab({ interestList }: { interestList: string[] }) {
+const InterestsFeedTab = memo(({ interestList }: { interestList: string[] }) => {
+  const filter = useMemo(() => ({
+    kinds: [1, 6, 16, 1068, 30023] as NDKKind[],
+    "#t": interestList,
+  }), [interestList]);
+
   const { posts, newCount, isLoading, flushNewPosts, loadMore, hasMore } =
-    usePausedFeed({
-      filter: {
-        kinds: [1, 6, 16, 1068, 30023] as NDKKind[],
-        "#t": interestList,
-      },
-    });
+    usePausedFeed({ filter });
 
   const handleFlush = useCallback(() => {
     flushNewPosts();
@@ -248,9 +248,11 @@ function InterestsFeedTab({ interestList }: { interestList: string[] }) {
       />
     </div>
   );
-}
+});
 
-function ForYouFeedTab({ viewerPubkey, followingList }: { viewerPubkey: string; followingList: string[] }) {
+InterestsFeedTab.displayName = "InterestsFeedTab";
+
+const ForYouFeedTab = memo(({ viewerPubkey, followingList }: { viewerPubkey: string; followingList: string[] }) => {
   const { posts, newCount, isLoading, wotStatus, wotSize, flushNewPosts, loadMore, hasMore } = 
     useForYouFeed({ viewerPubkey, followingList });
 
@@ -275,7 +277,9 @@ function ForYouFeedTab({ viewerPubkey, followingList }: { viewerPubkey: string; 
       />
     </div>
   );
-}
+});
+
+ForYouFeedTab.displayName = "ForYouFeedTab";
 
 function WoTStatusBanner({
   status,
@@ -335,16 +339,16 @@ function WoTStatusBanner({
   return null;
 }
 
-function FollowingFeedTab({ followingList, viewerPubkey }: { followingList: string[]; viewerPubkey: string }) {
-  const authors = followingList.length > 0 ? followingList : [viewerPubkey];
+const FollowingFeedTab = memo(({ followingList, viewerPubkey }: { followingList: string[]; viewerPubkey: string }) => {
+  const authors = useMemo(() => followingList.length > 0 ? followingList : [viewerPubkey], [followingList, viewerPubkey]);
   
+  const filter = useMemo(() => ({
+    kinds: [1, 6, 16, 1068, 30023] as NDKKind[],
+    authors,
+  }), [authors]);
+
   const { posts, newCount, isLoading, flushNewPosts, loadMore, hasMore } =
-    usePausedFeed({
-      filter: {
-        kinds: [1, 6, 16, 1068, 30023] as NDKKind[],
-        authors,
-      },
-    });
+    usePausedFeed({ filter });
 
   const handleFlush = useCallback(() => {
     flushNewPosts();
@@ -363,15 +367,17 @@ function FollowingFeedTab({ followingList, viewerPubkey }: { followingList: stri
       />
     </div>
   );
-}
+});
 
-function GlobalFeedTab() {
+FollowingFeedTab.displayName = "FollowingFeedTab";
+
+const GlobalFeedTab = memo(() => {
+  const filter = useMemo(() => ({
+    kinds: [1, 6, 16, 1068, 30023] as NDKKind[],
+  }), []);
+
   const { posts, newCount, isLoading, flushNewPosts, loadMore, hasMore } =
-    usePausedFeed({
-      filter: {
-        kinds: [1, 6, 16, 1068, 30023] as NDKKind[],
-      },
-    });
+    usePausedFeed({ filter });
 
   const handleFlush = useCallback(() => {
     flushNewPosts();
@@ -391,4 +397,6 @@ function GlobalFeedTab() {
       />
     </div>
   );
-}
+});
+
+GlobalFeedTab.displayName = "GlobalFeedTab";
