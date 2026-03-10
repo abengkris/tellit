@@ -4,6 +4,8 @@ import "./globals.css";
 import { NDKProvider } from "@/providers/NDKProvider";
 import { ToastContainer } from "@/components/ui/Toast";
 import { MainLayout } from "@/components/layout/MainLayout";
+import { useAuthStore } from "@/store/auth";
+import { Loader2 } from "lucide-react";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -57,6 +59,8 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const { _hasHydrated, isLoading: isAuthLoading } = useAuthStore();
+
   return (
     <html lang="en">
       <body
@@ -64,7 +68,13 @@ export default function RootLayout({
       >
         <NDKProvider>
           <MainLayout>
-            {children}
+            {!_hasHydrated || isAuthLoading ? (
+              <div className="min-h-[60vh] flex items-center justify-center bg-white dark:bg-black">
+                <Loader2 className="animate-spin text-blue-500" size={48} />
+              </div>
+            ) : (
+              children
+            )}
           </MainLayout>
           <ToastContainer />
         </NDKProvider>

@@ -6,7 +6,7 @@ import { useAuthStore } from "@/store/auth";
 import { useNDK } from "@/hooks/useNDK";
 import { NDKKind } from "@nostr-dev-kit/ndk";
 import { useRouter } from "next/navigation";
-import { Loader2, Sparkles, Users, Globe, Hash, Settings } from "lucide-react";
+import { Sparkles, Users, Globe, Hash, Settings } from "lucide-react";
 import { FeedList } from "@/components/feed/FeedList";
 import { NewPostsIsland } from "@/components/feed/NewPostsIsland";
 import { usePausedFeed } from "@/hooks/usePausedFeed";
@@ -87,14 +87,6 @@ export function HomeContent() {
       router.push("/login");
     }
   }, [isLoggedIn, isAuthLoading, _hasHydrated, router]);
-
-  if (!_hasHydrated || isAuthLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-white dark:bg-black">
-        <Loader2 className="animate-spin text-blue-500" size={48} />
-      </div>
-    );
-  }
 
   if (!isLoggedIn || !user) return null;
 
