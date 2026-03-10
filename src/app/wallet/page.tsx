@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { MainLayout } from "@/components/layout/MainLayout";
 import { useWalletStore, WalletType, EncryptedData } from "@/store/wallet";
 import { useNDK } from "@/hooks/useNDK";
 import { useAuthStore } from "@/store/auth";
@@ -214,7 +213,7 @@ export default function WalletPage() {
 
   if (!isLoggedIn) {
     return (
-      <MainLayout>
+      <>
         <div className="flex flex-col items-center justify-center h-[60vh] p-6 text-center">
           <div className="p-6 bg-gray-100 dark:bg-gray-900 rounded-full mb-6 text-gray-400">
             <Wallet size={64} />
@@ -222,12 +221,12 @@ export default function WalletPage() {
           <h1 className="text-2xl font-black mb-2">Wallet Access Restricted</h1>
           <p className="text-gray-500 mb-8 max-w-sm">Please log in to manage your wallet.</p>
         </div>
-      </MainLayout>
+      </>
     );
   }
 
   return (
-    <MainLayout>
+    <>
       <div className="max-w-2xl mx-auto px-4 py-6 sm:p-6 pb-32">
         <header className="flex items-center justify-between mb-6 sm:mb-8">
           <div>
@@ -455,6 +454,6 @@ export default function WalletPage() {
       </div>
 
       <WalletPinModal isOpen={showPinModal} onClose={() => setShowPinModal(false)} />
-    </MainLayout>
+    </>
   );
 }

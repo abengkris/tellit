@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect } from "react";
-import { MainLayout } from "@/components/layout/MainLayout";
 import { FileWarning, RotateCcw, ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -19,7 +18,7 @@ export default function PostError({
   }, [error]);
 
   return (
-    <MainLayout>
+    <>
       <div className="flex flex-col items-center justify-center min-h-[60vh] p-6 text-center">
         <div className="bg-red-50 dark:bg-red-900/20 p-5 rounded-full mb-6">
           <FileWarning size={48} className="text-red-500" />
@@ -46,6 +45,6 @@ export default function PostError({
           </button>
         </div>
       </div>
-    </MainLayout>
+    </>
   );
 }

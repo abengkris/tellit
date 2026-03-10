@@ -1,7 +1,6 @@
 "use client";
 
 import React, { use, useEffect, useState } from "react";
-import { MainLayout } from "@/components/layout/MainLayout";
 import { Loader2, ArrowLeft, Calendar } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useNDK } from "@/hooks/useNDK";
@@ -79,17 +78,17 @@ export default function ArticleDetailPage({ params }: { params: Promise<{ naddr:
 
   if (loading) {
     return (
-      <MainLayout>
+      <>
         <div className="flex items-center justify-center min-h-[60vh]">
           <Loader2 className="animate-spin text-blue-500" size={40} />
         </div>
-      </MainLayout>
+      </>
     );
   }
 
   if (!article) {
     return (
-      <MainLayout>
+      <>
         <div className="p-8 text-center">
           <h1 className="text-2xl font-bold mb-4">Article not found</h1>
           <button 
@@ -99,7 +98,7 @@ export default function ArticleDetailPage({ params }: { params: Promise<{ naddr:
             <ArrowLeft size={20} /> Go back
           </button>
         </div>
-      </MainLayout>
+      </>
     );
   }
 
@@ -112,7 +111,7 @@ export default function ArticleDetailPage({ params }: { params: Promise<{ naddr:
   const readingTime = Math.ceil(article.content.split(/\s+/).length / 200);
 
   return (
-    <MainLayout>
+    <>
       <div className="sticky top-0 z-10 bg-white/80 dark:bg-black/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 flex items-center px-4 py-3 space-x-6">
         <button 
           onClick={() => router.back()} 
@@ -252,6 +251,6 @@ export default function ArticleDetailPage({ params }: { params: Promise<{ naddr:
           </div>
         </div>
       </article>
-    </MainLayout>
+    </>
   );
 }

@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { MainLayout } from "@/components/layout/MainLayout";
 import { useMessages, Conversation } from "@/hooks/useMessages";
 import { useProfile } from "@/hooks/useProfile";
 import { useUIStore } from "@/store/ui";
@@ -22,7 +21,7 @@ export default function MessagesPage() {
   }, [setUnreadMessagesCount]);
 
   return (
-    <MainLayout>
+    <>
       <div className="sticky top-0 z-10 bg-white/80 dark:bg-black/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 flex items-center justify-between px-4 py-3">
         <h1 className="text-xl font-black">Messages</h1>
         <button 
@@ -70,7 +69,7 @@ export default function MessagesPage() {
       {showNewMessageModal && (
         <NewMessageModal onClose={() => setShowNewMessageModal(false)} />
       )}
-    </MainLayout>
+    </>
   );
 }
 

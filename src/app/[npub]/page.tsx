@@ -4,7 +4,6 @@ import { ProfileContent } from "./ProfileContent";
 import { decodeNip19, shortenPubkey } from "@/lib/utils/nip19";
 import { connectNDK } from "@/lib/ndk";
 import { FeedSkeleton } from "@/components/feed/FeedSkeleton";
-import { MainLayout } from "@/components/layout/MainLayout";
 
 interface Props {
   params: Promise<{ npub: string }>;
@@ -50,7 +49,7 @@ export default async function ProfilePage({ params }: Props) {
 
   return (
     <Suspense fallback={
-      <MainLayout>
+      <>
         <div className="h-48 bg-gray-200 dark:bg-gray-800 animate-pulse" />
         <div className="px-4 pb-4 animate-pulse">
           <div className="relative flex justify-between items-end -mt-16 mb-4">
@@ -63,7 +62,7 @@ export default async function ProfilePage({ params }: Props) {
           </div>
         </div>
         <FeedSkeleton />
-      </MainLayout>
+      </>
     }>
       <ProfileContent npubParam={npub} />
     </Suspense>

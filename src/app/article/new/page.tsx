@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState } from "react";
-import { MainLayout } from "@/components/layout/MainLayout";
 import { useNDK } from "@/hooks/useNDK";
 import { useAuthStore } from "@/store/auth";
 import { useUIStore } from "@/store/ui";
@@ -66,7 +65,7 @@ export default function NewArticlePage() {
   ];
 
   return (
-    <MainLayout>
+    <>
       <div className="sticky top-0 z-10 bg-white/80 dark:bg-black/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 flex items-center justify-between px-4 py-3">
         <div className="flex items-center gap-4">
           <button 
@@ -177,6 +176,6 @@ export default function NewArticlePage() {
           </div>
         )}
       </div>
-    </MainLayout>
+    </>
   );
 }

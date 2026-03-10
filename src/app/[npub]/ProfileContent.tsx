@@ -1,7 +1,6 @@
 "use client";
 
 import React from "react";
-import { MainLayout } from "@/components/layout/MainLayout";
 import { useProfile } from "@/hooks/useProfile";
 import { useFeed } from "@/hooks/useFeed";
 import { Calendar, Link as LinkIcon, Zap, Activity, Mail, Share, Copy, MoreVertical, Edit2, X, Music, Tag, Clock, RefreshCw } from "lucide-react";
@@ -157,7 +156,7 @@ export function ProfileContent({ npubParam }: { npubParam: string }) {
 
   if (profileLoading) {
     return (
-      <MainLayout>
+      <>
         <div className="h-48 bg-gray-200 dark:bg-gray-800 animate-pulse" />
         <div className="px-4 pb-4 animate-pulse">
           <div className="relative flex justify-between items-end -mt-16 mb-4">
@@ -171,12 +170,12 @@ export function ProfileContent({ npubParam }: { npubParam: string }) {
           </div>
         </div>
         <FeedSkeleton />
-      </MainLayout>
+      </>
     );
   }
 
   return (
-    <MainLayout>
+    <>
       {/* Header */}
       <div className="h-48 bg-gray-200 dark:bg-gray-800 relative overflow-hidden">
         {profile?.banner ? (
@@ -562,6 +561,6 @@ export function ProfileContent({ npubParam }: { npubParam: string }) {
           </div>
         </div>
       )}
-    </MainLayout>
+    </>
   );
 }

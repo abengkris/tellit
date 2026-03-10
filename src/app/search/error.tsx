@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect } from "react";
-import { MainLayout } from "@/components/layout/MainLayout";
 import { SearchX, RotateCcw } from "lucide-react";
 
 export default function SearchError({
@@ -16,7 +15,7 @@ export default function SearchError({
   }, [error]);
 
   return (
-    <MainLayout>
+    <>
       <div className="flex flex-col items-center justify-center min-h-[60vh] p-6 text-center">
         <div className="bg-gray-100 dark:bg-gray-900 p-5 rounded-full mb-6">
           <SearchX size={48} className="text-gray-400" />
@@ -34,6 +33,6 @@ export default function SearchError({
           <span>Try again</span>
         </button>
       </div>
-    </MainLayout>
+    </>
   );
 }

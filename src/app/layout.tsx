@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { NDKProvider } from "@/providers/NDKProvider";
 import { ToastContainer } from "@/components/ui/Toast";
+import { MainLayout } from "@/components/layout/MainLayout";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -62,7 +63,9 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <NDKProvider>
-          {children}
+          <MainLayout>
+            {children}
+          </MainLayout>
           <ToastContainer />
         </NDKProvider>
       </body>

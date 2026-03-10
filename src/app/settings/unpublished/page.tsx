@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import { MainLayout } from "@/components/layout/MainLayout";
 import { useNDK } from "@/hooks/useNDK";
 import { useUIStore } from "@/store/ui";
 import { 
@@ -103,7 +102,7 @@ export default function UnpublishedPage() {
   };
 
   return (
-    <MainLayout>
+    <>
       <div className="max-w-2xl mx-auto px-4 py-6 sm:p-6 pb-32">
         <header className="mb-8">
           <Link 
@@ -213,6 +212,6 @@ export default function UnpublishedPage() {
           </div>
         </div>
       </div>
-    </MainLayout>
+    </>
   );
 }

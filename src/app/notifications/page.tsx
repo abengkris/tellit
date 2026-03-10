@@ -1,7 +1,6 @@
 "use client";
 
 import React from "react";
-import { MainLayout } from "@/components/layout/MainLayout";
 import { useNotifications, TellItNotification } from "@/hooks/useNotifications";
 import { useProfile } from "@/hooks/useProfile";
 import { Loader2, Heart, Repeat2, MessageCircle, Zap, UserPlus, Bell } from "lucide-react";
@@ -124,7 +123,7 @@ export default function NotificationsPage() {
   }, [markAsRead]);
 
   return (
-    <MainLayout>
+    <>
       <div className="sticky top-0 z-10 bg-white/80 dark:bg-black/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 p-4">
         <h1 className="text-xl font-bold">Notifications</h1>
       </div>
@@ -180,6 +179,6 @@ export default function NotificationsPage() {
           </>
         )}
       </div>
-    </MainLayout>
+    </>
   );
 }

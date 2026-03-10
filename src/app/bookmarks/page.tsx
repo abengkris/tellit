@@ -1,7 +1,6 @@
 "use client";
 
 import React from "react";
-import { MainLayout } from "@/components/layout/MainLayout";
 import { useBookmarks } from "@/hooks/useBookmarks";
 import { PostCard } from "@/components/post/PostCard";
 import { FeedSkeleton } from "@/components/feed/FeedSkeleton";
@@ -11,7 +10,7 @@ export default function BookmarksPage() {
   const { events, loading } = useBookmarks();
 
   return (
-    <MainLayout>
+    <>
       <div className="sticky top-0 z-10 bg-white/80 dark:bg-black/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 p-4">
         <h1 className="text-xl font-bold flex items-center gap-2">
           <Bookmark className="text-blue-500" size={24} />
@@ -38,6 +37,6 @@ export default function BookmarksPage() {
           </div>
         )}
       </div>
-    </MainLayout>
+    </>
   );
 }

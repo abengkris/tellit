@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { MainLayout } from "@/components/layout/MainLayout";
 import { useUIStore } from "@/store/ui";
 import { useAuthStore } from "@/store/auth";
 import { useNDK } from "@/hooks/useNDK";
@@ -61,7 +60,7 @@ export default function SettingsPage() {
   };
 
   return (
-    <MainLayout>
+    <>
       <div className="max-w-2xl mx-auto p-4 sm:p-6 pb-32">
         <h1 className="text-3xl font-black mb-8">Settings</h1>
 
@@ -188,6 +187,6 @@ export default function SettingsPage() {
           Built with NDK & Next.js
         </div>
       </div>
-    </MainLayout>
+    </>
   );
 }

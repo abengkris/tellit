@@ -1,10 +1,9 @@
 import Link from "next/link";
-import { MainLayout } from "@/components/layout/MainLayout";
 import { Search } from "lucide-react";
 
 export default function NotFound() {
   return (
-    <MainLayout>
+    <>
       <div className="flex flex-col items-center justify-center min-h-[60vh] p-4 text-center">
         <div className="bg-gray-100 dark:bg-gray-900 p-4 rounded-full mb-6">
           <Search size={48} className="text-gray-400" />
@@ -20,6 +19,6 @@ export default function NotFound() {
           Go Home
         </Link>
       </div>
-    </MainLayout>
+    </>
   );
 }

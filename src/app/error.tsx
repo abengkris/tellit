@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect } from "react";
-import { MainLayout } from "@/components/layout/MainLayout";
 import { AlertCircle, RotateCcw } from "lucide-react";
 
 export default function Error({
@@ -16,7 +15,7 @@ export default function Error({
   }, [error]);
 
   return (
-    <MainLayout>
+    <>
       <div className="flex flex-col items-center justify-center min-h-[60vh] p-4 text-center">
         <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-full mb-6">
           <AlertCircle size={48} className="text-red-500" />
@@ -33,6 +32,6 @@ export default function Error({
           <span>Try again</span>
         </button>
       </div>
-    </MainLayout>
+    </>
   );
 }

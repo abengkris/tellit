@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { MainLayout } from "@/components/layout/MainLayout";
 import { Search, Loader2, TrendingUp, X, CheckCircle2 } from "lucide-react";
 import { useSearch } from "@/hooks/useSearch";
 import { useDebounce } from "use-debounce";
@@ -83,7 +82,7 @@ export function SearchContent() {
   const trendingTags = ["nostr", "bitcoin", "tellit", "art", "tech", "zap", "photography", "meme"];
 
   return (
-    <MainLayout>
+    <>
       <div className="sticky top-0 z-10 bg-white/80 dark:bg-black/80 backdrop-blur-md p-4 border-b border-gray-200 dark:border-gray-800">
         <div className="relative group">
           <label htmlFor="search-input" className="sr-only">Search people, hashtags, or content</label>
@@ -308,6 +307,6 @@ export function SearchContent() {
           </div>
         )}
       </div>
-    </MainLayout>
+    </>
   );
 }

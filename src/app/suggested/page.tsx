@@ -1,7 +1,6 @@
 "use client";
 
 import React from "react";
-import { MainLayout } from "@/components/layout/MainLayout";
 import { SuggestionCard } from "@/components/profile/WhoToFollow";
 import { useFollowSuggestions } from "@/hooks/useFollowSuggestions";
 import { Loader2, ArrowLeft, Users } from "lucide-react";
@@ -14,7 +13,7 @@ export default function SuggestedPage() {
   const { suggestions, loading } = useFollowSuggestions(100, 250);
 
   return (
-    <MainLayout>
+    <>
       <div className="sticky top-0 z-10 bg-white/80 dark:bg-black/80 backdrop-blur-md p-4 border-b border-gray-200 dark:border-gray-800 flex items-center gap-4">
         <button 
           onClick={() => router.back()}
@@ -70,6 +69,6 @@ export default function SuggestedPage() {
           </div>
         )}
       </div>
-    </MainLayout>
+    </>
   );
 }

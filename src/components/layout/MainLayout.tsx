@@ -23,6 +23,16 @@ export const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }
   const { unreadMessagesCount } = useUIStore();
   const { profile } = useProfile(user?.pubkey);
 
+  const isLoginPage = pathname === "/login";
+
+  if (isLoginPage) {
+    return (
+      <div className="min-h-screen bg-white dark:bg-black text-black dark:text-white overflow-x-hidden">
+        {children}
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex flex-col bg-white dark:bg-black text-black dark:text-white overflow-x-hidden">
       {/* Mobile Header */}

@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useMemo, memo, useRef } from "react";
-import { MainLayout } from "@/components/layout/MainLayout";
 import { PostComposer } from "@/components/post/PostComposer";
 import { useAuthStore } from "@/store/auth";
 import { useNDK } from "@/hooks/useNDK";
@@ -100,7 +99,7 @@ export function HomeContent() {
   if (!isLoggedIn || !user) return null;
 
   return (
-    <MainLayout>
+    <>
       <div className="sticky top-[56px] sm:top-0 z-10 w-full bg-white/80 dark:bg-black/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 overflow-hidden">
         <div className="hidden sm:flex px-4 py-3">
           <h1 className="text-xl font-bold">Home</h1>
@@ -227,7 +226,7 @@ export function HomeContent() {
         onClose={() => setIsEditModalOpen(false)} 
         currentProfile={profile || null} 
       />
-    </MainLayout>
+    </>
   );
 }
 

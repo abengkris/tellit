@@ -1,7 +1,6 @@
 "use client";
 
 import React, { use, useState, useRef, useEffect } from "react";
-import { MainLayout } from "@/components/layout/MainLayout";
 import { useChat } from "@/hooks/useChat";
 import { useProfile } from "@/hooks/useProfile";
 import { useNDK } from "@/hooks/useNDK";
@@ -124,16 +123,16 @@ export default function ChatPage({ params }: { params: Promise<{ pubkey: string 
 
   if (loading && messages.length === 0) {
     return (
-      <MainLayout>
+      <>
         <div className="flex items-center justify-center h-full">
           <Loader2 className="animate-spin text-blue-500" size={32} />
         </div>
-      </MainLayout>
+      </>
     );
   }
 
   return (
-    <MainLayout>
+    <>
       <div className="flex flex-col h-[calc(100vh-64px)] lg:h-screen">
         {/* Header */}
         <div className="flex items-center p-4 border-b border-gray-100 dark:border-gray-800 bg-white/80 dark:bg-black/80 backdrop-blur-md sticky top-0 z-10">
@@ -258,6 +257,6 @@ export default function ChatPage({ params }: { params: Promise<{ pubkey: string 
           </form>
         </div>
       </div>
-    </MainLayout>
+    </>
   );
 }

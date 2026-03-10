@@ -3,7 +3,6 @@ import { Metadata } from "next";
 import { PostDetailContent } from "./PostDetailContent";
 import { decodeNip19 } from "@/lib/utils/nip19";
 import { connectNDK } from "@/lib/ndk";
-import { MainLayout } from "@/components/layout/MainLayout";
 import { ArrowLeft } from "lucide-react";
 import { FeedSkeleton } from "@/components/feed/FeedSkeleton";
 
@@ -51,7 +50,7 @@ export default async function PostPage({ params }: Props) {
 
   return (
     <Suspense fallback={
-      <MainLayout>
+      <>
         <div className="sticky top-0 z-10 bg-white/80 dark:bg-black/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 flex items-center px-4 py-3 space-x-6">
           <div className="p-2 rounded-full">
             <ArrowLeft size={20} className="text-gray-400" />
@@ -68,7 +67,7 @@ export default async function PostPage({ params }: Props) {
           </div>
           <FeedSkeleton />
         </div>
-      </MainLayout>
+      </>
     }>
       <PostDetailContent noteId={noteId} />
     </Suspense>

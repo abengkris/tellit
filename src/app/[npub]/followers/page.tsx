@@ -6,7 +6,6 @@ import { useParams } from "next/navigation";
 import { useFollowers } from "@/hooks/useFollowers";
 import { useFollowingList } from "@/hooks/useFollowingList";
 import { FollowList } from "@/components/profile/FollowList";
-import { MainLayout } from "@/components/layout/MainLayout";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { decodeNip19 } from "@/lib/utils/nip19";
@@ -25,7 +24,7 @@ export default function FollowersPage() {
   const followingPubkeys = followingUsers.map((u) => u.pubkey);
 
   return (
-    <MainLayout>
+    <>
       <div className="max-w-xl mx-auto">
         {/* Header */}
         <header className="sticky top-0 z-10 bg-white/80 dark:bg-black/80 backdrop-blur border-b border-gray-200 dark:border-gray-800">
@@ -70,7 +69,7 @@ export default function FollowersPage() {
           />
         )}
       </div>
-    </MainLayout>
+    </>
   );
 }
 

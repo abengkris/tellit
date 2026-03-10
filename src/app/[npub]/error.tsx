@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect } from "react";
-import { MainLayout } from "@/components/layout/MainLayout";
 import { UserX, RotateCcw, Home } from "lucide-react";
 import Link from "next/link";
 
@@ -17,7 +16,7 @@ export default function ProfileError({
   }, [error]);
 
   return (
-    <MainLayout>
+    <>
       <div className="flex flex-col items-center justify-center min-h-[60vh] p-6 text-center">
         <div className="bg-orange-50 dark:bg-orange-900/20 p-5 rounded-full mb-6">
           <UserX size={48} className="text-orange-500" />
@@ -44,6 +43,6 @@ export default function ProfileError({
           </Link>
         </div>
       </div>
-    </MainLayout>
+    </>
   );
 }

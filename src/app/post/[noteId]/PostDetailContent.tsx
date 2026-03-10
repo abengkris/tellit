@@ -1,7 +1,6 @@
 "use client";
 
 import React from "react";
-import { MainLayout } from "@/components/layout/MainLayout";
 import { PostCard } from "@/components/post/PostCard";
 import { Loader2, ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -27,7 +26,7 @@ export function PostDetailContent({ noteId }: { noteId: string }) {
   const router = useRouter();
 
   return (
-    <MainLayout>
+    <>
       <div className="sticky top-0 z-10 bg-white/80 dark:bg-black/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 flex items-center px-4 py-3 space-x-6">
         <button 
           onClick={() => router.back()} 
@@ -137,6 +136,6 @@ export function PostDetailContent({ noteId }: { noteId: string }) {
           </>
         )}
       </div>
-    </MainLayout>
+    </>
   );
 }
