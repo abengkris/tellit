@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useEffect, useState, ReactNode, useRef, useMemo } from "react";
-import NDK, { NDKEvent, NDKCacheAdapter, NDKRelay } from "@nostr-dev-kit/ndk";
+import NDK, { NDKEvent, NDKCacheAdapter, NDKRelay, NDKRelayAuthPolicies } from "@nostr-dev-kit/ndk";
 import NDKCacheAdapterDexie from "@nostr-dev-kit/ndk-cache-dexie";
 import { NDKMessenger, CacheModuleStorage, NDKMessage } from "@nostr-dev-kit/messages";
 import { NDKSessionManager, LocalStorage, NDKSession } from "@nostr-dev-kit/sessions";
@@ -49,7 +49,8 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
     incrementUnreadMessagesCount, 
     addToast, 
     activeChatPubkey, 
-    browserNotificationsEnabled 
+    browserNotificationsEnabled,
+    relayAuthStrategy
   } = useUIStore();
   
   const { 
@@ -74,6 +75,7 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
     addToast,
     activeChatPubkey,
     browserNotificationsEnabled,
+    relayAuthStrategy,
     nwcPairingCode,
     setBalance,
     setInfo,
@@ -88,6 +90,7 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
       addToast,
       activeChatPubkey,
       browserNotificationsEnabled,
+      relayAuthStrategy,
       nwcPairingCode,
       setBalance,
       setInfo,
@@ -142,6 +145,52 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
     // Performance Optimization
     instance.initialValidationRatio = 0.5;
     instance.lowestValidationRatio = 0.05;
+
+    // NIP-42 Relay Authentication
+    instance.relayAuthDefaultPolicy = async (relay: NDKRelay, challenge: string) => {
+      const strategy = depsRef.current.relayAuthStrategy;
+      console.log(`[NDKProvider] Relay ${relay.url} requested authentication. Strategy: ${strategy}`);
+      
+      if (strategy === "never") return false;
+      
+      const signInPolicy = NDKRelayAuthPolicies.signIn({ ndk: instance });
+      
+      if (strategy === "always") {
+        try {
+          const result = await signInPolicy(relay, challenge);
+          return !!result;
+        } catch (err) {
+          console.error(`[NDKProvider] Auto-authentication failed for ${relay.url}:`, err);
+          return false;
+        }
+      }
+      
+      // Strategy is "ask"
+      return new Promise<boolean>((resolve) => {
+        depsRef.current.addToast(`Relay ${relay.url} requested authentication.`, "info", 15000, {
+          label: "Authenticate",
+          onClick: () => {
+            signInPolicy(relay, challenge)
+              .then((result) => {
+                if (result) {
+                  depsRef.current.addToast(`Authenticated to ${relay.url}`, "success");
+                  resolve(true);
+                } else {
+                  resolve(false);
+                }
+              })
+              .catch((err) => {
+                console.error(`[NDKProvider] Authentication failed for ${relay.url}:`, err);
+                depsRef.current.addToast(`Authentication failed for ${relay.url}`, "error");
+                resolve(false);
+              });
+          }
+        });
+        
+        // Timeout after 15s
+        setTimeout(() => resolve(false), 15000);
+      });
+    };
 
     const TOAST_THROTTLE = 5000;
     const DISCONNECT_THRESHOLD = 5;

@@ -10,7 +10,8 @@ describe("UI Store", () => {
       wotStrictMode: false,
       browserNotificationsEnabled: false,
       defaultZapAmount: 21,
-      hideBalance: false
+      hideBalance: false,
+      relayAuthStrategy: "ask"
     });
   });
 
@@ -56,5 +57,8 @@ describe("UI Store", () => {
     
     useUIStore.getState().setHideBalance(true);
     expect(useUIStore.getState().hideBalance).toBe(true);
+
+    useUIStore.getState().setRelayAuthStrategy("always");
+    expect(useUIStore.getState().relayAuthStrategy).toBe("always");
   });
 });

@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { useUIStore } from "@/store/ui";
+import { useUIStore, RelayAuthStrategy } from "@/store/ui";
 import { useAuthStore } from "@/store/auth";
 import { useNDK } from "@/hooks/useNDK";
-import { Bell, Shield, User, Globe, Wallet, Clock, LogOut } from "lucide-react";
+import { Bell, Shield, User, Globe, Wallet, Clock, LogOut, Key } from "lucide-react";
 import { Avatar } from "@/components/common/Avatar";
 import Link from "next/link";
 import { NDKEvent } from "@nostr-dev-kit/ndk";
@@ -21,6 +21,8 @@ export default function SettingsPage() {
     setBrowserNotificationsEnabled,
     wotStrictMode,
     setWotStrictMode,
+    relayAuthStrategy,
+    setRelayAuthStrategy,
     addToast
   } = useUIStore();
 
@@ -138,6 +140,41 @@ export default function SettingsPage() {
               <Wallet size={20} />
               Open Wallet Dashboard
             </Link>
+          </div>
+        </section>
+
+        {/* Relay Authentication Section */}
+        <section className="mb-10">
+          <h2 className="text-sm font-bold uppercase tracking-widest text-gray-500 mb-4 flex items-center gap-2">
+            <Key size={16} /> Relay Authentication
+          </h2>
+          <div className="bg-white dark:bg-black border border-gray-100 dark:border-gray-800 rounded-3xl p-4">
+            <p className="text-sm text-gray-500 mb-4">
+              Control how the app responds when a relay requests authentication (NIP-42).
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              {(["ask", "always", "never"] as RelayAuthStrategy[]).map((strategy) => (
+                <button
+                  key={strategy}
+                  onClick={() => {
+                    setRelayAuthStrategy(strategy);
+                    addToast(`Relay authentication set to: ${strategy}`, "success");
+                  }}
+                  className={`flex flex-col items-center justify-center p-4 rounded-2xl border transition-all text-center gap-1 ${
+                    relayAuthStrategy === strategy
+                      ? "border-blue-500 bg-blue-500/5 ring-1 ring-blue-500"
+                      : "border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-900"
+                  }`}
+                >
+                  <span className="font-bold capitalize">{strategy}</span>
+                  <span className="text-[10px] text-gray-500 leading-tight">
+                    {strategy === "ask" && "Confirm each request"}
+                    {strategy === "always" && "Auto-authenticate"}
+                    {strategy === "never" && "Always decline"}
+                  </span>
+                </button>
+              ))}
+            </div>
           </div>
         </section>
 

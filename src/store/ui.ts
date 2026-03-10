@@ -14,6 +14,8 @@ export interface Toast {
   action?: ToastAction;
 }
 
+export type RelayAuthStrategy = "ask" | "always" | "never";
+
 interface UIState {
   toasts: Toast[];
   unreadMessagesCount: number;
@@ -22,6 +24,7 @@ interface UIState {
   browserNotificationsEnabled: boolean;
   defaultZapAmount: number;
   hideBalance: boolean;
+  relayAuthStrategy: RelayAuthStrategy;
   addToast: (message: string, type?: "success" | "error" | "info", duration?: number, action?: ToastAction) => void;
   removeToast: (id: string) => void;
   setUnreadMessagesCount: (count: number) => void;
@@ -31,6 +34,7 @@ interface UIState {
   setBrowserNotificationsEnabled: (enabled: boolean) => void;
   setDefaultZapAmount: (amount: number) => void;
   setHideBalance: (hide: boolean) => void;
+  setRelayAuthStrategy: (strategy: RelayAuthStrategy) => void;
 }
 
 export const useUIStore = create<UIState>()(
@@ -43,6 +47,7 @@ export const useUIStore = create<UIState>()(
       browserNotificationsEnabled: false,
       defaultZapAmount: 21,
       hideBalance: false,
+      relayAuthStrategy: "ask",
       addToast: (message, type = "info", duration = 4000, action) => {
         const id = Math.random().toString(36).substring(7);
         set((state) => ({
@@ -60,6 +65,7 @@ export const useUIStore = create<UIState>()(
       setBrowserNotificationsEnabled: (enabled) => set({ browserNotificationsEnabled: enabled }),
       setDefaultZapAmount: (amount) => set({ defaultZapAmount: amount }),
       setHideBalance: (hide) => set({ hideBalance: hide }),
+      setRelayAuthStrategy: (strategy) => set({ relayAuthStrategy: strategy }),
     }),
     {
       name: "tellit-ui-storage",
@@ -69,6 +75,7 @@ export const useUIStore = create<UIState>()(
         browserNotificationsEnabled: state.browserNotificationsEnabled,
         defaultZapAmount: state.defaultZapAmount,
         hideBalance: state.hideBalance,
+        relayAuthStrategy: state.relayAuthStrategy,
       }),
     }
   )
