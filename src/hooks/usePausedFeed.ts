@@ -38,18 +38,29 @@ export function usePausedFeed({
   const bufferDelayTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const seenIds = useRef<Set<string>>(new Set());
   const subRef = useRef<NDKSubscription | null>(null);
+  const prevFilterRef = useRef<string>("");
 
   useEffect(() => {
     if (!ndk || !isReady) return;
 
-    isInitialLoadDone.current = false;
-    Promise.resolve().then(() => {
-      setIsLoading(true);
-      setNewCount(0);
-      setPosts([]);
-    });
-    bufferRef.current = [];
-    seenIds.current = new Set();
+    const currentFilterStr = JSON.stringify(filter);
+    const filterChanged = currentFilterStr !== prevFilterRef.current;
+    
+    if (filterChanged) {
+      isInitialLoadDone.current = false;
+      Promise.resolve().then(() => {
+        setIsLoading(true);
+        setNewCount(0);
+        setPosts([]);
+      });
+      bufferRef.current = [];
+      seenIds.current = new Set();
+      prevFilterRef.current = currentFilterStr;
+    } else if (posts.length > 0) {
+      // If filter didn't change and we have posts, don't show loading
+      setIsLoading(false);
+      return;
+    }
 
     const sub = ndk.subscribe(
       { ...filter, limit: 20 },

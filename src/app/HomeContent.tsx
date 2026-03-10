@@ -183,21 +183,29 @@ export function HomeContent() {
       )}
 
       <div className="pb-20">
-        {activeTab === "forYou" ? (
+        <div className={activeTab === "forYou" ? "block" : "hidden"}>
           <ForYouFeedTab 
             viewerPubkey={user.pubkey} 
             followingList={followingPubkeys} 
           />
-        ) : activeTab === "following" ? (
+        </div>
+        
+        <div className={activeTab === "following" ? "block" : "hidden"}>
           <FollowingFeedTab 
             followingList={followingPubkeys} 
             viewerPubkey={user.pubkey}
           />
-        ) : activeTab === "global" ? (
+        </div>
+
+        <div className={activeTab === "global" ? "block" : "hidden"}>
           <GlobalFeedTab />
-        ) : (
-          <InterestsFeedTab interestList={[activeTab]} />
-        )}
+        </div>
+
+        {interestList.map((tag) => (
+          <div key={tag} className={activeTab === tag ? "block" : "hidden"}>
+            <InterestsFeedTab interestList={[tag]} />
+          </div>
+        ))}
       </div>
 
       <ProfileEditModal 

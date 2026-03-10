@@ -44,6 +44,7 @@ export function useForYouFeed({
   const bufferRef = useRef<NDKEvent[]>([]);
   const seenIds = useRef(new Set<string>());
   const isInitialLoadDone = useRef(false);
+  const prevFollowingListRef = useRef<string>("");
 
   // Memoized ranked posts using advanced scorer
   const posts = useMemo(() => {
@@ -71,13 +72,22 @@ export function useForYouFeed({
   useEffect(() => {
     if (!ndk || !isReady || wotStatus === "idle") return;
 
-    Promise.resolve().then(() => {
-      setIsLoading(true);
-      seenIds.current = new Set();
-      isInitialLoadDone.current = false;
-      bufferRef.current = [];
-      setRawEvents([]);
-    });
+    const followingStr = JSON.stringify(followingList);
+    const listChanged = followingStr !== prevFollowingListRef.current;
+
+    if (listChanged) {
+      Promise.resolve().then(() => {
+        setIsLoading(true);
+        seenIds.current = new Set();
+        isInitialLoadDone.current = false;
+        bufferRef.current = [];
+        setRawEvents([]);
+      });
+      prevFollowingListRef.current = followingStr;
+    } else if (rawEvents.length > 0) {
+      setIsLoading(false);
+      return;
+    }
 
     const authors = wot
       ? wot.getAllPubkeys({ maxDepth: 2 }).slice(0, 500)
