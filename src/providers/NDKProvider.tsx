@@ -111,13 +111,30 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
       instance.cacheAdapter = adapter;
 
       adapter.discardUnpublishedEvent = async (eventId: string) => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        if (dexieAdapter && (dexieAdapter as any).db) {
-          try {
+        try {
+          // 1. Call the built-in method if available (handles memory)
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          if (typeof (dexieAdapter as any).discardUnpublishedEvent === 'function') {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            await (dexieAdapter as any).discardUnpublishedEvent(eventId);
+          }
+
+          // 2. Manually ensure it's deleted from the Dexie table
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          if (dexieAdapter && (dexieAdapter as any).db) {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const dbInstance = (dexieAdapter as any).db;
             await dbInstance.unpublishedEvents.delete(eventId);
-          } catch { /* ignore */ }
+          }
+
+          // 3. Force a dump to ensure persistence
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          if (typeof (dexieAdapter as any).dump === 'function') {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            await (dexieAdapter as any).dump();
+          }
+        } catch (err) { 
+          console.error("Failed to discard unpublished event:", err);
         }
       };
     }
