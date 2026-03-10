@@ -32,6 +32,9 @@ export function HomeContent() {
   const interestList = useMemo(() => Array.from(interests), [interests]);
 
   const [followingPubkeys, setFollowingPubkeys] = useState<string[]>([]);
+  const lastFetchedPubkeyRef = useRef<string | null>(null);
+
+  console.log("[HomeContent] Render", { isLoggedIn, isReady, isAuthLoading, _hasHydrated, activeTab });
 
   // Load persisted tab
   useEffect(() => {
@@ -56,7 +59,9 @@ export function HomeContent() {
   }, [activeTab, _hasHydrated]);
 
   useEffect(() => {
-    if (isReady && isLoggedIn && user) {
+    if (isReady && isLoggedIn && user && lastFetchedPubkeyRef.current !== user.pubkey) {
+      console.log("[HomeContent] Fetching following list for", user.pubkey);
+      lastFetchedPubkeyRef.current = user.pubkey;
       ndk?.fetchEvent({ kinds: [3], authors: [user.pubkey] }).then((event) => {
         if (event) {
           const pubkeys = event.tags

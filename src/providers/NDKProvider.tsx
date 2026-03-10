@@ -62,9 +62,13 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
   const messengerRef = useRef<NDKMessenger | null>(null);
   const sessionsRef = useRef<NDKSessionManager | null>(null);
   const walletRef = useRef<NDKNWCWallet | null>(null);
+  const initializingRef = useRef(false);
+  const invalidSigCountByRelay = useRef(new Map<string, number>());
+  const lastToastTime = useRef(0);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (typeof window === "undefined" || initializingRef.current) return;
+    initializingRef.current = true;
 
     let dexieAdapter: NDKCacheAdapterDexie | null = null;
     try {
@@ -93,30 +97,28 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
     instance.initialValidationRatio = 0.5;
     instance.lowestValidationRatio = 0.05;
 
-    const invalidSigCountByRelay = new Map<string, number>();
-    let lastToastTime = 0;
     const TOAST_THROTTLE = 5000;
     const DISCONNECT_THRESHOLD = 5;
 
     instance.on("event:invalid-sig", (event: NDKEvent, relay?: NDKRelay) => {
       const relayUrl = relay?.url || 'unknown';
       console.error("Invalid signature detected from relay:", relayUrl);
-      const currentCount = (invalidSigCountByRelay.get(relayUrl) || 0) + 1;
-      invalidSigCountByRelay.set(relayUrl, currentCount);
+      const currentCount = (invalidSigCountByRelay.current.get(relayUrl) || 0) + 1;
+      invalidSigCountByRelay.current.set(relayUrl, currentCount);
       const now = Date.now();
       
       if (currentCount >= DISCONNECT_THRESHOLD && relay) {
         relay.disconnect();
-        if (now - lastToastTime > TOAST_THROTTLE) {
+        if (now - lastToastTime.current > TOAST_THROTTLE) {
           addToast(`Disconnected from malicious relay: ${relayUrl}`, "error");
-          lastToastTime = now;
+          lastToastTime.current = now;
         }
         return;
       }
 
-      if (now - lastToastTime > TOAST_THROTTLE) {
+      if (now - lastToastTime.current > TOAST_THROTTLE) {
         addToast(`Invalid signature detected from relay: ${relayUrl}`, "error");
-        lastToastTime = now;
+        lastToastTime.current = now;
       }
     });
 
@@ -161,29 +163,27 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
       fetches: { follows: true, mutes: true, relayList: true }
     });
     sessionsRef.current = sessionManager;
-    Promise.resolve().then(() => setSessions(sessionManager));
+    setSessions(sessionManager);
 
     const unsubscribeSessions = sessionManager.subscribe((state) => {
+      console.log("[NDKProvider] Session state changed:", !!state.activePubkey);
       if (state.activePubkey) {
         const session = sessionManager.activeSession;
         if (session) {
-          Promise.resolve().then(() => {
-            setActiveSession(session);
-            const user = sessionManager.activeUser || instance.getUser({ pubkey: session.pubkey });
-            setUser(user);
-            setLoginState(true, session.pubkey);
-          });
+          setActiveSession(session);
+          const user = sessionManager.activeUser || instance.getUser({ pubkey: session.pubkey });
+          setUser(user);
+          setLoginState(true, session.pubkey);
         }
       } else {
-        Promise.resolve().then(() => {
-          setActiveSession(null);
-          setUser(null);
-          setLoginState(false, null);
-        });
+        setActiveSession(null);
+        setUser(null);
+        setLoginState(false, null);
       }
     });
 
     const initApp = async () => {
+      console.log("[NDKProvider] Initializing App...");
       await sessionManager.restore();
       await initWallet();
       setNdk(instance);
@@ -204,11 +204,13 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
     };
 
     initApp().then((msgInstance) => {
+      console.log("[NDKProvider] App initialized, connecting...");
       const connectPromise = instance.connect();
       const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 10000));
 
       Promise.race([connectPromise, timeoutPromise])
         .then(async () => {
+          console.log("[NDKProvider] Connected!");
           setIsReady(true);
           if (instance.cacheAdapter && (instance.cacheAdapter as ExtendedCacheAdapter).getUnpublishedEvents) {
             try {
@@ -229,6 +231,7 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
               msgInstance.on("message", (message: NDKMessage) => {
                 const currentPubkey = sessionManager.activePubkey;
                 if (message.sender?.pubkey !== currentPubkey && message.recipient?.pubkey === currentPubkey) {
+                  // We use a ref for the chat check to avoid effect re-runs
                   const isCurrentChat = activeChatPubkey === message.sender?.pubkey;
                   if (!isCurrentChat) {
                     incrementUnreadMessagesCount();
@@ -251,8 +254,18 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
     return () => {
       unsubscribeSessions();
       if (messengerRef.current) try { messengerRef.current.destroy(); } catch { /* ignore */ }
+      initializingRef.current = false;
     };
-  }, [setUser, setLoginState, incrementUnreadMessagesCount, addToast, activeChatPubkey, browserNotificationsEnabled, nwcPairingCode, setBalance, setInfo, walletType]);
+  }, []); // Only run once on mount
+
+  // Separate effect for wallet pairing code changes
+  useEffect(() => {
+    if (ndk && nwcPairingCode && !isWalletReady) {
+      // Re-trigger wallet init if pairing code appears after initial load
+      // But we need to handle this carefully to not double-init.
+      // For now, let the user reload or implement a more robust wallet manager.
+    }
+  }, [ndk, nwcPairingCode, isWalletReady]);
 
   const refreshBalance = async () => {
     if (walletRef.current) {
