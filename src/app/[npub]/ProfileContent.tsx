@@ -3,7 +3,7 @@
 import React from "react";
 import { useProfile } from "@/hooks/useProfile";
 import { useFeed } from "@/hooks/useFeed";
-import { Calendar, Link as LinkIcon, Zap, Activity, Mail, Share, Copy, MoreVertical, Edit2, X, Music, Tag, Clock, RefreshCw } from "lucide-react";
+import { Calendar, Link as LinkIcon, Zap, Activity, Mail, Share, Copy, MoreVertical, Edit2, X, Music, Tag, Clock, RefreshCw, VolumeX, Volume2, Flag } from "lucide-react";
 import { useAuthStore } from "@/store/auth";
 import { useUIStore } from "@/store/ui";
 import { useNDK } from "@/hooks/useNDK";
@@ -77,6 +77,7 @@ export function ProfileContent({ npubParam }: { npubParam: string }) {
   const { count: followerCount, loading: fLoading } = useFollowerCount(hexPubkey);
   const { totalSats } = useZaps(hexPubkey, true);
   const { interests, pinnedEventIds, externalIdentities } = useLists(hexPubkey);
+  const { muteUser, unmuteUser, isMuted } = useLists();
   const { pinnedPosts } = usePinnedPosts(hexPubkey, pinnedEventIds);
 
   const { ndk } = useNDK();
@@ -115,6 +116,16 @@ export function ProfileContent({ npubParam }: { npubParam: string }) {
     } catch (err) {
       console.error("Failed to copy:", err);
       addToast("Failed to copy npub", "error");
+    }
+  };
+
+  const handleMute = async () => {
+    const muted = isMuted(hexPubkey);
+    const success = muted ? await unmuteUser(hexPubkey) : await muteUser(hexPubkey);
+    if (success) {
+      addToast(muted ? `Unmuted ${display_name}` : `Muted ${display_name}`, "success");
+    } else {
+      addToast("Failed to update mute list", "error");
     }
   };
 
@@ -254,6 +265,18 @@ export function ProfileContent({ npubParam }: { npubParam: string }) {
                       label: "Copy Npub",
                       onClick: handleCopyNpub,
                       icon: <Copy size={16} />
+                    },
+                    {
+                      label: isMuted(hexPubkey) ? "Unmute User" : "Mute User",
+                      onClick: handleMute,
+                      icon: isMuted(hexPubkey) ? <Volume2 size={16} /> : <VolumeX size={16} />,
+                      variant: isMuted(hexPubkey) ? undefined : "danger"
+                    },
+                    {
+                      label: "Report User",
+                      onClick: () => addToast("Report feature coming soon", "info"),
+                      icon: <Flag size={16} />,
+                      variant: "danger"
                     }
                   ]}
                 />
