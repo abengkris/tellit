@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useEffect, useState, ReactNode, useRef } from "react";
+import { createContext, useEffect, useState, ReactNode, useRef, useMemo } from "react";
 import NDK, { NDKEvent, NDKCacheAdapter, NDKRelay } from "@nostr-dev-kit/ndk";
 import NDKCacheAdapterDexie from "@nostr-dev-kit/ndk-cache-dexie";
 import { NDKMessenger, CacheModuleStorage, NDKMessage } from "@nostr-dev-kit/messages";
@@ -66,6 +66,35 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
   const invalidSigCountByRelay = useRef(new Map<string, number>());
   const lastToastTime = useRef(0);
 
+  // Memoize stable refs for dependencies that change but shouldn't re-trigger NDK init
+  const depsRef = useRef({
+    setUser,
+    setLoginState,
+    incrementUnreadMessagesCount,
+    addToast,
+    activeChatPubkey,
+    browserNotificationsEnabled,
+    nwcPairingCode,
+    setBalance,
+    setInfo,
+    walletType
+  });
+
+  useEffect(() => {
+    depsRef.current = {
+      setUser,
+      setLoginState,
+      incrementUnreadMessagesCount,
+      addToast,
+      activeChatPubkey,
+      browserNotificationsEnabled,
+      nwcPairingCode,
+      setBalance,
+      setInfo,
+      walletType
+    };
+  });
+
   useEffect(() => {
     if (typeof window === "undefined" || initializingRef.current) return;
     initializingRef.current = true;
@@ -110,28 +139,28 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
       if (currentCount >= DISCONNECT_THRESHOLD && relay) {
         relay.disconnect();
         if (now - lastToastTime.current > TOAST_THROTTLE) {
-          addToast(`Disconnected from malicious relay: ${relayUrl}`, "error");
+          depsRef.current.addToast(`Disconnected from malicious relay: ${relayUrl}`, "error");
           lastToastTime.current = now;
         }
         return;
       }
 
       if (now - lastToastTime.current > TOAST_THROTTLE) {
-        addToast(`Invalid signature detected from relay: ${relayUrl}`, "error");
+        depsRef.current.addToast(`Invalid signature detected from relay: ${relayUrl}`, "error");
         lastToastTime.current = now;
       }
     });
 
     instance.on("event:publish-failed", (event: NDKEvent, error: Error) => {
       console.error(`Event ${event.id} failed to publish:`, error);
-      addToast(`Failed to publish event. It will be retried automatically.`, "error");
+      depsRef.current.addToast(`Failed to publish event. It will be retried automatically.`, "error");
     });
 
     const initWallet = async () => {
-      if (nwcPairingCode) {
+      if (depsRef.current.nwcPairingCode) {
         try {
           const nwc = new NDKNWCWallet(instance, { 
-            pairingCode: nwcPairingCode,
+            pairingCode: depsRef.current.nwcPairingCode,
             timeout: 30000
           });
           
@@ -140,16 +169,16 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
             setIsWalletReady(true);
             walletRef.current = nwc;
             
-            if (walletType === 'nwc') {
+            if (depsRef.current.walletType === 'nwc') {
               instance.wallet = nwc;
-              addToast("NWC Wallet connected", "success");
-              nwc.getInfo().then((info) => { if (info) setInfo(info); }).catch(() => {});
+              depsRef.current.addToast("NWC Wallet connected", "success");
+              nwc.getInfo().then((info) => { if (info) depsRef.current.setInfo(info); }).catch(() => {});
               nwc.updateBalance().catch(() => {});
             }
           });
 
           nwc.on("balance_updated", (balance?: { amount: number }) => {
-            if (walletType === 'nwc') setBalance(balance?.amount || 0);
+            if (depsRef.current.walletType === 'nwc') depsRef.current.setBalance(balance?.amount || 0);
           });
         } catch (err) {
           console.error("Failed to initialize NWC wallet:", err);
@@ -163,22 +192,26 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
       fetches: { follows: true, mutes: true, relayList: true }
     });
     sessionsRef.current = sessionManager;
-    setSessions(sessionManager);
+    Promise.resolve().then(() => setSessions(sessionManager));
 
     const unsubscribeSessions = sessionManager.subscribe((state) => {
       console.log("[NDKProvider] Session state changed:", !!state.activePubkey);
       if (state.activePubkey) {
         const session = sessionManager.activeSession;
         if (session) {
-          setActiveSession(session);
-          const user = sessionManager.activeUser || instance.getUser({ pubkey: session.pubkey });
-          setUser(user);
-          setLoginState(true, session.pubkey);
+          Promise.resolve().then(() => {
+            setActiveSession(session);
+            const user = sessionManager.activeUser || instance.getUser({ pubkey: session.pubkey });
+            depsRef.current.setUser(user);
+            depsRef.current.setLoginState(true, session.pubkey);
+          });
         }
       } else {
-        setActiveSession(null);
-        setUser(null);
-        setLoginState(false, null);
+        Promise.resolve().then(() => {
+          setActiveSession(null);
+          depsRef.current.setUser(null);
+          depsRef.current.setLoginState(false, null);
+        });
       }
     });
 
@@ -231,11 +264,10 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
               msgInstance.on("message", (message: NDKMessage) => {
                 const currentPubkey = sessionManager.activePubkey;
                 if (message.sender?.pubkey !== currentPubkey && message.recipient?.pubkey === currentPubkey) {
-                  // We use a ref for the chat check to avoid effect re-runs
-                  const isCurrentChat = activeChatPubkey === message.sender?.pubkey;
+                  const isCurrentChat = depsRef.current.activeChatPubkey === message.sender?.pubkey;
                   if (!isCurrentChat) {
-                    incrementUnreadMessagesCount();
-                    if (browserNotificationsEnabled && Notification.permission === "granted") {
+                    depsRef.current.incrementUnreadMessagesCount();
+                    if (depsRef.current.browserNotificationsEnabled && Notification.permission === "granted") {
                       const sender = message.sender;
                       sender.fetchProfile().then(() => {
                         const title = String(sender.profile?.display_name || sender.profile?.name || "New Message");
@@ -256,6 +288,7 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
       if (messengerRef.current) try { messengerRef.current.destroy(); } catch { /* ignore */ }
       initializingRef.current = false;
     };
+   
   }, []); // Only run once on mount
 
   // Separate effect for wallet pairing code changes
@@ -277,8 +310,18 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const contextValue = useMemo(() => ({ 
+    ndk, 
+    messenger, 
+    sessions, 
+    activeSession, 
+    isReady, 
+    isWalletReady, 
+    refreshBalance 
+  }), [ndk, messenger, sessions, activeSession, isReady, isWalletReady]);
+
   return (
-    <NDKContext.Provider value={{ ndk, messenger, sessions, activeSession, isReady, isWalletReady, refreshBalance }}>
+    <NDKContext.Provider value={contextValue}>
       {children}
     </NDKContext.Provider>
   );

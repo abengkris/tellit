@@ -28,13 +28,20 @@ export function HomeContent() {
   const { interests } = useLists();
   const { profile } = useProfile(user?.pubkey);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const isRedirectingRef = useRef(false);
 
   const interestList = useMemo(() => Array.from(interests), [interests]);
 
   const [followingPubkeys, setFollowingPubkeys] = useState<string[]>([]);
   const lastFetchedPubkeyRef = useRef<string | null>(null);
 
-  console.log("[HomeContent] Render", { isLoggedIn, isReady, isAuthLoading, _hasHydrated, activeTab });
+  console.log("[HomeContent] Render", { 
+    isLoggedIn, 
+    isReady, 
+    isAuthLoading, 
+    _hasHydrated, 
+    activeTab
+  });
 
   // Load persisted tab
   useEffect(() => {
@@ -75,7 +82,9 @@ export function HomeContent() {
 
   // Protected route check
   useEffect(() => {
-    if (_hasHydrated && !isAuthLoading && !isLoggedIn) {
+    if (_hasHydrated && !isAuthLoading && !isLoggedIn && !isRedirectingRef.current) {
+      console.log("[HomeContent] Not logged in, redirecting to /login");
+      isRedirectingRef.current = true;
       router.push("/login");
     }
   }, [isLoggedIn, isAuthLoading, _hasHydrated, router]);
