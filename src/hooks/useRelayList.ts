@@ -49,10 +49,11 @@ export function useRelayList(pubkey?: string) {
           
           setRelays(relayData);
           
-          // NDK specific optimization: connect to these relays if not already
+          // Enforce Outbox Model (NIP-65)
+          // We must connect to the user's write relays to ensure our events reach their audience
           relayData.forEach(r => {
             if (r.write) {
-              ndk.addExplicitRelay(r.url);
+              ndk.addExplicitRelay(r.url, undefined, true); // true = connect immediately
             }
           });
         }

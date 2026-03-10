@@ -22,6 +22,7 @@ import {
 import { Avatar } from "../common/Avatar";
 import { PollEditor } from "./PollEditor";
 import { CollaboratorEditor } from "./CollaboratorEditor";
+import { useMentionSearch } from "@/hooks/useMentionSearch";
 
 interface PostComposerProps {
   replyTo?: NDKEvent;
@@ -56,6 +57,12 @@ export const PostComposer: React.FC<PostComposerProps> = ({
   const [showPollEditor, setShowPollEditor] = useState(false);
   const [showCollaboratorEditor, setShowCollaboratorEditor] = useState(false);
   
+  // Mention state
+  const [mentionQuery, setMentionQuery] = useState("");
+  const [showMentionPicker, setShowMentionPicker] = useState(false);
+  const [cursorPos, setCursorPos] = useState(0);
+  const { results: mentionResults } = useMentionSearch(mentionQuery);
+  
   const [pollOptions, setPollOptions] = useState<PollOption[]>([
     { id: "0", label: "" },
     { id: "1", label: "" }
@@ -79,6 +86,41 @@ export const PostComposer: React.FC<PostComposerProps> = ({
       updateDraft(content);
     }
   }, [content, isLoaded, updateDraft]);
+
+  const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const val = e.target.value;
+    const pos = e.target.selectionStart;
+    setContent(val);
+    setCursorPos(pos);
+
+    // Detect mention trigger
+    const lastAt = val.lastIndexOf("@", pos - 1);
+    if (lastAt !== -1) {
+      const query = val.slice(lastAt + 1, pos);
+      if (!query.includes(" ") && query.length > 0) {
+        setMentionQuery(query);
+        setShowMentionPicker(true);
+        return;
+      }
+    }
+    setShowMentionPicker(false);
+  };
+
+  const insertMention = (npub: string) => {
+    const lastAt = content.lastIndexOf("@", cursorPos - 1);
+    if (lastAt !== -1) {
+      const before = content.slice(0, lastAt);
+      const after = content.slice(cursorPos);
+      const newContent = `${before}nostr:${npub} ${after}`;
+      setContent(newContent);
+      setShowMentionPicker(false);
+      setTimeout(() => {
+        textareaRef.current?.focus();
+        const newPos = before.length + npub.length + 7; // nostr: + space
+        textareaRef.current?.setSelectionRange(newPos, newPos);
+      }, 0);
+    }
+  };
 
   const handlePost = async () => {
     if (!content.trim() && mediaFiles.length === 0) return;
@@ -116,10 +158,18 @@ export const PostComposer: React.FC<PostComposerProps> = ({
         });
       } else {
         const tags: NDKTag[] = [];
-        // Add imeta tags for Blossom media
+        // Add imeta tags for Blossom media (NIP-92)
         mediaFiles.forEach(file => {
           if (file.imeta) {
             tags.push(file.imeta);
+          }
+        });
+
+        // Add emoji tags (NIP-30) - naive check
+        // A robust implementation would parse the content for :shortcode:
+        emojis.forEach(e => {
+          if (finalContent.includes(`:${e.shortcode}:`)) {
+            tags.push(["emoji", e.shortcode, e.url]);
           }
         });
 
@@ -207,16 +257,36 @@ export const PostComposer: React.FC<PostComposerProps> = ({
       <div className="flex gap-3">
         <Avatar pubkey={user?.pubkey || ""} src={profile?.picture || (profile as { image?: string })?.image} size={48} />
         
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 relative">
           <textarea
             ref={textareaRef}
             value={content}
-            onChange={(e) => setContent(e.target.value)}
+            onChange={handleContentChange}
+            onClick={() => setCursorPos(textareaRef.current?.selectionStart || 0)}
+            onKeyUp={() => setCursorPos(textareaRef.current?.selectionStart || 0)}
             placeholder={placeholder}
             autoFocus={autoFocus}
             rows={3}
             className="w-full bg-transparent text-lg resize-none outline-none placeholder-gray-500 py-2"
           />
+
+          {showMentionPicker && mentionResults.length > 0 && (
+            <div className="absolute z-50 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-lg max-h-48 overflow-y-auto w-64 animate-in fade-in zoom-in-95">
+              {mentionResults.map(u => (
+                <button
+                  key={u.pubkey}
+                  onClick={() => insertMention(u.npub)}
+                  className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center gap-2"
+                >
+                  <Avatar pubkey={u.pubkey} size={24} />
+                  <div className="min-w-0">
+                    <div className="font-bold text-sm truncate">{u.profile?.display_name || u.profile?.name}</div>
+                    <div className="text-xs text-gray-500 truncate">@{u.profile?.name}</div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
 
           {showPollEditor && (
             <PollEditor 
