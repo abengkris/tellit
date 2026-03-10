@@ -4,10 +4,12 @@ import React, { useEffect, useState } from "react";
 import { useUIStore, RelayAuthStrategy } from "@/store/ui";
 import { useAuthStore } from "@/store/auth";
 import { useNDK } from "@/hooks/useNDK";
-import { Bell, Shield, User, Globe, Wallet, Clock, LogOut, Key } from "lucide-react";
+import { Bell, Shield, User, Globe, Wallet, Clock, LogOut, Key, VolumeX, X } from "lucide-react";
 import { Avatar } from "@/components/common/Avatar";
 import Link from "next/link";
 import { NDKEvent } from "@nostr-dev-kit/ndk";
+import { useLists } from "@/hooks/useLists";
+import { MuteList } from "@/components/profile/MuteList";
 
 interface ExtendedCacheAdapter {
   getUnpublishedEvents?: () => Promise<{ event: NDKEvent; relays?: string[]; lastTryAt?: number }[]>;
@@ -16,6 +18,7 @@ interface ExtendedCacheAdapter {
 export default function SettingsPage() {
   const { isLoggedIn, user, logout } = useAuthStore();
   const { sessions, ndk, isReady } = useNDK();
+  const { mutedPubkeys, loading: loadingLists } = useLists();
   const { 
     browserNotificationsEnabled, 
     setBrowserNotificationsEnabled,
@@ -28,6 +31,7 @@ export default function SettingsPage() {
 
   const [permissionStatus, setPermissionStatus] = useState<NotificationPermission>("default");
   const [unpublishedCount, setUnpublishedCount] = useState(0);
+  const [isMuteListModalOpen, setIsMuteListModalOpen] = useState(false);
 
   useEffect(() => {
     if (isReady && ndk?.cacheAdapter) {
@@ -178,6 +182,27 @@ export default function SettingsPage() {
           </div>
         </section>
 
+        {/* Privacy Section (Mutes) */}
+        <section className="mb-10">
+          <h2 className="text-sm font-bold uppercase tracking-widest text-gray-500 mb-4 flex items-center gap-2">
+            <VolumeX size={16} /> Privacy
+          </h2>
+          <div className="bg-white dark:bg-black border border-gray-100 dark:border-gray-800 rounded-3xl p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="font-bold">Muted Users</div>
+                <div className="text-sm text-gray-500">{mutedPubkeys.size} users currently muted</div>
+              </div>
+              <button
+                onClick={() => setIsMuteListModalOpen(true)}
+                className="px-4 py-2 bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 text-gray-900 dark:text-white rounded-full text-xs font-bold transition-all"
+              >
+                Manage List
+              </button>
+            </div>
+          </div>
+        </section>
+
         {/* Preferences Section */}
         <section className="mb-10">
           <h2 className="text-sm font-bold uppercase tracking-widest text-gray-500 mb-4 flex items-center gap-2">
@@ -246,6 +271,39 @@ export default function SettingsPage() {
           Built with NDK & Next.js
         </div>
       </div>
+
+      {/* Mute List Modal */}
+      {isMuteListModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-white dark:bg-zinc-950 rounded-3xl w-full max-w-md overflow-hidden shadow-2xl animate-in zoom-in-95 h-[70vh] flex flex-col">
+            <div className="p-4 border-b border-gray-100 dark:border-zinc-800 flex justify-between items-center shrink-0">
+              <div className="flex items-center gap-2">
+                <VolumeX size={20} className="text-red-500" />
+                <h3 className="font-black text-xl">Muted Users</h3>
+              </div>
+              <button 
+                onClick={() => setIsMuteListModalOpen(false)} 
+                className="p-2 hover:bg-gray-100 dark:hover:bg-zinc-900 rounded-full transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto">
+              <MuteList 
+                pubkeys={Array.from(mutedPubkeys)} 
+                loading={loadingLists}
+              />
+            </div>
+            
+            <div className="p-4 border-t border-gray-100 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-900/50">
+              <p className="text-[10px] text-gray-500 text-center italic">
+                Changes to your mute list are published to your Nostr relays (Kind 10000).
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

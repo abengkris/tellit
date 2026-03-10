@@ -12,6 +12,7 @@ import { QuoteEmbed } from "../tokens/QuoteEmbed";
 import { LightningCard } from "../tokens/LightningCard";
 import { ShortenedUrl } from "../tokens/ShortenedUrl";
 import { UrlPreview } from "../tokens/UrlPreview";
+import { PodcastEmbed } from "../tokens/PodcastEmbed";
 import { AsyncMediaEmbed } from "../tokens/AsyncMediaEmbed";
 import { NDKEvent } from "@nostr-dev-kit/ndk";
 import { shortenPubkey, toNpub } from "@/lib/utils/nip19";
@@ -123,6 +124,20 @@ export function PostContentRenderer({
   const shouldTruncate = isLong && !showFull && !isFullArticle;
   const imetaMap = useMemo(() => buildImetaMap(event.tags), [event.tags]);
   const normalizedContent = useMemo(() => resolveDeprecatedMentions(content, event.tags), [content, event.tags]);
+
+  const podcastMetadata = useMemo(() => {
+    const itemTag = event.tags.find(t => t[0] === 'i' && t[1]?.startsWith('podcast:item:guid:'));
+    const podcastTag = event.tags.find(t => t[0] === 'i' && t[1]?.startsWith('podcast:guid:'));
+
+    if (!itemTag && !podcastTag) return null;
+
+    return {
+      itemGuid: itemTag?.[1],
+      itemUrl: itemTag?.[2],
+      podcastGuid: podcastTag?.[1],
+      podcastUrl: podcastTag?.[2],
+    };
+  }, [event.tags]);
 
   const emojiMap = useMemo(() => {
     const map = new Map<string, string>();
@@ -422,6 +437,15 @@ export function PostContentRenderer({
           {urlTokens.map((token, i) => (
             <UrlPreview key={i} url={token.value} />
           ))}
+
+          {podcastMetadata && (
+            <PodcastEmbed 
+              itemGuid={podcastMetadata.itemGuid}
+              itemUrl={podcastMetadata.itemUrl}
+              podcastGuid={podcastMetadata.podcastGuid}
+              podcastUrl={podcastMetadata.podcastUrl}
+            />
+          )}
         </>
       ))}
     </div>
