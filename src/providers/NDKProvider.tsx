@@ -246,8 +246,7 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
             ? new CacheModuleStorage(dexieAdapter as unknown as NDKCacheAdapter, currentPubkey) 
             : undefined;
           msgInstance = new NDKMessenger(instance, { 
-            storage,
-            enableGiftWrap: true // NIP-59
+            storage
           });
           messengerRef.current = msgInstance;
           setMessenger(msgInstance);
