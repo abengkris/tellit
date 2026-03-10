@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useMemo, memo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, memo, useRef } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { PostComposer } from "@/components/post/PostComposer";
 import { useAuthStore } from "@/store/auth";
