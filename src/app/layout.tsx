@@ -1,11 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { NDKProvider } from "@/providers/NDKProvider";
-import { ToastContainer } from "@/components/ui/Toast";
-import { MainLayout } from "@/components/layout/MainLayout";
-import { useAuthStore } from "@/store/auth";
-import { Loader2 } from "lucide-react";
+import { ClientShell } from "@/components/layout/ClientShell";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -36,7 +32,7 @@ export const metadata: Metadata = {
     type: "website",
     images: [
       {
-        url: "https://tellit.id/og-image.png", // This should be created later
+        url: "https://tellit.id/og-image.png",
         width: 1200,
         height: 630,
         alt: "Tell it!",
@@ -48,7 +44,8 @@ export const metadata: Metadata = {
     title: "Tell it!",
     description: "Whatever it is, just Tell It.",
     images: ["https://tellit.id/og-image.png"],
-  },  robots: {
+  },
+  robots: {
     index: true,
     follow: true,
   },
@@ -59,25 +56,14 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const { _hasHydrated, isLoading: isAuthLoading } = useAuthStore();
-
   return (
     <html lang="en">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <NDKProvider>
-          <MainLayout>
-            {!_hasHydrated || isAuthLoading ? (
-              <div className="min-h-[60vh] flex items-center justify-center bg-white dark:bg-black">
-                <Loader2 className="animate-spin text-blue-500" size={48} />
-              </div>
-            ) : (
-              children
-            )}
-          </MainLayout>
-          <ToastContainer />
-        </NDKProvider>
+        <ClientShell>
+          {children}
+        </ClientShell>
       </body>
     </html>
   );
