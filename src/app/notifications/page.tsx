@@ -3,7 +3,7 @@
 import React from "react";
 import { useNotifications, TellItNotification } from "@/hooks/useNotifications";
 import { useProfile } from "@/hooks/useProfile";
-import { Loader2, Heart, Repeat2, MessageCircle, Zap, UserPlus, Bell } from "lucide-react";
+import { Loader2, Heart, Repeat2, MessageCircle, Zap, UserPlus, Bell, Mic, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { FeedSkeleton } from "@/components/feed/FeedSkeleton";
@@ -29,6 +29,11 @@ const NotificationItem = ({ event }: { event: TellItNotification }) => {
   const router = useRouter();
   const display_name = profile?.display_name || profile?.name || shortenPubkey(event.pubkey);
   const avatar = profile?.picture || `https://robohash.org/${event.pubkey}?set=set1`;
+
+  // Extract podcast metadata from zap tags
+  const podcastItem = event.kind === 9735 ? event.tags.find(t => t[0] === 'i' && t[1]?.startsWith('podcast:item:guid:')) : null;
+  const podcastUrl = podcastItem?.[2];
+  const podcastName = podcastItem?.[1]?.replace("podcast:item:guid:", "");
 
   const getTargetHref = () => {
     if (event.type === 'follow') return `/${event.author.npub}`;
@@ -65,6 +70,10 @@ const NotificationItem = ({ event }: { event: TellItNotification }) => {
   };
 
   const handleNotificationClick = () => {
+    if (event.type === 'zap' && podcastUrl) {
+      window.open(podcastUrl, '_blank');
+      return;
+    }
     router.push(getTargetHref());
   };
 
@@ -97,14 +106,22 @@ const NotificationItem = ({ event }: { event: TellItNotification }) => {
                 {event.type === 'like' && "liked your post"}
                 {event.type === 'repost' && "reposted your post"}
                 {event.type === 'reply' && (event.kind === 1111 ? "commented on your article" : "replied to your post")}
-                {event.type === 'zap' && "zapped your post"}
+                {event.type === 'zap' && (podcastName ? "zapped your podcast" : "zapped your post")}
                 {event.type === 'mention' && (event.kind === 30023 ? "mentioned you in an article" : "mentioned you")}
                 {event.type === 'follow' && "followed you"}
               </span>
             </div>
           </div>
           
-          {event.content && event.type !== 'follow' && event.type !== 'like' && event.type !== 'repost' && (
+          {podcastName && (
+            <div className="mt-1 flex items-center gap-1.5 px-3 py-1 bg-purple-500/10 text-purple-600 dark:text-purple-400 rounded-lg text-xs font-bold w-fit border border-purple-500/10 animate-in fade-in slide-in-from-left-2 duration-300">
+              <Mic size={14} />
+              <span className="truncate max-w-[200px]">{podcastName}</span>
+              {podcastUrl && <ExternalLink size={12} className="ml-0.5 opacity-50" />}
+            </div>
+          )}
+          
+          {event.content && event.type !== 'follow' && event.type !== 'like' && event.type !== 'repost' && !podcastName && (
             <div className="text-gray-600 dark:text-gray-400 text-sm border-l-2 border-gray-200 dark:border-gray-800 pl-3 py-1 italic line-clamp-2">
               {event.content}
             </div>

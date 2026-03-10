@@ -20,7 +20,8 @@ import {
   Eye,
   EyeOff,
   ShieldCheck,
-  Lock
+  Lock,
+  Mic
 } from "lucide-react";
 import { NDKEvent, NDKFilter } from "@nostr-dev-kit/ndk";
 import { format } from "date-fns";
@@ -45,12 +46,22 @@ interface ParsedZap {
   isSent: boolean;
   timestamp: number;
   id: string;
+  podcast?: {
+    itemGuid?: string;
+    itemUrl?: string;
+    podcastGuid?: string;
+    podcastUrl?: string;
+  };
 }
 
 function parseZapReceipt(zap: NDKEvent, currentUserPubkey?: string): ParsedZap {
   let senderPubkey: string | null = null;
   const recipientPubkey: string | null = zap.tags.find(t => t[0] === 'p')?.[1] || null;
   let amount = 0;
+
+  // Extract podcast metadata from root tags (Kind 9735)
+  const itemTag = zap.tags.find(t => t[0] === 'i' && t[1]?.startsWith('podcast:item:guid:'));
+  const podcastTag = zap.tags.find(t => t[0] === 'i' && t[1]?.startsWith('podcast:guid:'));
 
   try {
     const descriptionTag = zap.tags.find(t => t[0] === 'description');
@@ -75,7 +86,13 @@ function parseZapReceipt(zap: NDKEvent, currentUserPubkey?: string): ParsedZap {
     amount,
     isSent,
     timestamp: zap.created_at || 0,
-    id: zap.id
+    id: zap.id,
+    podcast: (itemTag || podcastTag) ? {
+      itemGuid: itemTag?.[1],
+      itemUrl: itemTag?.[2],
+      podcastGuid: podcastTag?.[1],
+      podcastUrl: podcastTag?.[2],
+    } : undefined
   };
 }
 
@@ -433,6 +450,19 @@ export default function WalletPage() {
                               {parsed.otherPartyPubkey ? <ZapUser pubkey={parsed.otherPartyPubkey} /> : <span className="text-gray-400">Unknown</span>}
                             </div>
                             <p className="text-[9px] sm:text-[10px] text-gray-500 font-medium">{format(new Date(parsed.timestamp * 1000), "MMM d, HH:mm")}</p>
+                            {parsed.podcast && (
+                              <div className="mt-1 flex items-center gap-1 text-[9px] font-black uppercase tracking-widest text-purple-500 bg-purple-500/10 px-1.5 py-0.5 rounded border border-purple-500/10 w-fit">
+                                <Mic size={10} />
+                                <span className="truncate max-w-[120px]">
+                                  {parsed.podcast.itemGuid?.replace("podcast:item:guid:", "") || parsed.podcast.podcastGuid?.replace("podcast:guid:", "")}
+                                </span>
+                                {parsed.podcast.itemUrl && (
+                                  <a href={parsed.podcast.itemUrl} target="_blank" rel="noopener noreferrer" className="ml-1 hover:text-purple-700" onClick={e => e.stopPropagation()}>
+                                    <ExternalLink size={10} />
+                                  </a>
+                                )}
+                              </div>
+                            )}
                           </div>
                         </div>
                         <div className="flex flex-col items-end shrink-0 ml-2">
