@@ -434,9 +434,15 @@ export function PostContentRenderer({
             />
           ))}
 
-          {urlTokens.map((token, i) => (
-            <UrlPreview key={i} url={token.value} />
-          ))}
+          {urlTokens
+            .filter(token => {
+              const cleanUrl = token.value.replace(/[.,;]$/, "");
+              return cleanUrl !== podcastMetadata?.itemUrl && cleanUrl !== podcastMetadata?.podcastUrl;
+            })
+            .map((token, i) => (
+              <UrlPreview key={i} url={token.value} />
+            ))
+          }
 
           {podcastMetadata && (
             <PodcastEmbed 
