@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ImetaData } from "@/lib/content/tokenizer";
 import { Blurhash } from "react-blurhash";
+import { Lightbox } from "@/components/common/Lightbox";
 
 export function ImageEmbed({ 
   url, 
@@ -19,6 +20,7 @@ export function ImageEmbed({
 }) {
   const [error, setError] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const [showLightbox, setShowLightbox] = useState(false);
 
   // We'll skip optimization for now to ensure maximum compatibility
   const displayUrl = url;
@@ -72,6 +74,7 @@ export function ImageEmbed({
         </div>
       )}
 
+      {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={displayUrl}
         alt={imeta?.alt || "Post media"}
@@ -85,8 +88,15 @@ export function ImageEmbed({
         loading="lazy"
         onClick={e => {
           e.stopPropagation();
-          window.open(url, "_blank");
+          setShowLightbox(true);
         }}
+      />
+
+      <Lightbox 
+        src={url} 
+        alt={imeta?.alt} 
+        isOpen={showLightbox} 
+        onClose={() => setShowLightbox(false)} 
       />
     </div>
   );

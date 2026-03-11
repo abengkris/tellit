@@ -39,13 +39,13 @@ export const Avatar: React.FC<AvatarProps> = ({
   }, []);
 
   // Primary state for the image source
-  const [displayUrl, setDisplayUrl] = useState<string>(src || getRobohash(pubkey));
+  const [displayUrl, setDisplayUrl] = useState<string>("");
   // Track if we've already tried falling back to the original src after an optimized one failed
   const [hasTriedOriginal, setHasTriedOriginal] = useState(false);
   // Track if we've already fallen back to robohash
   const [hasFallenBack, setHasFallenBack] = useState(false);
 
-  // Update URL when src or pubkey changes
+  // Initial set and reset on src/pubkey changes
   useEffect(() => {
     if (isLoading) return;
 
@@ -109,11 +109,12 @@ export const Avatar: React.FC<AvatarProps> = ({
   return (
     <ShadcnAvatar size={size} className={className} aria-hidden={ariaHidden}>
       <AvatarImage
-        src={displayUrl}
+        src={displayUrl || getRobohash(pubkey)}
         alt={pubkey}
         onError={handleError}
       />
       <AvatarFallback>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={getRobohash(pubkey)}
           alt=""

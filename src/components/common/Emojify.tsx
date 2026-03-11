@@ -32,6 +32,7 @@ export const Emojify: React.FC<EmojifyProps> = ({ text, tags, className = "inlin
         const emojiUrl = emojiMap.get(part);
         if (emojiUrl) {
           return (
+            /* eslint-disable-next-line @next/next/no-img-element */
             <img
               key={i}
               src={emojiUrl}

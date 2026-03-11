@@ -10,6 +10,7 @@ import { nip19 } from "nostr-tools";
 import { Blurhash } from "react-blurhash";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { Lightbox } from "@/components/common/Lightbox";
 import { cn } from "@/lib/utils";
 
 interface MediaGridProps {
@@ -18,6 +19,8 @@ interface MediaGridProps {
 }
 
 export function MediaGrid({ posts, isLoading }: MediaGridProps) {
+  const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
+
   if (isLoading && posts.length === 0) {
     return (
       <div className="grid grid-cols-3 gap-1 sm:gap-2 p-1 sm:p-4">
@@ -31,13 +34,19 @@ export function MediaGrid({ posts, isLoading }: MediaGridProps) {
   return (
     <div className="grid grid-cols-3 gap-1 sm:gap-2 p-1 sm:p-4 animate-in fade-in duration-500">
       {posts.map((post) => (
-        <MediaItem key={post.id} post={post} />
+        <MediaItem key={post.id} post={post} onOpenLightbox={setLightboxSrc} />
       ))}
+
+      <Lightbox 
+        src={lightboxSrc || ""} 
+        isOpen={!!lightboxSrc} 
+        onClose={() => setLightboxSrc(null)} 
+      />
     </div>
   );
 }
 
-function MediaItem({ post }: { post: NDKEvent }) {
+function MediaItem({ post, onOpenLightbox }: { post: NDKEvent; onOpenLightbox: (src: string) => void }) {
   const [loaded, setLoaded] = useState(false);
   const media = React.useMemo(() => {
     // 1. Check imeta tags
@@ -83,6 +92,12 @@ function MediaItem({ post }: { post: NDKEvent }) {
 
   if (!media) return null;
 
+  const handleOpen = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onOpenLightbox(media.url);
+  };
+
   const href = post.kind === 30023 
     ? `/article/${nip19.naddrEncode({
         kind: 30023,
@@ -96,6 +111,7 @@ function MediaItem({ post }: { post: NDKEvent }) {
       href={href}
       className="group relative aspect-square bg-muted overflow-hidden rounded-xl border border-border transition-all hover:ring-2 hover:ring-primary hover:ring-offset-2 dark:hover:ring-offset-background"
       aria-label={`View post with ${media.type}`}
+      onClick={handleOpen}
     >
       {/* Placeholder: Blurhash */}
       {!loaded && media.blurhash && (

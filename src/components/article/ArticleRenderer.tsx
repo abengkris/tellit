@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
@@ -10,6 +10,7 @@ import Link from "next/link";
 import { decodeNip19 } from "@/lib/utils/nip19";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import { Lightbox } from "@/components/common/Lightbox";
 
 interface ArticleRendererProps {
   content: string;
@@ -17,6 +18,9 @@ interface ArticleRendererProps {
 }
 
 export function ArticleRenderer({ content }: ArticleRendererProps) {
+  const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
+  const [lightboxAlt, setLightboxAlt] = useState<string | undefined>(undefined);
+
   return (
     <div className="prose prose-lg dark:prose-invert prose-blue max-w-none 
       selection:bg-primary/20
@@ -110,8 +114,14 @@ export function ArticleRenderer({ content }: ArticleRendererProps) {
               <img 
                 src={src} 
                 alt={alt || ""} 
-                className="rounded-3xl shadow-xl border border-border max-h-[70vh] object-contain transition-transform hover:scale-[1.01]" 
+                className="rounded-3xl shadow-xl border border-border max-h-[70vh] object-contain transition-transform hover:scale-[1.01] cursor-zoom-in" 
                 loading="lazy"
+                onClick={() => {
+                  if (typeof src === 'string') {
+                    setLightboxSrc(src);
+                    setLightboxAlt(alt);
+                  }
+                }}
                 {...props} 
               />
               {alt && (
@@ -135,6 +145,13 @@ export function ArticleRenderer({ content }: ArticleRendererProps) {
       >
         {content}
       </ReactMarkdown>
+
+      <Lightbox 
+        src={lightboxSrc || ""} 
+        alt={lightboxAlt} 
+        isOpen={!!lightboxSrc} 
+        onClose={() => setLightboxSrc(null)} 
+      />
     </div>
   );
 }

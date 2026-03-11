@@ -19,6 +19,7 @@ import { shortenPubkey, toNpub } from "@/lib/utils/nip19";
 import { nip19 } from "nostr-tools";
 import { useProfile } from "@/hooks/useProfile";
 import { Play } from "lucide-react";
+import { Lightbox } from "@/components/common/Lightbox";
 
 interface PostContentRendererProps {
   content: string;
@@ -60,6 +61,7 @@ export function PostContentRenderer({
 }: PostContentRendererProps) {
   const [showFull, setShowFull] = useState(false);
   const [showSensitive, setShowSensitive] = useState(false);
+  const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
 
   const comment = useMemo(() => isHighlight ? event.tags.find(t => t[0] === "comment")?.[1] : null, [isHighlight, event.tags]);
   const highlightSource = useMemo(() => {
@@ -228,10 +230,15 @@ export function PostContentRenderer({
         <div className="flex flex-col gap-3">
           {event.tags.find(t => t[0] === 'image')?.[1] && (
             <div className="w-full aspect-video rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-900 border border-gray-200 dark:border-gray-800">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img 
                 src={event.tags.find(t => t[0] === 'image')?.[1]} 
                 alt={event.tags.find(t => t[0] === 'title')?.[1] || "Article hero"}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover cursor-zoom-in"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setLightboxSrc(event.tags.find(t => t[0] === 'image')?.[1] || null);
+                }}
               />
             </div>
           )}
@@ -454,6 +461,13 @@ export function PostContentRenderer({
           )}
         </>
       ))}
+
+      <Lightbox 
+        src={lightboxSrc || ""} 
+        alt={event.tags.find(t => t[0] === 'title')?.[1] || "Article image"} 
+        isOpen={!!lightboxSrc} 
+        onClose={() => setLightboxSrc(null)} 
+      />
     </div>
   );
 }
@@ -468,6 +482,7 @@ function TokenRenderer({ token, emojiMap }: { token: Token; emojiMap: Map<string
             const emojiUrl = emojiMap.get(part);
             if (emojiUrl) {
               return (
+                /* eslint-disable-next-line @next/next/no-img-element */
                 <img
                   key={i}
                   src={emojiUrl}
@@ -492,7 +507,7 @@ function TokenRenderer({ token, emojiMap }: { token: Token; emojiMap: Map<string
       return (
         <Link
           href={`/post/${token.decoded?.eventId || rawValue}`}
-          className="text-blue-500 hover:text-blue-600 hover:underline font-mono text-sm"
+          className="text-primary hover:underline font-black"
           onClick={e => e.stopPropagation()}
         >
           {rawValue.slice(0, 20)}…
