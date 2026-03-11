@@ -127,6 +127,17 @@ export default function SettingsPage() {
                     <Button 
                       asChild
                       variant="outline"
+                      className="rounded-2xl font-black h-12 bg-background border-none shadow-sm"
+                    >
+                      <Link href="/settings/profile">
+                        <User className="size-4 text-primary" />
+                        <span>Edit Profile</span>
+                      </Link>
+                    </Button>
+
+                    <Button 
+                      asChild
+                      variant="outline"
                       className="rounded-2xl font-black h-12 bg-background border-none shadow-sm relative group"
                     >
                       <Link href="/settings/unpublished">

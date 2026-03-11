@@ -10,7 +10,6 @@ import { useNDK } from "@/hooks/useNDK";
 import { useFollowingList } from "@/hooks/useFollowingList";
 import { useFollowerCount } from "@/hooks/useFollowers";
 import { FollowButton } from "@/components/profile/FollowButton";
-import { ProfileEditModal } from "@/components/profile/ProfileEditModal";
 import { UserStatusModal } from "@/components/profile/UserStatusModal";
 import { UserIdentity } from "@/components/common/UserIdentity";
 import { ZapModal } from "@/components/common/ZapModal";
@@ -120,7 +119,6 @@ export function ProfileContent({ npubParam }: { npubParam: string }) {
     window.scrollTo({ top: 0, behavior: 'instant' });
   }, [activeTab]);
 
-  const [isEditModalOpen, setIsEditModalOpen] = React.useState(false);
   const [isStatusModalOpen, setIsStatusModalOpen] = React.useState(false);
   const [showZapModal, setShowZapModal] = React.useState(false);
   const [showDatesModal, setShowDatesModal] = React.useState(false);
@@ -247,7 +245,7 @@ export function ProfileContent({ npubParam }: { npubParam: string }) {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
                   {isOwnProfile && (
-                    <DropdownMenuItem onClick={() => setIsEditModalOpen(true)} className="gap-2">
+                    <DropdownMenuItem onClick={() => router.push("/settings/profile")} className="gap-2">
                       <Edit2 className="size-4" aria-hidden="true" />
                       <span>Edit Profile</span>
                     </DropdownMenuItem>
@@ -495,16 +493,6 @@ export function ProfileContent({ npubParam }: { npubParam: string }) {
           />
         )}
       </div>
-
-      <ProfileEditModal
-        isOpen={isEditModalOpen}
-        onClose={() => setIsEditModalOpen(false)}
-        currentProfile={profile}
-        onSuccess={() => {
-          // Force reload to see changes
-          window.location.reload();
-        }}
-      />
 
       <UserStatusModal
         isOpen={isStatusModalOpen}

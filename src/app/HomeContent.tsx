@@ -15,7 +15,7 @@ import { ProfileSetupCard } from "@/components/profile/ProfileSetupCard";
 import { useUIStore } from "@/store/ui";
 import { useLists } from "@/hooks/useLists";
 import { useProfile } from "@/hooks/useProfile";
-import { ProfileEditModal } from "@/components/profile/ProfileEditModal";
+import Link from "next/link";
 
 type FeedTab = "following" | "forYou" | "global" | string;
 
@@ -25,8 +25,6 @@ export function HomeContent() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<FeedTab>("forYou");
   const { interests } = useLists();
-  const { profile } = useProfile(user?.pubkey);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const isRedirectingRef = useRef(false);
 
   const interestList = useMemo(() => Array.from(interests), [interests]);
@@ -170,13 +168,13 @@ export function HomeContent() {
               )}
             </button>
 
-            <button
-              onClick={() => setIsEditModalOpen(true)}
+            <Link
+              href="/settings/profile"
               className="flex-none px-5 py-4 text-gray-400 hover:text-blue-500 transition-colors outline-none"
               title="Manage Interests"
             >
               <Settings size={18} />
-            </button>
+            </Link>
           </div>
         </nav>
       </div>
@@ -184,7 +182,7 @@ export function HomeContent() {
       <PostComposer />
 
       {isLoggedIn && user && (
-        <ProfileSetupCard pubkey={user.pubkey} npub={user.npub} />
+        <ProfileSetupCard pubkey={user.pubkey} />
       )}
 
       <div className="pb-20">
@@ -212,12 +210,6 @@ export function HomeContent() {
           </div>
         ))}
       </div>
-
-      <ProfileEditModal 
-        isOpen={isEditModalOpen} 
-        onClose={() => setIsEditModalOpen(false)} 
-        currentProfile={profile || null} 
-      />
     </>
   );
 }

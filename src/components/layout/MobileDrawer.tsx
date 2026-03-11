@@ -113,6 +113,12 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({ isOpen, onClose, onO
             {/* Navigation Links */}
             <nav className="flex flex-col px-2">
               <DrawerItem 
+                href="/settings/profile" 
+                icon={<User className="size-5" />} 
+                label="Edit Profile" 
+                onClick={onClose} 
+              />
+              <DrawerItem 
                 href={`/${user?.npub}`} 
                 icon={<User className="size-5" />} 
                 label="Profile" 

@@ -20,7 +20,7 @@ import {
   TooltipTrigger 
 } from "@/components/ui/tooltip";
 
-export const ProfileSetupCard = ({ pubkey, npub }: { pubkey: string; npub: string }) => {
+export const ProfileSetupCard = ({ pubkey }: { pubkey: string }) => {
   const { profile, loading } = useProfile(pubkey);
   const [isVisible, setIsVisible] = useState(true);
 
@@ -106,7 +106,7 @@ export const ProfileSetupCard = ({ pubkey, npub }: { pubkey: string; npub: strin
         </div>
 
         <Button asChild className="w-full bg-blue-500 hover:bg-blue-600 text-white rounded-2xl font-black shadow-lg shadow-blue-500/20 active:scale-[0.98]">
-          <Link href={`/${npub}`}>
+          <Link href="/settings/profile">
             Setup My Profile
             <ArrowRight data-icon="inline-end" />
           </Link>
