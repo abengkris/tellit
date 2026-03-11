@@ -1,10 +1,18 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { useUIStore } from "../ui";
+import { toast } from "sonner";
+
+vi.mock("sonner", () => ({
+  toast: {
+    success: vi.fn(),
+    error: vi.fn(),
+    info: vi.fn(),
+  },
+}));
 
 describe("UI Store", () => {
   beforeEach(() => {
     useUIStore.setState({
-      toasts: [],
       unreadMessagesCount: 0,
       activeChatPubkey: null,
       wotStrictMode: false,
@@ -13,23 +21,22 @@ describe("UI Store", () => {
       hideBalance: false,
       relayAuthStrategy: "ask"
     });
+    vi.clearAllMocks();
   });
 
-  it("should add a toast", () => {
-    useUIStore.getState().addToast("Test message", "success");
-    const state = useUIStore.getState();
-    expect(state.toasts).toHaveLength(1);
-    expect(state.toasts[0].message).toBe("Test message");
-    expect(state.toasts[0].type).toBe("success");
-    expect(state.toasts[0].id).toBeDefined();
+  it("should call sonner success when adding a success toast", () => {
+    useUIStore.getState().addToast("Success message", "success");
+    expect(toast.success).toHaveBeenCalledWith("Success message", expect.any(Object));
   });
 
-  it("should remove a toast", () => {
-    useUIStore.getState().addToast("Test message");
-    const id = useUIStore.getState().toasts[0].id;
-    
-    useUIStore.getState().removeToast(id);
-    expect(useUIStore.getState().toasts).toHaveLength(0);
+  it("should call sonner error when adding an error toast", () => {
+    useUIStore.getState().addToast("Error message", "error");
+    expect(toast.error).toHaveBeenCalledWith("Error message", expect.any(Object));
+  });
+
+  it("should call sonner info when adding an info toast", () => {
+    useUIStore.getState().addToast("Info message", "info");
+    expect(toast.info).toHaveBeenCalledWith("Info message", expect.any(Object));
   });
 
   it("should handle unread messages count", () => {

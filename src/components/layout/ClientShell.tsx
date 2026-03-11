@@ -2,7 +2,7 @@
 
 import React from "react";
 import { NDKProvider } from "@/providers/NDKProvider";
-import { ToastContainer } from "@/components/ui/Toast";
+import { Toaster } from "@/components/ui/sonner";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useAuthStore } from "@/store/auth";
 import { Loader2 } from "lucide-react";
@@ -21,7 +21,7 @@ export function ClientShell({ children }: { children: React.ReactNode }) {
           children
         )}
       </MainLayout>
-      <ToastContainer />
+      <Toaster position="bottom-right" closeButton richColors />
     </NDKProvider>
   );
 }

@@ -1,23 +1,15 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
+import { toast } from "sonner";
 
 export interface ToastAction {
   label: string;
   onClick: () => void;
 }
 
-export interface Toast {
-  id: string;
-  message: string;
-  type: "success" | "error" | "info";
-  duration?: number;
-  action?: ToastAction;
-}
-
 export type RelayAuthStrategy = "ask" | "always" | "never";
 
 interface UIState {
-  toasts: Toast[];
   unreadMessagesCount: number;
   activeChatPubkey: string | null;
   wotStrictMode: boolean;
@@ -26,7 +18,6 @@ interface UIState {
   hideBalance: boolean;
   relayAuthStrategy: RelayAuthStrategy;
   addToast: (message: string, type?: "success" | "error" | "info", duration?: number, action?: ToastAction) => void;
-  removeToast: (id: string) => void;
   setUnreadMessagesCount: (count: number) => void;
   incrementUnreadMessagesCount: () => void;
   setActiveChatPubkey: (pubkey: string | null) => void;
@@ -40,7 +31,6 @@ interface UIState {
 export const useUIStore = create<UIState>()(
   persist(
     (set) => ({
-      toasts: [],
       unreadMessagesCount: 0,
       activeChatPubkey: null,
       wotStrictMode: false,
@@ -49,15 +39,26 @@ export const useUIStore = create<UIState>()(
       hideBalance: false,
       relayAuthStrategy: "ask",
       addToast: (message, type = "info", duration = 4000, action) => {
-        const id = Math.random().toString(36).substring(7);
-        set((state) => ({
-          toasts: [...state.toasts, { id, message, type, duration, action }],
-        }));
+        const options = {
+          duration,
+          action: action ? {
+            label: action.label,
+            onClick: action.onClick,
+          } : undefined,
+        };
+
+        switch (type) {
+          case "success":
+            toast.success(message, options);
+            break;
+          case "error":
+            toast.error(message, options);
+            break;
+          default:
+            toast.info(message, options);
+            break;
+        }
       },
-      removeToast: (id) =>
-        set((state) => ({
-          toasts: state.toasts.filter((t) => t.id !== id),
-        })),
       setUnreadMessagesCount: (count) => set({ unreadMessagesCount: count }),
       incrementUnreadMessagesCount: () => set((state) => ({ unreadMessagesCount: state.unreadMessagesCount + 1 })),
       setActiveChatPubkey: (pubkey) => set({ activeChatPubkey: pubkey }),
