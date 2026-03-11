@@ -56,7 +56,7 @@ export const RelayModal: React.FC<RelayModalProps> = ({ isOpen, onClose }) => {
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="p-0 gap-0 sm:max-w-md max-h-[80vh] flex flex-col overflow-hidden border-none shadow-2xl">
+      <DialogContent className="p-0 gap-0 sm:max-w-md max-h-[90vh] sm:max-h-[80vh] flex flex-col overflow-hidden border-none shadow-2xl">
         <DialogHeader className="p-6 border-b shrink-0">
           <DialogTitle className="flex items-center gap-2 text-primary font-black">
             <Server className="size-5" aria-hidden="true" />

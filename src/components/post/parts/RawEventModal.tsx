@@ -54,7 +54,7 @@ export const RawEventModal: React.FC<RawEventModalProps> = ({ event, isOpen, onC
         </DialogHeader>
 
         <ScrollArea className="flex-1 min-h-0 bg-muted/30">
-          <pre className="p-6 text-[11px] font-mono text-foreground/80 whitespace-pre-wrap break-all leading-relaxed">
+          <pre className="p-6 text-[11px] font-mono text-foreground/80 whitespace-pre leading-relaxed min-w-max">
             {rawJson}
           </pre>
         </ScrollArea>
