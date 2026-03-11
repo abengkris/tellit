@@ -1,9 +1,13 @@
 "use client";
 
-import React from "react";
+import React, { Fragment } from "react";
 import { useTrending } from "@/hooks/useTrending";
 import Link from "next/link";
-import { TrendingUp } from "lucide-react";
+import { TrendingUp, ArrowRight } from "lucide-react";
+import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
 
 export const TrendingTags = () => {
   const { trending, loading, error } = useTrending();
@@ -17,53 +21,65 @@ export const TrendingTags = () => {
   if (error) return null;
 
   return (
-    <section className="bg-gray-50 dark:bg-gray-900 rounded-3xl overflow-hidden border border-gray-100 dark:border-gray-800 animate-in fade-in duration-500">
-      <div className="p-4 pb-2 flex items-center gap-2">
-        <TrendingUp size={18} className="text-blue-500" />
-        <h2 className="text-xl font-black">Trending</h2>
-      </div>
+    <Card className="rounded-3xl border-none shadow-none bg-muted/30">
+      <CardHeader className="p-4 pb-2">
+        <CardTitle className="flex items-center gap-2 text-xl font-black">
+          <TrendingUp className="size-5 text-primary" />
+          Trending
+        </CardTitle>
+      </CardHeader>
 
-      <div className="divide-y divide-gray-100 dark:divide-gray-800">
+      <CardContent className="p-0">
         {loading ? (
-          // Skeletons
-          Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="p-4 space-y-2 animate-pulse">
-              <div className="h-3 bg-gray-200 dark:bg-gray-800 rounded w-1/3" />
-              <div className="h-4 bg-gray-200 dark:bg-gray-800 rounded w-1/2" />
-              <div className="h-3 bg-gray-200 dark:bg-gray-800 rounded w-1/4" />
-            </div>
-          ))
+          <div className="flex flex-col">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Fragment key={i}>
+                <div className="p-4 space-y-2">
+                  <Skeleton className="h-3 w-1/3" />
+                  <Skeleton className="h-4 w-1/2" />
+                  <Skeleton className="h-3 w-1/4" />
+                </div>
+                {i < 3 && <Separator className="bg-muted-foreground/10" />}
+              </Fragment>
+            ))}
+          </div>
         ) : trending.length > 0 ? (
-          trending.map((item) => (
-            <Link 
-              key={item.tag}
-              href={`/search?q=${encodeURIComponent('#' + item.tag)}`}
-              className="block p-4 hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors group"
-            >
-              <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 group-hover:text-blue-500 transition-colors">
-                Trending
-              </p>
-              <p className="font-black text-base text-gray-900 dark:text-white">
-                #{item.tag}
-              </p>
-              <p className="text-xs text-gray-500 mt-0.5">
-                {formatCount(item.count)}
-              </p>
-            </Link>
-          ))
+          <div className="flex flex-col">
+            {trending.slice(0, 5).map((item, index) => (
+              <Fragment key={item.tag}>
+                <Link 
+                  href={`/search?q=${encodeURIComponent('#' + item.tag)}`}
+                  className="block p-4 hover:bg-accent/50 transition-colors group"
+                >
+                  <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground group-hover:text-primary transition-colors">
+                    Trending
+                  </p>
+                  <p className="font-black text-base">
+                    #{item.tag}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {formatCount(item.count)}
+                  </p>
+                </Link>
+                {index < Math.min(trending.length, 5) - 1 && <Separator className="bg-muted-foreground/10" />}
+              </Fragment>
+            ))}
+          </div>
         ) : (
-          <div className="p-8 text-center text-gray-500 italic text-sm">
+          <div className="p-8 text-center text-muted-foreground italic text-sm">
             No trends found right now.
           </div>
         )}
-        
-        <Link 
-          href="/search" 
-          className="block p-4 text-blue-500 text-sm font-black hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors"
-        >
-          Show more
-        </Link>
-      </div>
-    </section>
+      </CardContent>
+      
+      <CardFooter className="p-0 border-t border-muted-foreground/10">
+        <Button asChild variant="ghost" className="w-full justify-start p-4 text-primary font-black hover:bg-accent/50 rounded-none h-auto">
+          <Link href="/search" className="flex items-center justify-between w-full group">
+            Show more
+            <ArrowRight className="size-4 opacity-0 group-hover:opacity-100 transition-all -translate-x-2 group-hover:translate-x-0" />
+          </Link>
+        </Button>
+      </CardFooter>
+    </Card>
   );
 };

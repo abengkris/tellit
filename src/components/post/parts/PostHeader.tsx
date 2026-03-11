@@ -17,9 +17,18 @@ import {
 import Link from "next/link";
 
 import { UserIdentity } from "@/components/common/UserIdentity";
-import { DropdownMenu } from "@/components/common/DropdownMenu";
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuTrigger,
+  DropdownMenuSeparator
+} from "@/components/ui/dropdown-menu";
 import { formatCompactDate } from "@/lib/utils/date";
 import { Avatar } from "@/components/common/Avatar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 interface PostHeaderProps {
   display_name: string;
@@ -74,50 +83,11 @@ export const PostHeader: React.FC<PostHeaderProps> = ({
 }) => {
   const formattedTime = formatCompactDate(createdAt);
 
-  const menuItems = [
-    ...(onPinClick ? [{
-      label: isPinned ? "Unpin from Profile" : "Pin to Profile",
-      icon: isPinned ? <PinOff size={16} /> : <Pin size={16} />,
-      onClick: onPinClick
-    }] : []),
-    ...(onBookmarkClick ? [{
-      label: isBookmarked ? "Remove Bookmark" : "Save Bookmark",
-      icon: <Bookmark size={16} fill={isBookmarked ? "currentColor" : "none"} />,
-      onClick: onBookmarkClick
-    }] : []),
-    ...(onMuteClick ? [{
-      label: isMuted ? `Unmute @${display_name}` : `Mute @${display_name}`,
-      icon: isMuted ? <Volume2 size={16} /> : <VolumeX size={16} />,
-      variant: isMuted ? undefined : "danger" as const,
-      onClick: onMuteClick
-    }] : []),
-    ...(onDeleteClick ? [{
-      label: "Delete Post",
-      icon: <Trash2 size={16} />,
-      variant: "danger" as const,
-      onClick: () => {
-        if (confirm("Delete this post? This sends a request to relays, but decentralized deletion is not guaranteed across all clients and relays.")) {
-          onDeleteClick();
-        }
-      }
-    }] : []),
-    ...(onReportClick ? [{
-      label: "Report Content",
-      icon: <Flag size={16} />,
-      onClick: onReportClick
-    }] : []),
-    ...(onMoreClick ? [{
-      label: "View Raw Data",
-      icon: <Code size={16} />,
-      onClick: onMoreClick
-    }] : [])
-  ];
-
   return (
     <>
       {/* Repost Header */}
       {isRepost && (
-        <div className="flex items-center space-x-2 text-gray-500 text-xs font-bold mb-2 ml-10 truncate min-w-0">
+        <div className="flex items-center space-x-2 text-muted-foreground text-xs font-bold mb-2 ml-10 truncate min-w-0">
           <Repeat2 size={14} className="shrink-0" />
           <span className="truncate">{repostAuthorName} reposted</span>
         </div>
@@ -132,7 +102,7 @@ export const PostHeader: React.FC<PostHeaderProps> = ({
                 src={avatar} 
                 isLoading={isLoading} 
                 size={48} 
-                className="w-12 h-12 ring-4 ring-white dark:ring-black" 
+                className="w-12 h-12 ring-4 ring-background" 
               />
             </Link>
           </div>
@@ -147,46 +117,98 @@ export const PostHeader: React.FC<PostHeaderProps> = ({
                 tags={tags}
               />
             </Link>
-            {isPinned && (
-              <div className="flex items-center gap-1 text-blue-500 bg-blue-500/10 border border-blue-500/20 px-1.5 py-0.5 rounded font-black uppercase text-[8px] tracking-tighter mt-1 shrink-0">
-                <Pin size={8} fill="currentColor" />
-                <span>Pinned</span>
-              </div>
-            )}
-            {isPoll && (
-              <div className="flex items-center gap-1 text-orange-500 bg-orange-500/10 border border-orange-500/20 px-1.5 py-0.5 rounded font-black uppercase text-[8px] tracking-tighter mt-1 shrink-0">
-                <BarChart2 size={8} fill="currentColor" />
-                <span>Poll</span>
-              </div>
-            )}
-            {isArticle && (
-              <span className="text-[9px] bg-purple-500/10 text-purple-500 border border-purple-500/20 px-1 rounded font-bold uppercase tracking-tighter shrink-0 mt-1">
-                Article
-              </span>
-            )}
-            {bot && (
-              <span className="text-[9px] bg-blue-500/10 text-blue-500 border border-blue-500/20 px-1 rounded font-bold uppercase tracking-tighter shrink-0 mt-1">
-                Bot
-              </span>
-            )}
+            <div className="flex items-center gap-1 shrink-0 mt-1">
+              {isPinned && (
+                <Badge variant="secondary" className="h-4 px-1.5 gap-1 text-primary bg-primary/10 border-primary/20 font-black uppercase text-[8px] tracking-tighter">
+                  <Pin className="size-2" fill="currentColor" />
+                  <span>Pinned</span>
+                </Badge>
+              )}
+              {isPoll && (
+                <Badge variant="secondary" className="h-4 px-1.5 gap-1 text-orange-500 bg-orange-500/10 border-orange-500/20 font-black uppercase text-[8px] tracking-tighter">
+                  <BarChart2 className="size-2" fill="currentColor" />
+                  <span>Poll</span>
+                </Badge>
+              )}
+              {isArticle && (
+                <Badge variant="secondary" className="h-4 px-1 rounded font-bold uppercase tracking-tighter text-[9px] bg-purple-500/10 text-purple-500 border-purple-500/20">
+                  Article
+                </Badge>
+              )}
+              {bot && (
+                <Badge variant="secondary" className="h-4 px-1 rounded font-bold uppercase tracking-tighter text-[9px] bg-blue-500/10 text-blue-500 border-blue-500/20">
+                  Bot
+                </Badge>
+              )}
+            </div>
           </div>
-          <span className="text-gray-500 text-xs shrink-0 mt-1">·</span>
-          <span className="text-gray-500 text-xs whitespace-nowrap shrink-0 mt-1">
+          <span className="text-muted-foreground text-xs shrink-0 mt-1">·</span>
+          <span className="text-muted-foreground text-xs whitespace-nowrap shrink-0 mt-1">
             {formattedTime}
           </span>
         </div>
         
-        <DropdownMenu
-          trigger={
-            <button 
-              className="text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 p-2 rounded-full transition-colors shrink-0" 
-              title="Options"
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button 
+              variant="ghost" 
+              size="icon-xs" 
+              className="text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-full transition-colors shrink-0"
             >
-              <MoreHorizontal size={18} />
-            </button>
-          }
-          items={menuItems}
-        />
+              <MoreHorizontal className="size-4" />
+              <span className="sr-only">Options</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56">
+            {onPinClick && (
+              <DropdownMenuItem onClick={onPinClick} className="gap-2">
+                {isPinned ? <PinOff className="size-4" /> : <Pin className="size-4" />}
+                <span>{isPinned ? "Unpin from Profile" : "Pin to Profile"}</span>
+              </DropdownMenuItem>
+            )}
+            {onBookmarkClick && (
+              <DropdownMenuItem onClick={onBookmarkClick} className="gap-2">
+                <Bookmark className={cn("size-4", isBookmarked && "fill-current")} />
+                <span>{isBookmarked ? "Remove Bookmark" : "Save Bookmark"}</span>
+              </DropdownMenuItem>
+            )}
+            {onMuteClick && (
+              <DropdownMenuItem onClick={onMuteClick} className={cn("gap-2", !isMuted && "text-destructive focus:text-destructive")}>
+                {isMuted ? <Volume2 className="size-4" /> : <VolumeX className="size-4" />}
+                <span>{isMuted ? `Unmute @${display_name}` : `Mute @${display_name}`}</span>
+              </DropdownMenuItem>
+            )}
+            <DropdownMenuSeparator />
+            {onReportClick && (
+              <DropdownMenuItem onClick={onReportClick} className="gap-2">
+                <Flag className="size-4" />
+                <span>Report Content</span>
+              </DropdownMenuItem>
+            )}
+            {onMoreClick && (
+              <DropdownMenuItem onClick={onMoreClick} className="gap-2">
+                <Code className="size-4" />
+                <span>View Raw Data</span>
+              </DropdownMenuItem>
+            )}
+            {onDeleteClick && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem 
+                  onClick={() => {
+                    if (confirm("Delete this post? This sends a request to relays, but decentralized deletion is not guaranteed across all clients and relays.")) {
+                      onDeleteClick();
+                    }
+                  }} 
+                  className="gap-2 text-destructive focus:text-destructive focus:bg-destructive/10"
+                >
+                  <Trash2 className="size-4" />
+                  <span>Delete Post</span>
+                </DropdownMenuItem>
+              </>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </>
   );

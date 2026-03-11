@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { TrendingTags } from "./TrendingTags";
 import { WhoToFollow } from "../profile/WhoToFollow";
 import { useAuthStore } from "@/store/auth";
+import { Input } from "@/components/ui/input";
 
 export const RightPanel = () => {
   const [query, setQuery] = useState("");
@@ -21,20 +22,20 @@ export const RightPanel = () => {
   };
 
   return (
-    <div className="space-y-4 sticky top-4">
+    <div className="flex flex-col gap-4 sticky top-4">
       <section className="relative group">
-        <form onSubmit={handleSearch}>
+        <form onSubmit={handleSearch} className="relative">
           <label htmlFor="right-panel-search" className="sr-only">Search Nostr</label>
-          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-            <Search className="h-4 w-4 text-gray-500 group-focus-within:text-blue-500 transition-colors" />
+          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none z-10">
+            <Search className="size-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
           </div>
-          <input
+          <Input
             id="right-panel-search"
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search Nostr..."
-            className="block w-full pl-11 pr-4 py-2.5 border border-transparent rounded-full bg-gray-100 dark:bg-gray-900 focus:outline-none focus:bg-white dark:focus:bg-black focus:ring-1 focus:ring-blue-500 transition-all text-sm"
+            className="pl-11 rounded-full bg-muted/50 border-transparent focus:bg-background transition-all text-sm h-11"
           />
         </form>
       </section>
@@ -45,7 +46,7 @@ export const RightPanel = () => {
         <WhoToFollow />
       )}
 
-      <footer className="px-4 text-[11px] text-gray-500 space-y-1">
+      <footer className="px-4 text-[11px] text-muted-foreground flex flex-col gap-1">
         <div className="flex flex-wrap gap-x-3 gap-y-1">
           <a href="#" className="hover:underline">Terms of Service</a>
           <a href="#" className="hover:underline">Privacy Policy</a>

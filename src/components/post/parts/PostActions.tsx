@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState, useMemo, useEffect } from "react";
 import { MessageCircle, Repeat2, Heart, Zap, Bookmark, Quote, Share, Loader2 } from "lucide-react";
 import { useUIStore } from "@/store/ui";
@@ -7,7 +9,15 @@ import { useNDK } from "@/hooks/useNDK";
 import { createZapInvoice } from "@/lib/actions/zap";
 import { useReactions } from "@/hooks/useReactions";
 import { UserListModal } from "@/components/common/UserListModal";
-import { DropdownMenu } from "@/components/common/DropdownMenu";
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuTrigger 
+} from "@/components/ui/dropdown-menu";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 interface PostActionsProps {
   eventId: string;
@@ -195,58 +205,67 @@ export const PostActions: React.FC<PostActionsProps> = ({
     return n.toString();
   };
 
-  const repostItems = [
-    {
-      label: "Repost",
-      description: `${optimisticReposts} reposts`,
-      icon: <Repeat2 size={18} />,
-      onClick: handleRepostAction
-    },
-    {
-      label: "Quote",
-      description: `${optimisticQuotes} quotes`,
-      icon: <Quote size={18} />,
-      onClick: handleQuoteAction
-    }
-  ];
-
   return (
     <>
-      <div className="flex items-center justify-between max-w-lg text-gray-500 -ml-2">
+      <div className="flex items-center justify-between max-w-lg text-muted-foreground -ml-2">
         {/* Reply */}
-        <button 
-          onClick={(e) => {
-            e.stopPropagation();
-            onReplyClick?.(e);
-          }}
-          aria-label="Reply"
-          className="group flex items-center space-x-1 hover:text-blue-500 transition-colors"
-        >
-          <div className="p-3 group-hover:bg-blue-50 dark:group-hover:bg-blue-900/20 rounded-full transition-colors">
-            <MessageCircle size={20} />
-          </div>
-          <span className="text-xs">{comments > 0 ? formatCount(comments) : ""}</span>
-        </button>
-
-        {/* Combined Repost & Quote */}
         <div className="flex items-center">
-          <DropdownMenu
-            align="left"
-            position="up"
-            items={repostItems}
-            trigger={
-              <button 
-                aria-label="Repost and Quote options"
-                className={`group flex items-center hover:text-green-500 transition-colors ${optimisticReposted ? 'text-green-500' : ''}`}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onReplyClick?.(e);
+                }}
+                className="hover:text-primary hover:bg-primary/10 rounded-full"
+                aria-label="Reply"
               >
-                <div className="p-3 group-hover:bg-green-50 dark:group-hover:bg-green-900/20 rounded-full transition-colors">
-                  <Repeat2 size={20} className={optimisticReposted ? "animate-in spin-in-180 duration-500" : ""} />
-                </div>
-              </button>
-            }
-          />
+                <MessageCircle className="size-5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">Reply</TooltipContent>
+          </Tooltip>
+          <span className="text-xs ml-0.5">{comments > 0 ? formatCount(comments) : ""}</span>
+        </div>
+
+        {/* Repost & Quote */}
+        <div className="flex items-center">
+          <DropdownMenu>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <DropdownMenuTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className={cn(
+                      "hover:text-green-500 hover:bg-green-500/10 rounded-full",
+                      optimisticReposted && "text-green-500"
+                    )}
+                    aria-label="Repost and Quote options"
+                  >
+                    <Repeat2 className={cn("size-5", optimisticReposted && "animate-in spin-in-180 duration-500")} />
+                  </Button>
+                </DropdownMenuTrigger>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">Repost / Quote</TooltipContent>
+            </Tooltip>
+            <DropdownMenuContent align="start">
+              <DropdownMenuItem onClick={handleRepostAction} className="gap-2">
+                <Repeat2 className="size-4" />
+                <span>Repost</span>
+                <span className="ml-auto text-xs text-muted-foreground">{optimisticReposts}</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleQuoteAction} className="gap-2">
+                <Quote className="size-4" />
+                <span>Quote</span>
+                <span className="ml-auto text-xs text-muted-foreground">{optimisticQuotes}</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <span 
-            className="text-xs cursor-pointer hover:underline -ml-1 pr-2 py-2"
+            className="text-xs cursor-pointer hover:underline ml-0.5 pr-2 py-2"
             onClick={openRepostsModal}
           >
             {optimisticCombined > 0 ? formatCount(optimisticCombined) : ""}
@@ -255,17 +274,28 @@ export const PostActions: React.FC<PostActionsProps> = ({
 
         {/* Like */}
         <div className="flex items-center">
-          <button 
-            onClick={handleLike}
-            aria-label={optimisticReacted === '+' ? "Unlike" : "Like"}
-            className={`group flex items-center hover:text-pink-500 transition-colors ${optimisticReacted === '+' ? 'text-pink-500' : ''}`}
-          >
-            <div className="p-3 group-hover:bg-pink-50 dark:group-hover:bg-pink-900/20 rounded-full transition-colors">
-              <Heart size={20} fill={optimisticReacted === '+' ? 'currentColor' : 'none'} className={optimisticReacted === '+' ? "animate-in zoom-in-125 duration-300" : ""} />
-            </div>
-          </button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={handleLike}
+                className={cn(
+                  "hover:text-pink-500 hover:bg-pink-500/10 rounded-full",
+                  optimisticReacted === '+' && "text-pink-500"
+                )}
+                aria-label={optimisticReacted === '+' ? "Unlike" : "Like"}
+              >
+                <Heart 
+                  className={cn("size-5", optimisticReacted === '+' && "animate-in zoom-in-125 duration-300")} 
+                  fill={optimisticReacted === '+' ? 'currentColor' : 'none'} 
+                />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">Like</TooltipContent>
+          </Tooltip>
           <span 
-            className="text-xs cursor-pointer hover:underline -ml-1 pr-2 py-2"
+            className="text-xs cursor-pointer hover:underline ml-0.5 pr-2 py-2"
             onClick={openLikesModal}
           >
             {optimisticLikes > 0 ? formatCount(optimisticLikes) : ""}
@@ -274,26 +304,34 @@ export const PostActions: React.FC<PostActionsProps> = ({
 
         {/* Zap */}
         <div className="flex items-center">
-          <button 
-            onClick={handleZap}
-            onContextMenu={(e) => {
-              e.preventDefault();
-              onZapClick?.(e);
-            }}
-            aria-label="Zap"
-            className="group flex items-center hover:text-yellow-500 transition-colors"
-            disabled={isZapping}
-          >
-            <div className="p-3 group-hover:bg-yellow-50 dark:group-hover:bg-yellow-900/20 rounded-full transition-colors relative">
-              {isZapping ? (
-                <Loader2 size={20} className="animate-spin text-yellow-500" />
-              ) : (
-                <Zap size={20} className={optimisticZaps > 0 ? "text-yellow-500 fill-yellow-500" : ""} />
-              )}
-            </div>
-          </button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={handleZap}
+                onContextMenu={(e) => {
+                  e.preventDefault();
+                  onZapClick?.(e);
+                }}
+                disabled={isZapping}
+                className="hover:text-yellow-500 hover:bg-yellow-500/10 rounded-full"
+                aria-label="Zap"
+              >
+                {isZapping ? (
+                  <Loader2 className="size-5 animate-spin text-yellow-500" />
+                ) : (
+                  <Zap className={cn("size-5", optimisticZaps > 0 && "text-yellow-500 fill-yellow-500")} />
+                )}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">Zap (Right-click for custom)</TooltipContent>
+          </Tooltip>
           <span 
-            className={`text-xs cursor-pointer hover:underline -ml-1 pr-2 py-2 ${optimisticZaps > 0 ? "text-yellow-600 dark:text-yellow-400 font-bold" : ""}`}
+            className={cn(
+              "text-xs cursor-pointer hover:underline ml-0.5 pr-2 py-2",
+              optimisticZaps > 0 && "text-yellow-600 dark:text-yellow-400 font-bold"
+            )}
             onClick={openZapsModal}
           >
             {optimisticZaps > 0 ? formatCount(optimisticZaps) : ""}
@@ -301,30 +339,48 @@ export const PostActions: React.FC<PostActionsProps> = ({
         </div>
 
         {/* Bookmark */}
-        <button 
-          onClick={handleBookmark}
-          aria-label={isBookmarked ? "Remove Bookmark" : "Bookmark"}
-          className={`group flex items-center space-x-1 hover:text-blue-500 transition-colors ${isBookmarked ? 'text-blue-500' : ''}`}
-        >
-          <div className="p-3 group-hover:bg-blue-50 dark:group-hover:bg-blue-900/20 rounded-full transition-colors">
-            <Bookmark size={20} fill={isBookmarked ? 'currentColor' : 'none'} className={isBookmarked ? "animate-in zoom-in-125 duration-300" : ""} />
-          </div>
-          <span className="text-xs">{bookmarks > 0 ? formatCount(bookmarks) : ""}</span>
-        </button>
+        <div className="flex items-center">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={handleBookmark}
+                className={cn(
+                  "hover:text-primary hover:bg-primary/10 rounded-full",
+                  isBookmarked && "text-primary"
+                )}
+                aria-label={isBookmarked ? "Remove Bookmark" : "Bookmark"}
+              >
+                <Bookmark 
+                  className={cn("size-5", isBookmarked && "animate-in zoom-in-125 duration-300")} 
+                  fill={isBookmarked ? 'currentColor' : 'none'} 
+                />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">Bookmark</TooltipContent>
+          </Tooltip>
+          <span className="text-xs ml-0.5">{bookmarks > 0 ? formatCount(bookmarks) : ""}</span>
+        </div>
 
         {/* Share */}
-        <button 
-          onClick={(e) => {
-            e.stopPropagation();
-            onShareClick?.(e);
-          }}
-          aria-label="Share"
-          className="group flex items-center space-x-1 hover:text-blue-500 transition-colors"
-        >
-          <div className="p-3 group-hover:bg-blue-50 dark:group-hover:bg-blue-900/20 rounded-full transition-colors">
-            <Share size={20} />
-          </div>
-        </button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={(e) => {
+                e.stopPropagation();
+                onShareClick?.(e);
+              }}
+              className="hover:text-primary hover:bg-primary/10 rounded-full"
+              aria-label="Share"
+            >
+              <Share className="size-5" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">Share</TooltipContent>
+        </Tooltip>
       </div>
 
       <UserListModal

@@ -22,6 +22,8 @@ import { PollRenderer } from "./PollRenderer";
 import { shortenPubkey } from "@/lib/utils/nip19";
 import { nip19 } from "nostr-tools";
 import { useLists } from "@/hooks/useLists";
+import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 
 type ThreadLine = "none" | "top" | "bottom" | "both";
 
@@ -254,16 +256,16 @@ export const PostCard: React.FC<PostCardProps> = ({
 
   if (isRepost && repostLoading) {
     return (
-      <div className="p-4 border-b border-gray-200 dark:border-gray-800 animate-pulse">
-        <div className="flex items-center space-x-2 text-gray-500 text-xs font-bold mb-2 ml-10 truncate min-w-0">
-          <div className="w-4 h-4 bg-gray-200 dark:bg-gray-800 rounded" />
-          <div className="w-32 h-3 bg-gray-200 dark:bg-gray-800 rounded" />
+      <div className="p-4 border-b border-border animate-pulse">
+        <div className="flex items-center gap-2 mb-3 ml-10">
+          <Skeleton className="size-4 rounded" />
+          <Skeleton className="h-3 w-32 rounded" />
         </div>
         <div className="flex gap-3">
-          <div className="w-12 h-12 rounded-full bg-gray-200 dark:bg-gray-800 shrink-0" />
-          <div className="flex-1 space-y-2 mt-1">
-            <div className="h-3 bg-gray-200 dark:bg-gray-800 rounded w-1/4" />
-            <div className="h-3 bg-gray-200 dark:bg-gray-800 rounded w-full" />
+          <Skeleton className="size-12 rounded-full shrink-0" />
+          <div className="flex-1 space-y-2 py-1">
+            <Skeleton className="h-4 w-1/4 rounded" />
+            <Skeleton className="h-4 w-full rounded" />
           </div>
         </div>
       </div>
@@ -272,9 +274,10 @@ export const PostCard: React.FC<PostCardProps> = ({
 
   return (
     <article 
-      className={`group relative flex flex-col p-4 border-b border-gray-200 hover:bg-gray-50 transition-colors dark:border-gray-800 dark:hover:bg-gray-900/50 overflow-visible ${
-        isFocal ? "bg-blue-50/5 dark:bg-blue-900/5 border-l-4 border-l-blue-500" : ""
-      }`}
+      className={cn(
+        "group relative flex flex-col p-4 border-b border-border hover:bg-accent/30 transition-colors overflow-visible",
+        isFocal && "bg-primary/5 border-l-4 border-l-primary"
+      )}
       style={{ paddingLeft: `${1 + indent * 1.5}rem` }}
     >
       <Link 
@@ -286,10 +289,10 @@ export const PostCard: React.FC<PostCardProps> = ({
       <div className="flex relative min-w-0 z-10 pointer-events-none">
         {/* Simplified Thread Lines */}
         {(threadLine === "top" || threadLine === "both") && (
-          <div className="absolute top-[-1.5rem] left-5 w-0.5 h-[2.5rem] bg-gray-100 dark:bg-gray-800/50" />
+          <div className="absolute top-[-1.5rem] left-5 w-0.5 h-[2.5rem] bg-border/50" />
         )}
         {(threadLine === "bottom" || threadLine === "both") && (
-          <div className="absolute top-[3.5rem] bottom-[-1.5rem] left-5 w-0.5 bg-gray-100 dark:bg-gray-800/50" />
+          <div className="absolute top-[3.5rem] bottom-[-1.5rem] left-5 w-0.5 bg-border/50" />
         )}
 
         {/* Content Area */}

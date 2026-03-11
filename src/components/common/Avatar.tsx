@@ -2,6 +2,12 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { useBlossom } from "@/hooks/useBlossom";
+import { 
+  Avatar as ShadcnAvatar, 
+  AvatarImage, 
+  AvatarFallback 
+} from "@/components/ui/avatar";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface AvatarProps {
   pubkey: string;
@@ -15,7 +21,7 @@ interface AvatarProps {
  * A robust Avatar component that handles Nostr profile pictures with:
  * 1. Blossom optimization support
  * 2. Automatic fallback to Robohash on error or missing src
- * 3. Graceful loading states
+ * 3. Graceful loading states using shadcn/ui
  */
 export const Avatar: React.FC<AvatarProps> = ({ 
   pubkey, 
@@ -90,28 +96,27 @@ export const Avatar: React.FC<AvatarProps> = ({
 
   if (isLoading) {
     return (
-      <div 
-        className={`rounded-full bg-gray-200 dark:bg-gray-800 animate-pulse shrink-0 ${className}`}
+      <Skeleton 
+        className={`rounded-full shrink-0 ${className}`}
         style={{ width: size, height: size }}
       />
     );
   }
 
   return (
-    <div 
-      className={`relative rounded-full overflow-hidden bg-gray-100 dark:bg-gray-900 shrink-0 ${className}`}
-      style={{ width: size, height: size }}
-    >
-      <img
+    <ShadcnAvatar size={size} className={className}>
+      <AvatarImage
         src={displayUrl}
-        alt=""
-        aria-hidden="true"
-        className="w-full h-full object-cover"
+        alt={pubkey}
         onError={handleError}
-        loading="lazy"
-        width={size}
-        height={size}
       />
-    </div>
+      <AvatarFallback>
+        <img
+          src={getRobohash(pubkey)}
+          alt=""
+          className="aspect-square size-full object-cover"
+        />
+      </AvatarFallback>
+    </ShadcnAvatar>
   );
 };

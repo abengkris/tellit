@@ -1,13 +1,22 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import NDK, { NDKEvent, NDKUser } from "@nostr-dev-kit/ndk";
+import { NDKEvent, NDKUser } from "@nostr-dev-kit/ndk";
 import { useNDK } from "@/hooks/useNDK";
 import { createZapInvoice, listenForZapReceipt } from "@/lib/actions/zap";
-import { X, Zap, Loader2, CheckCircle2, ExternalLink } from "lucide-react";
+import { Zap, Loader2, CheckCircle2, ExternalLink, Copy } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { useUIStore } from "@/store/ui";
 import { triggerZapConfetti } from "@/lib/utils/confetti";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle 
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 
 interface WebLN {
   enable: () => Promise<void>;
@@ -107,121 +116,121 @@ export const ZapModal: React.FC<ZapModalProps> = ({ event, user, onClose, onSucc
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <div className="bg-white dark:bg-gray-900 rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl animate-in zoom-in-95">
-        <div className="p-6 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center">
-          <div className="flex items-center space-x-2 text-yellow-500">
-            <Zap size={20} fill="currentColor" />
-            <h3 className="font-bold text-lg">Send Zap</h3>
-          </div>
-          <button 
-            onClick={onClose} 
-            aria-label="Close modal"
-            className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
-          >
-            <X size={20} />
-          </button>
-        </div>
+    <Dialog open={true} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-sm p-0 gap-0 overflow-hidden border-none shadow-2xl">
+        <DialogHeader className="p-6 border-b shrink-0">
+          <DialogTitle className="flex items-center gap-2 text-yellow-500 font-black">
+            <Zap className="size-5" fill="currentColor" />
+            Send Zap
+          </DialogTitle>
+        </DialogHeader>
 
         <div className="p-6">
           {!invoice ? (
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-500 mb-2">Amount (Sats)</label>
-                <div className="grid grid-cols-4 gap-2 mb-4">
+            <div className="space-y-6">
+              <div className="space-y-3">
+                <label className="text-xs font-black uppercase tracking-widest text-muted-foreground">Select Amount (Sats)</label>
+                <div className="grid grid-cols-4 gap-2">
                   {[21, 100, 1000, 5000].map((val) => (
-                    <button
+                    <Button
                       key={val}
+                      variant={amount === val ? "default" : "outline"}
                       onClick={() => setAmount(val)}
-                      className={`py-2 rounded-xl text-sm font-bold border transition-all ${
-                        amount === val 
-                          ? "bg-yellow-500 border-yellow-500 text-white shadow-lg shadow-yellow-500/20" 
-                          : "border-gray-200 dark:border-gray-800 hover:border-yellow-500"
-                      }`}
+                      className={cn(
+                        "h-10 rounded-xl font-black transition-all",
+                        amount === val && "bg-yellow-500 hover:bg-yellow-600 border-yellow-500 text-white shadow-lg shadow-yellow-500/20"
+                      )}
                     >
                       {val}
-                    </button>
+                    </Button>
                   ))}
                 </div>
-                <input
+                <Input
                   type="number"
                   value={amount}
                   onChange={(e) => setAmount(Number(e.target.value))}
-                  className="w-full p-4 bg-gray-50 dark:bg-black border border-gray-200 dark:border-gray-800 rounded-2xl focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                  placeholder="Custom amount"
+                  className="h-12 rounded-xl bg-muted/50 border-transparent focus:bg-background text-lg font-black"
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-500 mb-2">Comment (Optional)</label>
-                <input
+              <div className="space-y-3">
+                <label className="text-xs font-black uppercase tracking-widest text-muted-foreground">Comment (Optional)</label>
+                <Input
                   type="text"
                   value={comment}
                   onChange={(e) => setComment(e.target.value)}
                   placeholder="Say something nice..."
-                  className="w-full p-4 bg-gray-50 dark:bg-black border border-gray-200 dark:border-gray-800 rounded-2xl focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                  className="h-12 rounded-xl bg-muted/50 border-transparent focus:bg-background"
                 />
               </div>
 
-              <button
+              <Button
                 onClick={handleZap}
                 disabled={loading || amount <= 0}
-                className="w-full py-4 bg-yellow-500 hover:bg-yellow-600 text-white font-bold rounded-2xl transition-all shadow-lg shadow-yellow-500/20 flex items-center justify-center space-x-2 disabled:opacity-50"
+                className="w-full h-14 bg-yellow-500 hover:bg-yellow-600 text-white font-black rounded-2xl transition-all shadow-lg shadow-yellow-500/20 gap-2 disabled:opacity-50"
               >
-                {loading ? <Loader2 className="animate-spin" /> : <Zap size={18} fill="currentColor" />}
+                {loading ? <Loader2 className="size-5 animate-spin" /> : <Zap className="size-5" fill="currentColor" />}
                 <span>Zap {amount} Sats</span>
-              </button>
+              </Button>
             </div>
           ) : paid ? (
-            <div className="text-center py-8 space-y-4 animate-in fade-in slide-in-from-bottom-4">
-              <div className="inline-flex items-center justify-center w-20 h-20 bg-green-100 dark:bg-green-900/30 text-green-500 rounded-full mb-4">
-                <CheckCircle2 size={48} />
+            <div className="text-center py-8 space-y-6 animate-in fade-in slide-in-from-bottom-4">
+              <div className="inline-flex items-center justify-center size-24 bg-green-500/10 text-green-500 rounded-full">
+                <CheckCircle2 className="size-12" />
               </div>
-              <h4 className="text-2xl font-bold">Zap Sent!</h4>
-              <p className="text-gray-500">Your zap has been confirmed on the lightning network.</p>
-              <button
+              <div className="space-y-2">
+                <h4 className="text-2xl font-black tracking-tight">Zap Sent!</h4>
+                <p className="text-muted-foreground text-sm font-medium">Your zap has been confirmed on the lightning network.</p>
+              </div>
+              <Button
                 onClick={onClose}
-                className="w-full py-4 bg-gray-900 dark:bg-white text-white dark:text-black font-bold rounded-2xl mt-4"
+                className="w-full h-12 rounded-xl font-black"
               >
-                Close
-              </button>
+                Done
+              </Button>
             </div>
           ) : (
             <div className="space-y-6 text-center">
               <div 
-                className="bg-white p-4 rounded-3xl inline-block mx-auto border-4 border-yellow-500/10 shadow-xl"
+                className="bg-white p-4 rounded-3xl inline-block mx-auto border-8 border-yellow-500/10 shadow-xl"
                 role="img"
                 aria-label="Lightning Network Invoice QR Code"
               >
-                <QRCodeSVG value={`lightning:${invoice}`} size={220} />
+                <QRCodeSVG value={`lightning:${invoice}`} size={200} />
               </div>
               
-              <div className="space-y-2">
-                <p className="text-sm font-medium">Scan with your lightning wallet</p>
-                <div className="flex space-x-2">
-                  <button
+              <div className="space-y-3">
+                <p className="text-sm font-bold text-muted-foreground">Scan with your lightning wallet</p>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
                     onClick={copyInvoice}
-                    className="flex-1 py-3 px-4 bg-gray-100 dark:bg-gray-800 rounded-xl text-sm font-bold flex items-center justify-center space-x-2 hover:bg-gray-200 transition-colors"
+                    className="flex-1 h-12 rounded-xl font-black gap-2"
                   >
-                    <span>Copy Invoice</span>
-                  </button>
-                  <a
-                    href={`lightning:${invoice}`}
-                    className="flex-1 py-3 px-4 bg-yellow-500 text-white rounded-xl text-sm font-bold flex items-center justify-center space-x-2 hover:bg-yellow-600 transition-colors"
+                    <Copy className="size-4" />
+                    <span>Copy</span>
+                  </Button>
+                  <Button
+                    asChild
+                    className="flex-1 h-12 bg-yellow-500 hover:bg-yellow-600 text-white rounded-xl font-black gap-2 shadow-lg shadow-yellow-500/20"
                   >
-                    <ExternalLink size={16} />
-                    <span>Open Wallet</span>
-                  </a>
+                    <a href={`lightning:${invoice}`}>
+                      <ExternalLink className="size-4" />
+                      <span>Open</span>
+                    </a>
+                  </Button>
                 </div>
               </div>
 
-              <div className="flex items-center justify-center space-x-2 text-gray-500 text-sm">
-                <Loader2 className="animate-spin" size={14} />
-                <span>Waiting for payment confirmation...</span>
+              <div className="flex items-center justify-center gap-2 text-muted-foreground text-xs font-bold">
+                <Loader2 className="size-3 animate-spin" />
+                <span>Waiting for payment...</span>
               </div>
             </div>
           )}
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 };

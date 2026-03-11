@@ -1,14 +1,18 @@
 "use client";
 
-import React from "react";
+import React, { Fragment } from "react";
 import { useFollowSuggestions } from "@/hooks/useFollowSuggestions";
 import { Avatar } from "@/components/common/Avatar";
 import { FollowButton } from "@/components/profile/FollowButton";
 import Link from "next/link";
-import { useNDK } from "@/hooks/useNDK";
 import { UserIdentity } from "@/components/common/UserIdentity";
 import { useProfile } from "@/hooks/useProfile";
 import { toNpub } from "@/lib/utils/nip19";
+import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import { ArrowRight } from "lucide-react";
 
 interface SuggestionCardProps {
   pubkey: string;
@@ -25,13 +29,13 @@ export const SuggestionCard: React.FC<SuggestionCardProps> = ({
   const npub = toNpub(pubkey);
 
   return (
-    <div className="flex items-start justify-between gap-3 group">
-      <Link href={`/${npub}`} className="shrink-0 pt-1">
+    <div className="flex items-start justify-between gap-3 group px-4 py-3 hover:bg-accent/30 transition-colors">
+      <Link href={`/${npub}`} className="shrink-0">
         <Avatar 
           pubkey={pubkey} 
           src={profile?.picture} 
           size={48} 
-          className="rounded-full ring-2 ring-transparent group-hover:ring-blue-500/20 transition-all"
+          className="rounded-full ring-2 ring-transparent group-hover:ring-primary/20 transition-all"
         />
       </Link>
       
@@ -46,11 +50,11 @@ export const SuggestionCard: React.FC<SuggestionCardProps> = ({
             tags={profile?.tags}
           />
         </Link>
-        <p className="text-[11px] text-gray-500 mt-0.5 font-medium">
+        <p className="text-[11px] text-muted-foreground mt-0.5 font-medium">
           Followed by {followedByCount} people you follow
         </p>
         {showAbout && profile?.about && (
-          <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 line-clamp-2 leading-relaxed">
+          <p className="text-xs text-muted-foreground mt-1 line-clamp-2 leading-relaxed">
             {profile.about}
           </p>
         )}
@@ -66,35 +70,58 @@ export const SuggestionCard: React.FC<SuggestionCardProps> = ({
 export const WhoToFollow = () => {
   const { suggestions, loading } = useFollowSuggestions(3);
 
-  if (loading || suggestions.length === 0) return null;
+  if (loading) {
+    return (
+      <Card className="rounded-3xl border-none shadow-none bg-muted/30">
+        <CardHeader className="p-4 pb-2">
+          <Skeleton className="h-6 w-1/2" />
+        </CardHeader>
+        <CardContent className="p-0">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="p-4 flex items-center gap-3">
+              <Skeleton className="size-12 rounded-full" />
+              <div className="space-y-2 flex-1">
+                <Skeleton className="h-4 w-1/2" />
+                <Skeleton className="h-3 w-1/3" />
+              </div>
+              <Skeleton className="h-8 w-20 rounded-full" />
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (suggestions.length === 0) return null;
 
   return (
-    <div className="py-6 border-b border-gray-100 dark:border-gray-900 bg-gray-50/30 dark:bg-gray-900/10">
-      <div className="px-6 mb-4 flex items-center justify-between">
-        <h3 className="font-black text-lg text-gray-900 dark:text-white tracking-tight">Who to follow</h3>
-      </div>
+    <Card className="rounded-3xl border-none shadow-none bg-muted/30 overflow-hidden">
+      <CardHeader className="p-4 pb-2">
+        <CardTitle className="font-black text-xl tracking-tight">Who to follow</CardTitle>
+      </CardHeader>
 
-      <div className="space-y-5 px-6">
-        {suggestions.map((suggestion) => (
-          <SuggestionCard 
-            key={suggestion.pubkey} 
-            pubkey={suggestion.pubkey} 
-            followedByCount={suggestion.followedByCount}
-          />
-        ))}
-      </div>
+      <CardContent className="p-0">
+        <div className="flex flex-col">
+          {suggestions.map((suggestion, index) => (
+            <Fragment key={suggestion.pubkey}>
+              <SuggestionCard 
+                pubkey={suggestion.pubkey} 
+                followedByCount={suggestion.followedByCount}
+              />
+              {index < suggestions.length - 1 && <Separator className="bg-muted-foreground/10" />}
+            </Fragment>
+          ))}
+        </div>
+      </CardContent>
 
-      <div className="px-6 mt-6">
-        <Link 
-          href="/suggested" 
-          className="inline-flex items-center text-blue-500 text-sm font-black hover:text-blue-600 transition-colors group"
-        >
-          Show more
-          <svg className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M9 5l7 7-7 7" />
-          </svg>
-        </Link>
-      </div>
-    </div>
+      <CardFooter className="p-0 border-t border-muted-foreground/10">
+        <Button asChild variant="ghost" className="w-full justify-start p-4 text-primary font-black hover:bg-accent/50 rounded-none h-auto">
+          <Link href="/suggested" className="flex items-center justify-between w-full group">
+            Show more
+            <ArrowRight className="size-4 opacity-0 group-hover:opacity-100 transition-all -translate-x-2 group-hover:translate-x-0" />
+          </Link>
+        </Button>
+      </CardFooter>
+    </Card>
   );
 };

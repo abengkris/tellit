@@ -1,14 +1,15 @@
 // src/components/profile/FollowList.tsx
 "use client";
 
-import { useEffect, useState, useRef } from "react";
-import { NDKUser } from "@nostr-dev-kit/ndk";
+import { useEffect, useState, useRef, Fragment } from "react";
 import { getNDK } from "@/lib/ndk";
 import { FollowButton } from "./FollowButton";
 import { Avatar } from "@/components/common/Avatar";
 import Link from "next/link";
 import { nip19 } from "nostr-tools";
 import { shortenPubkey } from "@/lib/utils/nip19";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Separator } from "@/components/ui/separator";
 
 interface FollowListProps {
   pubkeys: string[];
@@ -27,7 +28,7 @@ interface UserWithProfile {
 export function FollowList({
   pubkeys,
   loading = false,
-  emptyMessage = "Belum ada.",
+  emptyMessage = "No users found.",
 }: FollowListProps) {
   const [users, setUsers] = useState<Map<string, UserWithProfile>>(new Map());
   const fetchedRef = useRef(new Set<string>());
@@ -41,7 +42,7 @@ export function FollowList({
 
     const ndk = getNDK();
 
-    // Fetch profile (kind:0) untuk semua pubkey
+    // Fetch profile (kind:0) for all pubkeys
     const sub = ndk.subscribe(
       { kinds: [0], authors: toFetch },
       { closeOnEose: true }
@@ -56,7 +57,7 @@ export function FollowList({
           next.set(event.pubkey, {
             pubkey: event.pubkey,
             npub,
-            name: profile.name ?? profile.display_name,
+            name: profile.display_name ?? profile.name,
             about: profile.about,
             picture: profile.picture,
           });
@@ -70,9 +71,12 @@ export function FollowList({
 
   if (loading) {
     return (
-      <div className="divide-y divide-zinc-800">
+      <div className="flex flex-col">
         {Array.from({ length: 5 }).map((_, i) => (
-          <FollowItemSkeleton key={i} />
+          <Fragment key={i}>
+            <FollowItemSkeleton />
+            {i < 4 && <Separator />}
+          </Fragment>
         ))}
       </div>
     );
@@ -80,7 +84,7 @@ export function FollowList({
 
   if (!pubkeys.length) {
     return (
-      <div className="py-16 text-center text-zinc-500">
+      <div className="py-16 text-center text-muted-foreground">
         <p className="text-4xl mb-3">👥</p>
         <p>{emptyMessage}</p>
       </div>
@@ -88,49 +92,51 @@ export function FollowList({
   }
 
   return (
-    <div className="divide-y divide-zinc-800">
-      {pubkeys.map((pubkey) => {
+    <div className="flex flex-col">
+      {pubkeys.map((pubkey, index) => {
         const user = users.get(pubkey);
         const npub = user?.npub ?? nip19.npubEncode(pubkey);
         const display_name = user?.name ?? shortenPubkey(npub);
 
         return (
-          <div
-            key={pubkey}
-            className="flex items-center gap-3 p-4 hover:bg-zinc-900/50 transition-colors"
-          >
-            {/* Avatar */}
-            <Link href={`/${npub}`} className="shrink-0">
-              <Avatar
-                pubkey={pubkey}
-                src={user?.picture}
-                size={44}
-                className="rounded-full"
-              />
-            </Link>
-
-            {/* Info */}
-            <div className="flex-1 min-w-0">
-              <Link href={`/${npub}`} className="block">
-                <p className="font-semibold text-white hover:underline truncate">
-                  {display_name}
-                </p>
-                <p className="text-zinc-500 text-sm truncate">
-                  @{shortenPubkey(npub, 16)}
-                </p>
+          <Fragment key={pubkey}>
+            <div
+              className="flex items-center gap-3 p-4 hover:bg-accent/50 transition-colors"
+            >
+              {/* Avatar */}
+              <Link href={`/${npub}`} className="shrink-0">
+                <Avatar
+                  pubkey={pubkey}
+                  src={user?.picture}
+                  size={44}
+                  className="rounded-full"
+                />
               </Link>
-              {user?.about && (
-                <p className="text-zinc-400 text-sm mt-0.5 line-clamp-1">
-                  {user.about}
-                </p>
-              )}
-            </div>
 
-            {/* Follow button */}
-            <div className="shrink-0">
-              <FollowButton targetPubkey={pubkey} size="sm" />
+              {/* Info */}
+              <div className="flex-1 min-w-0">
+                <Link href={`/${npub}`} className="block">
+                  <p className="font-bold hover:underline truncate">
+                    {display_name}
+                  </p>
+                  <p className="text-muted-foreground text-sm truncate">
+                    @{shortenPubkey(npub, 16)}
+                  </p>
+                </Link>
+                {user?.about && (
+                  <p className="text-muted-foreground text-sm mt-0.5 line-clamp-1">
+                    {user.about}
+                  </p>
+                )}
+              </div>
+
+              {/* Follow button */}
+              <div className="shrink-0">
+                <FollowButton targetPubkey={pubkey} size="sm" />
+              </div>
             </div>
-          </div>
+            {index < pubkeys.length - 1 && <Separator />}
+          </Fragment>
         );
       })}
     </div>
@@ -139,13 +145,13 @@ export function FollowList({
 
 function FollowItemSkeleton() {
   return (
-    <div className="flex items-center gap-3 p-4 animate-pulse">
-      <div className="w-11 h-11 rounded-full bg-zinc-800 shrink-0" />
-      <div className="flex-1 space-y-1.5">
-        <div className="h-3.5 bg-zinc-800 rounded w-28" />
-        <div className="h-3 bg-zinc-800 rounded w-20" />
+    <div className="flex items-center gap-3 p-4">
+      <Skeleton className="size-11 rounded-full shrink-0" />
+      <div className="flex-1 space-y-2">
+        <Skeleton className="h-4 w-28 rounded" />
+        <Skeleton className="h-3 w-20 rounded" />
       </div>
-      <div className="w-16 h-7 bg-zinc-800 rounded-full shrink-0" />
+      <Skeleton className="w-16 h-8 rounded-full shrink-0" />
     </div>
   );
 }

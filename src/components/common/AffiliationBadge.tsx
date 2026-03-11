@@ -5,6 +5,8 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useProfile } from '@/hooks/useProfile';
 import { toNpub } from '@/lib/utils/nip19';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface AffiliationBadgeProps {
   affiliationPubkey: string;
@@ -17,16 +19,18 @@ export const AffiliationBadge: React.FC<AffiliationBadgeProps> = ({
 }) => {
   const { profile, loading } = useProfile(affiliationPubkey);
 
-  if (loading || !profile?.picture) return null;
+  if (loading) {
+    const size = isPost ? 16 : 22;
+    return <Skeleton className="rounded-md shrink-0" style={{ width: size, height: size }} />;
+  }
+
+  if (!profile?.picture) return null;
 
   const size = isPost ? 16 : 22;
   const npub = toNpub(affiliationPubkey);
 
   const content = (
-    <div 
-      className="rounded-md overflow-hidden bg-zinc-200 dark:bg-zinc-800 border border-white/20 shadow-sm"
-      style={{ width: size, height: size }}
-    >
+    <Badge variant="secondary" className="p-0 overflow-hidden border-white/20 shadow-sm shrink-0" style={{ width: size, height: size }}>
       <Image
         src={profile.picture}
         alt=""
@@ -35,18 +39,18 @@ export const AffiliationBadge: React.FC<AffiliationBadgeProps> = ({
         className="object-cover w-full h-full"
         unoptimized
       />
-    </div>
+    </Badge>
   );
 
   // Avoid nested links if we are already in a post (which is wrapped in a Link)
   if (isPost) {
-    return <div className="shrink-0">{content}</div>;
+    return content;
   }
 
   return (
     <Link 
       href={`/${npub}`}
-      className="shrink-0 transition-transform hover:scale-110 active:scale-95"
+      className="shrink-0 transition-transform hover:scale-110 active:scale-95 flex"
       onClick={(e) => e.stopPropagation()}
       title={`Affiliated with ${profile.display_name || profile.name || 'Organization'}`}
     >

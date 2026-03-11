@@ -13,6 +13,15 @@ import { useWalletStore } from "@/store/wallet";
 import { useProfile } from "@/hooks/useProfile";
 import { RelayModal } from "@/components/common/RelayModal";
 import { Avatar } from "@/components/common/Avatar";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { 
+  Tooltip, 
+  TooltipContent, 
+  TooltipProvider,
+  TooltipTrigger 
+} from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
 
 const SidebarItem = ({ 
   href, 
@@ -33,29 +42,41 @@ const SidebarItem = ({
   const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
 
   return (
-    <Link
-      href={href}
-      aria-label={label}
-      aria-current={active ? "page" : undefined}
-      className={`flex items-center space-x-4 p-3 rounded-full hover:bg-gray-100 dark:hover:bg-gray-900 transition-colors relative ${
-        active ? "font-bold text-blue-500" : ""
-      }`}
-    >
-      <div className="relative">
-        {pubkey ? (
-          <Avatar pubkey={pubkey} size={26} isLoading={isLoading} />
-        ) : Icon ? (
-          <Icon size={26} className={active ? "text-blue-500" : ""} strokeWidth={active ? 3 : 2} />
-        ) : null}
-        
-        {badge !== undefined && badge > 0 && (
-          <div className="absolute -top-1 -right-1 bg-blue-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full border-2 border-white dark:border-black">
-            {badge > 9 ? "9+" : badge}
-          </div>
-        )}
-      </div>
-      <span className="hidden lg:block text-xl">{label}</span>
-    </Link>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          variant="ghost"
+          asChild
+          className={cn(
+            "flex items-center justify-start gap-4 p-3 h-auto rounded-full transition-colors relative w-fit lg:w-full",
+            active ? "font-bold text-primary bg-accent/50" : "text-muted-foreground hover:text-foreground"
+          )}
+        >
+          <Link href={href} aria-label={label}>
+            <div className="relative flex items-center justify-center shrink-0 size-7">
+              {pubkey ? (
+                <Avatar pubkey={pubkey} size={28} isLoading={isLoading} />
+              ) : Icon ? (
+                <Icon className={cn("size-7", active ? "text-primary" : "")} strokeWidth={active ? 3 : 2} />
+              ) : null}
+              
+              {badge !== undefined && badge > 0 && (
+                <Badge 
+                  variant="destructive" 
+                  className="absolute -top-1.5 -right-1.5 min-w-4 h-4 p-0 flex items-center justify-center text-[10px] font-black rounded-full border-2 border-background"
+                >
+                  {badge > 9 ? "9+" : badge}
+                </Badge>
+              )}
+            </div>
+            <span className="hidden lg:block text-xl">{label}</span>
+          </Link>
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent side="right" className="lg:hidden">
+        {label} {badge && badge > 0 ? `(${badge})` : ""}
+      </TooltipContent>
+    </Tooltip>
   );
 };
 
@@ -67,13 +88,14 @@ export const Sidebar = () => {
   const { unreadMessagesCount, hideBalance } = useUIStore();
   const { connectedCount, totalCount } = useRelayStatus();
   const { balance, nwcPairingCode } = useWalletStore();
+  
   const [isRelayModalOpen, setIsRelayModalOpen] = React.useState(false);
 
   return (
     <div className="flex sm:flex-col items-center sm:items-start justify-around sm:justify-between h-16 sm:h-screen w-full sm:sticky sm:top-0 p-2 sm:p-4">
-      <div className="flex sm:flex-col space-y-0 sm:space-y-4 w-full">
+      <div className="flex sm:flex-col gap-2 w-full">
         <div className="hidden sm:block p-3">
-          <div className="text-3xl font-bold text-blue-500 tracking-tighter">Tell it!</div>
+          <div className="text-3xl font-black text-primary tracking-tighter">Tell it!</div>
         </div>
 
         <SidebarItem href="/" icon={Home} label="Home" />
@@ -99,46 +121,86 @@ export const Sidebar = () => {
       <div className="flex sm:flex-col w-full sm:mt-auto gap-2">
         {/* Wallet Indicator (if connected) */}
         {isLoggedIn && nwcPairingCode && (
-          <Link
-            href="/wallet"
-            className="hidden sm:flex items-center space-x-4 p-3 rounded-full hover:bg-yellow-50 dark:hover:bg-yellow-900/10 text-yellow-600 dark:text-yellow-500 transition-colors w-full"
-          >
-            <Wallet size={26} fill={balance !== null ? "currentColor" : "none"} />
-            <span className="hidden lg:block text-sm font-black">
-              {hideBalance ? "**** sats" : (balance !== null ? `${balance.toLocaleString()} sats` : "Wallet")}
-            </span>
-          </Link>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                asChild
+                className="flex items-center justify-start gap-4 p-3 h-auto rounded-full hover:bg-yellow-500/10 text-yellow-600 dark:text-yellow-500 transition-colors w-fit lg:w-full overflow-hidden"
+              >
+                <Link href="/wallet">
+                  <div className="flex items-center justify-center shrink-0 size-7">
+                    <Wallet className="size-7" fill={balance !== null ? "currentColor" : "none"} />
+                  </div>
+                  <span className="hidden lg:block text-sm font-black truncate">
+                    {hideBalance ? "**** sats" : (balance !== null ? `${balance.toLocaleString()} sats` : "Wallet")}
+                  </span>
+                </Link>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="right" className="lg:hidden">
+              Wallet: {balance !== null ? `${balance.toLocaleString()} sats` : "Connect"}
+            </TooltipContent>
+          </Tooltip>
         )}
 
         {/* Relay Indicator */}
-        <button 
-          onClick={() => setIsRelayModalOpen(true)}
-          className="hidden sm:flex items-center space-x-4 p-3 text-xs text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-900 rounded-full transition-colors w-full text-left outline-none"
-        >
-          <Activity size={26} className={connectedCount > 0 ? "text-green-500" : "text-red-500"} />
-          <span className="hidden lg:block text-sm font-bold">
-            {connectedCount}/{totalCount} relays
-          </span>
-        </button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              onClick={() => setIsRelayModalOpen(true)}
+              className="hidden sm:flex items-center justify-start gap-4 p-3 h-auto text-muted-foreground hover:bg-accent rounded-full transition-colors w-fit lg:w-full text-left"
+            >
+              <div className="flex items-center justify-center shrink-0 size-7">
+                <Activity className={cn("size-7", connectedCount > 0 ? "text-green-500" : "text-destructive")} />
+              </div>
+              <span className="hidden lg:block text-sm font-bold">
+                {connectedCount}/{totalCount} relays
+              </span>
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="right" className="lg:hidden">
+            {connectedCount}/{totalCount} Relays connected
+          </TooltipContent>
+        </Tooltip>
 
         {isLoggedIn ? (
-          <button
-            onClick={() => logout(sessions)}
-            aria-label="Logout"
-            className="hidden sm:flex items-center space-x-4 p-3 rounded-full hover:bg-red-50 dark:hover:bg-red-900/10 text-red-500 transition-colors w-full"
-          >
-            <LogOut size={26} />
-            <span className="hidden lg:block text-xl font-bold">Logout</span>
-          </button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                onClick={() => logout(sessions)}
+                className="hidden sm:flex items-center justify-start gap-4 p-3 h-auto rounded-full hover:bg-destructive/10 text-destructive transition-colors w-fit lg:w-full"
+              >
+                <div className="flex items-center justify-center shrink-0 size-7">
+                  <LogOut className="size-7" />
+                </div>
+                <span className="hidden lg:block text-xl font-bold">Logout</span>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="right" className="lg:hidden">
+              Logout
+            </TooltipContent>
+          </Tooltip>
         ) : (
-          <button
-            onClick={() => ndk && sessions && login(ndk, sessions)}
-            aria-label="Login"
-            className="flex items-center space-x-4 p-3 rounded-full hover:bg-blue-50 dark:hover:bg-blue-900/10 text-blue-500 transition-colors w-full"
-          >
-            <LogIn size={26} />
-            <span className="hidden lg:block text-xl font-bold">Login</span>
-          </button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                onClick={() => ndk && sessions && login(ndk, sessions)}
+                className="flex items-center justify-start gap-4 p-3 h-auto rounded-full hover:bg-primary/10 text-primary transition-colors w-fit lg:w-full"
+              >
+                <div className="flex items-center justify-center shrink-0 size-7">
+                  <LogIn className="size-7" />
+                </div>
+                <span className="hidden lg:block text-xl font-bold">Login</span>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="right" className="lg:hidden">
+              Login
+            </TooltipContent>
+          </Tooltip>
         )}
       </div>
 
