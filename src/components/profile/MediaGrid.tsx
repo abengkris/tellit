@@ -19,7 +19,7 @@ interface MediaGridProps {
 }
 
 export function MediaGrid({ posts, isLoading }: MediaGridProps) {
-  const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
+  const [lightboxData, setLightboxData] = useState<{ src: string; href: string } | null>(null);
 
   if (isLoading && posts.length === 0) {
     return (
@@ -34,19 +34,24 @@ export function MediaGrid({ posts, isLoading }: MediaGridProps) {
   return (
     <div className="grid grid-cols-3 gap-1 sm:gap-2 p-1 sm:p-4 animate-in fade-in duration-500">
       {posts.map((post) => (
-        <MediaItem key={post.id} post={post} onOpenLightbox={setLightboxSrc} />
+        <MediaItem 
+          key={post.id} 
+          post={post} 
+          onOpenLightbox={(src, href) => setLightboxData({ src, href })} 
+        />
       ))}
 
       <Lightbox 
-        src={lightboxSrc || ""} 
-        isOpen={!!lightboxSrc} 
-        onClose={() => setLightboxSrc(null)} 
+        src={lightboxData?.src || ""} 
+        postHref={lightboxData?.href}
+        isOpen={!!lightboxData} 
+        onClose={() => setLightboxData(null)} 
       />
     </div>
   );
 }
 
-function MediaItem({ post, onOpenLightbox }: { post: NDKEvent; onOpenLightbox: (src: string) => void }) {
+function MediaItem({ post, onOpenLightbox }: { post: NDKEvent; onOpenLightbox: (src: string, href: string) => void }) {
   const [loaded, setLoaded] = useState(false);
   const media = React.useMemo(() => {
     // 1. Check imeta tags
@@ -95,7 +100,7 @@ function MediaItem({ post, onOpenLightbox }: { post: NDKEvent; onOpenLightbox: (
   const handleOpen = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    onOpenLightbox(media.url);
+    onOpenLightbox(media.url, href);
   };
 
   const href = post.kind === 30023 

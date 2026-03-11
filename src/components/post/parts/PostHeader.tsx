@@ -54,6 +54,7 @@ interface PostHeaderProps {
   isArticle?: boolean;
   isPoll?: boolean;
   tags?: string[][];
+  navigationHref?: string;
 }
 
 export const PostHeader: React.FC<PostHeaderProps> = ({
@@ -79,7 +80,8 @@ export const PostHeader: React.FC<PostHeaderProps> = ({
   isArticle,
   isPoll,
   tags,
-  name
+  name,
+  navigationHref
 }) => {
   const formattedTime = formatCompactDate(createdAt);
 
@@ -144,9 +146,19 @@ export const PostHeader: React.FC<PostHeaderProps> = ({
             </div>
           </div>
           <span className="text-muted-foreground text-xs shrink-0 mt-1">·</span>
-          <span className="text-muted-foreground text-xs whitespace-nowrap shrink-0 mt-1">
-            {formattedTime}
-          </span>
+          {navigationHref ? (
+            <Link 
+              href={navigationHref} 
+              className="text-muted-foreground text-xs whitespace-nowrap shrink-0 mt-1 hover:underline"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {formattedTime}
+            </Link>
+          ) : (
+            <span className="text-muted-foreground text-xs whitespace-nowrap shrink-0 mt-1">
+              {formattedTime}
+            </span>
+          )}
         </div>
         
         <DropdownMenu>

@@ -15,9 +15,10 @@ interface LightboxProps {
   alt?: string;
   isOpen: boolean;
   onClose: () => void;
+  postHref?: string;
 }
 
-export const Lightbox: React.FC<LightboxProps> = ({ src, alt, isOpen, onClose }) => {
+export const Lightbox: React.FC<LightboxProps> = ({ src, alt, isOpen, onClose, postHref }) => {
   const handleDownload = (e: React.MouseEvent) => {
     e.stopPropagation();
     // Simple download logic
@@ -44,6 +45,19 @@ export const Lightbox: React.FC<LightboxProps> = ({ src, alt, isOpen, onClose })
         
         {/* Controls Overlay */}
         <div className="absolute top-4 right-4 z-50 flex items-center gap-2 animate-in fade-in duration-500">
+          {postHref && (
+            <Button
+              asChild
+              variant="ghost"
+              size="sm"
+              className="text-white hover:bg-white/20 rounded-full bg-black/20 backdrop-blur-sm px-4 gap-2 h-10 hidden sm:flex"
+            >
+              <a href={postHref}>
+                <ExternalLink className="size-4" />
+                <span className="font-bold">View Post</span>
+              </a>
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="icon"
@@ -86,6 +100,15 @@ export const Lightbox: React.FC<LightboxProps> = ({ src, alt, isOpen, onClose })
         {alt && (
           <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-50 bg-black/40 backdrop-blur-md px-4 py-2 rounded-full border border-white/10 text-white text-xs font-medium max-w-[80vw] truncate animate-in slide-in-from-bottom-4 duration-500">
             {alt}
+          </div>
+        )}
+
+        {/* Mobile View Post Link */}
+        {postHref && (
+          <div className="sm:hidden absolute bottom-6 left-1/2 -translate-x-1/2 z-50 w-[90%]">
+            <Button asChild className="w-full rounded-2xl h-12 font-black shadow-xl" variant="default">
+              <a href={postHref}>View Original Post</a>
+            </Button>
           </div>
         )}
       </DialogContent>

@@ -321,6 +321,7 @@ export const PostCard: React.FC<PostCardProps> = ({
             onReportClick={currentUser?.pubkey !== displayEvent.pubkey ? () => setShowReportModal(true) : undefined}
             onMoreClick={() => setShowRawModal(true)}
             tags={isRepost ? (repostAuthorProfile?.tags || displayEvent.tags) : displayEvent.tags}
+            navigationHref={navigationHref}
           />
 
           <PostContentRenderer

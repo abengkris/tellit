@@ -110,7 +110,7 @@ export const Avatar: React.FC<AvatarProps> = ({
     <ShadcnAvatar size={size} className={className} aria-hidden={ariaHidden}>
       <AvatarImage
         src={displayUrl || getRobohash(pubkey)}
-        alt={pubkey}
+        alt=""
         onError={handleError}
       />
       <AvatarFallback>
