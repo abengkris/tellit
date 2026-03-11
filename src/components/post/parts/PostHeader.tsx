@@ -24,6 +24,16 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { formatCompactDate } from "@/lib/utils/date";
 import { Avatar } from "@/components/common/Avatar";
 import { Badge } from "@/components/ui/badge";
@@ -84,6 +94,7 @@ export const PostHeader: React.FC<PostHeaderProps> = ({
   navigationHref
 }) => {
   const formattedTime = formatCompactDate(createdAt);
+  const [showDeleteDialog, setShowDeleteDialog] = React.useState(false);
 
   return (
     <>
@@ -208,10 +219,9 @@ export const PostHeader: React.FC<PostHeaderProps> = ({
               <>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem 
-                  onClick={() => {
-                    if (confirm("Delete this post? This sends a request to relays, but decentralized deletion is not guaranteed across all clients and relays.")) {
-                      onDeleteClick();
-                    }
+                  onSelect={(e) => {
+                    e.preventDefault();
+                    setShowDeleteDialog(true);
                   }} 
                   className="gap-2 text-destructive focus:text-destructive focus:bg-destructive/10"
                 >
@@ -223,6 +233,35 @@ export const PostHeader: React.FC<PostHeaderProps> = ({
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent className="rounded-3xl border-none shadow-2xl overflow-hidden max-w-[340px] sm:max-w-md p-0">
+          <AlertDialogHeader className="p-8 pb-4">
+            <div className="size-12 rounded-2xl bg-destructive/10 text-destructive flex items-center justify-center mb-4">
+              <Trash2 className="size-6" />
+            </div>
+            <AlertDialogTitle className="text-xl font-black text-left">Delete post?</AlertDialogTitle>
+            <AlertDialogDescription className="text-left text-muted-foreground text-sm font-medium leading-relaxed">
+              This will remove this post from your profile and search results. This sends a request to relays, but decentralized deletion is not guaranteed across all clients and relays.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="bg-muted/30 p-4 px-8 flex-row items-center gap-3">
+            <AlertDialogCancel className="flex-1 rounded-2xl h-12 font-black border-none bg-muted hover:bg-muted/80 m-0">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={(e) => {
+                e.stopPropagation();
+                onDeleteClick?.();
+                setShowDeleteDialog(false);
+              }}
+              className="flex-1 rounded-2xl h-12 font-black bg-destructive hover:bg-destructive/90 text-destructive-foreground shadow-lg shadow-destructive/20 m-0"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 };
