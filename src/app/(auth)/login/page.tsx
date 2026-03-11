@@ -112,7 +112,7 @@ export default function LoginPage() {
 
             <div className="flex flex-col space-y-3">
               <button
-                onClick={() => router.push("/")}
+                onClick={() => router.push("/onboarding")}
                 className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-6 rounded-2xl transition-all shadow-lg shadow-blue-500/20"
               >
                 I&apos;ve Saved It, Let&apos;s Go!

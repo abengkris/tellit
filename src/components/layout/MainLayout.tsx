@@ -27,8 +27,9 @@ export const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }
   const { profile } = useProfile(user?.pubkey);
 
   const isLoginPage = pathname === "/login";
+  const isOnboardingPage = pathname === "/onboarding";
 
-  if (isLoginPage) {
+  if (isLoginPage || isOnboardingPage) {
     return (
       <div className="min-h-screen bg-background text-foreground overflow-x-hidden">
         {children}
