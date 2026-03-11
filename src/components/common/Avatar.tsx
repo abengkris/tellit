@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useBlossom } from "@/hooks/useBlossom";
 import { 
   Avatar as ShadcnAvatar, 
@@ -8,6 +8,7 @@ import {
   AvatarFallback 
 } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
+import Image from "next/image";
 
 interface AvatarProps {
   pubkey: string;
@@ -20,9 +21,9 @@ interface AvatarProps {
 
 /**
  * A robust Avatar component that handles Nostr profile pictures with:
- * 1. Blossom optimization support
+ * 1. Blossom optimization support via next/image or direct URL
  * 2. Automatic fallback to Robohash on error or missing src
- * 3. Graceful loading states using shadcn/ui
+ * 3. Next.js Image optimization for better performance
  */
 export const Avatar: React.FC<AvatarProps> = ({ 
   pubkey, 
@@ -34,67 +35,63 @@ export const Avatar: React.FC<AvatarProps> = ({
 }) => {
   const { getOptimizedUrl } = useBlossom();
   
-  const getRobohash = useCallback((pk: string) => {
-    return `https://robohash.org/${pk}?set=set1`;
-  }, []);
+  const robohashUrl = useMemo(() => `https://robohash.org/${pubkey}?set=set1`, [pubkey]);
 
-  // Primary state for the image source
-  const [displayUrl, setDisplayUrl] = useState<string>("");
-  // Track if we've already tried falling back to the original src after an optimized one failed
-  const [hasTriedOriginal, setHasTriedOriginal] = useState(false);
-  // Track if we've already fallen back to robohash
+  // Initialize displayUrl immediately to avoid flickering
+  const [displayUrl, setDisplayUrl] = useState<string>(() => {
+    if (!src || src.trim() === "") return robohashUrl;
+    return src;
+  });
+  
   const [hasFallenBack, setHasFallenBack] = useState(false);
+  const [isOptimizing, setIsOptimizing] = useState(false);
 
-  // Initial set and reset on src/pubkey changes
+  // Sync state when src or pubkey changes
   useEffect(() => {
     if (isLoading) return;
 
     if (!src || src.trim() === "") {
-      setDisplayUrl(getRobohash(pubkey));
+      setDisplayUrl(robohashUrl);
       setHasFallenBack(true);
       return;
     }
 
     setHasFallenBack(false);
-    setHasTriedOriginal(false);
-
-    // If it's already a robohash or data URL, don't optimize
+    
+    // If it's already a robohash or data URL, just use it
     if (src.includes('robohash.org') || src.startsWith('data:')) {
       setDisplayUrl(src);
       return;
     }
 
-    // Default to the provided src initially
-    setDisplayUrl(src);
-
-    // Attempt Blossom optimization if possible
+    // Attempt Blossom optimization
     let isMounted = true;
+    setIsOptimizing(true);
+    
     getOptimizedUrl(src, { width: size * 2, height: size * 2, format: 'webp' })
       .then(optimized => {
-        if (isMounted && optimized && optimized !== src) {
-          setDisplayUrl(optimized);
+        if (isMounted) {
+          setDisplayUrl(optimized || src);
+          setIsOptimizing(false);
         }
       })
       .catch(() => {
-        // Silent catch, we already set it to src
+        if (isMounted) {
+          setDisplayUrl(src);
+          setIsOptimizing(false);
+        }
       });
       
     return () => { isMounted = false; };
-  }, [src, pubkey, size, getOptimizedUrl, getRobohash, isLoading]);
+  }, [src, robohashUrl, size, getOptimizedUrl, isLoading]);
 
-  const handleError = () => {
-    if (!src || hasFallenBack) return;
-
-    if (!hasTriedOriginal && displayUrl !== src) {
-      // If the optimized URL failed, try the original src
-      setHasTriedOriginal(true);
-      setDisplayUrl(src);
-    } else {
-      // If original src also fails, go to robohash
-      setHasFallenBack(true);
-      setDisplayUrl(getRobohash(pubkey));
-    }
-  };
+  const handleError = useCallback(() => {
+    if (hasFallenBack) return;
+    
+    // If the current URL fails, fallback to robohash
+    setHasFallenBack(true);
+    setDisplayUrl(robohashUrl);
+  }, [hasFallenBack, robohashUrl]);
 
   if (isLoading) {
     return (
@@ -109,16 +106,31 @@ export const Avatar: React.FC<AvatarProps> = ({
   return (
     <ShadcnAvatar size={size} className={className} aria-hidden={ariaHidden}>
       <AvatarImage
-        src={displayUrl || getRobohash(pubkey)}
-        alt=""
-        onError={handleError}
-      />
+        asChild
+        src={displayUrl}
+        onLoadingStatusChange={(status) => {
+          if (status === 'error') handleError();
+        }}
+      >
+        <Image
+          src={displayUrl}
+          alt={pubkey}
+          width={size}
+          height={size}
+          className="aspect-square size-full object-cover rounded-full"
+          onError={handleError}
+          unoptimized={displayUrl.startsWith('data:') || displayUrl.includes('robohash.org')}
+          priority={size > 100} // Higher priority for large avatars (profiles)
+        />
+      </AvatarImage>
       <AvatarFallback>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={getRobohash(pubkey)}
+        <Image
+          src={robohashUrl}
           alt=""
-          className="aspect-square size-full object-cover"
+          width={size}
+          height={size}
+          className="aspect-square size-full object-cover rounded-full"
+          unoptimized
         />
       </AvatarFallback>
     </ShadcnAvatar>

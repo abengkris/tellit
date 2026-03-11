@@ -8,6 +8,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { FeedSkeleton } from "@/components/feed/FeedSkeleton";
 import { UserIdentity } from "@/components/common/UserIdentity";
+import { Avatar } from "@/components/common/Avatar";
 import { shortenPubkey } from "@/lib/utils/nip19";
 import { nip19 } from "nostr-tools";
 import { useRouter } from "next/navigation";
@@ -89,13 +90,11 @@ const NotificationItem = ({ event }: { event: TellItNotification }) => {
         <div className="flex-1 min-w-0">
           <div className="flex items-center space-x-2 mb-1">
             <Link href={`/${event.author.npub}`} className="shrink-0 z-10" onClick={e => e.stopPropagation()}>
-              <Image 
-                src={avatar} 
-                width={32}
-                height={32}
-                className="w-8 h-8 rounded-full bg-gray-200 object-cover"
-                alt={display_name}
-                unoptimized
+              <Avatar 
+                pubkey={event.pubkey} 
+                src={profile?.picture} 
+                size={32} 
+                className="w-8 h-8 rounded-full bg-gray-200"
               />
             </Link>
             <div className="flex flex-wrap items-center gap-x-1 min-w-0">

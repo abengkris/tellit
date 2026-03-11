@@ -59,8 +59,12 @@ export function ProfileImageStep({ onNext, onBack }: { onNext: () => void; onBac
         <div className="relative group">
           <div className="size-40 rounded-full border-4 border-muted overflow-hidden relative shadow-2xl transition-transform group-hover:scale-105 duration-300 bg-muted/50 flex items-center justify-center">
             {data.picture ? (
-              /* eslint-disable-next-line @next/next/no-img-element */
-              <img src={data.picture} alt="Preview" className="size-full object-cover" />
+              <Avatar 
+                pubkey={publicKey || ''} 
+                src={data.picture} 
+                size={160} 
+                className="size-full border-none rounded-none" 
+              />
             ) : (
               <Avatar pubkey={publicKey || ''} size={160} className="border-none" />
             )}
