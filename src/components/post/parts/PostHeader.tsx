@@ -88,7 +88,7 @@ export const PostHeader: React.FC<PostHeaderProps> = ({
       {/* Repost Header */}
       {isRepost && (
         <div className="flex items-center space-x-2 text-muted-foreground text-xs font-bold mb-2 ml-10 truncate min-w-0">
-          <Repeat2 size={14} className="shrink-0" />
+          <Repeat2 size={14} className="shrink-0" aria-hidden="true" />
           <span className="truncate">{repostAuthorName} reposted</span>
         </div>
       )}
@@ -103,6 +103,7 @@ export const PostHeader: React.FC<PostHeaderProps> = ({
                 isLoading={isLoading} 
                 size={48} 
                 className="w-12 h-12 ring-4 ring-background" 
+                aria-hidden="true"
               />
             </Link>
           </div>
@@ -120,13 +121,13 @@ export const PostHeader: React.FC<PostHeaderProps> = ({
             <div className="flex items-center gap-1 shrink-0 mt-1">
               {isPinned && (
                 <Badge variant="secondary" className="h-4 px-1.5 gap-1 text-primary bg-primary/10 border-primary/20 font-black uppercase text-[8px] tracking-tighter">
-                  <Pin className="size-2" fill="currentColor" />
+                  <Pin className="size-2" fill="currentColor" aria-hidden="true" />
                   <span>Pinned</span>
                 </Badge>
               )}
               {isPoll && (
                 <Badge variant="secondary" className="h-4 px-1.5 gap-1 text-orange-500 bg-orange-500/10 border-orange-500/20 font-black uppercase text-[8px] tracking-tighter">
-                  <BarChart2 className="size-2" fill="currentColor" />
+                  <BarChart2 className="size-2" fill="currentColor" aria-hidden="true" />
                   <span>Poll</span>
                 </Badge>
               )}
@@ -153,41 +154,41 @@ export const PostHeader: React.FC<PostHeaderProps> = ({
             <Button 
               variant="ghost" 
               size="icon-xs" 
+              aria-label="More options"
               className="text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-full transition-colors shrink-0"
             >
-              <MoreHorizontal className="size-4" />
-              <span className="sr-only">Options</span>
+              <MoreHorizontal className="size-4" aria-hidden="true" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
             {onPinClick && (
               <DropdownMenuItem onClick={onPinClick} className="gap-2">
-                {isPinned ? <PinOff className="size-4" /> : <Pin className="size-4" />}
+                {isPinned ? <PinOff className="size-4" aria-hidden="true" /> : <Pin className="size-4" aria-hidden="true" />}
                 <span>{isPinned ? "Unpin from Profile" : "Pin to Profile"}</span>
               </DropdownMenuItem>
             )}
             {onBookmarkClick && (
               <DropdownMenuItem onClick={onBookmarkClick} className="gap-2">
-                <Bookmark className={cn("size-4", isBookmarked && "fill-current")} />
+                <Bookmark className={cn("size-4", isBookmarked && "fill-current")} aria-hidden="true" />
                 <span>{isBookmarked ? "Remove Bookmark" : "Save Bookmark"}</span>
               </DropdownMenuItem>
             )}
             {onMuteClick && (
               <DropdownMenuItem onClick={onMuteClick} className={cn("gap-2", !isMuted && "text-destructive focus:text-destructive")}>
-                {isMuted ? <Volume2 className="size-4" /> : <VolumeX className="size-4" />}
+                {isMuted ? <Volume2 className="size-4" aria-hidden="true" /> : <VolumeX className="size-4" aria-hidden="true" />}
                 <span>{isMuted ? `Unmute @${display_name}` : `Mute @${display_name}`}</span>
               </DropdownMenuItem>
             )}
             <DropdownMenuSeparator />
             {onReportClick && (
               <DropdownMenuItem onClick={onReportClick} className="gap-2">
-                <Flag className="size-4" />
+                <Flag className="size-4" aria-hidden="true" />
                 <span>Report Content</span>
               </DropdownMenuItem>
             )}
             {onMoreClick && (
               <DropdownMenuItem onClick={onMoreClick} className="gap-2">
-                <Code className="size-4" />
+                <Code className="size-4" aria-hidden="true" />
                 <span>View Raw Data</span>
               </DropdownMenuItem>
             )}
@@ -202,7 +203,7 @@ export const PostHeader: React.FC<PostHeaderProps> = ({
                   }} 
                   className="gap-2 text-destructive focus:text-destructive focus:bg-destructive/10"
                 >
-                  <Trash2 className="size-4" />
+                  <Trash2 className="size-4" aria-hidden="true" />
                   <span>Delete Post</span>
                 </DropdownMenuItem>
               </>

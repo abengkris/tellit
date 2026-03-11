@@ -43,13 +43,15 @@ export const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }
         {isLoggedIn ? (
           <button 
             onClick={() => setIsDrawerOpen(true)} 
-            className="outline-none relative active:scale-95 transition-transform"
+            aria-label="Open menu"
+            className="relative active:scale-95 transition-transform focus-visible:ring-2 focus-visible:ring-primary rounded-full outline-hidden"
           >
             <Avatar 
               pubkey={user?.pubkey || ""} 
               src={profile?.picture || (profile as { image?: string })?.image} 
               size={32} 
               className="border border-border"
+              aria-hidden="true"
             />
             {(unreadMessagesCount > 0 || unreadCount > 0) && (
               <Badge variant="destructive" className="absolute -top-1 -right-1 size-2.5 p-0 min-w-0 rounded-full border-2 border-background" />
@@ -62,8 +64,8 @@ export const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }
         <Link href="/" className="font-black text-xl text-primary tracking-tighter">Tell it!</Link>
         
         <Button asChild variant="ghost" size="icon" className="relative hover:bg-accent rounded-full">
-          <Link href="/notifications">
-            <Bell className="size-5" />
+          <Link href="/notifications" aria-label={`Notifications ${unreadCount > 0 ? `(${unreadCount} new)` : ""}`}>
+            <Bell className="size-5" aria-hidden="true" />
             {unreadCount > 0 && (
               <Badge variant="destructive" className="absolute top-1.5 right-1.5 size-2.5 p-0 min-w-0 rounded-full border-2 border-background" />
             )}
@@ -123,19 +125,24 @@ export const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }
   );
 };
 
-const MobileNavItem = ({ href, icon: Icon, active, badge }: { href: string; icon: LucideIcon; active: boolean; badge?: number }) => (
-  <Button asChild variant="ghost" className={cn(
-    "p-3 rounded-full transition-all active:scale-90 relative h-auto",
-    active ? 'text-primary' : 'text-muted-foreground'
-  )}>
-    <Link href={href}>
-      <Icon 
-        className="size-6"
-        strokeWidth={active ? 3 : 2} 
-      />
-      {badge !== undefined && badge > 0 && (
-        <Badge variant="destructive" className="absolute top-2 right-2 size-2.5 p-0 min-w-0 rounded-full border-2 border-background" />
-      )}
-    </Link>
-  </Button>
-);
+const MobileNavItem = ({ href, icon: Icon, active, badge }: { href: string; icon: LucideIcon; active: boolean; badge?: number }) => {
+  const label = href === "/" ? "Home" : href.replace("/", "").charAt(0).toUpperCase() + href.slice(2);
+  
+  return (
+    <Button asChild variant="ghost" className={cn(
+      "p-3 rounded-full transition-all active:scale-90 relative h-auto",
+      active ? 'text-primary' : 'text-muted-foreground'
+    )}>
+      <Link href={href} aria-label={`${label} ${badge && badge > 0 ? `(${badge} new)` : ""}`}>
+        <Icon 
+          className="size-6"
+          strokeWidth={active ? 3 : 2} 
+          aria-hidden="true"
+        />
+        {badge !== undefined && badge > 0 && (
+          <Badge variant="destructive" className="absolute top-2 right-2 size-2.5 p-0 min-w-0 rounded-full border-2 border-background" />
+        )}
+      </Link>
+    </Button>
+  );
+};

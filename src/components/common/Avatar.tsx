@@ -15,6 +15,7 @@ interface AvatarProps {
   size?: number;
   className?: string;
   isLoading?: boolean;
+  "aria-hidden"?: boolean | "true" | "false";
 }
 
 /**
@@ -28,7 +29,8 @@ export const Avatar: React.FC<AvatarProps> = ({
   src, 
   size = 40, 
   className = "",
-  isLoading = false 
+  isLoading = false,
+  "aria-hidden": ariaHidden
 }) => {
   const { getOptimizedUrl } = useBlossom();
   
@@ -99,12 +101,13 @@ export const Avatar: React.FC<AvatarProps> = ({
       <Skeleton 
         className={`rounded-full shrink-0 ${className}`}
         style={{ width: size, height: size }}
+        aria-hidden={ariaHidden}
       />
     );
   }
 
   return (
-    <ShadcnAvatar size={size} className={className}>
+    <ShadcnAvatar size={size} className={className} aria-hidden={ariaHidden}>
       <AvatarImage
         src={displayUrl}
         alt={pubkey}

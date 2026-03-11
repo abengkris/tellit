@@ -150,10 +150,11 @@ export const Sidebar = () => {
             <Button
               variant="ghost"
               onClick={() => setIsRelayModalOpen(true)}
+              aria-label={`Relay Status: ${connectedCount} of ${totalCount} connected`}
               className="hidden sm:flex items-center justify-start gap-4 p-3 h-auto text-muted-foreground hover:bg-accent rounded-full transition-colors w-fit lg:w-full text-left"
             >
               <div className="flex items-center justify-center shrink-0 size-7">
-                <Activity className={cn("size-7", connectedCount > 0 ? "text-green-500" : "text-destructive")} />
+                <Activity className={cn("size-7", connectedCount > 0 ? "text-green-500" : "text-destructive")} aria-hidden="true" />
               </div>
               <span className="hidden lg:block text-sm font-bold">
                 {connectedCount}/{totalCount} relays
@@ -171,10 +172,11 @@ export const Sidebar = () => {
               <Button
                 variant="ghost"
                 onClick={() => logout(sessions)}
+                aria-label="Logout"
                 className="hidden sm:flex items-center justify-start gap-4 p-3 h-auto rounded-full hover:bg-destructive/10 text-destructive transition-colors w-fit lg:w-full"
               >
                 <div className="flex items-center justify-center shrink-0 size-7">
-                  <LogOut className="size-7" />
+                  <LogOut className="size-7" aria-hidden="true" />
                 </div>
                 <span className="hidden lg:block text-xl font-bold">Logout</span>
               </Button>
@@ -189,10 +191,11 @@ export const Sidebar = () => {
               <Button
                 variant="ghost"
                 onClick={() => ndk && sessions && login(ndk, sessions)}
+                aria-label="Login"
                 className="flex items-center justify-start gap-4 p-3 h-auto rounded-full hover:bg-primary/10 text-primary transition-colors w-fit lg:w-full"
               >
                 <div className="flex items-center justify-center shrink-0 size-7">
-                  <LogIn className="size-7" />
+                  <LogIn className="size-7" aria-hidden="true" />
                 </div>
                 <span className="hidden lg:block text-xl font-bold">Login</span>
               </Button>
