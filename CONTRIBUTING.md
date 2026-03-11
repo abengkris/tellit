@@ -19,6 +19,11 @@ Welcome to **Tell it!** contribution guide. To maintain code quality and project
   - Components: `PascalCase`
   - Hooks: `usePrefix` (e.g., `useNostr`)
   - Utilities/Variables: `camelCase`
+- **UI Components (shadcn/ui):**
+  - We use **shadcn/ui** for core UI components.
+  - Components are located in `src/components/ui`.
+  - To add a new component: `npx shadcn@latest add <component-name>`
+  - Avoid creating custom styled components if a shadcn component can be used or composed.
 - **Error Handling:** Always handle loading and error states.
 - **Validation:** Nostr events MUST be validated before being displayed.
 

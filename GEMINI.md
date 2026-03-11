@@ -9,6 +9,7 @@ Domain: tellit.id
 - Framework: Next.js latest (App Router)
 - Nostr SDK: NDK (@nostr-dev-kit/ndk)
 - Messaging: @nostr-dev-kit/messages (NIP-17)
+- UI Components: shadcn/ui
 - Styling: TailwindCSS
 - State: Zustand
 - Auth: Nostr keypair (NIP-07 browser extension / NIP-46)
@@ -34,6 +35,7 @@ Domain: tellit.id
 # Project Instructions
 
 - **Framework:** We use Next.js.
+- **UI Components:** Use **shadcn/ui**. Check if a component exists in `src/components/ui` before creating custom components. Use `npx shadcn@latest add <component>` to add new ones.
 - **Styling:** Use Tailwind CSS for all styling. Do not write custom CSS.
 - **Testing:** All new components must include a Vitest unit test.
 - **Tone:** Be concise. Don't explain basic React concepts.
