@@ -100,6 +100,7 @@ function QuoteEmbedContent({ event, className }: { event: NDKEvent; className: s
         renderMedia={true}
         renderQuotes={false}   // ← Tidak ada quote di dalam quote
         maxLines={4}
+        isQuote={true}
       />
     </Link>
   );

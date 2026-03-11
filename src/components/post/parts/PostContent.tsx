@@ -33,6 +33,7 @@ interface PostContentRendererProps {
   isArticle?: boolean;
   isHighlight?: boolean;
   isFullArticle?: boolean;
+  isQuote?: boolean;
 }
 
 const ReplyRecipient: React.FC<{ pubkey: string }> = ({ pubkey }) => {
@@ -58,6 +59,7 @@ export function PostContentRenderer({
   isArticle,
   isHighlight,
   isFullArticle = false,
+  isQuote = false,
 }: PostContentRendererProps) {
   const [showFull, setShowFull] = useState(false);
   const [showSensitive, setShowSensitive] = useState(false);
@@ -256,7 +258,7 @@ export function PostContentRenderer({
         </div>
       )}
 
-      {(!isArticle || isFullArticle) && replyingToPubkey && !isRepost && (
+      {(!isArticle || isFullArticle) && replyingToPubkey && !isRepost && !isQuote && (
         <div className="text-gray-500 text-xs mb-1" onClick={(e) => e.stopPropagation()}>
           Replying to <ReplyRecipient pubkey={replyingToPubkey} />
         </div>
