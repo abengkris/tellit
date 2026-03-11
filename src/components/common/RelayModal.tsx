@@ -59,12 +59,12 @@ export const RelayModal: React.FC<RelayModalProps> = ({ isOpen, onClose }) => {
       <DialogContent className="p-0 gap-0 sm:max-w-md max-h-[80vh] flex flex-col overflow-hidden border-none shadow-2xl">
         <DialogHeader className="p-6 border-b shrink-0">
           <DialogTitle className="flex items-center gap-2 text-primary font-black">
-            <Server className="size-5" />
+            <Server className="size-5" aria-hidden="true" />
             Network Status
           </DialogTitle>
         </DialogHeader>
 
-        <ScrollArea className="flex-1">
+        <ScrollArea className="flex-1 min-h-0">
           <div className="p-6 space-y-4">
             <div className="p-4 bg-primary/10 rounded-2xl text-xs text-primary font-medium leading-relaxed border border-primary/20">
               <p className="font-black mb-1 uppercase tracking-wider">User Sovereignty & Transparency</p>
@@ -92,9 +92,9 @@ export const RelayModal: React.FC<RelayModalProps> = ({ isOpen, onClose }) => {
                   </div>
                   <div className="shrink-0">
                     {relay.status === NDKRelayStatus.CONNECTED ? (
-                      <Wifi size={16} className={getLatencyColor(relay.latency || 0)} />
+                      <Wifi size={16} className={getLatencyColor(relay.latency || 0)} aria-hidden="true" />
                     ) : (
-                      <WifiOff size={16} className="text-destructive" />
+                      <WifiOff size={16} className="text-destructive" aria-hidden="true" />
                     )}
                   </div>
                 </div>
@@ -109,7 +109,7 @@ export const RelayModal: React.FC<RelayModalProps> = ({ isOpen, onClose }) => {
             className="w-full font-black h-12 rounded-xl"
             onClick={() => window.location.reload()}
           >
-            <RefreshCw className="size-4" />
+            <RefreshCw className="size-4" aria-hidden="true" />
             Reconnect All
           </Button>
         </div>

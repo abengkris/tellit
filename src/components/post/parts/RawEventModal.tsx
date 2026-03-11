@@ -1,9 +1,17 @@
 "use client";
 
 import React from "react";
-import { X, Code, Copy, Check } from "lucide-react";
+import { Code, Copy, Check } from "lucide-react";
 import { NDKEvent } from "@nostr-dev-kit/ndk";
 import { useUIStore } from "@/store/ui";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle 
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface RawEventModalProps {
   event: NDKEvent;
@@ -15,8 +23,6 @@ export const RawEventModal: React.FC<RawEventModalProps> = ({ event, isOpen, onC
   const [copied, setCopied] = React.useState(false);
   const { addToast } = useUIStore();
 
-  if (!isOpen) return null;
-
   const rawJson = JSON.stringify(event.rawEvent(), null, 2);
 
   const copyToClipboard = () => {
@@ -27,42 +33,38 @@ export const RawEventModal: React.FC<RawEventModalProps> = ({ event, isOpen, onC
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <div className="bg-white dark:bg-gray-900 rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl animate-in zoom-in-95 flex flex-col max-h-[80vh]">
-        <div className="p-6 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center shrink-0">
-          <div className="flex items-center space-x-2 text-gray-500">
-            <Code size={20} />
-            <h3 className="font-bold text-lg">Raw Event Data</h3>
-          </div>
-          <div className="flex items-center gap-2">
-            <button 
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="p-0 gap-0 sm:max-w-2xl max-h-[80vh] flex flex-col overflow-hidden border-none shadow-2xl">
+        <DialogHeader className="p-6 border-b shrink-0 flex flex-row items-center justify-between">
+          <DialogTitle className="flex items-center gap-2 text-muted-foreground font-black">
+            <Code className="size-5" aria-hidden="true" />
+            Raw Event Data
+          </DialogTitle>
+          <div className="mr-8">
+            <Button 
+              variant="ghost" 
+              size="icon-sm"
               onClick={copyToClipboard}
-              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors text-blue-500"
-              title="Copy JSON"
+              className="text-primary hover:bg-primary/10 rounded-full"
+              aria-label="Copy JSON"
             >
-              {copied ? <Check size={20} /> : <Copy size={20} />}
-            </button>
-            <button 
-              onClick={onClose} 
-              className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
-            >
-              <X size={20} />
-            </button>
+              {copied ? <Check className="size-5" aria-hidden="true" /> : <Copy className="size-5" aria-hidden="true" />}
+            </Button>
           </div>
-        </div>
+        </DialogHeader>
 
-        <div className="p-0 overflow-y-auto bg-gray-50 dark:bg-black/40">
-          <pre className="p-6 text-xs font-mono overflow-x-auto text-gray-800 dark:text-gray-300 whitespace-pre-wrap break-all">
+        <ScrollArea className="flex-1 min-h-0 bg-muted/30">
+          <pre className="p-6 text-[11px] font-mono text-foreground/80 whitespace-pre-wrap break-all leading-relaxed">
             {rawJson}
           </pre>
-        </div>
+        </ScrollArea>
 
-        <div className="p-4 border-t border-gray-100 dark:border-gray-800 shrink-0 bg-white dark:bg-gray-900">
-          <p className="text-[10px] text-gray-500 text-center uppercase tracking-widest font-bold">
+        <div className="p-4 border-t shrink-0 bg-background">
+          <p className="text-[10px] text-muted-foreground text-center uppercase tracking-widest font-black opacity-50">
             Protocol Transparency · NIP-01
           </p>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 };

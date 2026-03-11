@@ -1,11 +1,20 @@
 "use client";
 
 import React, { useState } from "react";
-import { X, Flag, Loader2, AlertCircle, Ban } from "lucide-react";
+import { Flag, Loader2, AlertCircle, Ban } from "lucide-react";
 import { useNDK } from "@/hooks/useNDK";
 import { reportContent, ReportType } from "@/lib/actions/report";
 import { useUIStore } from "@/store/ui";
 import { useLists } from "@/hooks/useLists";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle 
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { cn } from "@/lib/utils";
 
 interface ReportModalProps {
   targetPubkey: string;
@@ -37,8 +46,6 @@ export const ReportModal: React.FC<ReportModalProps> = ({
   const [reason, setReason] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isMuting, setIsMuting] = useState(false);
-
-  if (!isOpen) return null;
 
   const handleMute = async () => {
     setIsMuting(true);
@@ -79,98 +86,97 @@ export const ReportModal: React.FC<ReportModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={onClose}>
-      <div 
-        className="bg-white dark:bg-gray-900 rounded-3xl w-full max-w-md overflow-hidden shadow-2xl animate-in zoom-in-95 flex flex-col max-h-[90vh]"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="p-6 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center shrink-0">
-          <div className="flex items-center space-x-2 text-red-500">
-            <Flag size={20} />
-            <h3 className="font-bold text-lg">Report Content</h3>
-          </div>
-          <button 
-            onClick={onClose} 
-            className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
-          >
-            <X size={20} />
-          </button>
-        </div>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="p-0 gap-0 sm:max-w-md max-h-[90vh] flex flex-col overflow-hidden border-none shadow-2xl">
+        <DialogHeader className="p-6 border-b shrink-0">
+          <DialogTitle className="flex items-center gap-2 text-destructive font-black">
+            <Flag className="size-5" aria-hidden="true" />
+            Report Content
+          </DialogTitle>
+        </DialogHeader>
 
-        <div className="p-6 overflow-y-auto space-y-6">
-          <div className="flex items-start gap-3 p-4 bg-amber-50 dark:bg-amber-950/20 rounded-2xl border border-amber-100 dark:border-amber-900/30 text-xs text-amber-800 dark:text-amber-200">
-            <AlertCircle size={16} className="shrink-0" />
-            <p>
-              Reports are public events (kind 1984) sent to relays. They help clients and relays filter content but do not guarantee removal from the decentralized network.
-            </p>
-          </div>
-
-          <div className="space-y-3">
-            <label className="text-sm font-bold text-gray-500 uppercase tracking-wider px-1">Why are you reporting this?</label>
-            <div className="space-y-2">
-              {REPORT_TYPES.map((item) => (
-                <button
-                  key={item.type}
-                  onClick={() => setSelectedType(item.type)}
-                  className={`w-full text-left p-4 rounded-2xl border transition-all ${
-                    selectedType === item.type
-                      ? "border-red-500 bg-red-50 dark:bg-red-950/20 ring-1 ring-red-500"
-                      : "border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50"
-                  }`}
-                >
-                  <p className={`font-bold text-sm ${selectedType === item.type ? "text-red-600 dark:text-red-400" : ""}`}>
-                    {item.label}
-                  </p>
-                  <p className="text-xs text-gray-500 mt-0.5">{item.description}</p>
-                </button>
-              ))}
+        <ScrollArea className="flex-1 min-h-0">
+          <div className="p-6 space-y-6">
+            <div className="flex items-start gap-3 p-4 bg-amber-500/10 rounded-2xl border border-amber-500/20 text-[11px] text-amber-600 dark:text-amber-400 font-medium leading-relaxed">
+              <AlertCircle size={16} className="shrink-0" aria-hidden="true" />
+              <p>
+                Reports are public events (kind 1984) sent to relays. They help clients and relays filter content but do not guarantee removal from the decentralized network.
+              </p>
             </div>
-          </div>
 
-          <div className="space-y-3 pb-2">
-            <div className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-2xl flex items-center justify-between mb-4">
-              <div className="text-sm">
-                <p className="font-bold">Don&apos;t want to see this user?</p>
-                <p className="text-gray-500 text-xs">Muting hides their posts and replies globally.</p>
+            <div className="space-y-3">
+              <label className="text-xs font-black uppercase tracking-widest text-muted-foreground px-1">Why are you reporting this?</label>
+              <div className="space-y-2">
+                {REPORT_TYPES.map((item) => (
+                  <Button
+                    key={item.type}
+                    variant="outline"
+                    onClick={() => setSelectedType(item.type)}
+                    className={cn(
+                      "w-full h-auto justify-start flex-col items-start p-4 rounded-2xl transition-all border-none shadow-sm gap-0.5",
+                      selectedType === item.type
+                        ? "bg-destructive/10 ring-1 ring-destructive"
+                        : "bg-muted/30 hover:bg-accent"
+                    )}
+                  >
+                    <p className={cn("font-black text-sm", selectedType === item.type ? "text-destructive" : "text-foreground")}>
+                      {item.label}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground font-medium">{item.description}</p>
+                  </Button>
+                ))}
               </div>
-              <button
-                onClick={handleMute}
-                disabled={isMuting}
-                className="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded-xl text-sm font-bold transition-colors flex items-center gap-2"
-              >
-                {isMuting ? <Loader2 className="animate-spin" size={14} /> : <Ban size={14} />}
-                <span>Mute</span>
-              </button>
             </div>
 
-            <label className="text-sm font-bold text-gray-500 uppercase tracking-wider px-1">Additional Context (Optional)</label>
-            <textarea
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
-              placeholder="Provide more details to help us understand the issue..."
-              rows={3}
-              className="w-full p-4 bg-gray-50 dark:bg-black border border-gray-200 dark:border-gray-800 rounded-2xl focus:outline-none focus:ring-2 focus:ring-red-500 transition-all text-sm resize-none"
-            />
-          </div>
-        </div>
+            <div className="space-y-4 pt-2">
+              <div className="p-4 bg-muted/30 rounded-2xl flex items-center justify-between gap-4">
+                <div className="space-y-0.5">
+                  <p className="font-black text-sm">Don&apos;t want to see this user?</p>
+                  <p className="text-muted-foreground text-[10px] font-medium leading-tight text-pretty">Muting hides their posts and replies globally.</p>
+                </div>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={handleMute}
+                  disabled={isMuting}
+                  className="rounded-full font-black px-4 bg-background hover:bg-destructive/10 hover:text-destructive transition-colors shrink-0"
+                >
+                  {isMuting ? <Loader2 className="animate-spin size-3.5" aria-hidden="true" /> : <Ban className="size-3.5" aria-hidden="true" />}
+                  <span>Mute</span>
+                </Button>
+              </div>
 
-        <div className="p-6 border-t border-gray-100 dark:border-gray-800 shrink-0">
-          <button
+              <div className="space-y-3 pb-2">
+                <label className="text-xs font-black uppercase tracking-widest text-muted-foreground px-1">Additional Context (Optional)</label>
+                <textarea
+                  value={reason}
+                  onChange={(e) => setReason(e.target.value)}
+                  placeholder="Provide more details to help us understand the issue..."
+                  rows={3}
+                  className="w-full p-4 bg-muted/30 border-none rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all text-sm font-medium resize-none placeholder:text-muted-foreground/50"
+                />
+              </div>
+            </div>
+          </div>
+        </ScrollArea>
+
+        <div className="p-6 border-t shrink-0">
+          <Button
             onClick={handleSubmit}
             disabled={!selectedType || isSubmitting}
-            className="w-full py-4 bg-red-500 hover:bg-red-600 disabled:opacity-50 disabled:hover:bg-red-500 text-white font-bold rounded-2xl transition-all shadow-lg shadow-red-500/20 flex items-center justify-center gap-2"
+            className="w-full h-14 bg-destructive hover:bg-destructive/90 text-destructive-foreground font-black rounded-2xl transition-all shadow-lg shadow-destructive/20 gap-2"
           >
             {isSubmitting ? (
-              <Loader2 className="animate-spin" size={20} />
+              <Loader2 className="animate-spin size-5" aria-hidden="true" />
             ) : (
               <>
-                <Flag size={18} />
+                <Flag className="size-5" aria-hidden="true" />
                 <span>Submit Report</span>
               </>
             )}
-          </button>
+          </Button>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 };

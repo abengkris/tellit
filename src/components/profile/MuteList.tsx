@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
-import { NDKUser } from "@nostr-dev-kit/ndk";
+import { useEffect, useState, useRef, Fragment } from "react";
 import { getNDK } from "@/lib/ndk";
 import { Avatar } from "@/components/common/Avatar";
 import Link from "next/link";
@@ -10,6 +9,9 @@ import { shortenPubkey } from "@/lib/utils/nip19";
 import { useLists } from "@/hooks/useLists";
 import { useUIStore } from "@/store/ui";
 import { Volume2, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Separator } from "@/components/ui/separator";
 
 interface MuteListProps {
   pubkeys: string[];
@@ -90,9 +92,12 @@ export function MuteList({
 
   if (loading) {
     return (
-      <div className="divide-y divide-gray-100 dark:divide-zinc-800">
+      <div className="flex flex-col">
         {Array.from({ length: 5 }).map((_, i) => (
-          <MuteItemSkeleton key={i} />
+          <Fragment key={i}>
+            <MuteItemSkeleton />
+            {i < 4 && <Separator />}
+          </Fragment>
         ))}
       </div>
     );
@@ -100,7 +105,7 @@ export function MuteList({
 
   if (!pubkeys.length) {
     return (
-      <div className="py-16 text-center text-gray-500">
+      <div className="py-16 text-center text-muted-foreground">
         <p className="text-4xl mb-3">🤫</p>
         <p>Your mute list is empty.</p>
       </div>
@@ -108,51 +113,55 @@ export function MuteList({
   }
 
   return (
-    <div className="divide-y divide-gray-100 dark:divide-zinc-800">
-      {pubkeys.map((pubkey) => {
+    <div className="flex flex-col">
+      {pubkeys.map((pubkey, index) => {
         const user = users.get(pubkey);
         const npub = user?.npub ?? nip19.npubEncode(pubkey);
         const display_name = user?.name ?? shortenPubkey(npub);
         const isUnmuting = unmuting.has(pubkey);
 
         return (
-          <div
-            key={pubkey}
-            className="flex items-center gap-3 p-4 hover:bg-gray-50 dark:hover:bg-zinc-900/50 transition-colors"
-          >
-            <Link href={`/${npub}`} className="shrink-0">
-              <Avatar
-                pubkey={pubkey}
-                src={user?.picture}
-                size={44}
-                className="rounded-full"
-              />
-            </Link>
-
-            <div className="flex-1 min-w-0">
-              <Link href={`/${npub}`} className="block">
-                <p className="font-semibold text-gray-900 dark:text-white hover:underline truncate">
-                  {display_name}
-                </p>
-                <p className="text-gray-500 text-sm truncate">
-                  @{shortenPubkey(npub, 16)}
-                </p>
-              </Link>
-            </div>
-
-            <button
-              onClick={() => handleUnmute(pubkey, display_name)}
-              disabled={isUnmuting}
-              className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 text-gray-900 dark:text-white rounded-full text-xs font-bold transition-all disabled:opacity-50"
+          <Fragment key={pubkey}>
+            <div
+              className="flex items-center gap-3 p-4 hover:bg-accent/50 transition-colors"
             >
-              {isUnmuting ? (
-                <Loader2 size={16} className="animate-spin" />
-              ) : (
-                <Volume2 size={16} />
-              )}
-              <span>Unmute</span>
-            </button>
-          </div>
+              <Link href={`/${npub}`} className="shrink-0">
+                <Avatar
+                  pubkey={pubkey}
+                  src={user?.picture}
+                  size={44}
+                  className="rounded-full"
+                />
+              </Link>
+
+              <div className="flex-1 min-w-0">
+                <Link href={`/${npub}`} className="block">
+                  <p className="font-black hover:underline truncate">
+                    {display_name}
+                  </p>
+                  <p className="text-muted-foreground text-sm truncate">
+                    @{shortenPubkey(npub, 16)}
+                  </p>
+                </Link>
+              </div>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleUnmute(pubkey, display_name)}
+                disabled={isUnmuting}
+                className="rounded-full font-black gap-2 h-9 px-4 bg-background border-none shadow-sm hover:bg-destructive/10 hover:text-destructive"
+              >
+                {isUnmuting ? (
+                  <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+                ) : (
+                  <Volume2 className="size-4" aria-hidden="true" />
+                )}
+                <span>Unmute</span>
+              </Button>
+            </div>
+            {index < pubkeys.length - 1 && <Separator />}
+          </Fragment>
         );
       })}
     </div>
@@ -161,13 +170,13 @@ export function MuteList({
 
 function MuteItemSkeleton() {
   return (
-    <div className="flex items-center gap-3 p-4 animate-pulse">
-      <div className="w-11 h-11 rounded-full bg-gray-100 dark:bg-zinc-800 shrink-0" />
-      <div className="flex-1 space-y-1.5">
-        <div className="h-3.5 bg-gray-100 dark:bg-zinc-800 rounded w-28" />
-        <div className="h-3 bg-gray-100 dark:bg-zinc-800 rounded w-20" />
+    <div className="flex items-center gap-3 p-4">
+      <Skeleton className="size-11 rounded-full shrink-0" />
+      <div className="flex-1 space-y-2">
+        <Skeleton className="h-4 w-28 rounded" />
+        <Skeleton className="h-3 w-20 rounded" />
       </div>
-      <div className="w-24 h-8 bg-gray-100 dark:bg-zinc-800 rounded-full shrink-0" />
+      <Skeleton className="w-24 h-9 rounded-full shrink-0" />
     </div>
   );
 }
