@@ -1,11 +1,20 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { X, Loader2, Activity as StatusIcon, Music, Smile } from "lucide-react";
+import { Loader2, Smile } from "lucide-react";
 import { updateStatus } from "@/lib/actions/profile";
 import { useNDK } from "@/hooks/useNDK";
 import { useUIStore } from "@/store/ui";
 import { useUserStatus } from "@/hooks/useUserStatus";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle 
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 interface UserStatusModalProps {
   isOpen: boolean;
@@ -33,10 +42,8 @@ export const UserStatusModal: React.FC<UserStatusModalProps> = ({
     }
   }, [generalStatus, isOpen]);
 
-  if (!isOpen) return null;
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (e?: React.FormEvent) => {
+    e?.preventDefault();
     if (!ndk) return;
 
     setLoading(true);
@@ -49,8 +56,7 @@ export const UserStatusModal: React.FC<UserStatusModalProps> = ({
       } else {
         addToast("Failed to update status.", "error");
       }
-    } catch (err) {
-      console.error(err);
+    } catch {
       addToast("Error updating status.", "error");
     } finally {
       setLoading(false);
@@ -68,7 +74,7 @@ export const UserStatusModal: React.FC<UserStatusModalProps> = ({
         onSuccess?.();
         onClose();
       }
-    } catch (err) {
+    } catch {
       addToast("Failed to clear status", "error");
     } finally {
       setLoading(false);
@@ -85,70 +91,70 @@ export const UserStatusModal: React.FC<UserStatusModalProps> = ({
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-      <div className="bg-white dark:bg-black w-full max-w-md rounded-3xl overflow-hidden flex flex-col shadow-2xl border border-gray-200 dark:border-gray-800 animate-in zoom-in-95">
-        <div className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-gray-800">
-          <div className="flex items-center gap-3">
-            <button 
-              onClick={onClose} 
-              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-900 rounded-full transition-colors"
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-md p-0 gap-0 overflow-hidden border-none shadow-2xl">
+        <DialogHeader className="p-4 border-b shrink-0 flex flex-row items-center justify-between">
+          <DialogTitle className="font-black text-xl">Set Status</DialogTitle>
+          <div className="mr-8">
+            <Button
+              onClick={() => handleSubmit()}
+              disabled={loading}
+              size="sm"
+              className="px-6 rounded-full font-black shadow-lg shadow-primary/20"
             >
-              <X size={20} />
-            </button>
-            <h2 className="text-lg font-black">Set Status</h2>
+              {loading ? <Loader2 className="animate-spin size-4" aria-hidden="true" /> : "Update"}
+            </Button>
           </div>
-          <button
-            onClick={handleSubmit}
-            disabled={loading}
-            className="px-5 py-1.5 bg-blue-500 hover:bg-blue-600 disabled:opacity-50 text-white rounded-full font-bold text-sm transition-all"
-          >
-            {loading ? <Loader2 className="animate-spin" size={18} /> : "Update"}
-          </button>
-        </div>
+        </DialogHeader>
 
-        <div className="p-6 space-y-6">
-          <div className="space-y-2">
-            <label className="text-xs font-bold uppercase tracking-widest text-gray-400 ml-1">Current Activity</label>
+        <div className="p-6 space-y-8">
+          <div className="space-y-3">
+            <Label htmlFor="status-input" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Current Activity</Label>
             <div className="relative">
-              <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-blue-500">
-                <Smile size={20} />
+              <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-primary">
+                <Smile className="size-5" aria-hidden="true" />
               </div>
-              <input
+              <Input
+                id="status-input"
                 type="text"
                 autoFocus
                 value={status}
                 onChange={(e) => setStatus(e.target.value)}
                 placeholder="What's happening?"
-                className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl py-4 pl-12 pr-4 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium"
+                className="h-14 rounded-2xl pl-12 bg-muted/30 border-none shadow-sm focus-visible:ring-primary/20 font-medium text-base"
               />
             </div>
           </div>
 
           <div className="space-y-3">
-            <label className="text-xs font-bold uppercase tracking-widest text-gray-400 ml-1">Suggestions</label>
+            <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Suggestions</Label>
             <div className="flex flex-wrap gap-2">
               {suggestions.map((s) => (
-                <button
+                <Button
                   key={s}
+                  variant="outline"
+                  size="sm"
                   onClick={() => setStatus(s)}
-                  className="px-3 py-1.5 bg-gray-100 dark:bg-gray-900 hover:bg-blue-50 dark:hover:bg-blue-900/20 border border-gray-200 dark:border-gray-800 rounded-full text-xs font-medium transition-colors"
+                  className="rounded-full bg-muted/30 border-none shadow-sm hover:bg-primary/10 hover:text-primary transition-all h-9 px-4 font-medium"
                 >
                   {s}
-                </button>
+                </Button>
               ))}
             </div>
           </div>
 
           {status && (
-            <button
+            <Button
+              variant="ghost"
               onClick={clearStatus}
-              className="w-full py-3 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-2xl text-sm font-bold transition-colors"
+              disabled={loading}
+              className="w-full h-12 text-destructive hover:bg-destructive/10 rounded-2xl font-black transition-colors"
             >
               Clear Current Status
-            </button>
+            </Button>
           )}
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 };

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { BadgeCheck, Loader2, AlertCircle, X, ExternalLink } from 'lucide-react';
+import { BadgeCheck, AlertCircle, ExternalLink } from 'lucide-react';
 import { useNIP05 } from '@/hooks/useNIP05';
 import { useAffiliation } from '@/hooks/useAffiliation';
 import { useProfile } from '@/hooks/useProfile';
@@ -9,7 +9,15 @@ import { shortenPubkey, toNpub } from '@/lib/utils/nip19';
 import { Emojify } from './Emojify';
 import { AffiliationBadge } from './AffiliationBadge';
 import Link from 'next/link';
-import Image from 'next/image';
+import { Avatar } from './Avatar';
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle 
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 interface UserIdentityProps {
   pubkey: string;
@@ -39,7 +47,7 @@ export const UserIdentity: React.FC<UserIdentityProps> = ({
   const isOrg = nip05Name === '_' || nip05Name === domainPart;
   
   // Only fetch org profile when modal is open to save resources
-  const { profile: orgProfile } = useProfile(isModalOpen ? (affiliationPubkey || undefined) : undefined);
+  const { profile: orgProfile, loading: orgLoading } = useProfile(isModalOpen ? (affiliationPubkey || undefined) : undefined);
 
   const isPost = variant === 'post';
   const isProfile = variant === 'profile';
@@ -51,25 +59,33 @@ export const UserIdentity: React.FC<UserIdentityProps> = ({
   const orgNpub = affiliationPubkey ? toNpub(affiliationPubkey) : '';
 
   return (
-    <div className={`flex flex-col min-w-0 ${isPost ? 'gap-0' : 'gap-0.5'} ${className}`}>
+    <div className={cn("flex flex-col min-w-0", isPost ? "gap-0" : "gap-0.5", className)}>
       <div className="flex items-center gap-1 min-w-0">
         <span 
-          className={`font-bold truncate ${isPost ? 'text-sm' : 'text-xl'} ${isProfile && affiliationPubkey ? 'cursor-pointer hover:underline' : ''}`}
+          className={cn(
+            "font-black truncate",
+            isPost ? "text-sm" : "text-2xl tracking-tight",
+            isProfile && affiliationPubkey ? "cursor-pointer hover:underline" : ""
+          )}
           onClick={() => isProfile && affiliationPubkey && setIsModalOpen(true)}
         >
-          <Emojify text={processedName} tags={tags} className={isPost ? "w-4 h-4" : "w-6 h-6"} />
+          <Emojify text={processedName} tags={tags} />
         </span>
 
         {/* Badge logic */}
         {status === 'loading' && (
-          <div className="w-3 h-3 rounded-full bg-zinc-800 animate-pulse" />
+          <div className="size-3 rounded-full bg-muted animate-pulse shrink-0" />
         )}
 
         {status === 'valid' && (
           <>
             <BadgeCheck
-              size={isPost ? 14 : 20}
-              className={`${isOrg ? 'text-amber-500 fill-amber-500/10' : 'text-blue-500 fill-blue-500/10'} shrink-0`}
+              size={isPost ? 14 : 22}
+              className={cn(
+                "shrink-0",
+                isOrg ? "text-amber-500 fill-amber-500/10" : "text-primary fill-primary/10"
+              )}
+              aria-hidden="true"
             />
             {affiliationPubkey && (
               <AffiliationBadge 
@@ -82,99 +98,75 @@ export const UserIdentity: React.FC<UserIdentityProps> = ({
 
         {status === 'invalid' && (
           <AlertCircle
-            size={isPost ? 14 : 20}
-            className="text-red-500 shrink-0"
+            size={isPost ? 14 : 22}
+            className="text-destructive shrink-0"
+            aria-hidden="true"
           />
         )}
       </div>
 
-      {/* Remove @name display below for profile variant as requested */}
-      {/* {isProfile && name && (
-        <span className="text-sm text-zinc-500 font-medium lowercase leading-tight">
-          @{name}
-        </span>
-      )} */}
+      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <DialogContent className="sm:max-w-sm p-0 gap-0 overflow-hidden border-none shadow-2xl">
+          <DialogHeader className="p-6 border-b shrink-0">
+            <DialogTitle className="font-black text-xl flex items-center gap-2">
+              <BadgeCheck className="text-amber-500 size-6" aria-hidden="true" />
+              Affiliation Detail
+            </DialogTitle>
+          </DialogHeader>
 
-      {/* Affiliation Modal */}
-      {isModalOpen && affiliationPubkey && (
-        <div 
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
-          onClick={() => setIsModalOpen(false)}
-        >
-          <div 
-            className="bg-white dark:bg-zinc-950 w-full max-w-sm rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-2xl p-6 animate-in zoom-in-95 duration-200"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex justify-end mb-2">
-              <button 
-                onClick={() => setIsModalOpen(false)}
-                className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-900 rounded-full transition-colors"
-              >
-                <X size={20} />
-              </button>
+          <div className="p-8 space-y-8">
+            <div className="flex items-start gap-4">
+              <p className="text-sm leading-relaxed text-muted-foreground font-medium">
+                This account is verified because it&apos;s an affiliate of{' '}
+                <Link 
+                  href={`/${orgNpub}`} 
+                  className="text-primary font-black hover:underline inline-flex items-center gap-0.5"
+                  onClick={() => setIsModalOpen(false)}
+                >
+                  @{orgName} <ExternalLink size={12} aria-hidden="true" />
+                </Link>{' '}
+                on Nostr.
+              </p>
             </div>
 
-            <div className="space-y-6">
-              <div className="flex items-start gap-3">
-                <div className="p-2 bg-amber-500/10 rounded-full shrink-0">
-                  <BadgeCheck size={24} className="text-amber-500" />
-                </div>
-                <p className="text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
-                  This account is verified because it&apos;s an affiliate of{' '}
-                  <Link 
-                    href={`/${orgNpub}`} 
-                    className="text-blue-500 font-bold hover:underline inline-flex items-center gap-0.5"
-                    onClick={() => setIsModalOpen(false)}
-                  >
-                    @{orgName} <ExternalLink size={12} />
-                  </Link>{' '}
-                  on Nostr.
-                </p>
-              </div>
-
-              <div className="flex items-start gap-4 p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-100 dark:border-zinc-800">
-                <div className="relative w-12 h-12 rounded-xl overflow-hidden bg-zinc-200 shrink-0 shadow-sm border border-white/20">
-                  <Image 
-                    src={orgProfile?.picture || `https://robohash.org/${affiliationPubkey}?set=set1`} 
-                    alt={orgName} 
-                    fill
-                    className="object-cover"
-                    unoptimized
-                  />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-1">Affiliate</p>
-                  <p className="text-sm text-zinc-600 dark:text-zinc-300">
-                    This account is affiliated with{' '}
-                    <Link 
-                      href={`/${orgNpub}`} 
-                      className="font-bold text-blue-500 hover:underline"
-                      onClick={() => setIsModalOpen(false)}
-                    >
-                      {orgName}
-                    </Link>
-                  </p>
-                </div>
+            <div className="flex items-start gap-4 p-4 rounded-3xl bg-muted/30 border border-border">
+              <Avatar 
+                pubkey={affiliationPubkey || ""} 
+                src={orgProfile?.picture} 
+                size={56}
+                isLoading={orgLoading}
+                className="rounded-2xl shrink-0 shadow-sm"
+                aria-hidden="true"
+              />
+              <div className="flex-1 min-w-0 py-1">
+                <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Affiliate</p>
+                <Link 
+                  href={`/${orgNpub}`} 
+                  className="font-black text-primary hover:underline text-base truncate block"
+                  onClick={() => setIsModalOpen(false)}
+                >
+                  {orgName}
+                </Link>
               </div>
             </div>
 
-            <button 
+            <Button 
               onClick={() => setIsModalOpen(false)}
-              className="w-full mt-8 py-3 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-black font-bold rounded-full hover:opacity-90 transition-opacity"
+              className="w-full h-12 rounded-2xl font-black shadow-lg"
             >
               Close
-            </button>
+            </Button>
           </div>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
 
       {nip05 && (
         <span
-          className={`
-            truncate
-            ${isPost ? 'text-xs text-zinc-500 max-w-[100px] sm:max-w-[150px]' : 'text-sm font-medium text-blue-500 max-w-[250px] sm:max-w-[400px]'}
-            ${status === 'invalid' ? 'text-red-500' : ''}
-          `}
+          className={cn(
+            "truncate font-medium",
+            isPost ? "text-[11px] text-muted-foreground max-w-[100px] sm:max-w-[150px]" : "text-sm text-primary max-w-[250px] sm:max-w-[400px]",
+            status === 'invalid' && "text-destructive"
+          )}
         >
           {nip05.startsWith('_@') ? nip05.substring(1) : nip05}
         </span>

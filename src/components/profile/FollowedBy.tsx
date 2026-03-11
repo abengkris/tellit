@@ -33,14 +33,15 @@ export const FollowedBy = ({ pubkey }: { pubkey: string }) => {
   if (loading || followedBy.length === 0) return null;
 
   return (
-    <div className="flex items-center gap-2 mt-2 text-xs text-gray-500">
+    <div className="flex items-center gap-2 mt-3 text-[11px] text-muted-foreground font-medium">
       <div className="flex -space-x-2">
         {followedBy.slice(0, 3).map((user) => (
           <Avatar 
             key={user.pubkey} 
             pubkey={user.pubkey} 
             size={18} 
-            className="ring-2 ring-white dark:ring-black rounded-full" 
+            className="ring-2 ring-background rounded-full" 
+            aria-hidden="true"
           />
         ))}
       </div>
@@ -50,7 +51,7 @@ export const FollowedBy = ({ pubkey }: { pubkey: string }) => {
           <>
             {displayUsers.map((user, i) => (
               <React.Fragment key={user.pubkey}>
-                <Link href={`/${user.npub}`} className="text-gray-900 dark:text-gray-100 font-bold hover:underline">
+                <Link href={`/${user.npub}`} className="text-foreground font-black hover:underline hover:text-primary transition-colors">
                   {user.name || shortenPubkey(user.pubkey)}
                 </Link>
                 {i < displayUsers.length - 1 ? ", " : ""}
@@ -61,7 +62,7 @@ export const FollowedBy = ({ pubkey }: { pubkey: string }) => {
             )}
           </>
         ) : (
-          <>{count} people you follow</>
+          <span className="font-black text-foreground">{count} people you follow</span>
         )}
       </div>
     </div>

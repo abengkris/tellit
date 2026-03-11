@@ -64,7 +64,7 @@ export const ZapModal: React.FC<ZapModalProps> = ({ event, user, onClose, onSucc
     }, !!user);
 
     return () => stopListening();
-  }, [ndk, event, user, invoice, onSuccess, addToast, target]);
+  }, [ndk, event, user, invoice, onSuccess, addToast, target, refreshBalance]);
 
   const handleZap = async () => {
     if (!ndk || loading || !target) return;
@@ -120,7 +120,7 @@ export const ZapModal: React.FC<ZapModalProps> = ({ event, user, onClose, onSucc
       <DialogContent className="sm:max-w-sm p-0 gap-0 overflow-hidden border-none shadow-2xl">
         <DialogHeader className="p-6 border-b shrink-0">
           <DialogTitle className="flex items-center gap-2 text-yellow-500 font-black">
-            <Zap className="size-5" fill="currentColor" />
+            <Zap className="size-5" fill="currentColor" aria-hidden="true" />
             Send Zap
           </DialogTitle>
         </DialogHeader>
@@ -170,14 +170,14 @@ export const ZapModal: React.FC<ZapModalProps> = ({ event, user, onClose, onSucc
                 disabled={loading || amount <= 0}
                 className="w-full h-14 bg-yellow-500 hover:bg-yellow-600 text-white font-black rounded-2xl transition-all shadow-lg shadow-yellow-500/20 gap-2 disabled:opacity-50"
               >
-                {loading ? <Loader2 className="size-5 animate-spin" /> : <Zap className="size-5" fill="currentColor" />}
+                {loading ? <Loader2 className="size-5 animate-spin" aria-hidden="true" /> : <Zap className="size-5" fill="currentColor" aria-hidden="true" />}
                 <span>Zap {amount} Sats</span>
               </Button>
             </div>
           ) : paid ? (
             <div className="text-center py-8 space-y-6 animate-in fade-in slide-in-from-bottom-4">
               <div className="inline-flex items-center justify-center size-24 bg-green-500/10 text-green-500 rounded-full">
-                <CheckCircle2 className="size-12" />
+                <CheckCircle2 className="size-12" aria-hidden="true" />
               </div>
               <div className="space-y-2">
                 <h4 className="text-2xl font-black tracking-tight">Zap Sent!</h4>
@@ -185,7 +185,7 @@ export const ZapModal: React.FC<ZapModalProps> = ({ event, user, onClose, onSucc
               </div>
               <Button
                 onClick={onClose}
-                className="w-full h-12 rounded-xl font-black"
+                className="w-full h-12 rounded-xl font-black shadow-lg"
               >
                 Done
               </Button>
@@ -208,7 +208,7 @@ export const ZapModal: React.FC<ZapModalProps> = ({ event, user, onClose, onSucc
                     onClick={copyInvoice}
                     className="flex-1 h-12 rounded-xl font-black gap-2"
                   >
-                    <Copy className="size-4" />
+                    <Copy className="size-4" aria-hidden="true" />
                     <span>Copy</span>
                   </Button>
                   <Button
@@ -216,7 +216,7 @@ export const ZapModal: React.FC<ZapModalProps> = ({ event, user, onClose, onSucc
                     className="flex-1 h-12 bg-yellow-500 hover:bg-yellow-600 text-white rounded-xl font-black gap-2 shadow-lg shadow-yellow-500/20"
                   >
                     <a href={`lightning:${invoice}`}>
-                      <ExternalLink className="size-4" />
+                      <ExternalLink className="size-4" aria-hidden="true" />
                       <span>Open</span>
                     </a>
                   </Button>
@@ -224,7 +224,7 @@ export const ZapModal: React.FC<ZapModalProps> = ({ event, user, onClose, onSucc
               </div>
 
               <div className="flex items-center justify-center gap-2 text-muted-foreground text-xs font-bold">
-                <Loader2 className="size-3 animate-spin" />
+                <Loader2 className="size-3 animate-spin" aria-hidden="true" />
                 <span>Waiting for payment...</span>
               </div>
             </div>

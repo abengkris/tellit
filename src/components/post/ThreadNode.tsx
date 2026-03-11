@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { NDKEvent } from "@nostr-dev-kit/ndk";
 import { PostCard } from "./PostCard";
 import { Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface ThreadNodeProps {
   event: NDKEvent;
@@ -15,7 +16,6 @@ interface ThreadNodeProps {
 export const ThreadNode: React.FC<ThreadNodeProps> = ({ 
   event, 
   depth = 0, 
-  isLast = false,
   fetchReplies 
 }) => {
   const [nestedReplies, setNestedReplies] = useState<NDKEvent[]>([]);
@@ -43,8 +43,9 @@ export const ThreadNode: React.FC<ThreadNodeProps> = ({
         {/* Thread connection line for nested items */}
         {depth > 0 && (
           <div 
-            className="absolute left-0 top-0 w-6 h-10 border-l-2 border-b-2 border-gray-200 dark:border-gray-800 rounded-bl-xl z-0"
+            className="absolute left-0 top-0 w-6 h-10 border-l-2 border-b-2 border-border/50 rounded-bl-xl z-0"
             style={{ left: "-1.5rem", top: "-1rem" }}
+            aria-hidden="true"
           />
         )}
 
@@ -55,25 +56,27 @@ export const ThreadNode: React.FC<ThreadNodeProps> = ({
         />
         
         {!hasFetched && depth < 3 && (
-          <button 
+          <Button 
+            variant="outline"
+            size="sm"
             onClick={handleExpand}
-            className="absolute left-6 bottom-2 z-20 text-[10px] font-black uppercase tracking-widest text-blue-500 hover:text-blue-600 bg-white dark:bg-black px-3 py-1 rounded-full border border-blue-500/20 shadow-sm transition-all active:scale-95"
+            className="absolute left-6 bottom-2 z-20 h-7 text-[10px] font-black uppercase tracking-widest text-primary hover:text-primary hover:bg-primary/5 bg-background px-3 rounded-full border-primary/20 shadow-sm transition-all active:scale-95"
+            aria-label="Show replies"
           >
-            {loading ? <Loader2 size={10} className="animate-spin" /> : "Show replies"}
-          </button>
+            {loading ? <Loader2 size={10} className="animate-spin" aria-hidden="true" /> : "Show replies"}
+          </Button>
         )}
       </div>
 
       {expanded && nestedReplies.length > 0 && (
         <div 
-          className={`flex flex-col ml-6 sm:ml-10 border-l-2 border-gray-100 dark:border-gray-800/50`}
+          className="flex flex-col ml-6 sm:ml-10 border-l-2 border-border/30"
         >
-          {nestedReplies.map((reply, index) => (
+          {nestedReplies.map((reply) => (
             <div key={reply.id} className="pl-4 sm:pl-6">
               <ThreadNode 
                 event={reply} 
                 depth={depth + 1} 
-                isLast={index === nestedReplies.length - 1}
                 fetchReplies={fetchReplies} 
               />
             </div>

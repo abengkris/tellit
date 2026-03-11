@@ -1,8 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
-import { Plus, Trash2, Clock, X } from "lucide-react";
+import React from "react";
+import { Plus, Trash2, X } from "lucide-react";
 import { PollOption } from "@/lib/actions/poll";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 interface PollEditorProps {
   options: PollOption[];
@@ -12,73 +15,72 @@ interface PollEditorProps {
 
 export const PollEditor: React.FC<PollEditorProps> = ({ options, setOptions, onClose }) => {
   const addOption = () => {
-    if (options.length < 10) {
-      setOptions([...options, { id: String(options.length), label: "" }]);
-    }
+    if (options.length >= 10) return;
+    setOptions([...options, { id: options.length.toString(), label: "" }]);
   };
 
-  const removeOption = (index: number) => {
-    if (options.length > 2) {
-      const newOptions = options.filter((_, i) => i !== index);
-      // Re-index
-      setOptions(newOptions.map((opt, i) => ({ ...opt, id: String(i) })));
-    }
+  const removeOption = (id: string) => {
+    if (options.length <= 2) return;
+    setOptions(options.filter((o) => o.id !== id));
   };
 
-  const updateOption = (index: number, label: string) => {
-    const newOptions = [...options];
-    newOptions[index].label = label;
-    setOptions(newOptions);
+  const updateOption = (id: string, label: string) => {
+    setOptions(options.map((o) => (o.id === id ? { ...o, label } : o)));
   };
 
   return (
-    <div className="mt-3 p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 animate-in slide-in-from-top-2">
-      <div className="flex justify-between items-center mb-3">
-        <span className="text-xs font-black uppercase tracking-widest text-gray-500">Poll Options</span>
-        <button 
+    <div className="bg-muted/30 border border-border rounded-2xl p-4 space-y-4">
+      <div className="flex items-center justify-between px-1">
+        <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Poll Options</Label>
+        <Button 
+          variant="ghost" 
+          size="icon-xs" 
           onClick={onClose}
-          className="p-1 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-full transition-colors text-gray-500"
+          className="text-muted-foreground hover:text-destructive h-6 w-6"
+          aria-label="Remove poll"
         >
-          <X size={16} />
-        </button>
+          <X className="size-3.5" />
+        </Button>
       </div>
 
       <div className="space-y-2">
-        {options.map((option, index) => (
-          <div key={index} className="flex gap-2">
-            <input
-              type="text"
-              value={option.label}
-              onChange={(e) => updateOption(index, e.target.value)}
+        {options.map((opt, index) => (
+          <div key={opt.id} className="flex items-center gap-2">
+            <Input
+              value={opt.label}
+              onChange={(e) => updateOption(opt.id, e.target.value)}
               placeholder={`Option ${index + 1}`}
-              className="flex-1 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="h-11 rounded-xl bg-background border-none shadow-sm focus-visible:ring-primary/20 font-medium"
             />
             {options.length > 2 && (
-              <button
-                onClick={() => removeOption(index)}
-                className="p-2 text-gray-400 hover:text-red-500 transition-colors"
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => removeOption(opt.id)}
+                className="text-muted-foreground hover:text-destructive shrink-0 rounded-xl"
+                aria-label={`Remove option ${index + 1}`}
               >
-                <Trash2 size={18} />
-              </button>
+                <Trash2 className="size-4" aria-hidden="true" />
+              </Button>
             )}
           </div>
         ))}
       </div>
 
       {options.length < 10 && (
-        <button
+        <Button
+          variant="ghost"
           onClick={addOption}
-          className="mt-3 flex items-center gap-2 text-sm font-bold text-blue-500 hover:text-blue-600 transition-colors"
+          className="w-full h-11 rounded-xl border border-dashed border-border text-primary hover:bg-primary/5 hover:border-primary/30 font-bold gap-2"
         >
-          <Plus size={18} />
+          <Plus className="size-4" aria-hidden="true" />
           <span>Add option</span>
-        </button>
+        </Button>
       )}
-
-      <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-800 flex items-center gap-2 text-gray-500">
-        <Clock size={14} />
-        <span className="text-[10px] font-bold uppercase tracking-wider">Poll ends in 24 hours</span>
-      </div>
+      
+      <p className="text-[10px] text-muted-foreground text-center font-medium">
+        Polls currently run for 24 hours.
+      </p>
     </div>
   );
 };

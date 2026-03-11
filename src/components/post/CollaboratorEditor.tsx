@@ -1,9 +1,13 @@
 "use client";
 
 import React, { useState } from "react";
-import { Plus, Trash2, X, Users } from "lucide-react";
+import { Trash2, X, Users } from "lucide-react";
 import { ZapSplit } from "@/lib/actions/post";
 import { nip19 } from "nostr-tools";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Slider } from "@/components/ui/slider";
 
 interface CollaboratorEditorProps {
   splits: ZapSplit[];
@@ -35,7 +39,7 @@ export const CollaboratorEditor: React.FC<CollaboratorEditorProps> = ({ splits, 
 
       setSplits([...splits, { pubkey, weight: weightVal }]);
       setInputVal("");
-    } catch (e) {
+    } catch {
       alert("Invalid format");
     }
   };
@@ -45,74 +49,91 @@ export const CollaboratorEditor: React.FC<CollaboratorEditorProps> = ({ splits, 
   };
 
   return (
-    <div className="mt-3 p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 animate-in slide-in-from-top-2">
-      <div className="flex justify-between items-center mb-3">
+    <div className="mt-3 p-4 bg-muted/30 border border-border rounded-2xl space-y-4 animate-in slide-in-from-top-2 duration-200">
+      <div className="flex justify-between items-center px-1">
         <div className="flex items-center gap-2">
-          <Users size={16} className="text-purple-500" />
-          <span className="text-xs font-black uppercase tracking-widest text-gray-500">Zap Splits (Collaborators)</span>
+          <Users size={16} className="text-purple-500" aria-hidden="true" />
+          <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Zap Splits (Collaborators)</Label>
         </div>
-        <button 
+        <Button 
+          variant="ghost" 
+          size="icon-xs"
           onClick={onClose}
-          className="p-1 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-full transition-colors text-gray-500"
+          className="text-muted-foreground hover:text-destructive h-6 w-6"
+          aria-label="Remove collaborator editor"
         >
-          <X size={16} />
-        </button>
+          <X className="size-3.5" />
+        </Button>
       </div>
 
       {splits.length > 0 && (
-        <div className="space-y-2 mb-4">
+        <div className="space-y-2">
           {splits.map((split) => (
-            <div key={split.pubkey} className="flex items-center justify-between bg-white dark:bg-black p-3 rounded-xl border border-gray-100 dark:border-gray-800">
+            <div key={split.pubkey} className="flex items-center justify-between bg-background p-3 rounded-xl border border-border shadow-sm group">
               <div className="min-w-0 flex-1">
-                <div className="text-xs font-mono truncate text-gray-500">
-                  {split.pubkey.slice(0, 8)}...{split.pubkey.slice(-8)}
+                <div className="text-[10px] font-mono truncate text-muted-foreground mb-0.5">
+                  {split.pubkey.slice(0, 12)}…{split.pubkey.slice(-8)}
                 </div>
-                <div className="text-xs font-bold">{split.weight}% share</div>
+                <div className="text-xs font-black uppercase tracking-tight text-primary">
+                  {split.weight}% share
+                </div>
               </div>
-              <button
+              <Button
+                variant="ghost"
+                size="icon-sm"
                 onClick={() => removeCollaborator(split.pubkey)}
-                className="p-2 text-gray-400 hover:text-red-500 transition-colors"
+                className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg"
+                aria-label="Remove collaborator"
               >
-                <Trash2 size={18} />
-              </button>
+                <Trash2 size={16} aria-hidden="true" />
+              </Button>
             </div>
           ))}
         </div>
       )}
 
-      <div className="space-y-3">
-        <input
-          type="text"
-          value={inputVal}
-          onChange={(e) => setInputVal(e.target.value)}
-          placeholder="npub or hex pubkey"
-          className="w-full bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-        <div className="flex items-center gap-3">
-          <div className="flex-1">
-            <label className="text-[10px] uppercase font-bold text-gray-400 mb-1 block">Share Percentage</label>
-            <input
-              type="range"
-              min="1"
-              max="100"
-              value={weightVal}
-              onChange={(e) => setWeightVal(Number(e.target.value))}
-              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-500"
-            />
+      <div className="space-y-4 pt-2">
+        <div className="space-y-2">
+          <Input
+            type="text"
+            value={inputVal}
+            onChange={(e) => setInputVal(e.target.value)}
+            placeholder="npub or hex pubkey"
+            className="h-11 rounded-xl bg-background border-none shadow-sm focus-visible:ring-primary/20 text-sm font-medium"
+          />
+        </div>
+        
+        <div className="space-y-4">
+          <div className="flex items-center justify-between px-1">
+            <Label className="text-[10px] uppercase font-black text-muted-foreground tracking-widest">Share Weight</Label>
+            <span className="text-xs font-black tabular-nums text-primary">{weightVal}%</span>
           </div>
-          <div className="w-12 text-center font-bold text-sm">{weightVal}%</div>
-          <button
-            onClick={addCollaborator}
-            disabled={!inputVal.trim()}
-            className="px-4 py-2 bg-blue-500 text-white text-sm font-bold rounded-xl disabled:opacity-50 hover:bg-blue-600 transition-colors"
-          >
-            Add
-          </button>
+          
+          <div className="flex items-center gap-4">
+            <div className="flex-1 px-1">
+              <Slider
+                min={1}
+                max={100}
+                step={1}
+                value={[weightVal]}
+                onValueChange={(vals) => setWeightVal(vals[0])}
+                className="py-4"
+              />
+            </div>
+            <Button
+              onClick={addCollaborator}
+              disabled={!inputVal.trim()}
+              size="sm"
+              className="h-10 px-6 rounded-xl font-black shadow-lg shadow-primary/20 shrink-0"
+            >
+              Add
+            </Button>
+          </div>
         </div>
       </div>
 
-      <p className="mt-3 text-[10px] text-gray-400 leading-tight">
-        Zaps sent to this post will be automatically split between you and the collaborators. Note: Total percentage can exceed 100% (weights are relative).
+      <p className="px-1 text-[10px] text-muted-foreground leading-relaxed font-medium italic opacity-70">
+        Zaps sent to this post will be automatically split between you and the collaborators.
       </p>
     </div>
   );

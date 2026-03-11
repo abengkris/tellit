@@ -14,7 +14,13 @@ import { ProfileEditModal } from "@/components/profile/ProfileEditModal";
 import { UserStatusModal } from "@/components/profile/UserStatusModal";
 import { UserIdentity } from "@/components/common/UserIdentity";
 import { ZapModal } from "@/components/common/ZapModal";
-import { DropdownMenu } from "@/components/common/DropdownMenu";
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuTrigger,
+  DropdownMenuSeparator
+} from "@/components/ui/dropdown-menu";
 import { Emojify } from "@/components/common/Emojify";
 import { updateStatus } from "@/lib/actions/profile";
 import { useZaps } from "@/hooks/useZaps";
@@ -37,6 +43,16 @@ import { FeedList } from "@/components/feed/FeedList";
 import { FeedSkeleton } from "@/components/feed/FeedSkeleton";
 import { format } from "date-fns";
 import { decodeNip19, shortenPubkey } from "@/lib/utils/nip19";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle 
+} from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 type ProfileTab = "posts" | "replies" | "media" | "articles" | "highlights";
 
@@ -168,16 +184,16 @@ export function ProfileContent({ npubParam }: { npubParam: string }) {
   if (profileLoading) {
     return (
       <>
-        <div className="h-48 bg-gray-200 dark:bg-gray-800 animate-pulse" />
+        <div className="h-48 bg-muted animate-pulse" />
         <div className="px-4 pb-4 animate-pulse">
           <div className="relative flex justify-between items-end -mt-16 mb-4">
-            <div className="w-32 h-32 rounded-full bg-gray-300 dark:bg-gray-700 ring-4 ring-white dark:ring-black" />
-            <div className="w-32 h-10 rounded-full bg-gray-200 dark:bg-gray-800" />
+            <div className="size-32 rounded-full bg-muted ring-4 ring-background" />
+            <div className="w-32 h-10 rounded-full bg-muted" />
           </div>
           <div className="space-y-3">
-            <div className="h-8 bg-gray-200 dark:bg-gray-800 rounded w-1/3" />
-            <div className="h-4 bg-gray-100 dark:bg-gray-900 rounded w-full" />
-            <div className="h-4 bg-gray-100 dark:bg-gray-900 rounded w-2/3" />
+            <div className="h-8 bg-muted rounded w-1/3" />
+            <div className="h-4 bg-muted rounded w-full" />
+            <div className="h-4 bg-muted rounded w-2/3" />
           </div>
         </div>
         <FeedSkeleton />
@@ -188,100 +204,80 @@ export function ProfileContent({ npubParam }: { npubParam: string }) {
   return (
     <>
       {/* Header */}
-      <div className="h-48 bg-gray-200 dark:bg-gray-800 relative overflow-hidden">
+      <div className="h-48 bg-muted relative overflow-hidden">
         {profile?.banner ? (
           <Image src={profile.banner} alt="Banner" fill className="object-cover" unoptimized />
         ) : (
-          <div className="w-full h-full bg-gradient-to-r from-blue-400 to-purple-500 opacity-20" />
+          <div className="w-full h-full bg-linear-to-r from-primary/20 to-purple-500/20" />
         )}
       </div>
 
-      <div className="px-4 pb-4 border-b border-gray-200 dark:border-gray-800">
+      <div className="px-4 pb-4 border-b border-border">
         <div className="relative flex justify-between items-end -mt-16 mb-4">
-          <div className="p-1 bg-white dark:bg-black rounded-full ring-4 ring-white dark:ring-black shrink-0">
+          <div className="p-1 bg-background rounded-full ring-4 ring-background shrink-0">
             <Avatar 
               pubkey={hexPubkey} 
               src={profile?.picture || (profile as { image?: string })?.image} 
               size={128} 
               className="border-none shadow-none" 
+              aria-hidden="true"
             />
           </div>
           
           <div className="flex gap-2 items-center flex-wrap justify-end">
-            {isOwnProfile ? (
-              <div className="flex gap-2 items-center">
-                <DropdownMenu
-                  trigger={
-                    <button className="p-2 border border-gray-300 dark:border-gray-700 rounded-full hover:bg-gray-50 dark:hover:bg-gray-900 transition-all text-gray-500">
-                      <MoreVertical size={20} />
-                    </button>
-                  }
-                  items={[
-                    {
-                      label: "Edit Profile",
-                      onClick: () => setIsEditModalOpen(true),
-                      icon: <Edit2 size={16} />
-                    },
-                    {
-                      label: "Share Profile",
-                      onClick: handleShare,
-                      icon: <Share size={16} />
-                    },
-                    {
-                      label: "Copy Npub",
-                      onClick: handleCopyNpub,
-                      icon: <Copy size={16} />
-                    }
-                  ]}
-                />
-              </div>
-            ) : (
-              <div className="flex gap-2 items-center">
-                {currentUser && (
-                  <>
-                    <Link
-                      href={`/messages/${npubParam}`}
-                      className="p-2 border border-gray-300 dark:border-gray-700 rounded-full hover:bg-blue-50 dark:hover:bg-blue-900/20 text-blue-500 transition-all"
-                      aria-label="Message User"
-                    >
-                      <Mail size={20} />
+            <div className="flex gap-2 items-center">
+              {!isOwnProfile && currentUser && (
+                <>
+                  <Button asChild variant="outline" size="icon" className="rounded-full h-10 w-10 text-primary border-border hover:bg-primary/10">
+                    <Link href={`/messages/${npubParam}`} aria-label="Message User">
+                      <Mail className="size-5" aria-hidden="true" />
                     </Link>
-                    <FollowButton targetPubkey={hexPubkey} size="lg" />
-                  </>
-                )}
-                <DropdownMenu
-                  trigger={
-                    <button className="p-2 border border-gray-300 dark:border-gray-700 rounded-full hover:bg-gray-50 dark:hover:bg-gray-900 transition-all text-gray-500">
-                      <MoreVertical size={20} />
-                    </button>
-                  }
-                  items={[
-                    {
-                      label: "Share Profile",
-                      onClick: handleShare,
-                      icon: <Share size={16} />
-                    },
-                    {
-                      label: "Copy Npub",
-                      onClick: handleCopyNpub,
-                      icon: <Copy size={16} />
-                    },
-                    {
-                      label: isMuted(hexPubkey) ? "Unmute User" : "Mute User",
-                      onClick: handleMute,
-                      icon: isMuted(hexPubkey) ? <Volume2 size={16} /> : <VolumeX size={16} />,
-                      variant: isMuted(hexPubkey) ? undefined : "danger"
-                    },
-                    {
-                      label: "Report User",
-                      onClick: () => addToast("Report feature coming soon", "info"),
-                      icon: <Flag size={16} />,
-                      variant: "danger"
-                    }
-                  ]}
-                />
-              </div>
-            )}
+                  </Button>
+                  <FollowButton targetPubkey={hexPubkey} size="lg" />
+                </>
+              )}
+              
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="icon" className="rounded-full h-10 w-10 text-muted-foreground border-border hover:bg-accent">
+                    <MoreVertical className="size-5" aria-hidden="true" />
+                    <span className="sr-only">More options</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  {isOwnProfile && (
+                    <DropdownMenuItem onClick={() => setIsEditModalOpen(true)} className="gap-2">
+                      <Edit2 className="size-4" aria-hidden="true" />
+                      <span>Edit Profile</span>
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuItem onClick={handleShare} className="gap-2">
+                    <Share className="size-4" aria-hidden="true" />
+                    <span>Share Profile</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleCopyNpub} className="gap-2">
+                    <Copy className="size-4" aria-hidden="true" />
+                    <span>Copy Npub</span>
+                  </DropdownMenuItem>
+                  {!isOwnProfile && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem 
+                        onClick={handleMute} 
+                        className={cn("gap-2", !isMuted(hexPubkey) && "text-destructive focus:text-destructive")}
+                      >
+                        {isMuted(hexPubkey) ? <Volume2 className="size-4" aria-hidden="true" /> : <VolumeX className="size-4" aria-hidden="true" />}
+                        <span>{isMuted(hexPubkey) ? "Unmute User" : "Mute User"}</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => addToast("Report feature coming soon", "info")} className="gap-2 text-destructive focus:text-destructive">
+                        <Flag className="size-4" aria-hidden="true" />
+                        <span>Report User</span>
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
         </div>
 
@@ -296,33 +292,35 @@ export function ProfileContent({ npubParam }: { npubParam: string }) {
               tags={profile?.tags}
             />
             {profile?.pronouns && (
-              <span className="text-xs text-gray-500 font-medium bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded mt-1">
+              <Badge variant="secondary" className="h-5 px-1.5 font-medium rounded-md mt-1 lowercase">
                 {profile.pronouns}
-              </span>
+              </Badge>
             )}
             {profile?.bot && (
-              <span className="text-[10px] bg-blue-500/10 text-blue-500 border border-blue-500/20 px-1.5 py-0.5 rounded font-bold uppercase tracking-widest mt-1">
+              <Badge variant="secondary" className="h-5 px-1.5 font-black uppercase tracking-widest text-[9px] bg-primary/10 text-primary border-primary/20 rounded-md mt-1">
                 Bot
-              </span>
+              </Badge>
             )}
           </div>
           
           {/* User Status Badges */}
           <div className="flex flex-wrap gap-2 py-1.5">
             {isOwnProfile && !generalStatus?.content && (
-              <button 
+              <Button 
+                variant="ghost"
+                size="sm"
                 onClick={() => setIsStatusModalOpen(true)}
-                className="flex items-center gap-1.5 px-3 py-1 bg-gray-50 dark:bg-gray-900/40 border border-gray-100 dark:border-gray-800 text-gray-500 rounded-full text-[11px] font-bold hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-500 hover:border-blue-200 dark:hover:border-blue-800 transition-all group"
+                className="h-7 px-3 bg-muted/40 border border-border text-muted-foreground rounded-full text-[11px] font-black hover:bg-primary/10 hover:text-primary hover:border-primary/30 transition-all group gap-1.5"
               >
-                <Activity size={12} className="group-hover:animate-pulse" />
-                <span>Set Status</span>
-              </button>
+                <Activity size={12} className="group-hover:animate-pulse" aria-hidden="true" />
+                <span>SET STATUS</span>
+              </Button>
             )}
             {generalStatus?.content && (
               <div 
-                className={`flex items-center gap-1.5 px-3 py-1 bg-blue-500/5 dark:bg-blue-500/10 border border-blue-500/10 dark:border-blue-500/20 text-blue-600 dark:text-blue-400 rounded-full text-[11px] font-bold animate-in fade-in zoom-in-95 duration-500 group relative`}
+                className={`flex items-center gap-1.5 px-3 py-1 bg-primary/5 dark:bg-primary/10 border border-primary/10 dark:border-primary/20 text-primary rounded-full text-[11px] font-black animate-in fade-in zoom-in-95 duration-500 group relative uppercase tracking-tight`}
               >
-                <Activity size={12} />
+                <Activity size={12} aria-hidden="true" />
                 <span 
                   className={isOwnProfile ? "cursor-pointer hover:underline" : ""} 
                   onClick={() => isOwnProfile && setIsStatusModalOpen(true)}
@@ -330,8 +328,8 @@ export function ProfileContent({ npubParam }: { npubParam: string }) {
                   <Emojify text={generalStatus.content} tags={profile?.tags} />
                 </span>
                 {generalStatus.link && (
-                  <a href={generalStatus.link} target="_blank" rel="noopener noreferrer" className="hover:text-blue-500 transition-colors" onClick={e => e.stopPropagation()}>
-                    <LinkIcon size={10} />
+                  <a href={generalStatus.link} target="_blank" rel="noopener noreferrer" className="hover:opacity-70 transition-opacity" onClick={e => e.stopPropagation()} aria-label="Status link">
+                    <LinkIcon size={10} aria-hidden="true" />
                   </a>
                 )}
                 {isOwnProfile && (
@@ -343,21 +341,21 @@ export function ProfileContent({ npubParam }: { npubParam: string }) {
                         window.location.reload();
                       }
                     }}
-                    className="ml-1 opacity-0 group-hover:opacity-100 transition-opacity hover:text-red-500"
+                    className="ml-1 opacity-0 group-hover:opacity-100 transition-opacity hover:text-destructive"
                     title="Clear status"
                   >
-                    <X size={10} />
+                    <X size={10} aria-hidden="true" />
                   </button>
                 )}
               </div>
             )}
             {musicStatus?.content && (
-              <div className="flex items-center gap-1.5 px-3 py-1 bg-pink-500/5 dark:bg-pink-500/10 border border-pink-500/10 dark:border-pink-500/20 text-pink-600 dark:text-pink-400 rounded-full text-[11px] font-bold animate-in fade-in zoom-in-95 duration-500">
-                <Music size={12} className="animate-bounce" style={{ animationDuration: '3s' }} />
+              <div className="flex items-center gap-1.5 px-3 py-1 bg-pink-500/5 dark:bg-pink-500/10 border border-pink-500/10 dark:border-pink-500/20 text-pink-600 dark:text-pink-400 rounded-full text-[11px] font-black animate-in fade-in zoom-in-95 duration-500 uppercase tracking-tight">
+                <Music size={12} className="animate-bounce" style={{ animationDuration: '3s' }} aria-hidden="true" />
                 <span><Emojify text={musicStatus.content} tags={profile?.tags} /></span>
                 {musicStatus.link && (
-                  <a href={musicStatus.link} target="_blank" rel="noopener noreferrer" className="hover:text-pink-500 transition-colors">
-                    <LinkIcon size={10} />
+                  <a href={musicStatus.link} target="_blank" rel="noopener noreferrer" className="hover:opacity-70 transition-opacity" aria-label="Music link">
+                    <LinkIcon size={10} aria-hidden="true" />
                   </a>
                 )}
               </div>
@@ -368,39 +366,38 @@ export function ProfileContent({ npubParam }: { npubParam: string }) {
           {interests.size > 0 && (
             <div className="flex flex-wrap gap-2 py-1 animate-in fade-in slide-in-from-left duration-700">
               {Array.from(interests).map((interest) => (
-                <Link
-                  key={interest}
-                  href={`/search?q=%23${interest}`}
-                  className="flex items-center gap-1.5 px-2.5 py-1 bg-gray-100 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-400 rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-500 hover:border-blue-200 transition-all"
-                >
-                  <Tag size={10} />
-                  <span>#{interest}</span>
-                </Link>
+                <Button key={interest} asChild variant="ghost" className="h-6 px-2.5 bg-muted/50 border border-border text-muted-foreground rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-primary/10 hover:text-primary hover:border-primary/20 transition-all gap-1.5">
+                  <Link href={`/search?q=%23${interest}`}>
+                    <Tag size={10} aria-hidden="true" />
+                    <span>#{interest}</span>
+                  </Link>
+                </Button>
               ))}
             </div>
           )}
         </div>
 
         {profile?.about && (
-          <div className="mt-4 text-gray-900 dark:text-gray-100">
+          <div className="mt-4 text-foreground leading-relaxed">
             <FormattedAbout text={profile.about} tags={profile.tags} />
           </div>
         )}
 
         <ExternalIdentities identities={externalIdentities} />
 
-        <div className="mt-4 flex flex-wrap gap-4 text-gray-500 text-sm">
+        <div className="mt-4 flex flex-wrap gap-4 text-muted-foreground text-sm font-medium">
           {profile?.website && (
-            <a href={profile.website} target="_blank" rel="noopener noreferrer" className="flex items-center space-x-1 hover:underline text-blue-500">
-              <LinkIcon size={16} />
+            <a href={profile.website} target="_blank" rel="noopener noreferrer" className="flex items-center space-x-1 hover:underline text-primary">
+              <LinkIcon size={16} aria-hidden="true" />
               <span>{safeHostname(profile.website)}</span>
             </a>
           )}
           <button 
             onClick={() => setShowDatesModal(true)}
-            className="flex items-center space-x-1 hover:text-blue-500 transition-colors cursor-pointer"
+            className="flex items-center space-x-1 hover:text-primary transition-colors cursor-pointer"
+            aria-label="View profile history"
           >
-            <Calendar size={16} />
+            <Calendar size={16} aria-hidden="true" />
             <span>
               {profile?.published_at 
                 ? format(new Date(profile.published_at * 1000), "MMM yyyy")
@@ -414,8 +411,8 @@ export function ProfileContent({ npubParam }: { npubParam: string }) {
               className="flex items-center space-x-1 text-yellow-600 dark:text-yellow-500 hover:underline transition-all group"
               title={`Zap ${profile.lud16}`}
             >
-              <Zap size={16} fill="currentColor" className="group-hover:scale-110 transition-transform" />
-              <span className="font-medium">{profile.lud16}</span>
+              <Zap size={16} fill="currentColor" className="group-hover:scale-110 transition-transform" aria-hidden="true" />
+              <span className="font-bold">{profile.lud16}</span>
             </button>
           )}
         </div>
@@ -426,32 +423,32 @@ export function ProfileContent({ npubParam }: { npubParam: string }) {
         <div className="flex gap-5 mt-4 text-sm">
           <Link
             href={`/${npubParam}/followers?tab=following`}
-            className="hover:underline flex items-center gap-1"
+            className="hover:underline flex items-center gap-1 group"
           >
-            <span className="font-bold text-gray-900 dark:text-white">
+            <span className="font-black text-foreground">
               {fwLoading ? "–" : followingCount.toLocaleString()}
             </span>
-            <span className="text-gray-500 text-xs">Following</span>
+            <span className="text-muted-foreground text-xs font-medium">Following</span>
           </Link>
 
-          <Link href={`/${npubParam}/followers?tab=followers`} className="hover:underline flex items-center gap-1">
-            <span className="font-bold text-gray-900 dark:text-white">
+          <Link href={`/${npubParam}/followers?tab=followers`} className="hover:underline flex items-center gap-1 group">
+            <span className="font-black text-foreground">
               {fLoading ? "–" : formatCount(followerCount)}
             </span>
-            <span className="text-gray-500 text-xs">Followers</span>
+            <span className="text-muted-foreground text-xs font-medium">Followers</span>
           </Link>
 
           <div className="flex items-center gap-1 cursor-default">
-            <Zap size={14} className="text-yellow-500" fill="currentColor" />
-            <span className="font-bold text-gray-900 dark:text-white">
+            <Zap size={14} className="text-yellow-500" fill="currentColor" aria-hidden="true" />
+            <span className="font-black text-foreground">
               {formatCount(totalSats)}
             </span>
           </div>
 
           {!relaysLoading && userRelays.length > 0 && (
             <div className="flex items-center gap-1 cursor-default" title={userRelays.map(r => r.url).join("\n")}>
-              <Activity size={14} className="text-green-500" />
-              <span className="font-bold text-gray-900 dark:text-white">
+              <Activity size={14} className="text-green-500" aria-hidden="true" />
+              <span className="font-black text-foreground">
                 {userRelays.length}
               </span>
             </div>
@@ -460,30 +457,25 @@ export function ProfileContent({ npubParam }: { npubParam: string }) {
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-gray-200 dark:border-gray-800" role="tablist">
-        {(["posts", "replies", "media", "articles", "highlights"] as const).map((tab) => (
-          <button
-            key={tab}
-            role="tab"
-            aria-selected={activeTab === tab}
-            onClick={() => handleTabChange(tab)}
-            className={`flex-1 py-4 text-sm font-bold capitalize transition-colors relative ${
-              activeTab === tab ? "text-blue-500" : "text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-900"
-            }`}
-          >
-            {tab}
-            {activeTab === tab && (
-              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-1 bg-blue-500 rounded-full" />
-            )}
-          </button>
-        ))}
-      </div>
+      <Tabs value={activeTab} onValueChange={(val) => handleTabChange(val as ProfileTab)} className="w-full">
+        <TabsList className="w-full h-14 bg-background border-b border-border rounded-none p-0 flex">
+          {(["posts", "replies", "media", "articles", "highlights"] as const).map((tab) => (
+            <TabsTrigger 
+              key={tab} 
+              value={tab} 
+              className="flex-1 h-full rounded-none font-black text-xs uppercase tracking-widest data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:shadow-none relative after:absolute after:bottom-0 after:left-1/2 after:-translate-x-1/2 after:w-12 after:h-1 after:bg-primary after:rounded-full after:opacity-0 data-[state=active]:after:opacity-100 after:transition-opacity border-none"
+            >
+              {tab}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+      </Tabs>
 
       {/* Feed */}
       <div className="pb-20">
         {/* Pinned Posts Section */}
         {activeTab === "posts" && pinnedPosts.length > 0 && (
-          <div className="border-b-4 border-gray-100 dark:border-gray-900 bg-blue-50/5">
+          <div className="border-b-4 border-muted/50 bg-primary/5">
             {pinnedPosts.map((post) => (
               <PostCard key={`pinned-${post.id}`} event={post} />
             ))}
@@ -527,63 +519,53 @@ export function ProfileContent({ npubParam }: { npubParam: string }) {
       )}
 
       {/* Profile History Modal */}
-      {showDatesModal && (
-        <div 
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
-          onClick={() => setShowDatesModal(false)}
-        >
-          <div 
-            className="bg-white dark:bg-zinc-900 w-full max-w-xs rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="p-5 border-b border-gray-100 dark:border-zinc-800 flex items-center justify-between">
-              <h2 className="text-lg font-black flex items-center gap-2">
-                <Clock className="text-blue-500" size={18} />
-                Profile History
-              </h2>
-              <button onClick={() => setShowDatesModal(false)} className="p-2 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-full transition-colors">
-                <X size={18} />
-              </button>
-            </div>
-            <div className="p-6 space-y-6">
-              <div className="flex items-center gap-4">
-                <div className="p-2.5 bg-blue-500/10 text-blue-500 rounded-xl">
-                  <Calendar size={20} />
-                </div>
-                <div>
-                  <p className="text-[10px] font-black uppercase text-gray-400 tracking-widest">Joined</p>
-                  <p className="text-sm font-bold">
-                    {profile?.published_at 
-                      ? format(new Date(profile.published_at * 1000), "MMMM d, yyyy")
-                      : "Unknown"}
-                  </p>
-                </div>
+      <Dialog open={showDatesModal} onOpenChange={setShowDatesModal}>
+        <DialogContent className="sm:max-w-xs p-0 gap-0 overflow-hidden border-none shadow-2xl">
+          <DialogHeader className="p-5 border-b shrink-0 flex flex-row items-center justify-between">
+            <DialogTitle className="text-lg font-black flex items-center gap-2">
+              <Clock className="text-primary size-5" aria-hidden="true" />
+              Profile History
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="p-6 space-y-6">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-primary/10 text-primary rounded-2xl">
+                <Calendar size={20} aria-hidden="true" />
               </div>
-              <div className="flex items-center gap-4">
-                <div className="p-2.5 bg-green-500/10 text-green-500 rounded-xl">
-                  <RefreshCw size={20} />
-                </div>
-                <div>
-                  <p className="text-[10px] font-black uppercase text-gray-400 tracking-widest">Last Updated</p>
-                  <p className="text-sm font-bold">
-                    {profile?.created_at 
-                      ? format(new Date(profile.created_at * 1000), "MMMM d, yyyy · HH:mm")
-                      : "Unknown"}
-                  </p>
-                </div>
+              <div>
+                <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Joined</p>
+                <p className="text-sm font-black">
+                  {profile?.published_at 
+                    ? format(new Date(profile.published_at * 1000), "MMMM d, yyyy")
+                    : "Unknown"}
+                </p>
               </div>
             </div>
-            <div className="p-4 bg-gray-50 dark:bg-zinc-900/50">
-              <button 
-                onClick={() => setShowDatesModal(false)}
-                className="w-full py-3 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-2xl font-bold text-sm hover:bg-gray-50 transition-all active:scale-95"
-              >
-                Close
-              </button>
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-green-500/10 text-green-500 rounded-2xl">
+                <RefreshCw size={20} aria-hidden="true" />
+              </div>
+              <div>
+                <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Last Updated</p>
+                <p className="text-sm font-black">
+                  {profile?.created_at 
+                    ? format(new Date(profile.created_at * 1000), "MMMM d, yyyy · HH:mm")
+                    : "Unknown"}
+                </p>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+          <div className="p-4 border-t bg-muted/30">
+            <Button 
+              onClick={() => setShowDatesModal(false)}
+              className="w-full h-12 rounded-2xl font-black shadow-lg"
+            >
+              Close
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

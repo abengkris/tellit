@@ -8,6 +8,9 @@ import { Play, FileText, Image as ImageIcon } from "lucide-react";
 import { tokenize, parseImeta } from "@/lib/content/tokenizer";
 import { nip19 } from "nostr-tools";
 import { Blurhash } from "react-blurhash";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 interface MediaGridProps {
   posts: NDKEvent[];
@@ -17,16 +20,16 @@ interface MediaGridProps {
 export function MediaGrid({ posts, isLoading }: MediaGridProps) {
   if (isLoading && posts.length === 0) {
     return (
-      <div className="grid grid-cols-3 gap-1 sm:gap-4 p-1 sm:p-4 animate-pulse">
+      <div className="grid grid-cols-3 gap-1 sm:gap-2 p-1 sm:p-4">
         {[...Array(9)].map((_, i) => (
-          <div key={i} className="aspect-square bg-gray-200 dark:bg-gray-800 rounded-lg" />
+          <Skeleton key={i} className="aspect-square rounded-xl bg-muted/50" />
         ))}
       </div>
     );
   }
 
   return (
-    <div className="grid grid-cols-3 gap-1 sm:gap-4 p-1 sm:p-4">
+    <div className="grid grid-cols-3 gap-1 sm:gap-2 p-1 sm:p-4 animate-in fade-in duration-500">
       {posts.map((post) => (
         <MediaItem key={post.id} post={post} />
       ))}
@@ -91,7 +94,8 @@ function MediaItem({ post }: { post: NDKEvent }) {
   return (
     <Link 
       href={href}
-      className="group relative aspect-square bg-gray-100 dark:bg-gray-900 overflow-hidden rounded-lg border border-gray-200 dark:border-gray-800 transition-all hover:ring-2 hover:ring-blue-500 hover:ring-offset-2 dark:hover:ring-offset-black"
+      className="group relative aspect-square bg-muted overflow-hidden rounded-xl border border-border transition-all hover:ring-2 hover:ring-primary hover:ring-offset-2 dark:hover:ring-offset-background"
+      aria-label={`View post with ${media.type}`}
     >
       {/* Placeholder: Blurhash */}
       {!loaded && media.blurhash && (
@@ -111,7 +115,7 @@ function MediaItem({ post }: { post: NDKEvent }) {
         <div className="w-full h-full relative">
           <video src={media.url} className="w-full h-full object-cover" />
           <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
-            <Play fill="white" className="text-white" size={32} />
+            <Play fill="white" className="text-white drop-shadow-lg" size={32} aria-hidden="true" />
           </div>
         </div>
       ) : (
@@ -119,23 +123,26 @@ function MediaItem({ post }: { post: NDKEvent }) {
           src={media.url} 
           alt="" 
           fill 
-          className={`object-cover transition-all duration-500 group-hover:scale-105 ${loaded ? 'opacity-100' : 'opacity-0'}`}
+          className={cn(
+            "object-cover transition-all duration-700 group-hover:scale-110",
+            loaded ? "opacity-100" : "opacity-0"
+          )}
           onLoad={() => setLoaded(true)}
           unoptimized 
         />
       )}
       
       {/* Overlay info */}
-      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white p-2">
+      <div className="absolute inset-0 bg-background/40 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col items-center justify-center p-2">
         {post.kind === 30023 && (
-          <div className="flex items-center gap-1.5 font-bold text-xs uppercase tracking-widest bg-blue-500 px-2 py-1 rounded-full mb-2">
-            <FileText size={12} />
+          <Badge variant="default" className="gap-1.5 font-black text-[10px] uppercase tracking-widest bg-primary px-3 py-1 rounded-full mb-2 shadow-lg">
+            <FileText size={12} aria-hidden="true" />
             <span>Article</span>
-          </div>
+          </Badge>
         )}
-        <div className="flex items-center gap-1">
-          <ImageIcon size={14} />
-          <span className="text-[10px] font-bold">View Post</span>
+        <div className="flex items-center gap-1.5 text-foreground drop-shadow-md">
+          <ImageIcon size={14} aria-hidden="true" />
+          <span className="text-[10px] font-black uppercase tracking-widest">View Post</span>
         </div>
       </div>
     </Link>

@@ -15,6 +15,11 @@ import {
 import { NDKEvent } from "@nostr-dev-kit/ndk";
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 
 interface ExtendedCacheAdapter {
   getUnpublishedEvents?: () => Promise<{ event: NDKEvent; relays?: string[]; lastTryAt?: number }[]>;
@@ -135,128 +140,136 @@ export default function UnpublishedPage() {
   };
 
   return (
-    <>
-      <div className="max-w-2xl mx-auto px-4 py-6 sm:p-6 pb-32">
-        <header className="mb-8">
-          <Link 
-            href="/settings" 
-            className="inline-flex items-center gap-1 text-gray-500 hover:text-blue-500 mb-4 transition-colors"
-          >
-            <ChevronLeft size={18} />
-            <span className="text-sm font-bold">Back to Settings</span>
+    <div className="max-w-2xl mx-auto px-4 py-6 sm:p-6 pb-32">
+      <header className="mb-10">
+        <Button asChild variant="ghost" size="sm" className="mb-6 -ml-3 text-muted-foreground hover:text-primary gap-1 font-black uppercase tracking-widest text-[10px]">
+          <Link href="/settings">
+            <ChevronLeft className="size-3.5" aria-hidden="true" />
+            <span>Back to Settings</span>
           </Link>
-          <div className="flex items-center justify-between">
-            <h1 className="text-3xl font-black">Outbox</h1>
-            <div className="flex items-center gap-2">
-              {unpublished.length > 1 && (
-                <button 
-                  onClick={handlePublishAll}
-                  disabled={!!isProcessing}
-                  className="px-4 py-2 bg-blue-500 hover:bg-blue-600 disabled:opacity-50 text-white text-xs font-black rounded-full transition-all flex items-center gap-2"
-                >
-                  {isProcessing === "all" ? <RefreshCw size={14} className="animate-spin" /> : <Send size={14} />}
-                  Publish All ({unpublished.length})
-                </button>
-              )}
-              <button 
-                onClick={fetchEvents}
-                disabled={isLoading}
-                className={`p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-all ${isLoading ? 'animate-spin' : ''}`}
+        </Button>
+        
+        <div className="flex items-center justify-between gap-4">
+          <h1 className="text-3xl font-black tracking-tight">Local Outbox</h1>
+          <div className="flex items-center gap-2">
+            {unpublished.length > 1 && (
+              <Button 
+                onClick={handlePublishAll}
+                disabled={!!isProcessing}
+                size="sm"
+                className="rounded-full font-black shadow-lg shadow-primary/20 gap-2"
               >
-                <RefreshCw size={20} />
-              </button>
-            </div>
+                {isProcessing === "all" ? <RefreshCw className="size-3.5 animate-spin" aria-hidden="true" /> : <Send className="size-3.5" aria-hidden="true" />}
+                <span>Publish All ({unpublished.length})</span>
+              </Button>
+            )}
+            <Button 
+              variant="outline"
+              size="icon"
+              onClick={fetchEvents}
+              disabled={isLoading}
+              className={cn("rounded-full border-border bg-background shadow-sm", isLoading && "animate-spin")}
+              aria-label="Refresh outbox"
+            >
+              <RefreshCw className="size-4" aria-hidden="true" />
+            </Button>
           </div>
-          <p className="text-gray-500 text-sm mt-2">
-            Events that are saved locally but haven&apos;t reached enough relays yet.
-          </p>
-        </header>
+        </div>
+        <p className="text-muted-foreground text-sm mt-3 font-medium">
+          Events that are saved locally but haven&apos;t reached enough relays yet.
+        </p>
+      </header>
 
-        {isLoading ? (
-          <div className="space-y-4">
-            {[1, 2, 3].map(i => (
-              <div key={i} className="h-24 bg-gray-50 dark:bg-gray-900 rounded-3xl animate-pulse" />
-            ))}
-          </div>
-        ) : unpublished.length > 0 ? (
-          <div className="space-y-4">
-            {unpublished.map((item) => (
-              <div 
-                key={item.event.id}
-                className="bg-white dark:bg-black border border-gray-100 dark:border-gray-800 rounded-3xl p-5 shadow-sm hover:shadow-md transition-all group"
-              >
-                <div className="flex justify-between items-start mb-3">
-                  <div className="flex items-center gap-2">
-                    <div className="p-2 bg-blue-50 dark:bg-blue-900/20 text-blue-500 rounded-xl">
-                      <FileText size={18} />
+      {isLoading ? (
+        <div className="space-y-4">
+          {[1, 2, 3].map(i => (
+            <Skeleton key={i} className="h-32 rounded-3xl bg-muted/50" />
+          ))}
+        </div>
+      ) : unpublished.length > 0 ? (
+        <div className="space-y-4">
+          {unpublished.map((item) => (
+            <Card 
+              key={item.event.id}
+              className="rounded-3xl border-border bg-background shadow-sm hover:shadow-md transition-all group overflow-hidden"
+            >
+              <CardHeader className="p-5 pb-3">
+                <div className="flex justify-between items-start">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 bg-primary/10 text-primary rounded-2xl">
+                      <FileText className="size-5" aria-hidden="true" />
                     </div>
                     <div>
-                      <h3 className="font-black text-sm">{getKindLabel(item.event.kind)}</h3>
-                      <p className="text-[10px] font-mono text-gray-400">{item.event.id.slice(0, 16)}...</p>
+                      <CardTitle className="font-black text-sm uppercase tracking-tight">{getKindLabel(item.event.kind)}</CardTitle>
+                      <p className="text-[10px] font-mono text-muted-foreground opacity-70">{item.event.id.slice(0, 16)}…</p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="flex items-center gap-1 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                      <Clock size={10} />
+                    <Badge variant="secondary" className="bg-muted text-[9px] font-black uppercase tracking-widest gap-1 py-0.5">
+                      <Clock className="size-2.5" aria-hidden="true" />
                       {item.event.created_at ? formatDistanceToNow(item.event.created_at * 1000, { addSuffix: true }) : 'unknown'}
-                    </div>
+                    </Badge>
                   </div>
                 </div>
+              </CardHeader>
 
-                <div className="bg-gray-50 dark:bg-gray-900 rounded-2xl p-3 mb-4">
-                  <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2 break-all italic">
+              <CardContent className="px-5 pb-4">
+                <div className="bg-muted/30 rounded-2xl p-4 border border-border/50">
+                  <p className="text-xs text-foreground/70 leading-relaxed line-clamp-3 break-all italic font-medium">
                     {item.event.content || "(No content)"}
                   </p>
                 </div>
+              </CardContent>
 
-                <div className="flex gap-2">
-                  <button 
-                    onClick={() => handlePublish(item)}
-                    disabled={!!isProcessing}
-                    className="flex-1 py-2.5 bg-blue-500 hover:bg-blue-600 text-white font-black rounded-xl text-xs flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50"
-                  >
-                    {isProcessing === item.event.id ? (
-                      <RefreshCw size={14} className="animate-spin" />
-                    ) : (
-                      <Send size={14} />
-                    )}
-                    Publish Now
-                  </button>
-                  <button 
-                    onClick={() => handleDiscard(item.event.id)}
-                    disabled={!!isProcessing}
-                    className="p-2.5 bg-gray-100 dark:bg-gray-800 text-gray-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-all disabled:opacity-50"
-                    title="Discard Event"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                </div>
-              </div>
-            ))}
+              <CardFooter className="px-5 pb-5 pt-0 flex gap-2">
+                <Button 
+                  onClick={() => handlePublish(item)}
+                  disabled={!!isProcessing}
+                  className="flex-1 h-11 bg-primary hover:bg-primary/90 text-primary-foreground font-black rounded-xl text-xs gap-2 transition-all active:scale-95 shadow-lg shadow-primary/10"
+                >
+                  {isProcessing === item.event.id ? (
+                    <RefreshCw className="size-4 animate-spin" aria-hidden="true" />
+                  ) : (
+                    <Send className="size-4" aria-hidden="true" />
+                  )}
+                  Publish Now
+                </Button>
+                <Button 
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => handleDiscard(item.event.id)}
+                  disabled={!!isProcessing}
+                  className="size-11 bg-muted/50 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-xl transition-all"
+                  aria-label="Discard Event"
+                >
+                  <Trash2 className="size-5" aria-hidden="true" />
+                </Button>
+              </CardFooter>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <div className="text-center py-20 bg-muted/20 rounded-[3rem] border-2 border-dashed border-border/50">
+          <div className="size-24 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto mb-6">
+            <RefreshCw className="size-10 opacity-40" aria-hidden="true" />
           </div>
-        ) : (
-          <div className="text-center py-20 bg-gray-50 dark:bg-gray-900 rounded-[3rem] border-2 border-dashed border-gray-200 dark:border-gray-800">
-            <div className="w-20 h-20 bg-green-500/10 text-green-500 rounded-full flex items-center justify-center mx-auto mb-6">
-              <RefreshCw size={40} className="opacity-50" />
-            </div>
-            <h2 className="text-xl font-bold mb-2">Queue is clear!</h2>
-            <p className="text-gray-500 text-sm max-w-xs mx-auto">
-              All your events have been successfully broadcasted to the network.
-            </p>
-          </div>
-        )}
+          <h2 className="text-2xl font-black mb-2 tracking-tight">Queue is clear!</h2>
+          <p className="text-muted-foreground text-sm max-w-xs mx-auto font-medium">
+            All your events have been successfully broadcasted to the network.
+          </p>
+        </div>
+      )}
 
-        <div className="mt-12 p-6 bg-yellow-500/5 rounded-3xl border border-yellow-500/10 flex gap-4">
-          <AlertCircle className="text-yellow-500 shrink-0" size={24} />
-          <div className="space-y-1">
-            <h4 className="text-sm font-black text-yellow-700 dark:text-yellow-500 uppercase tracking-wider">Note about Outbox</h4>
-            <p className="text-xs text-yellow-600/80 dark:text-yellow-500/60 leading-relaxed">
-              Events usually stay here because of temporary connection issues or because specific relays are rejecting them (e.g. anti-spam filters or duplicate detection). 
-              If an event fails repeatedly, it might be better to discard it.
-            </p>
-          </div>
+      <div className="mt-12 p-6 bg-amber-500/5 rounded-3xl border border-amber-500/10 flex gap-4">
+        <AlertCircle className="text-amber-500 shrink-0 size-6" aria-hidden="true" />
+        <div className="space-y-1.5">
+          <h4 className="text-[10px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-widest">Note about Outbox</h4>
+          <p className="text-xs text-amber-700/70 dark:text-amber-400/60 font-medium leading-relaxed">
+            Events usually stay here because of temporary connection issues or because specific relays are rejecting them (e.g. anti-spam filters or duplicate detection). 
+            If an event fails repeatedly, it might be better to discard it.
+          </p>
         </div>
       </div>
-    </>
+    </div>
   );
 }

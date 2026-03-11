@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useMemo } from "react";
+import { cn } from "@/lib/utils";
 
-export function ShortenedUrl({ url }: { url: string }) {
+export function ShortenedUrl({ url, className }: { url: string; className?: string }) {
   const display = useMemo(() => {
     try {
       const u = new URL(url);
@@ -18,7 +19,7 @@ export function ShortenedUrl({ url }: { url: string }) {
       href={url}
       target="_blank"
       rel="noopener noreferrer"
-      className="text-blue-500 hover:text-blue-600 hover:underline break-all"
+      className={cn("text-primary hover:underline break-all font-black transition-colors", className)}
       onClick={e => e.stopPropagation()}
     >
       {display}

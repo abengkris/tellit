@@ -1,11 +1,21 @@
 "use client";
 
 import React, { useState } from "react";
-import { X, Search, Loader2 } from "lucide-react";
+import { Search, Loader2 } from "lucide-react";
 import { useSearch } from "@/hooks/useSearch";
 import { Avatar } from "../common/Avatar";
 import { useRouter } from "next/navigation";
 import { toNpub } from "@/lib/utils/nip19";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle 
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
 
 interface NewMessageModalProps {
   onClose: () => void;
@@ -23,68 +33,70 @@ export const NewMessageModal: React.FC<NewMessageModalProps> = ({ onClose }) => 
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <div className="bg-white dark:bg-gray-950 rounded-3xl w-full max-w-md overflow-hidden shadow-2xl animate-in zoom-in-95 h-[80vh] flex flex-col">
-        <div className="p-4 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center">
-          <h3 className="font-black text-xl">New message</h3>
-          <button 
-            onClick={onClose} 
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
-          >
-            <X size={20} />
-          </button>
-        </div>
+    <Dialog open={true} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-md p-0 gap-0 overflow-hidden border-none shadow-2xl flex flex-col h-[80vh]">
+        <DialogHeader className="p-4 border-b shrink-0">
+          <DialogTitle className="font-black text-xl">New message</DialogTitle>
+        </DialogHeader>
 
-        <div className="p-4 border-b border-gray-100 dark:border-gray-800">
+        <div className="p-4 border-b shrink-0 bg-muted/30">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-            <input
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground size-4" aria-hidden="true" />
+            <Input
               type="text"
               autoFocus
               placeholder="Search people..."
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 bg-gray-100 dark:bg-gray-900 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 font-medium"
+              className="pl-10 h-12 rounded-2xl bg-background border-none shadow-sm focus-visible:ring-primary/20 font-medium"
             />
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto">
-          {loading && query.length >= 3 ? (
-            <div className="flex justify-center py-10">
-              <Loader2 className="animate-spin text-blue-500" size={32} />
-            </div>
-          ) : profiles.length > 0 ? (
-            <div className="divide-y divide-gray-50 dark:divide-gray-900">
-              {profiles.map((user) => (
-                <button
-                  key={user.pubkey}
-                  onClick={() => handleSelectUser(user.pubkey)}
-                  className="w-full flex items-center gap-3 p-4 hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors text-left"
-                >
-                  <Avatar pubkey={user.pubkey} src={user.profile?.image} size={44} />
-                  <div className="min-w-0 flex-1">
-                    <div className="font-bold truncate text-gray-900 dark:text-white">
-                      {user.profile?.display_name || user.profile?.name || "Unknown"}
+        <ScrollArea className="flex-1 min-h-0">
+          <div className="flex flex-col">
+            {loading && query.length >= 3 ? (
+              <div className="flex justify-center py-12">
+                <Loader2 className="animate-spin text-primary size-8" aria-hidden="true" />
+              </div>
+            ) : profiles.length > 0 ? (
+              profiles.map((user, index) => (
+                <React.Fragment key={user.pubkey}>
+                  <Button
+                    variant="ghost"
+                    onClick={() => handleSelectUser(user.pubkey)}
+                    className="w-full h-auto flex items-center justify-start gap-3 p-4 rounded-none hover:bg-accent transition-colors"
+                  >
+                    <Avatar pubkey={user.pubkey} src={user.profile?.image} size={44} aria-hidden="true" />
+                    <div className="min-w-0 flex-1 text-left">
+                      <div className="font-black truncate">
+                        {user.profile?.display_name || user.profile?.name || "Unknown"}
+                      </div>
+                      {user.profile?.nip05 && (
+                        <div className="text-[11px] text-primary font-bold truncate opacity-80">{user.profile.nip05}</div>
+                      )}
                     </div>
-                    {user.profile?.nip05 && (
-                      <div className="text-xs text-blue-500 truncate">{user.profile.nip05}</div>
-                    )}
-                  </div>
-                </button>
-              ))}
-            </div>
-          ) : query.length >= 3 ? (
-            <div className="text-center py-10 text-gray-500">
-              No results found for &quot;{query}&quot;
-            </div>
-          ) : (
-            <div className="text-center py-10 text-gray-500 px-6">
-              <p className="text-sm font-medium">Search for people by name, npub, or NIP-05 to start a new private conversation.</p>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
+                  </Button>
+                  {index < profiles.length - 1 && <Separator />}
+                </React.Fragment>
+              ))
+            ) : query.length >= 3 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <p className="text-sm font-medium">No results found for &quot;{query}&quot;</p>
+              </div>
+            ) : (
+              <div className="text-center py-12 text-muted-foreground px-8">
+                <div className="size-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Search className="size-8 opacity-20" aria-hidden="true" />
+                </div>
+                <p className="text-sm font-bold leading-relaxed">
+                  Search for people by name, npub, or NIP-05 to start a new private conversation.
+                </p>
+              </div>
+            )}
+          </div>
+        </ScrollArea>
+      </DialogContent>
+    </Dialog>
   );
 };

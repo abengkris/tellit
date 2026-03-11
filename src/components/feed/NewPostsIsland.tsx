@@ -2,6 +2,8 @@
 
 import { useRef, useEffect, useState } from "react";
 import { ArrowUp } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 interface NewPostsIslandProps {
   count: number;
@@ -27,34 +29,28 @@ export function NewPostsIsland({ count, onFlush }: NewPostsIslandProps) {
       className="fixed top-20 left-1/2 -translate-x-1/2 z-50 pointer-events-none flex justify-center"
       aria-live="polite"
     >
-      <button
+      <Button
         onClick={(e) => {
           e.stopPropagation();
           onFlush();
         }}
         key={shakeKey}
-        className="
-          pointer-events-auto
-          flex items-center gap-2
-          px-5 py-2.5
-          bg-blue-500 hover:bg-blue-600 active:scale-95
-          text-white font-bold text-sm
-          rounded-full shadow-2xl shadow-blue-500/20
-          border border-white/10
-          transition-all duration-200
-          animate-in fade-in slide-in-from-bottom-2 zoom-in-95
-        "
+        size="sm"
+        className={cn(
+          "pointer-events-auto h-10 px-6 bg-primary hover:bg-primary/90 text-primary-foreground font-black rounded-full shadow-2xl shadow-primary/20 gap-2 border-none active:scale-95 transition-all duration-200 animate-in fade-in slide-in-from-bottom-2 zoom-in-95"
+        )}
         style={{ 
           animation: shakeKey > 0 ? "shake 0.4s cubic-bezier(.36,.07,.19,.97) both" : undefined 
         }}
+        aria-label={`Load ${count} new posts`}
       >
-        <ArrowUp size={16} className="shrink-0" />
-        <span>
+        <ArrowUp size={16} className="shrink-0" aria-hidden="true" />
+        <span className="uppercase tracking-tight text-xs">
           {count === 1
             ? "1 new post"
             : `${count > 99 ? "99+" : count} new posts`}
         </span>
-      </button>
+      </Button>
     </div>
   );
 }

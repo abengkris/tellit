@@ -8,6 +8,7 @@ import { ImageEmbed } from "../post/tokens/ImageEmbed";
 import { VideoEmbed } from "../post/tokens/VideoEmbed";
 import { ShortenedUrl } from "../post/tokens/ShortenedUrl";
 import { NDKEvent } from "@nostr-dev-kit/ndk";
+import { cn } from "@/lib/utils";
 
 interface MessageBubbleContentProps {
   text: string;
@@ -61,11 +62,14 @@ export const MessageBubbleContent: React.FC<MessageBubbleContentProps> = ({ text
   }, [tokens]);
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-3">
       {textTokens.length > 0 && (
-        <div className="whitespace-pre-wrap break-words leading-relaxed">
+        <div className={cn(
+          "whitespace-pre-wrap break-words leading-relaxed text-[15px]",
+          isMe ? "text-primary-foreground" : "text-foreground"
+        )}>
           {textTokens.map((token, i) => (
-            <MessageTokenRenderer key={i} token={token} emojiMap={emojiMap} />
+            <MessageTokenRenderer key={i} token={token} emojiMap={emojiMap} isMe={isMe} />
           ))}
         </div>
       )}
@@ -73,9 +77,9 @@ export const MessageBubbleContent: React.FC<MessageBubbleContentProps> = ({ text
       {mediaTokens.length > 0 && (
         <div className="flex flex-col gap-2 mt-1">
           {mediaTokens.map((token, i) => (
-            <div key={i} className="max-w-full rounded-lg overflow-hidden border border-black/5 dark:border-white/5">
+            <div key={i} className="max-w-full rounded-2xl overflow-hidden border border-border shadow-sm">
               {token.type === "image" ? (
-                <ImageEmbed url={token.value} noMargin className="max-h-64 object-contain bg-black/5 dark:bg-white/5" />
+                <ImageEmbed url={token.value} noMargin className="max-h-80 object-contain bg-muted/20" />
               ) : (
                 <VideoEmbed url={token.value} />
               )}
@@ -87,7 +91,7 @@ export const MessageBubbleContent: React.FC<MessageBubbleContentProps> = ({ text
   );
 };
 
-function MessageTokenRenderer({ token, emojiMap }: { token: Token; emojiMap: Map<string, string> }) {
+function MessageTokenRenderer({ token, emojiMap, isMe }: { token: Token; emojiMap: Map<string, string>; isMe?: boolean }) {
   switch (token.type) {
     case "text": {
       const parts = token.value.split(/(:[a-zA-Z0-9_]+:)/g);
@@ -97,11 +101,12 @@ function MessageTokenRenderer({ token, emojiMap }: { token: Token; emojiMap: Map
             const emojiUrl = emojiMap.get(part);
             if (emojiUrl) {
               return (
+                /* eslint-disable-next-line @next/next/no-img-element */
                 <img
                   key={i}
                   src={emojiUrl}
                   alt={part}
-                  className="inline-block w-5 h-5 align-middle mx-0.5"
+                  className="inline-block size-5 align-middle mx-0.5"
                   loading="lazy"
                 />
               );
@@ -112,9 +117,9 @@ function MessageTokenRenderer({ token, emojiMap }: { token: Token; emojiMap: Map
       );
     }
     case "linebreak": return <br />;
-    case "mention": return <MentionLink pubkey={token.decoded?.pubkey ?? ""} raw={token.value} />;
-    case "hashtag": return <HashtagLink tag={token.value.slice(1)} />;
-    case "url": return <ShortenedUrl url={token.value} />;
+    case "mention": return <MentionLink pubkey={token.decoded?.pubkey ?? ""} raw={token.value} className={isMe ? "text-primary-foreground underline decoration-primary-foreground/30" : ""} />;
+    case "hashtag": return <HashtagLink tag={token.value.slice(1)} className={isMe ? "text-primary-foreground underline decoration-primary-foreground/30" : ""} />;
+    case "url": return <ShortenedUrl url={token.value} className={isMe ? "text-primary-foreground underline decoration-primary-foreground/30" : ""} />;
     default: return null;
   }
 }

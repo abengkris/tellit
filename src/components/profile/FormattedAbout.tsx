@@ -6,13 +6,15 @@ import { tokenize, Token } from "@/lib/content/tokenizer";
 import { MentionLink } from "../post/tokens/MentionLink";
 import { HashtagLink } from "../post/tokens/HashtagLink";
 import { ShortenedUrl } from "../post/tokens/ShortenedUrl";
+import { cn } from "@/lib/utils";
 
 interface FormattedAboutProps {
   text: string;
   tags?: string[][];
+  className?: string;
 }
 
-export const FormattedAbout: React.FC<FormattedAboutProps> = ({ text, tags }) => {
+export const FormattedAbout: React.FC<FormattedAboutProps> = ({ text, tags, className }) => {
   const emojiMap = useMemo(() => {
     const map = new Map<string, string>();
     if (!tags) return map;
@@ -27,7 +29,7 @@ export const FormattedAbout: React.FC<FormattedAboutProps> = ({ text, tags }) =>
   const tokens = useMemo(() => tokenize(text), [text]);
 
   return (
-    <div className="text-[15px] leading-relaxed whitespace-pre-wrap break-words text-gray-900 dark:text-gray-100">
+    <div className={cn("text-[15px] leading-relaxed whitespace-pre-wrap break-words text-foreground/90", className)}>
       {tokens.map((token, i) => (
         <AboutTokenRenderer key={i} token={token} emojiMap={emojiMap} />
       ))}
@@ -45,11 +47,12 @@ function AboutTokenRenderer({ token, emojiMap }: { token: Token; emojiMap: Map<s
             const emojiUrl = emojiMap.get(part);
             if (emojiUrl) {
               return (
+                /* eslint-disable-next-line @next/next/no-img-element */
                 <img
                   key={i}
                   src={emojiUrl}
                   alt={part}
-                  className="inline-block w-5 h-5 align-middle mx-0.5"
+                  className="inline-block size-5 align-middle mx-0.5"
                   loading="lazy"
                 />
               );
@@ -70,7 +73,7 @@ function AboutTokenRenderer({ token, emojiMap }: { token: Token; emojiMap: Map<s
       return (
         <Link
           href={link}
-          className="text-blue-500 hover:underline font-mono text-sm"
+          className="text-primary font-bold hover:underline"
         >
           {rawValue.slice(0, 16)}…
         </Link>

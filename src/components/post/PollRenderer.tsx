@@ -6,6 +6,10 @@ import { usePoll } from "@/hooks/usePoll";
 import { Loader2, CheckCircle2, Circle, Clock } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useUIStore } from "@/store/ui";
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 interface PollRendererProps {
   event: NDKEvent;
@@ -34,22 +38,24 @@ export const PollRenderer: React.FC<PollRendererProps> = ({ event }) => {
 
   if (loading && totalVotes === 0) {
     return (
-      <div className="mt-4 p-4 border border-gray-100 dark:border-gray-800 rounded-2xl flex flex-col items-center gap-2">
-        <Loader2 className="animate-spin text-blue-500" size={24} />
-        <span className="text-xs text-gray-500 font-bold uppercase tracking-widest">Loading poll...</span>
-      </div>
+      <Card className="mt-4 border-muted/50 bg-muted/30 shadow-none overflow-hidden rounded-2xl">
+        <CardContent className="p-8 flex flex-col items-center gap-3">
+          <Loader2 className="animate-spin text-primary size-6" aria-hidden="true" />
+          <span className="text-[10px] text-muted-foreground font-black uppercase tracking-widest">Loading poll…</span>
+        </CardContent>
+      </Card>
     );
   }
 
   return (
-    <div className="mt-4 border border-gray-100 dark:border-gray-800 rounded-2xl overflow-hidden bg-gray-50/30 dark:bg-gray-900/10">
-      {/* Question */}
-      <div className="p-4 border-b border-gray-100 dark:border-gray-800">
-        <h3 className="font-bold text-gray-900 dark:text-gray-100">{event.content}</h3>
-      </div>
+    <Card className="mt-4 border-muted/50 bg-muted/30 shadow-none overflow-hidden rounded-2xl">
+      <CardHeader className="p-4 border-b border-muted/50 bg-muted/20">
+        <CardTitle className="text-base font-black leading-tight text-foreground/90">
+          {event.content}
+        </CardTitle>
+      </CardHeader>
 
-      {/* Options */}
-      <div className="p-4 space-y-3">
+      <CardContent className="p-4 space-y-2.5">
         {config.options.map((opt) => {
           const voteCount = results[opt.id] || 0;
           const percentage = totalVotes > 0 ? Math.round((voteCount / totalVotes) * 100) : 0;
@@ -57,59 +63,67 @@ export const PollRenderer: React.FC<PollRendererProps> = ({ event }) => {
           const showResults = !!userVote || hasEnded;
 
           return (
-            <button
+            <Button
               key={opt.id}
+              variant="outline"
               onClick={() => handleVote(opt.id)}
               disabled={showResults || isVoting}
-              className={`relative w-full text-left group overflow-hidden rounded-xl border transition-all ${
-                isSelected 
-                  ? "border-blue-500 bg-blue-50/50 dark:bg-blue-900/20" 
-                  : "border-gray-200 dark:border-gray-800 hover:border-blue-300 dark:hover:border-blue-700"
-              } ${showResults ? "cursor-default" : "cursor-pointer active:scale-[0.98]"}`}
+              className={cn(
+                "relative w-full justify-start h-auto p-0 overflow-hidden border-border transition-all hover:bg-transparent group",
+                isSelected && "border-primary bg-primary/5 ring-1 ring-primary/20",
+                showResults ? "cursor-default" : "cursor-pointer active:scale-[0.98]"
+              )}
             >
               {/* Progress Bar Background */}
               {showResults && (
                 <div 
-                  className={`absolute inset-y-0 left-0 transition-all duration-1000 ${
-                    isSelected ? "bg-blue-500/20" : "bg-gray-200 dark:bg-gray-800/50"
-                  }`}
+                  className={cn(
+                    "absolute inset-y-0 left-0 transition-all duration-1000",
+                    isSelected ? "bg-primary/10" : "bg-muted/50"
+                  )}
                   style={{ width: `${percentage}%` }}
                 />
               )}
 
-              <div className="relative p-3 flex items-center justify-between gap-3">
+              <div className="relative p-3.5 flex items-center justify-between gap-3 w-full">
                 <div className="flex items-center gap-3 min-w-0">
                   {!showResults && (
-                    <Circle size={18} className="text-gray-400 group-hover:text-blue-500 shrink-0" />
+                    <Circle size={18} className="text-muted-foreground group-hover:text-primary shrink-0" aria-hidden="true" />
                   )}
                   {showResults && isSelected && (
-                    <CheckCircle2 size={18} className="text-blue-500 shrink-0" />
+                    <CheckCircle2 size={18} className="text-primary shrink-0" aria-hidden="true" />
                   )}
-                  <span className={`font-bold text-sm truncate ${isSelected ? "text-blue-600 dark:text-blue-400" : "text-gray-700 dark:text-gray-300"}`}>
+                  <span className={cn(
+                    "font-bold text-sm truncate",
+                    isSelected ? "text-primary" : "text-foreground/80"
+                  )}>
                     {opt.label}
                   </span>
                 </div>
                 {showResults && (
-                  <span className="text-xs font-black tabular-nums text-gray-500">
+                  <span className="text-xs font-black tabular-nums text-muted-foreground">
                     {percentage}%
                   </span>
                 )}
               </div>
-            </button>
+            </Button>
           );
         })}
-      </div>
+      </CardContent>
 
-      {/* Footer Info */}
-      <div className="px-4 py-3 bg-gray-100/50 dark:bg-gray-800/30 flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-gray-500">
-        <div className="flex items-center gap-1.5">
+      <CardFooter className="px-4 py-3 bg-muted/40 flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-muted-foreground border-t border-muted/50">
+        <div className="flex items-center gap-2">
           <span>{totalVotes.toLocaleString()} votes</span>
-          {userVote && <span>• Voted</span>}
+          {userVote && (
+            <Badge variant="secondary" className="h-4 px-1.5 bg-primary/10 text-primary border-primary/20 font-black text-[8px] tracking-tight">
+              Voted
+            </Badge>
+          )}
         </div>
         
         {config.endsAt > 0 && (
           <div className="flex items-center gap-1">
-            <Clock size={10} />
+            <Clock size={10} aria-hidden="true" />
             <span>
               {hasEnded 
                 ? `Ended ${formatDistanceToNow(new Date(config.endsAt * 1000))} ago`
@@ -117,7 +131,7 @@ export const PollRenderer: React.FC<PollRendererProps> = ({ event }) => {
             </span>
           </div>
         )}
-      </div>
-    </div>
+      </CardFooter>
+    </Card>
   );
 };

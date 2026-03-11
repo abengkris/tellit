@@ -4,13 +4,15 @@ import { useProfile } from "@/hooks/useProfile";
 import Link from "next/link";
 import { nip19 } from "nostr-tools";
 import { shortenPubkey } from "@/lib/utils/nip19";
+import { cn } from "@/lib/utils";
 
 interface MentionLinkProps {
   pubkey: string;
   raw: string; // fallback jika pubkey kosong
+  className?: string;
 }
 
-export function MentionLink({ pubkey, raw }: MentionLinkProps) {
+export function MentionLink({ pubkey, raw, className }: MentionLinkProps) {
   const { profile, loading } = useProfile(pubkey);
 
   // Resolve display name dengan prioritas:
@@ -30,7 +32,10 @@ export function MentionLink({ pubkey, raw }: MentionLinkProps) {
   return (
     <Link
       href={`/${npub || raw}`}
-      className="text-blue-500 hover:text-blue-600 hover:underline font-medium min-w-0 truncate inline-block align-bottom max-w-[150px]"
+      className={cn(
+        "text-primary hover:underline font-black min-w-0 truncate inline-block align-bottom max-w-[150px]",
+        className
+      )}
       onClick={e => e.stopPropagation()} // jangan trigger PostCard click
     >
       @{display_name}

@@ -13,7 +13,7 @@ import { useProfile } from "@/hooks/useProfile";
 import { NDKEvent, NDKTag } from "@nostr-dev-kit/ndk";
 import { 
   ImageIcon, 
-  Smile, 
+  Smile,
   X, 
   Loader2, 
   BarChart2,
@@ -23,6 +23,12 @@ import { Avatar } from "../common/Avatar";
 import { PollEditor } from "./PollEditor";
 import { CollaboratorEditor } from "./CollaboratorEditor";
 import { useMentionSearch } from "@/hooks/useMentionSearch";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Card, CardContent } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { cn } from "@/lib/utils";
 
 interface PostComposerProps {
   replyTo?: NDKEvent;
@@ -259,12 +265,17 @@ export const PostComposer: React.FC<PostComposerProps> = ({
   if (!isLoggedIn) return null;
 
   return (
-    <div className={`p-4 ${replyTo ? "" : "border-b border-gray-100 dark:border-gray-800"}`}>
+    <div className={cn("p-4", !replyTo && "border-b border-border")}>
       <div className="flex gap-3">
-        <Avatar pubkey={user?.pubkey || ""} src={profile?.picture || (profile as { image?: string })?.image} size={48} />
+        <Avatar 
+          pubkey={user?.pubkey || ""} 
+          src={profile?.picture || (profile as { image?: string })?.image} 
+          size={48} 
+          aria-hidden="true"
+        />
         
         <div className="flex-1 min-w-0 relative">
-          <textarea
+          <Textarea
             ref={textareaRef}
             value={content}
             onChange={handleContentChange}
@@ -273,66 +284,79 @@ export const PostComposer: React.FC<PostComposerProps> = ({
             placeholder={placeholder}
             autoFocus={autoFocus}
             rows={3}
-            className="w-full bg-transparent text-lg resize-none outline-none placeholder-gray-500 py-2"
+            className="w-full bg-transparent text-lg resize-none border-none focus-visible:ring-0 placeholder:text-muted-foreground py-2 shadow-none min-h-[100px]"
           />
 
           {showMentionPicker && mentionResults.length > 0 && (
-            <div className="absolute z-50 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-lg max-h-48 overflow-y-auto w-64 animate-in fade-in zoom-in-95">
-              {mentionResults.map(u => (
-                <button
-                  key={u.pubkey}
-                  onClick={() => insertMention(u.npub)}
-                  className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center gap-2"
-                >
-                  <Avatar pubkey={u.pubkey} size={24} />
-                  <div className="min-w-0">
-                    <div className="font-bold text-sm truncate">{u.profile?.display_name || u.profile?.name}</div>
-                    <div className="text-xs text-gray-500 truncate">@{u.profile?.name}</div>
-                  </div>
-                </button>
-              ))}
-            </div>
+            <Card className="absolute z-50 mt-1 w-64 shadow-2xl border-border overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+              <CardContent className="p-0 max-h-48 overflow-y-auto">
+                {mentionResults.map((u, i) => (
+                  <React.Fragment key={u.pubkey}>
+                    <Button
+                      variant="ghost"
+                      onClick={() => insertMention(u.npub)}
+                      className="w-full justify-start h-auto px-4 py-3 rounded-none gap-3 hover:bg-accent"
+                    >
+                      <Avatar pubkey={u.pubkey} size={32} aria-hidden="true" />
+                      <div className="min-w-0 text-left">
+                        <div className="font-bold text-sm truncate">{u.profile?.display_name || u.profile?.name}</div>
+                        <div className="text-xs text-muted-foreground truncate">@{u.profile?.name}</div>
+                      </div>
+                    </Button>
+                    {i < mentionResults.length - 1 && <Separator />}
+                  </React.Fragment>
+                ))}
+              </CardContent>
+            </Card>
           )}
 
           {showPollEditor && (
-            <PollEditor 
-              options={pollOptions} 
-              setOptions={setPollOptions} 
-              onClose={() => setShowPollEditor(false)} 
-            />
+            <div className="mt-2 mb-4 animate-in slide-in-from-top-2 duration-200">
+              <PollEditor 
+                options={pollOptions} 
+                setOptions={setPollOptions} 
+                onClose={() => setShowPollEditor(false)} 
+              />
+            </div>
           )}
 
           {showCollaboratorEditor && (
-            <CollaboratorEditor
-              splits={zapSplits}
-              setSplits={setZapSplits}
-              onClose={() => setShowCollaboratorEditor(false)}
-            />
+            <div className="mt-2 mb-4 animate-in slide-in-from-top-2 duration-200">
+              <CollaboratorEditor
+                splits={zapSplits}
+                setSplits={setZapSplits}
+                onClose={() => setShowCollaboratorEditor(false)}
+              />
+            </div>
           )}
 
           {/* Media Previews */}
           {mediaFiles.length > 0 && (
-            <div className={`grid gap-2 mb-3 ${mediaFiles.length > 1 ? "grid-cols-2" : "grid-cols-1"}`}>
+            <div className={cn("grid gap-2 mb-4 mt-2", mediaFiles.length > 1 ? "grid-cols-2" : "grid-cols-1")}>
               {mediaFiles.map((file) => (
-                <div key={file.url} className="relative rounded-2xl overflow-hidden group border border-gray-100 dark:border-gray-800">
+                <div key={file.url} className="relative rounded-2xl overflow-hidden group border border-border aspect-video bg-muted/30">
                   {file.type.startsWith("image/") ? (
-                    <img src={file.url} alt="Uploaded" className="w-full h-48 object-cover" />
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img src={file.url} alt="Uploaded media" className="w-full h-full object-cover transition-transform group-hover:scale-105 duration-500" />
                   ) : (
-                    <video src={file.url} className="w-full h-48 object-cover" />
+                    <video src={file.url} className="w-full h-full object-cover" />
                   )}
-                  <button
+                  <Button
+                    variant="destructive"
+                    size="icon-xs"
                     onClick={() => removeMedia(file.url)}
-                    className="absolute top-2 right-2 p-1.5 bg-black/50 hover:bg-black/70 text-white rounded-full transition-colors opacity-0 group-hover:opacity-100"
+                    className="absolute top-2 right-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                    aria-label="Remove media"
                   >
-                    <X size={16} />
-                  </button>
+                    <X className="size-4" />
+                  </Button>
                 </div>
               ))}
             </div>
           )}
 
           {/* Controls */}
-          <div className="flex items-center justify-between pt-2 border-t border-gray-50 dark:border-gray-900">
+          <div className="flex items-center justify-between pt-3 border-t border-border">
             <div className="flex items-center -ml-2">
               <input
                 type="file"
@@ -342,92 +366,122 @@ export const PostComposer: React.FC<PostComposerProps> = ({
                 accept="image/*,video/*"
                 multiple
               />
-              <button
-                type="button"
-                onClick={handleFileClick}
-                disabled={isUploading}
-                className="p-2 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-full transition-colors disabled:opacity-50"
-                title="Add media"
-              >
-                {isUploading ? <Loader2 className="animate-spin" size={20} /> : <ImageIcon size={20} />}
-              </button>
               
-              <button
-                type="button"
-                onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                className={`p-2 rounded-full transition-colors ${
-                  showEmojiPicker ? "bg-blue-500 text-white" : "text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20"
-                }`}
-                title="Add emoji"
-              >
-                <Smile size={20} />
-              </button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={handleFileClick}
+                    disabled={isUploading}
+                    className="text-primary hover:bg-primary/10 rounded-full"
+                    aria-label="Add media"
+                  >
+                    {isUploading ? <Loader2 className="size-5 animate-spin" /> : <ImageIcon className="size-5" />}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">Add media</TooltipContent>
+              </Tooltip>
+              
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    type="button"
+                    variant={showEmojiPicker ? "secondary" : "ghost"}
+                    size="icon"
+                    onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                    className={cn("text-primary hover:bg-primary/10 rounded-full", showEmojiPicker && "bg-primary/10")}
+                    aria-label="Add emoji"
+                  >
+                    <Smile className="size-5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">Add emoji</TooltipContent>
+              </Tooltip>
 
-              <button
-                type="button"
-                onClick={() => {
-                  setShowPollEditor(!showPollEditor);
-                  if (!showPollEditor) setShowCollaboratorEditor(false);
-                }}
-                className={`p-2 rounded-full transition-colors ${
-                  showPollEditor ? "bg-blue-500 text-white" : "text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20"
-                }`}
-                title="Poll"
-              >
-                <BarChart2 size={20} />
-              </button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    type="button"
+                    variant={showPollEditor ? "secondary" : "ghost"}
+                    size="icon"
+                    onClick={() => {
+                      setShowPollEditor(!showPollEditor);
+                      if (!showPollEditor) setShowCollaboratorEditor(false);
+                    }}
+                    className={cn("text-primary hover:bg-primary/10 rounded-full", showPollEditor && "bg-primary/10")}
+                    aria-label="Poll"
+                  >
+                    <BarChart2 className="size-5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">Poll</TooltipContent>
+              </Tooltip>
 
-              <button
-                type="button"
-                onClick={() => {
-                  setShowCollaboratorEditor(!showCollaboratorEditor);
-                  if (!showCollaboratorEditor) setShowPollEditor(false);
-                }}
-                className={`p-2 rounded-full transition-colors ${
-                  showCollaboratorEditor ? "bg-purple-500 text-white" : "text-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/20"
-                }`}
-                title="Add Collaborator (Zap Split)"
-              >
-                <Users size={20} />
-              </button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    type="button"
+                    variant={showCollaboratorEditor ? "secondary" : "ghost"}
+                    size="icon"
+                    onClick={() => {
+                      setShowCollaboratorEditor(!showCollaboratorEditor);
+                      if (!showCollaboratorEditor) setShowPollEditor(false);
+                    }}
+                    className={cn("text-purple-500 hover:bg-purple-500/10 rounded-full", showCollaboratorEditor && "bg-purple-500/10")}
+                    aria-label="Add Collaborator (Zap Split)"
+                  >
+                    <Users className="size-5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">Zap Split</TooltipContent>
+              </Tooltip>
             </div>
 
             {/* Emoji Picker Overlay */}
             {showEmojiPicker && (
-              <div className="absolute z-50 mt-12 p-4 bg-white dark:bg-gray-950 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-xl max-w-xs animate-in zoom-in-95">
-                <div className="flex items-center justify-between mb-3 border-b border-gray-50 dark:border-gray-900 pb-2">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Custom Emojis</span>
-                  <button onClick={() => setShowEmojiPicker(false)} className="text-gray-400 hover:text-gray-600"><X size={14} /></button>
-                </div>
-                <div className="grid grid-cols-5 gap-2 overflow-y-auto max-h-48">
-                  {emojis.map((emoji) => (
-                    <button
-                      key={emoji.shortcode}
-                      onClick={() => insertEmoji(emoji.shortcode)}
-                      title={`:${emoji.shortcode}:`}
-                      className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-900 rounded-lg transition-all flex items-center justify-center"
-                    >
-                      <img src={emoji.url} alt={emoji.shortcode} className="w-6 h-6 object-contain" />
-                    </button>
-                  ))}
-                </div>
-              </div>
+              <Card className="absolute z-50 mt-12 w-72 shadow-2xl border-border animate-in zoom-in-95 duration-200">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between mb-3 border-b border-border pb-2">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Custom Emojis</span>
+                    <Button variant="ghost" size="icon-xs" onClick={() => setShowEmojiPicker(false)} aria-label="Close emoji picker">
+                      <X className="size-3" />
+                    </Button>
+                  </div>
+                  <div className="grid grid-cols-5 gap-2 overflow-y-auto max-h-48 pr-1">
+                    {emojis.map((emoji) => (
+                      <Button
+                        key={emoji.shortcode}
+                        variant="ghost"
+                        size="icon-sm"
+                        onClick={() => insertEmoji(emoji.shortcode)}
+                        className="hover:bg-accent rounded-lg p-1 h-auto w-auto"
+                        title={`:${emoji.shortcode}:`}
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={emoji.url} alt={emoji.shortcode} className="size-6 object-contain" />
+                      </Button>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
             )}
 
-            <button
+            <Button
               onClick={handlePost}
               disabled={isPosting || isUploading || (!content.trim() && mediaFiles.length === 0)}
-              className="px-6 py-2 bg-blue-500 hover:bg-blue-600 text-white font-black rounded-full transition-all disabled:opacity-50 shadow-lg shadow-blue-500/20 flex items-center gap-2"
+              className="px-8 rounded-full font-black shadow-lg shadow-primary/20 gap-2"
             >
               {isPosting ? (
                 <>
-                  <Loader2 className="animate-spin" size={18} />
+                  <Loader2 className="size-4 animate-spin" />
                   <span>Posting…</span>
                 </>
               ) : (
                 replyTo ? "Reply" : quoteEvent ? "Quote" : "Post"
               )}
-            </button>
+            </Button>
           </div>
         </div>
       </div>

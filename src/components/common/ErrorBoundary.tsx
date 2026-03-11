@@ -1,6 +1,9 @@
 "use client";
 
 import React, { Component, ErrorInfo, ReactNode } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { AlertCircle, RefreshCw } from "lucide-react";
 
 interface Props {
   children?: ReactNode;
@@ -27,18 +30,28 @@ export class ErrorBoundary extends Component<Props, State> {
   public render() {
     if (this.state.hasError) {
       return this.props.fallback || (
-        <div className="p-4 m-4 border border-red-200 bg-red-50 rounded-lg dark:bg-red-900/20 dark:border-red-800">
-          <h2 className="text-red-800 dark:text-red-400 font-bold mb-2">Something went wrong</h2>
-          <p className="text-red-600 dark:text-red-300 text-sm">
-            There was an error loading this component. Try refreshing the page.
-          </p>
-          <button
-            className="mt-4 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors text-sm"
-            onClick={() => this.setState({ hasError: false })}
-          >
-            Try again
-          </button>
-        </div>
+        <Card className="m-4 border-destructive/20 bg-destructive/5 shadow-none overflow-hidden">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-destructive flex items-center gap-2 text-base font-black">
+              <AlertCircle className="size-5" aria-hidden="true" />
+              Something went wrong
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-muted-foreground text-sm font-medium leading-relaxed">
+              There was an error loading this component. Try refreshing the page or try again.
+            </p>
+            <Button
+              variant="destructive"
+              size="sm"
+              className="rounded-full font-black px-6 shadow-lg shadow-destructive/20 gap-2"
+              onClick={() => this.setState({ hasError: false })}
+            >
+              <RefreshCw className="size-4" aria-hidden="true" />
+              Try again
+            </Button>
+          </CardContent>
+        </Card>
       );
     }
 
