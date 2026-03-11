@@ -14,8 +14,7 @@ import {
   Card, 
   CardContent, 
   CardDescription, 
-  CardHeader, 
-  CardTitle 
+  CardHeader 
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -315,7 +314,7 @@ export default function SettingsPage() {
             </DialogTitle>
           </DialogHeader>
 
-          <ScrollArea className="flex-1">
+          <ScrollArea className="flex-1 min-h-0">
             <MuteList 
               pubkeys={Array.from(mutedPubkeys)} 
               loading={loadingLists}

@@ -14,6 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 
 interface WalletPinModalProps {
@@ -99,7 +100,7 @@ export const WalletPinModal: React.FC<WalletPinModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-sm p-0 gap-0 overflow-hidden border-none shadow-2xl">
+      <DialogContent className="sm:max-w-sm p-0 gap-0 overflow-hidden border-none shadow-2xl flex flex-col max-h-[80vh]">
         <DialogHeader className="p-6 border-b shrink-0">
           <DialogTitle className="font-black flex items-center gap-2">
             {mode === "setup" ? (
@@ -111,77 +112,79 @@ export const WalletPinModal: React.FC<WalletPinModalProps> = ({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="p-8 space-y-8">
-          <div className="text-center">
-            <p className="text-sm text-muted-foreground font-medium">
-              {mode === "setup" ? "Set a PIN to encrypt your wallet keys locally." : "Enter your PIN to access your wallet."}
-            </p>
-          </div>
-
-          <div className="space-y-6">
-            <div className="space-y-3 text-center">
-              <Label htmlFor="pin-input" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-                {mode === "setup" ? "Enter PIN" : "PIN"}
-              </Label>
-              <Input 
-                id="pin-input"
-                type="password" 
-                inputMode="numeric" 
-                pattern="[0-9]*" 
-                value={pin} 
-                onChange={(e) => setPinInput(e.target.value.replace(/\D/g, ''))} 
-                placeholder="••••" 
-                className="h-16 text-center text-3xl tracking-[0.5em] font-black bg-muted/30 border-none rounded-2xl focus-visible:ring-primary/20"
-                autoFocus 
-              />
+        <ScrollArea className="flex-1 min-h-0">
+          <div className="p-8 space-y-8">
+            <div className="text-center">
+              <p className="text-sm text-muted-foreground font-medium">
+                {mode === "setup" ? "Set a PIN to encrypt your wallet keys locally." : "Enter your PIN to access your wallet."}
+              </p>
             </div>
 
-            {mode === "setup" && (
-              <div className="space-y-3 text-center animate-in slide-in-from-top-2 duration-300">
-                <Label htmlFor="confirm-pin-input" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Confirm PIN</Label>
+            <div className="space-y-6">
+              <div className="space-y-3 text-center">
+                <Label htmlFor="pin-input" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                  {mode === "setup" ? "Enter PIN" : "PIN"}
+                </Label>
                 <Input 
-                  id="confirm-pin-input"
+                  id="pin-input"
                   type="password" 
                   inputMode="numeric" 
-                  value={confirmPin} 
-                  onChange={(e) => setConfirmPin(e.target.value.replace(/\D/g, ''))} 
+                  pattern="[0-9]*" 
+                  value={pin} 
+                  onChange={(e) => setPinInput(e.target.value.replace(/\D/g, ''))} 
                   placeholder="••••" 
                   className="h-16 text-center text-3xl tracking-[0.5em] font-black bg-muted/30 border-none rounded-2xl focus-visible:ring-primary/20"
+                  autoFocus 
                 />
               </div>
-            )}
 
-            {error && (
-              <div className="flex items-center gap-2 text-destructive text-xs font-bold bg-destructive/10 p-4 rounded-2xl border border-destructive/20 animate-in shake-in duration-300">
-                <AlertCircle size={16} aria-hidden="true" />
-                <span>{error}</span>
-              </div>
-            )}
-
-            <div className="pt-2 flex flex-col gap-4">
-              <Button 
-                onClick={mode === "setup" ? handleSetup : handleUnlock} 
-                disabled={isLoading || pin.length < 4} 
-                className={cn(
-                  "w-full h-14 font-black rounded-2xl shadow-xl transition-all gap-2",
-                  mode === "setup" ? "bg-primary" : "bg-orange-500 hover:bg-orange-600 shadow-orange-500/20"
-                )}
-              >
-                {isLoading ? <Loader2 className="animate-spin size-5" aria-hidden="true" /> : (mode === "setup" ? "Enable Security" : "Unlock")}
-              </Button>
-
-              {mode === "unlock" && (
-                <Button 
-                  variant="ghost"
-                  onClick={() => confirm("FORGOT PIN? This will PERMANENTLY DELETE your local wallet data. Are you sure you want to reset?") && (resetWallet(), onClose(), window.location.reload())} 
-                  className="w-full h-auto py-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                >
-                  Forgot PIN? Reset Wallet
-                </Button>
+              {mode === "setup" && (
+                <div className="space-y-3 text-center animate-in slide-in-from-top-2 duration-300">
+                  <Label htmlFor="confirm-pin-input" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Confirm PIN</Label>
+                  <Input 
+                    id="confirm-pin-input"
+                    type="password" 
+                    inputMode="numeric" 
+                    value={confirmPin} 
+                    onChange={(e) => setConfirmPin(e.target.value.replace(/\D/g, ''))} 
+                    placeholder="••••" 
+                    className="h-16 text-center text-3xl tracking-[0.5em] font-black bg-muted/30 border-none rounded-2xl focus-visible:ring-primary/20"
+                  />
+                </div>
               )}
+
+              {error && (
+                <div className="flex items-center gap-2 text-destructive text-xs font-bold bg-destructive/10 p-4 rounded-2xl border border-destructive/20 animate-in shake-in duration-300">
+                  <AlertCircle size={16} aria-hidden="true" />
+                  <span>{error}</span>
+                </div>
+              )}
+
+              <div className="pt-2 flex flex-col gap-4">
+                <Button 
+                  onClick={mode === "setup" ? handleSetup : handleUnlock} 
+                  disabled={isLoading || pin.length < 4} 
+                  className={cn(
+                    "w-full h-14 font-black rounded-2xl shadow-xl transition-all gap-2",
+                    mode === "setup" ? "bg-primary" : "bg-orange-500 hover:bg-orange-600 shadow-orange-500/20"
+                  )}
+                >
+                  {isLoading ? <Loader2 className="animate-spin size-5" aria-hidden="true" /> : (mode === "setup" ? "Enable Security" : "Unlock")}
+                </Button>
+
+                {mode === "unlock" && (
+                  <Button 
+                    variant="ghost"
+                    onClick={() => confirm("FORGOT PIN? This will PERMANENTLY DELETE your local wallet data. Are you sure you want to reset?") && (resetWallet(), onClose(), window.location.reload())} 
+                    className="w-full h-auto py-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                  >
+                    Forgot PIN? Reset Wallet
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
-        </div>
+        </ScrollArea>
       </DialogContent>
     </Dialog>
   );

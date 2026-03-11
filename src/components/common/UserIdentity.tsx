@@ -17,6 +17,7 @@ import {
   DialogTitle 
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 
 interface UserIdentityProps {
@@ -106,7 +107,7 @@ export const UserIdentity: React.FC<UserIdentityProps> = ({
       </div>
 
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="sm:max-w-sm p-0 gap-0 overflow-hidden border-none shadow-2xl">
+        <DialogContent className="sm:max-w-sm p-0 gap-0 overflow-hidden border-none shadow-2xl flex flex-col max-h-[80vh]">
           <DialogHeader className="p-6 border-b shrink-0">
             <DialogTitle className="font-black text-xl flex items-center gap-2">
               <BadgeCheck className="text-amber-500 size-6" aria-hidden="true" />
@@ -114,49 +115,51 @@ export const UserIdentity: React.FC<UserIdentityProps> = ({
             </DialogTitle>
           </DialogHeader>
 
-          <div className="p-8 space-y-8">
-            <div className="flex items-start gap-4">
-              <p className="text-sm leading-relaxed text-muted-foreground font-medium">
-                This account is verified because it&apos;s an affiliate of{' '}
-                <Link 
-                  href={`/${orgNpub}`} 
-                  className="text-primary font-black hover:underline inline-flex items-center gap-0.5"
-                  onClick={() => setIsModalOpen(false)}
-                >
-                  @{orgName} <ExternalLink size={12} aria-hidden="true" />
-                </Link>{' '}
-                on Nostr.
-              </p>
-            </div>
-
-            <div className="flex items-start gap-4 p-4 rounded-3xl bg-muted/30 border border-border">
-              <Avatar 
-                pubkey={affiliationPubkey || ""} 
-                src={orgProfile?.picture} 
-                size={56}
-                isLoading={orgLoading}
-                className="rounded-2xl shrink-0 shadow-sm"
-                aria-hidden="true"
-              />
-              <div className="flex-1 min-w-0 py-1">
-                <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Affiliate</p>
-                <Link 
-                  href={`/${orgNpub}`} 
-                  className="font-black text-primary hover:underline text-base truncate block"
-                  onClick={() => setIsModalOpen(false)}
-                >
-                  {orgName}
-                </Link>
+          <ScrollArea className="flex-1 min-h-0">
+            <div className="p-8 space-y-8">
+              <div className="flex items-start gap-4">
+                <p className="text-sm leading-relaxed text-muted-foreground font-medium">
+                  This account is verified because it&apos;s an affiliate of{' '}
+                  <Link 
+                    href={`/${orgNpub}`} 
+                    className="text-primary font-black hover:underline inline-flex items-center gap-0.5"
+                    onClick={() => setIsModalOpen(false)}
+                  >
+                    @{orgName} <ExternalLink size={12} aria-hidden="true" />
+                  </Link>{' '}
+                  on Nostr.
+                </p>
               </div>
-            </div>
 
-            <Button 
-              onClick={() => setIsModalOpen(false)}
-              className="w-full h-12 rounded-2xl font-black shadow-lg"
-            >
-              Close
-            </Button>
-          </div>
+              <div className="flex items-start gap-4 p-4 rounded-3xl bg-muted/30 border border-border">
+                <Avatar 
+                  pubkey={affiliationPubkey || ""} 
+                  src={orgProfile?.picture} 
+                  size={56}
+                  isLoading={orgLoading}
+                  className="rounded-2xl shrink-0 shadow-sm"
+                  aria-hidden="true"
+                />
+                <div className="flex-1 min-w-0 py-1">
+                  <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Affiliate</p>
+                  <Link 
+                    href={`/${orgNpub}`} 
+                    className="font-black text-primary hover:underline text-base truncate block"
+                    onClick={() => setIsModalOpen(false)}
+                  >
+                    {orgName}
+                  </Link>
+                </div>
+              </div>
+
+              <Button 
+                onClick={() => setIsModalOpen(false)}
+                className="w-full h-12 rounded-2xl font-black shadow-lg"
+              >
+                Close
+              </Button>
+            </div>
+          </ScrollArea>
         </DialogContent>
       </Dialog>
 

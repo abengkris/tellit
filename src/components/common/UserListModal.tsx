@@ -32,7 +32,7 @@ export const UserListModal: React.FC<UserListModalProps> = ({
           <DialogTitle className="font-black text-xl">{title}</DialogTitle>
         </DialogHeader>
 
-        <ScrollArea className="flex-1">
+        <ScrollArea className="flex-1 min-h-0">
           <FollowList 
             pubkeys={pubkeys} 
             loading={loading}

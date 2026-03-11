@@ -51,6 +51,7 @@ import {
   DialogHeader, 
   DialogTitle 
 } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
@@ -520,7 +521,7 @@ export function ProfileContent({ npubParam }: { npubParam: string }) {
 
       {/* Profile History Modal */}
       <Dialog open={showDatesModal} onOpenChange={setShowDatesModal}>
-        <DialogContent className="sm:max-w-xs p-0 gap-0 overflow-hidden border-none shadow-2xl">
+        <DialogContent className="sm:max-w-xs p-0 gap-0 overflow-hidden border-none shadow-2xl flex flex-col max-h-[80vh]">
           <DialogHeader className="p-5 border-b shrink-0 flex flex-row items-center justify-between">
             <DialogTitle className="text-lg font-black flex items-center gap-2">
               <Clock className="text-primary size-5" aria-hidden="true" />
@@ -528,34 +529,37 @@ export function ProfileContent({ npubParam }: { npubParam: string }) {
             </DialogTitle>
           </DialogHeader>
           
-          <div className="p-6 space-y-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-primary/10 text-primary rounded-2xl">
-                <Calendar size={20} aria-hidden="true" />
+          <ScrollArea className="flex-1 min-h-0">
+            <div className="p-6 space-y-6">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-primary/10 text-primary rounded-2xl">
+                  <Calendar size={20} aria-hidden="true" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Joined</p>
+                  <p className="text-sm font-black">
+                    {profile?.published_at 
+                      ? format(new Date(profile.published_at * 1000), "MMMM d, yyyy")
+                      : "Unknown"}
+                  </p>
+                </div>
               </div>
-              <div>
-                <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Joined</p>
-                <p className="text-sm font-black">
-                  {profile?.published_at 
-                    ? format(new Date(profile.published_at * 1000), "MMMM d, yyyy")
-                    : "Unknown"}
-                </p>
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-green-500/10 text-green-500 rounded-2xl">
+                  <RefreshCw size={20} aria-hidden="true" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Last Updated</p>
+                  <p className="text-sm font-black">
+                    {profile?.created_at 
+                      ? format(new Date(profile.created_at * 1000), "MMMM d, yyyy · HH:mm")
+                      : "Unknown"}
+                  </p>
+                </div>
               </div>
             </div>
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-green-500/10 text-green-500 rounded-2xl">
-                <RefreshCw size={20} aria-hidden="true" />
-              </div>
-              <div>
-                <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Last Updated</p>
-                <p className="text-sm font-black">
-                  {profile?.created_at 
-                    ? format(new Date(profile.created_at * 1000), "MMMM d, yyyy · HH:mm")
-                    : "Unknown"}
-                </p>
-              </div>
-            </div>
-          </div>
+          </ScrollArea>
+          
           <div className="p-4 border-t bg-muted/30">
             <Button 
               onClick={() => setShowDatesModal(false)}
