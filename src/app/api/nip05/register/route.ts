@@ -55,14 +55,27 @@ export async function POST(req: NextRequest) {
 
     const supabase = getSupabaseAdmin();
 
-    // 1. Check if name is already taken in active handles
-    const { data: existing, error: checkError } = await supabase
+    // 1. Check if pubkey already has a handle (One handle per user)
+    const { data: existingPubkey } = await supabase
+      .from('handles')
+      .select('name')
+      .eq('pubkey', pubkey)
+      .single();
+
+    if (existingPubkey) {
+      return NextResponse.json({ 
+        error: `This public key is already registered with the handle: ${existingPubkey.name}@tellit.id` 
+      }, { status: 403 });
+    }
+
+    // 2. Check if name is already taken in active handles
+    const { data: existingName, error: checkError } = await supabase
       .from('handles')
       .select('name')
       .eq('name', name.toLowerCase())
       .single();
 
-    if (existing) {
+    if (existingName) {
       return NextResponse.json({ error: 'Username already taken' }, { status: 409 });
     }
 
