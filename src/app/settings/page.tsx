@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { useUIStore, RelayAuthStrategy } from "@/store/ui";
 import { useAuthStore } from "@/store/auth";
 import { useNDK } from "@/hooks/useNDK";
-import { Bell, Shield, User, Globe, Wallet, Clock, LogOut, Key, VolumeX } from "lucide-react";
+import { Bell, Shield, User, Globe, Wallet, Clock, LogOut, Key, VolumeX, BadgeCheck } from "lucide-react";
 import { Avatar } from "@/components/common/Avatar";
 import Link from "next/link";
 import { NDKEvent } from "@nostr-dev-kit/ndk";
@@ -124,6 +124,17 @@ export default function SettingsPage() {
                 <div className="flex flex-col gap-2">
                   <Separator className="bg-background/50" />
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
+                    <Button 
+                      asChild
+                      variant="outline"
+                      className="rounded-2xl font-black h-12 bg-primary/10 text-primary border-none shadow-sm hover:bg-primary/20"
+                    >
+                      <Link href="/settings/verify">
+                        <BadgeCheck className="size-4" />
+                        <span>Get Verified</span>
+                      </Link>
+                    </Button>
+
                     <Button 
                       asChild
                       variant="outline"
