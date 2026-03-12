@@ -28,10 +28,35 @@ export default function VerifyPage() {
   const [isRegistering, setIsRegistering] = useState(false);
   const [registeredHandle, setRegisteredHandle] = useState<string | null>(null);
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
 
   // Payment state
   const [paymentData, setPaymentData] = useState<{ pr: string; hash: string; amount: number } | null>(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+
+  // Check if user already has a handle on mount
+  useEffect(() => {
+    async function checkExistingHandle() {
+      if (!user) return;
+      try {
+        const res = await fetch(`/api/nip05/register?pubkey=${user.pubkey}`);
+        const data = await res.json();
+        if (data.existingHandle) {
+          setRegisteredHandle(data.existingHandle);
+        }
+      } catch (err) {
+        console.error("Failed to check existing handle:", err);
+      } finally {
+        setIsInitialLoading(false);
+      }
+    }
+
+    if (isLoggedIn) {
+      checkExistingHandle();
+    } else {
+      setIsInitialLoading(false);
+    }
+  }, [isLoggedIn, user]);
 
   useEffect(() => {
     if (!debouncedHandle) {
@@ -123,6 +148,15 @@ export default function VerifyPage() {
       setIsUpdatingProfile(false);
     }
   };
+
+  if (isInitialLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[50vh]">
+        <Loader2 className="animate-spin size-10 text-primary" />
+        <p className="mt-4 text-muted-foreground font-medium">Checking verification status...</p>
+      </div>
+    );
+  }
 
   if (!isLoggedIn) {
     return (

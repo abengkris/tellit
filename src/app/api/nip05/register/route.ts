@@ -8,18 +8,36 @@ const REGISTRATION_PRICE_SATS = 21000;
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const name = searchParams.get('name');
+  const pubkey = searchParams.get('pubkey');
 
-  if (!name) {
-    return NextResponse.json({ error: 'Missing name' }, { status: 400 });
-  }
-
-  const validation = validateUsername(name);
-  if (!validation.valid) {
-    return NextResponse.json({ available: false, error: validation.error });
+  if (!name && !pubkey) {
+    return NextResponse.json({ error: 'Missing name or pubkey' }, { status: 400 });
   }
 
   try {
     const supabase = getSupabaseAdmin();
+
+    // If pubkey is provided, check if user already has a handle
+    if (pubkey) {
+      const { data } = await supabase
+        .from('handles')
+        .select('name')
+        .eq('pubkey', pubkey)
+        .single();
+      
+      return NextResponse.json({ 
+        existingHandle: data ? `${data.name}@tellit.id` : null 
+      });
+    }
+
+    if (!name) {
+      return NextResponse.json({ error: 'Missing name' }, { status: 400 });
+    }
+
+    const validation = validateUsername(name);
+    if (!validation.valid) {
+      return NextResponse.json({ available: false, error: validation.error });
+    }
     const { data, error } = await supabase
       .from('handles')
       .select('name')
