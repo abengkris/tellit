@@ -31,7 +31,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { name, pubkey } = body;
+    const { name, pubkey, relays } = body;
 
     if (!name || !pubkey) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
