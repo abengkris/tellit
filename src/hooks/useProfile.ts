@@ -37,11 +37,36 @@ export function useProfile(pubkey?: string) {
     try {
       const user = ndk.getUser({ pubkey });
       
-      // fetchProfile fetches from cache first, then relays
-      // if forceRelay is true, we want to bypass cache or ensure it hits relays
-      const userProfile = await user.fetchProfile({ 
-        cacheUsage: forceRelay ? 2 : 0 // 2 is CACHE_FIRST but with relay fetch, 0 is CACHE_ONLY/DEFAULT
-      } as unknown as Record<string, unknown>);
+      let userProfile = null;
+
+      if (forceRelay) {
+        // Force a fresh fetch from relays by bypassing the user.fetchProfile cache logic
+        const event = await ndk.fetchEvent({
+          kinds: [0],
+          authors: [pubkey]
+        }, { 
+          cacheUsage: 2, // 2 is ONLY_RELAY (strictly bypasses Dexie and internal object cache)
+          closeOnEose: true 
+        } as unknown as Record<string, unknown>);
+
+        if (event) {
+          try {
+            const content = JSON.parse(event.content);
+            userProfile = content;
+            // Update the user object's profile so NDK's internal state is also fresh
+            user.profile = content;
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (user as any).kind0 = event;
+          } catch (e) {
+            console.error("Failed to parse profile content:", e);
+          }
+        }
+      }
+
+      // Fallback to standard fetch if forceRelay failed or wasn't requested
+      if (!userProfile) {
+        userProfile = await user.fetchProfile();
+      }
       
       // Construct metadata object
       const metadata: ProfileMetadata = { 

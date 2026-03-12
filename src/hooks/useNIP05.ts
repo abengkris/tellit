@@ -24,7 +24,7 @@ export function useNIP05(pubkey: string | undefined, nip05: string | undefined) 
 
     const verify = async () => {
       try {
-        const res = await fetch(`/api/nip05?identifier=${encodeURIComponent(nip05)}`);
+        const res = await fetch(`/api/nip05?identifier=${encodeURIComponent(nip05)}&t=${Date.now()}`);
         
         if (!isMounted) return;
 

@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
       headers: {
         'Accept': 'application/json',
       },
-      next: { revalidate: 3600 } // Cache for 1 hour
+      cache: 'no-store' // Don't cache the proxy request to ensure fresh verification
     });
 
     if (!response.ok) {
