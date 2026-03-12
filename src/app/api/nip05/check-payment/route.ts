@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabase';
 import { checkBlinkInvoiceStatus } from '@/lib/blink';
 
 export async function GET(req: NextRequest) {
@@ -10,13 +10,13 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Missing payment hash' }, { status: 400 });
   }
 
-  if (!supabase) {
+  if (!supabaseAdmin) {
     return NextResponse.json({ error: 'Database unavailable' }, { status: 503 });
   }
 
   try {
     // 1. Get registration record
-    const { data: registration, error: fetchError } = await supabase
+    const { data: registration, error: fetchError } = await supabaseAdmin
       .from('registrations')
       .select('*')
       .eq('payment_hash', hash)
@@ -40,7 +40,7 @@ export async function GET(req: NextRequest) {
       // Start a "transaction" via concurrent promises (or use a supabase rpc if needed)
       // For simplicity, we do sequential updates here
       
-      const { error: activateError } = await supabase
+      const { error: activateError } = await supabaseAdmin
         .from('handles')
         .insert({
           name: registration.name,
@@ -52,7 +52,7 @@ export async function GET(req: NextRequest) {
         throw activateError;
       }
 
-      await supabase
+      await supabaseAdmin
         .from('registrations')
         .update({ status: 'paid' })
         .eq('payment_hash', hash);

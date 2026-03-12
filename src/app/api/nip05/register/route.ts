@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabase';
 import { validateUsername } from '@/lib/nip05';
 import { createBlinkInvoice } from '@/lib/blink';
 
@@ -18,12 +18,12 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ available: false, error: validation.error });
   }
 
-  if (!supabase) {
+  if (!supabaseAdmin) {
     return NextResponse.json({ available: true, warning: 'Service temporarily limited' });
   }
 
   try {
-    const { data } = await supabase
+    const { data } = await supabaseAdmin
       .from('handles')
       .select('name')
       .eq('name', name.toLowerCase())
@@ -49,12 +49,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: validation.error }, { status: 400 });
     }
 
-    if (!supabase) {
+    if (!supabaseAdmin) {
       return NextResponse.json({ error: 'NIP-05 registration is currently unavailable' }, { status: 503 });
     }
 
     // 1. Check if name is already taken in active handles
-    const { data: existing } = await supabase
+    const { data: existing } = await supabaseAdmin
       .from('handles')
       .select('name')
       .eq('name', name.toLowerCase())
@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
     }
 
     // 3. Save pending registration to Supabase
-    const { error: regError } = await supabase
+    const { error: regError } = await supabaseAdmin
       .from('registrations')
       .insert({
         name: name.toLowerCase(),

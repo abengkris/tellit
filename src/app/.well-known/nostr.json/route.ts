@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabase';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,12 +11,12 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Missing name parameter' }, { status: 400 });
   }
 
-  if (!supabase) {
+  if (!supabaseAdmin) {
     return NextResponse.json({ names: {} });
   }
 
   try {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('handles')
       .select('name, pubkey, relays')
       .eq('name', name.toLowerCase())
