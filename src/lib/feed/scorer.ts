@@ -6,7 +6,8 @@ export interface ScoringContext {
   followsOfFollowsSet: Set<string>; 
   interactionHistory: Map<string, number>; 
   mutedSet: Set<string>;            
-  trustScores?: Map<string, number>; // pubkey -> score (0-100)
+  trustScores?: Map<string, number>; // pubkey -> score (0-1)
+  mutualsMap?: Map<string, number>;  // pubkey -> count of mutual followers
 }
 
 export interface ScoredEvent {
@@ -25,7 +26,8 @@ const WEIGHTS = {
   isRepost: 10,           
   networkReaction: 15,    
   networkReply: 12,
-  trustFactor: 0.5,       // multiplier for trust score
+  trustFactor: 40,        // multiplier for trust score (assumed 0-1)
+  mutualsFactor: 15,      // multiplier for log10(mutuals)
 } as const;
 
 export function scoreEvent(
@@ -54,8 +56,19 @@ export function scoreEvent(
     const trust = ctx.trustScores.get(event.pubkey) ?? 0;
     if (trust > 0) {
       const trustBoost = trust * WEIGHTS.trustFactor;
-      signals.trust = trustBoost;
+      signals.trust = Math.round(trustBoost * 10) / 10;
       score += trustBoost;
+    }
+  }
+
+  // Mutuals boost
+  if (ctx.mutualsMap) {
+    const mutuals = ctx.mutualsMap.get(event.pubkey) ?? 0;
+    if (mutuals > 1) {
+      // 1 + log10(mutuals) boost as per WOT_PLAN.md
+      const mutualsBoost = (1 + Math.log10(mutuals)) * WEIGHTS.mutualsFactor;
+      signals.mutuals = Math.round(mutualsBoost * 10) / 10;
+      score += mutualsBoost;
     }
   }
 

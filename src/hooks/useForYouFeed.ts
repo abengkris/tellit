@@ -32,7 +32,7 @@ export function useForYouFeed({
   followingList,
 }: UseForYouFeedOptions): UseForYouFeedReturn {
   const { ndk, isReady } = useNDK();
-  const { wot, status: wotStatus, pubkeyCount: wotSize } = useWoT(viewerPubkey);
+  const { wot, trustScores, status: wotStatus, pubkeyCount: wotSize } = useWoT(viewerPubkey);
   const { wotStrictMode } = useUIStore();
   const { mutedPubkeys } = useLists();
 
@@ -57,17 +57,29 @@ export function useForYouFeed({
 
     if (!wot) return sortByTime(baseEvents);
 
+    // Build mutuals map for the scorer
+    const mutualsMap = new Map<string, number>();
+    const allWoTPubkeys = wot.getAllPubkeys();
+    for (const pk of allWoTPubkeys) {
+      const node = wot.getNode(pk);
+      if (node && node.followedBy) {
+        mutualsMap.set(pk, node.followedBy.size);
+      }
+    }
+
     // Prepare context for the scorer
     const context: ScoringContext = {
       viewerPubkey,
       followingSet: new Set(followingList),
-      followsOfFollowsSet: new Set(wot.getAllPubkeys()),
+      followsOfFollowsSet: new Set(allWoTPubkeys),
       interactionHistory: new Map(), // To be implemented if we start tracking this
       mutedSet: mutedPubkeys,
+      trustScores,
+      mutualsMap,
     };
 
     return rankEvents(baseEvents, context).map(se => se.event);
-  }, [rawEvents, wot, wotStrictMode, followingList, mutedPubkeys, viewerPubkey]);
+  }, [rawEvents, wot, wotStrictMode, followingList, mutedPubkeys, viewerPubkey, trustScores]);
 
   useEffect(() => {
     if (!ndk || !isReady || wotStatus === "idle") return;
@@ -85,13 +97,22 @@ export function useForYouFeed({
       });
       prevFollowingListRef.current = followingStr;
     } else if (rawEvents.length > 0) {
-      setIsLoading(false);
+      Promise.resolve().then(() => setIsLoading(false));
       return;
     }
 
-    const authors = wot
-      ? wot.getAllPubkeys({ maxDepth: 2 }).slice(0, 500)
-      : followingList;
+    // Smart Author Selection:
+    // 1. All following list (direct trust)
+    // 2. High-trust FoF (score > 0) up to a reasonable limit for relay health
+    let authors = followingList;
+    if (wot) {
+      const allPubkeys = wot.getAllPubkeys({ maxDepth: 2 });
+      const fof = allPubkeys
+        .filter(pk => !followingList.includes(pk) && pk !== viewerPubkey)
+        .sort((a, b) => (wot.getScore(b) || 0) - (wot.getScore(a) || 0));
+      
+      authors = [...followingList, ...fof.slice(0, 400)];
+    }
 
     if (!authors.length) {
       Promise.resolve().then(() => setIsLoading(false));
@@ -150,7 +171,16 @@ export function useForYouFeed({
     if (!ndk || !hasMore || !rawEvents.length) return;
 
     const oldest = Math.min(...rawEvents.map(p => p.created_at ?? Infinity));
-    const authors = wot ? wot.getAllPubkeys({ maxDepth: 2 }).slice(0, 500) : followingList;
+    
+    let authors = followingList;
+    if (wot) {
+      const allPubkeys = wot.getAllPubkeys({ maxDepth: 2 });
+      const fof = allPubkeys
+        .filter(pk => !followingList.includes(pk) && pk !== viewerPubkey)
+        .sort((a, b) => (wot.getScore(b) || 0) - (wot.getScore(a) || 0));
+      
+      authors = [...followingList, ...fof.slice(0, 400)];
+    }
 
     const older = await ndk.fetchEvents({
       kinds: [1, 6, 16, 1068, 30023] as NDKKind[],
@@ -164,11 +194,10 @@ export function useForYouFeed({
     if (newEvents.length < 30) setHasMore(false);
 
     setRawEvents(prev => {
-      const combined = [...prev, ...newEvents];
-      return combined.filter((v, i, a) => a.findIndex(t => t.id === v.id) === i);
+    const combined = [...prev, ...newEvents];
+    return combined.filter((v, i, a) => a.findIndex(t => t.id === v.id) === i);
     });
-  }, [ndk, rawEvents, hasMore, followingList, wot]);
-
+    }, [ndk, rawEvents, hasMore, followingList, wot, viewerPubkey]);
   return {
     posts,
     newCount,
