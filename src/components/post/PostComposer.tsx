@@ -23,6 +23,7 @@ import { Avatar } from "../common/Avatar";
 import { PollEditor } from "./PollEditor";
 import { CollaboratorEditor } from "./CollaboratorEditor";
 import { useMentionSearch } from "@/hooks/useMentionSearch";
+import { uploadToBlossom, formatImeta, getTagValue } from "@/lib/upload";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -48,7 +49,6 @@ export const PostComposer: React.FC<PostComposerProps> = ({
   const { user, isLoggedIn } = useAuthStore();
   const { ndk, isReady } = useNDK();
   const { addToast } = useUIStore();
-  const { uploadFile } = useBlossom();
   const { emojis } = useEmojis();
   const { profile } = useProfile(user?.pubkey);
   
@@ -225,17 +225,19 @@ export const PostComposer: React.FC<PostComposerProps> = ({
     setIsUploading(true);
     try {
       for (const file of files) {
-        const result = await uploadFile(file);
-        if (result && result.url) {
-          const url = result.url;
+        if (!ndk) continue;
+        const tags = await uploadToBlossom(ndk, file);
+        const url = getTagValue(tags, "url");
+        
+        if (url) {
           setMediaFiles(prev => [...prev, { 
             url, 
             type: file.type,
-            imeta: result.sha256 ? ["imeta", `url ${url}`, `m ${file.type}`, `x ${result.sha256}`] as NDKTag : undefined
+            imeta: formatImeta(tags) as NDKTag
           }]);
         }
       }
-      addToast("Media uploaded!", "success");
+      addToast("Media uploaded with metadata!", "success");
     } catch (err) {
       console.error("Failed to upload media:", err);
       addToast("Failed to upload media.", "error");

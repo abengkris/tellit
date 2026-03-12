@@ -6,6 +6,8 @@ import NDKCacheAdapterDexie from "@nostr-dev-kit/ndk-cache-dexie";
 import { NDKMessenger, CacheModuleStorage, NDKMessage } from "@nostr-dev-kit/messages";
 import { NDKSessionManager, LocalStorage, NDKSession } from "@nostr-dev-kit/sessions";
 import { NDKNWCWallet } from "@nostr-dev-kit/wallet";
+import { NDKStore } from "@nostrify/ndk";
+import { NStore } from "@nostrify/nostrify";
 import { useAuthStore } from "@/store/auth";
 import { useUIStore } from "@/store/ui";
 import { useWalletStore } from "@/store/wallet";
@@ -21,6 +23,7 @@ export interface NDKContextType {
   messenger: NDKMessenger | null;
   sessions: NDKSessionManager | null;
   activeSession: NDKSession | null;
+  relay: NStore | null;
   isReady: boolean;
   isWalletReady: boolean;
   refreshBalance: () => Promise<void>;
@@ -31,6 +34,7 @@ export const NDKContext = createContext<NDKContextType>({
   messenger: null,
   sessions: null,
   activeSession: null,
+  relay: null,
   isReady: false,
   isWalletReady: false,
   refreshBalance: async () => {},
@@ -41,6 +45,7 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
   const [messenger, setMessenger] = useState<NDKMessenger | null>(null);
   const [sessions, setSessions] = useState<NDKSessionManager | null>(null);
   const [activeSession, setActiveSession] = useState<NDKSession | null>(null);
+  const [relay, setRelay] = useState<NStore | null>(null);
   const [isReady, setIsReady] = useState(false);
   const [isWalletReady, setIsWalletReady] = useState(false);
   
@@ -286,6 +291,7 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
       await sessionManager.restore();
       await initWallet();
       setNdk(instance);
+      setRelay(new NDKStore(instance));
 
       const currentPubkey = sessionManager.activePubkey;
       let msgInstance: NDKMessenger | null = null;
@@ -383,10 +389,11 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
     messenger, 
     sessions, 
     activeSession, 
+    relay,
     isReady, 
     isWalletReady, 
     refreshBalance 
-  }), [ndk, messenger, sessions, activeSession, isReady, isWalletReady]);
+  }), [ndk, messenger, sessions, activeSession, relay, isReady, isWalletReady]);
 
   return (
     <NDKContext.Provider value={contextValue}>

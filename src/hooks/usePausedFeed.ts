@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { NDKEvent, NDKFilter, NDKSubscription } from "@nostr-dev-kit/ndk";
 import { useNDK } from "@/hooks/useNDK";
+import { validateEvent } from "@/lib/policies";
 
 interface UsePausedFeedOptions {
   filter: NDKFilter;
@@ -58,7 +59,7 @@ export function usePausedFeed({
       prevFilterRef.current = currentFilterStr;
     } else if (posts.length > 0) {
       // If filter didn't change and we have posts, don't show loading
-      setIsLoading(false);
+      Promise.resolve().then(() => setIsLoading(false));
       return;
     }
 
@@ -68,8 +69,13 @@ export function usePausedFeed({
     );
     subRef.current = sub;
 
-    sub.on("event", (event: NDKEvent) => {
+    sub.on("event", async (event: NDKEvent) => {
       if (seenIds.current.has(event.id)) return;
+      
+      // Perform automated spam check using NPolicy
+      const ok = await validateEvent(event);
+      if (!ok) return;
+
       seenIds.current.add(event.id);
 
       if (!isInitialLoadDone.current) {

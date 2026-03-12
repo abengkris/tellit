@@ -2,14 +2,12 @@
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { NDKEvent, NDKKind } from "@nostr-dev-kit/ndk";
-/* eslint-disable-next-line @typescript-eslint/no-unused-vars */
-import { NDKWoT } from "@nostr-dev-kit/wot";
 import { useNDK } from "@/hooks/useNDK";
-/* eslint-disable-next-line @typescript-eslint/no-unused-vars */
-import { useWoT, CachedWoT } from "./useWoT";
+import { useWoT } from "./useWoT";
 import { useUIStore } from "@/store/ui";
 import { useLists } from "@/hooks/useLists";
 import { rankEvents, ScoringContext } from "@/lib/feed/scorer";
+import { validateEvent } from "@/lib/policies";
 
 interface UseForYouFeedOptions {
   viewerPubkey: string;
@@ -130,8 +128,12 @@ export function useForYouFeed({
       }
     );
 
-    sub.on("event", (event: NDKEvent) => {
+    sub.on("event", async (event: NDKEvent) => {
       if (seenIds.current.has(event.id)) return;
+      
+      const ok = await validateEvent(event);
+      if (!ok) return;
+
       seenIds.current.add(event.id);
 
       if (!isInitialLoadDone.current) {
