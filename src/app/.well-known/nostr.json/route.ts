@@ -11,6 +11,10 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Missing name parameter' }, { status: 400 });
   }
 
+  if (!supabase) {
+    return NextResponse.json({ names: {} });
+  }
+
   try {
     const { data, error } = await supabase
       .from('handles')

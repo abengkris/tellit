@@ -15,6 +15,10 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ available: false, error: validation.error });
   }
 
+  if (!supabase) {
+    return NextResponse.json({ available: true, warning: 'Service temporarily limited' });
+  }
+
   try {
     const { data } = await supabase
       .from('handles')
@@ -40,6 +44,10 @@ export async function POST(req: NextRequest) {
     const validation = validateUsername(name);
     if (!validation.valid) {
       return NextResponse.json({ error: validation.error }, { status: 400 });
+    }
+
+    if (!supabase) {
+      return NextResponse.json({ error: 'NIP-05 registration is currently unavailable' }, { status: 503 });
     }
 
     // Check if name taken
