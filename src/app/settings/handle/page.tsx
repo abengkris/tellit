@@ -7,13 +7,14 @@ import { useUIStore } from "@/store/ui";
 import { useProfile } from "@/hooks/useProfile";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { BadgeCheck, Loader2, ChevronLeft, Calendar, Globe, Key, RefreshCw, ExternalLink } from "lucide-react";
+import { BadgeCheck, Loader2, ChevronLeft, Calendar, Globe, Key, RefreshCw, ExternalLink, Fingerprint, Share2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { updateProfileNIP05 } from "@/lib/actions/profile";
 import { format } from "date-fns";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import { nip19 } from "nostr-tools";
 
 interface HandleDetails {
   name: string;
@@ -165,10 +166,28 @@ export default function ManageHandlePage() {
 
               <div className="space-y-1 sm:col-span-2">
                 <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest flex items-center gap-1.5">
-                  <Key size={12} /> Public Key
+                  <Key size={12} /> Hex Public Key
                 </p>
                 <p className="font-mono text-xs break-all bg-background/50 p-2 rounded-lg border border-primary/5">
                   {user?.pubkey}
+                </p>
+              </div>
+
+              <div className="space-y-1 sm:col-span-2">
+                <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest flex items-center gap-1.5">
+                  <Fingerprint size={12} /> Npub (Public ID)
+                </p>
+                <p className="font-mono text-xs break-all bg-background/50 p-2 rounded-lg border border-primary/5">
+                  {user?.pubkey ? nip19.npubEncode(user.pubkey) : "-"}
+                </p>
+              </div>
+
+              <div className="space-y-1 sm:col-span-2">
+                <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest flex items-center gap-1.5">
+                  <Share2 size={12} /> Nprofile (Shareable Profile)
+                </p>
+                <p className="font-mono text-xs break-all bg-background/50 p-2 rounded-lg border border-primary/5">
+                  {user?.pubkey ? nip19.nprofileEncode({ pubkey: user.pubkey, relays: handleDetails.relays }) : "-"}
                 </p>
               </div>
             </div>
