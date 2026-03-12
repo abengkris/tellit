@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { useUIStore, RelayAuthStrategy } from "@/store/ui";
 import { useAuthStore } from "@/store/auth";
 import { useNDK } from "@/hooks/useNDK";
+import { useProfile } from "@/hooks/useProfile";
 import { Bell, Shield, User, Globe, Wallet, Clock, LogOut, Key, VolumeX, BadgeCheck } from "lucide-react";
 import { Avatar } from "@/components/common/Avatar";
 import Link from "next/link";
@@ -36,6 +37,7 @@ interface ExtendedCacheAdapter {
 export default function SettingsPage() {
   const { isLoggedIn, user, logout } = useAuthStore();
   const { sessions, ndk, isReady } = useNDK();
+  const { profile } = useProfile(user?.pubkey);
   const { mutedPubkeys, loading: loadingLists } = useLists();
   const { 
     browserNotificationsEnabled, 
@@ -131,7 +133,7 @@ export default function SettingsPage() {
                     >
                       <Link href="/settings/verify">
                         <BadgeCheck className="size-4" />
-                        <span>Get Verified</span>
+                        <span>{profile?.nip05?.endsWith("@tellit.id") ? "Manage Handle" : "Get Verified"}</span>
                       </Link>
                     </Button>
 
