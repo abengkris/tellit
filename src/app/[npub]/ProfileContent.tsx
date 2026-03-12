@@ -85,7 +85,7 @@ export function ProfileContent({ npubParam }: { npubParam: string }) {
     params.set("tab", tab);
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
   };
-  const { profile, loading: profileLoading, refresh: refreshProfile } = useProfile(hexPubkey);
+  const { profile, loading: profileLoading, profileUrl, refresh: refreshProfile } = useProfile(hexPubkey);
   const { relays: userRelays, loading: relaysLoading } = useRelayList(hexPubkey);
   const { generalStatus, musicStatus } = useUserStatus(hexPubkey);
   
@@ -433,7 +433,7 @@ export function ProfileContent({ npubParam }: { npubParam: string }) {
         {/* Stats */}
         <div className="flex gap-5 mt-4 text-sm">
           <Link
-            href={`/${npubParam}/followers?tab=following`}
+            href={`${profileUrl}/followers?tab=following`}
             className="hover:underline flex items-center gap-1 group"
           >
             <span className="font-black text-foreground">
@@ -442,7 +442,7 @@ export function ProfileContent({ npubParam }: { npubParam: string }) {
             <span className="text-muted-foreground text-xs font-medium">Following</span>
           </Link>
 
-          <Link href={`/${npubParam}/followers?tab=followers`} className="hover:underline flex items-center gap-1 group">
+          <Link href={`${profileUrl}/followers?tab=followers`} className="hover:underline flex items-center gap-1 group">
             <span className="font-black text-foreground">
               {fLoading ? "–" : formatCount(followerCount)}
             </span>

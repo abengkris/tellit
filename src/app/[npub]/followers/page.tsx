@@ -1,27 +1,55 @@
 // src/app/[npub]/followers/page.tsx
 "use client";
 
-import React, { useState, useEffect, use } from "react";
-import { useParams } from "next/navigation";
+import React, { useState, useEffect } from "react";
+import { useParams, useSearchParams, useRouter } from "next/navigation";
 import { useFollowers } from "@/hooks/useFollowers";
 import { useFollowingList } from "@/hooks/useFollowingList";
+import { useResolveIdentity } from "@/hooks/useIdentity";
 import { FollowList } from "@/components/profile/FollowList";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Loader2 } from "lucide-react";
 import Link from "next/link";
-import { decodeNip19 } from "@/lib/utils/nip19";
 
 type Tab = "followers" | "following";
 
 export default function FollowersPage() {
   const params = useParams();
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const npub = params.npub as string;
-  const [tab, setTab] = useState<Tab>("followers");
   
-  const { id: hexPubkey } = decodeNip19(npub);
+  const initialTab = (searchParams.get("tab") as Tab) || "followers";
+  const [tab, setTab] = useState<Tab>(initialTab);
+  
+  const { hexPubkey, loading: resolving } = useResolveIdentity(npub);
 
   const { followers, loading: followersLoading } = useFollowers(hexPubkey || undefined);
   const { followingUsers, loading: followingLoading } = useFollowingList(hexPubkey || undefined);
   const followingPubkeys = followingUsers.map((u) => u.pubkey);
+
+  // Sync tab state with URL
+  useEffect(() => {
+    const t = searchParams.get("tab") as Tab;
+    if (t && (t === "followers" || t === "following")) {
+      setTab(t);
+    }
+  }, [searchParams]);
+
+  const handleTabChange = (newTab: Tab) => {
+    setTab(newTab);
+    const newSearchParams = new URLSearchParams(searchParams.toString());
+    newSearchParams.set("tab", newTab);
+    router.replace(`/${npub}/followers?${newSearchParams.toString()}`, { scroll: false });
+  };
+
+  if (resolving) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[50vh]">
+        <Loader2 className="animate-spin size-10 text-primary" />
+        <p className="mt-4 text-muted-foreground font-medium">Memuat koneksi...</p>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -39,14 +67,14 @@ export default function FollowersPage() {
           <div className="flex">
             <TabButton
               active={tab === "followers"}
-              onClick={() => setTab("followers")}
+              onClick={() => handleTabChange("followers")}
               count={followers.length}
               label="Pengikut"
               loading={followersLoading}
             />
             <TabButton
               active={tab === "following"}
-              onClick={() => setTab("following")}
+              onClick={() => handleTabChange("following")}
               count={followingPubkeys.length}
               label="Mengikuti"
               loading={followingLoading}
