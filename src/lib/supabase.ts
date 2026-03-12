@@ -25,8 +25,8 @@ export const supabaseAdmin = (ENV.SUPABASE.URL && ENV.SUPABASE.SERVICE_KEY)
  */
 export function getSupabaseAdmin(): SupabaseClient {
   if (!supabaseAdmin) {
-    if (!ENV.SUPABASE.URL) throw new Error('SUPABASE_URL is missing from environment.');
-    if (!ENV.SUPABASE.SERVICE_KEY) throw new Error('SUPABASE_SERVICE_ROLE_KEY is missing from environment.');
+    if (!ENV.SUPABASE.URL) throw new Error('SUPABASE_URL or NEXT_PUBLIC_SUPABASE_URL is missing from environment.');
+    if (!ENV.SUPABASE.SERVICE_KEY) throw new Error('SUPABASE_SERVICE_ROLE_KEY or TELLIT_SUPABASE_SERVICE_ROLE_KEY is missing from environment.');
     throw new Error('Supabase Admin client could not be initialized.');
   }
   return supabaseAdmin;

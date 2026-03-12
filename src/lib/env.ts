@@ -20,9 +20,9 @@ export function getOptionalEnv(name: string): string | undefined {
 
 export const ENV = {
   SUPABASE: {
-    URL: getOptionalEnv('NEXT_PUBLIC_SUPABASE_URL'),
-    ANON_KEY: getOptionalEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY'),
-    SERVICE_KEY: getOptionalEnv('TELLIT_SUPABASE_SERVICE_ROLE_KEY'),
+    URL: getOptionalEnv('NEXT_PUBLIC_SUPABASE_URL') || getOptionalEnv('SUPABASE_URL'),
+    ANON_KEY: getOptionalEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY') || getOptionalEnv('SUPABASE_ANON_KEY'),
+    SERVICE_KEY: getOptionalEnv('TELLIT_SUPABASE_SERVICE_ROLE_KEY') || getOptionalEnv('SUPABASE_SERVICE_ROLE_KEY'),
   },
   BLINK: {
     API_KEY: getOptionalEnv('BLINK_API_KEY'),
