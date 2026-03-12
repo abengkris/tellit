@@ -30,6 +30,31 @@ export async function updateProfile(
 }
 
 /**
+ * Specifically update only the NIP-05 field of a profile.
+ */
+export async function updateProfileNIP05(
+  ndk: NDK,
+  nip05: string
+): Promise<boolean> {
+  if (!ndk.signer) return false;
+
+  try {
+    const user = await ndk.signer.user();
+    await user.fetchProfile();
+    
+    const metadata = {
+      ...(user.profile || {}),
+      nip05
+    };
+
+    return updateProfile(ndk, metadata);
+  } catch (error) {
+    console.error("Failed to update NIP-05 profile:", error);
+    return false;
+  }
+}
+
+/**
  * Update user status (kind 30315).
  */
 export async function updateStatus(

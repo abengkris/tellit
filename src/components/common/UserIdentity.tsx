@@ -46,6 +46,7 @@ export const UserIdentity: React.FC<UserIdentityProps> = ({
   const [nip05Name, domain] = nip05?.split('@') || [];
   const domainPart = domain?.split('.')[0];
   const isOrg = nip05Name === '_' || nip05Name === domainPart;
+  const isTellIt = domain === 'tellit.id';
   
   // Only fetch org profile when modal is open to save resources
   const { profile: orgProfile, loading: orgLoading } = useProfile(isModalOpen ? (affiliationPubkey || undefined) : undefined);
@@ -84,7 +85,8 @@ export const UserIdentity: React.FC<UserIdentityProps> = ({
               size={isPost ? 14 : 22}
               className={cn(
                 "shrink-0",
-                isOrg ? "text-amber-500 fill-amber-500/10" : "text-primary fill-primary/10"
+                isTellIt ? "text-blue-500 fill-blue-500/10" : 
+                (isOrg ? "text-amber-500 fill-amber-500/10" : "text-primary fill-primary/10")
               )}
               aria-hidden="true"
             />

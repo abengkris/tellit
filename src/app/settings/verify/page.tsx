@@ -2,17 +2,20 @@
 
 import React, { useState, useEffect } from "react";
 import { useAuthStore } from "@/store/auth";
+import { useNDK } from "@/hooks/useNDK";
 import { useUIStore } from "@/store/ui";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { BadgeCheck, ShieldCheck, Loader2, ChevronLeft, Check, AlertCircle, Zap } from "lucide-react";
+import { BadgeCheck, Loader2, ChevronLeft, Check, AlertCircle, Zap, RefreshCw } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { validateUsername } from "@/lib/nip05";
 import { useDebounce } from "use-debounce";
+import { updateProfileNIP05 } from "@/lib/actions/profile";
 
 export default function VerifyPage() {
   const { user, isLoggedIn } = useAuthStore();
+  const { ndk } = useNDK();
   const { addToast } = useUIStore();
   const router = useRouter();
   
@@ -22,6 +25,8 @@ export default function VerifyPage() {
   const [isAvailable, setIsAvailable] = useState<boolean | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isRegistering, setIsRegistering] = useState(false);
+  const [registeredHandle, setRegisteredHandle] = useState<string | null>(null);
+  const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
 
   useEffect(() => {
     if (!debouncedHandle) {
@@ -66,14 +71,14 @@ export default function VerifyPage() {
         body: JSON.stringify({
           name: handle,
           pubkey: user.pubkey,
-          relays: ["wss://relay.damus.io", "wss://nos.lol"] // Default relays
+          relays: ["wss://relay.damus.io", "wss://nos.lol"] 
         })
       });
 
       const data = await res.json();
       if (data.success) {
-        addToast("Premium NIP-05 registration coming soon with Lightning payments!", "info");
-        // In the future, this would show the payment modal
+        setRegisteredHandle(data.handle);
+        addToast("Congratulations! Your handle is active.", "success");
       } else {
         addToast(data.error || "Registration failed", "error");
       }
@@ -81,6 +86,26 @@ export default function VerifyPage() {
       addToast("An error occurred", "error");
     } finally {
       setIsRegistering(false);
+    }
+  };
+
+  const handleUpdateProfile = async () => {
+    if (!ndk || !registeredHandle) return;
+    
+    setIsUpdatingProfile(true);
+    try {
+      const success = await updateProfileNIP05(ndk, registeredHandle);
+      if (success) {
+        addToast("Profile updated with verified handle!", "success");
+        router.push(`/${user?.npub}`);
+      } else {
+        addToast("Failed to update profile", "error");
+      }
+    } catch (err) {
+      console.error(err);
+      addToast("An error occurred", "error");
+    } finally {
+      setIsUpdatingProfile(false);
     }
   };
 
@@ -92,6 +117,49 @@ export default function VerifyPage() {
         <Button onClick={() => router.push("/")} className="rounded-full font-black">
           Go Home
         </Button>
+      </div>
+    );
+  }
+
+  if (registeredHandle) {
+    return (
+      <div className="max-w-2xl mx-auto p-4 sm:p-6 pb-32 space-y-8 animate-in fade-in duration-500">
+        <div className="flex flex-col items-center text-center space-y-6 pt-10">
+          <div className="size-24 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+            <BadgeCheck size={64} fill="currentColor" className="text-primary" />
+          </div>
+          <div className="space-y-2">
+            <h1 className="text-4xl font-black italic">You are Verified!</h1>
+            <p className="text-xl font-bold text-muted-foreground">
+              Your new handle: <span className="text-primary">{registeredHandle}</span>
+            </p>
+          </div>
+          
+          <Card className="w-full max-w-md border-none shadow-lg bg-muted/30">
+            <CardContent className="p-6 space-y-4">
+              <p className="text-sm font-medium">
+                Do you want to automatically add this handle to your Nostr profile?
+              </p>
+              <div className="flex flex-col gap-3">
+                <Button 
+                  onClick={handleUpdateProfile} 
+                  disabled={isUpdatingProfile}
+                  className="h-14 rounded-2xl font-black text-lg shadow-lg"
+                >
+                  {isUpdatingProfile ? <Loader2 className="animate-spin mr-2" /> : <RefreshCw className="mr-2 size-5" />}
+                  Update My Profile
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  onClick={() => router.push(`/${user?.npub}`)}
+                  className="h-12 rounded-2xl font-bold text-muted-foreground"
+                >
+                  I&apos;ll do it later
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     );
   }
@@ -118,7 +186,7 @@ export default function VerifyPage() {
           
           <CardHeader className="relative z-10">
             <CardTitle className="text-2xl font-black flex items-center gap-2">
-              <ShieldCheck className="text-primary size-6" />
+              <BadgeCheck className="text-primary size-6" />
               Tell it! Verified
             </CardTitle>
             <CardDescription className="text-base font-medium">

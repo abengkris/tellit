@@ -53,19 +53,25 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Username already taken' }, { status: 409 });
     }
 
-    // Placeholder for Lightning Payment logic
-    // In a real app, you would generate an invoice here and return it
-    // For now, we'll return a "pending" registration or just success if we want to skip payment for testing
-    
-    // const invoice = await generateInvoice(21000, `NIP-05: ${name}@tellit.id`);
-    
-    // We would save to 'registrations' table here
+    // --- TEST MODE: DIRECT INSERTION ---
+    // In production, you would only do this after payment is verified.
+    const { error: insertError } = await supabase
+      .from('handles')
+      .insert({
+        name: name.toLowerCase(),
+        pubkey: pubkey,
+        relays: relays || ["wss://relay.damus.io", "wss://nos.lol"]
+      });
+
+    if (insertError) {
+      console.error('[NIP-05 Register] DB Error:', insertError);
+      return NextResponse.json({ error: 'Failed to activate handle' }, { status: 500 });
+    }
     
     return NextResponse.json({ 
       success: true, 
-      message: 'Registration logic initiated',
-      price: 21000,
-      // invoice: invoice.pr
+      message: 'Handle activated successfully!',
+      handle: `${name}@tellit.id`
     });
 
   } catch (err) {
