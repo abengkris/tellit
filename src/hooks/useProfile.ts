@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useNDK } from "@/hooks/useNDK";
 
 export interface ProfileMetadata {
@@ -28,6 +28,51 @@ export function useProfile(pubkey?: string) {
   const [loading, setLoading] = useState(false);
   const lastFetchedPubkey = useRef<string | undefined>(undefined);
 
+  const fetchMetadata = useCallback(async (forceRelay = false) => {
+    if (!ndk || !isReady || !pubkey) return;
+    
+    setLoading(true);
+    lastFetchedPubkey.current = pubkey;
+
+    try {
+      const user = ndk.getUser({ pubkey });
+      
+      // fetchProfile fetches from cache first, then relays
+      // if forceRelay is true, we want to bypass cache or ensure it hits relays
+      const userProfile = await user.fetchProfile({ 
+        cacheUsage: forceRelay ? 2 : 0 // 2 is CACHE_FIRST but with relay fetch, 0 is CACHE_ONLY/DEFAULT
+      } as unknown as Record<string, unknown>);
+      
+      // Construct metadata object
+      const metadata: ProfileMetadata = { 
+        ...(userProfile || {}), 
+        name: userProfile?.name ? String(userProfile.name) : undefined,
+        display_name: userProfile?.display_name ? String(userProfile.display_name) : undefined,
+        pubkey 
+      };
+      
+      // Optimization: NDK caches the kind 0 event internally
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const kind0 = (user as any).kind0;
+      if (kind0) {
+        metadata.tags = kind0.tags;
+        metadata.created_at = kind0.created_at;
+        const publishedAtTag = kind0.tags.find((t: string[]) => t[0] === 'published_at');
+        metadata.published_at = publishedAtTag && publishedAtTag[1] 
+          ? parseInt(publishedAtTag[1]) 
+          : kind0.created_at;
+      }
+      
+      setProfile(metadata);
+    } catch (error) {
+      console.warn("Failed to fetch profile for", pubkey, error);
+      // On error, provide a basic fallback profile
+      setProfile({ pubkey });
+    } finally {
+      setLoading(false);
+    }
+  }, [ndk, isReady, pubkey]);
+
   useEffect(() => {
     if (!ndk || !isReady || !pubkey) {
       setProfile(null);
@@ -40,59 +85,8 @@ export function useProfile(pubkey?: string) {
       return;
     }
 
-    let isMounted = true;
-    setLoading(true);
-    lastFetchedPubkey.current = pubkey;
-
-    const fetchMetadata = async () => {
-      try {
-        const user = ndk.getUser({ pubkey });
-        
-        // fetchProfile fetches from cache first, then relays
-        const userProfile = await user.fetchProfile();
-        
-        if (isMounted) {
-          // Construct metadata object
-          const metadata: ProfileMetadata = { 
-            ...(userProfile || {}), 
-            name: userProfile?.name ? String(userProfile.name) : undefined,
-            display_name: userProfile?.display_name ? String(userProfile.display_name) : undefined,
-            pubkey 
-          };
-          
-          // Optimization: NDK caches the kind 0 event internally
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const kind0 = (user as any).kind0;
-          if (kind0) {
-            metadata.tags = kind0.tags;
-            metadata.created_at = kind0.created_at;
-            const publishedAtTag = kind0.tags.find((t: string[]) => t[0] === 'published_at');
-            metadata.published_at = publishedAtTag && publishedAtTag[1] 
-              ? parseInt(publishedAtTag[1]) 
-              : kind0.created_at;
-          }
-          
-          setProfile(metadata);
-        }
-      } catch (error) {
-        console.warn("Failed to fetch profile for", pubkey, error);
-        // On error, provide a basic fallback profile
-        if (isMounted) {
-          setProfile({ pubkey });
-        }
-      } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
-      }
-    };
-
     fetchMetadata();
+  }, [ndk, isReady, pubkey, profile, fetchMetadata]);
 
-    return () => {
-      isMounted = false;
-    };
-  }, [ndk, isReady, pubkey]);
-
-  return { profile, loading };
+  return { profile, loading, refresh: () => fetchMetadata(true) };
 }

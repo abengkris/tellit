@@ -85,7 +85,7 @@ export function ProfileContent({ npubParam }: { npubParam: string }) {
     params.set("tab", tab);
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
   };
-  const { profile, loading: profileLoading } = useProfile(hexPubkey);
+  const { profile, loading: profileLoading, refresh: refreshProfile } = useProfile(hexPubkey);
   const { relays: userRelays, loading: relaysLoading } = useRelayList(hexPubkey);
   const { generalStatus, musicStatus } = useUserStatus(hexPubkey);
   
@@ -225,6 +225,18 @@ export function ProfileContent({ npubParam }: { npubParam: string }) {
           
           <div className="flex gap-2 items-center flex-wrap justify-end">
             <div className="flex gap-2 items-center">
+              <Button 
+                variant="outline" 
+                size="icon" 
+                onClick={refreshProfile}
+                disabled={profileLoading}
+                className="rounded-full h-10 w-10 text-muted-foreground border-border hover:bg-accent"
+                title="Refresh Profile"
+              >
+                <RefreshCw className={cn("size-5", profileLoading && "animate-spin")} aria-hidden="true" />
+                <span className="sr-only">Refresh profile</span>
+              </Button>
+
               {!isOwnProfile && currentUser && (
                 <>
                   <Button asChild variant="outline" size="icon" className="rounded-full h-10 w-10 text-primary border-border hover:bg-primary/10">
