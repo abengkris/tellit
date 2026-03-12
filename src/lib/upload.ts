@@ -8,7 +8,7 @@ import NDK from '@nostr-dev-kit/ndk';
 class NDKSignerBridge implements NostrSigner {
   constructor(private ndk: NDK) {}
 
-  async getPubkey(): Promise<string> {
+  async getPublicKey(): Promise<string> {
     const user = await this.ndk.signer?.user();
     if (!user) throw new Error("No user available");
     return user.pubkey;
