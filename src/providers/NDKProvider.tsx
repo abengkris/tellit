@@ -291,7 +291,8 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
       await sessionManager.restore();
       await initWallet();
       setNdk(instance);
-      setRelay(new NDKStore(instance));
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      setRelay(new NDKStore(instance as any));
 
       const currentPubkey = sessionManager.activePubkey;
       let msgInstance: NDKMessenger | null = null;
