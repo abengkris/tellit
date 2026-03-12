@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase';
+import { getSupabaseAdmin } from '@/lib/supabase';
 import { checkBlinkInvoiceStatus } from '@/lib/blink';
 
 export async function GET(req: NextRequest) {
@@ -10,20 +10,19 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Missing payment hash' }, { status: 400 });
   }
 
-  if (!supabaseAdmin) {
-    return NextResponse.json({ error: 'Database unavailable' }, { status: 503 });
-  }
-
   try {
+    const supabase = getSupabaseAdmin();
+
     // 1. Get registration record
-    const { data: registration, error: fetchError } = await supabaseAdmin
+    const { data: registration, error: fetchError } = await supabase
       .from('registrations')
       .select('*')
       .eq('payment_hash', hash)
       .single();
 
     if (fetchError || !registration) {
-      return NextResponse.json({ error: 'Registration not found' }, { status: 404 });
+      const status = fetchError?.code === 'PGRST116' ? 404 : 500;
+      return NextResponse.json({ error: fetchError?.message || 'Registration not found' }, { status });
     }
 
     // 2. If already paid in DB, just return success
@@ -37,10 +36,7 @@ export async function GET(req: NextRequest) {
     if (blinkStatus === 'PAID') {
       // 4. Activate Handle: Move to 'handles' table and update registration status
       
-      // Start a "transaction" via concurrent promises (or use a supabase rpc if needed)
-      // For simplicity, we do sequential updates here
-      
-      const { error: activateError } = await supabaseAdmin
+      const { error: activateError } = await supabase
         .from('handles')
         .insert({
           name: registration.name,
@@ -49,13 +45,17 @@ export async function GET(req: NextRequest) {
         });
 
       if (activateError && activateError.code !== '23505') { // Ignore if already exists
-        throw activateError;
+        throw new Error(`Failed to activate handle: ${activateError.message}`);
       }
 
-      await supabaseAdmin
+      const { error: updateError } = await supabase
         .from('registrations')
         .update({ status: 'paid' })
         .eq('payment_hash', hash);
+
+      if (updateError) {
+        console.warn('[NIP-05 Check Payment] Failed to update registration status:', updateError);
+      }
 
       return NextResponse.json({ status: 'PAID', handle: `${registration.name}@tellit.id` });
     }

@@ -1,25 +1,26 @@
+import { ENV } from './env';
+
 const BLINK_API_URL = "https://api.blink.sv/graphql";
-const BLINK_API_KEY = process.env.BLINK_API_KEY;
-const BLINK_WALLET_ID = process.env.BLINK_WALLET_ID;
 
 /**
  * Basic GraphQL fetcher for Blink API.
  */
 async function fetchBlink(query: string, variables: Record<string, unknown> = {}) {
-  if (!BLINK_API_KEY) throw new Error("BLINK_API_KEY is missing");
+  const apiKey = ENV.BLINK.API_KEY;
+  if (!apiKey) throw new Error("BLINK_API_KEY is missing from environment");
 
   const response = await fetch(BLINK_API_URL, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "X-API-KEY": BLINK_API_KEY,
+      "X-API-KEY": apiKey,
     },
     body: JSON.stringify({ query, variables }),
   });
 
   const result = await response.json();
   if (result.errors) {
-    throw new Error(result.errors[0].message);
+    throw new Error(`Blink API Error: ${result.errors[0].message}`);
   }
   return result.data;
 }
@@ -29,7 +30,8 @@ async function fetchBlink(query: string, variables: Record<string, unknown> = {}
  * Amount is in Satoshis.
  */
 export async function createBlinkInvoice(amount: number, memo: string) {
-  if (!BLINK_WALLET_ID) throw new Error("BLINK_WALLET_ID is missing");
+  const walletId = ENV.BLINK.WALLET_ID;
+  if (!walletId) throw new Error("BLINK_WALLET_ID is missing from environment");
 
   const mutation = `
     mutation lnInvoiceCreate($input: LnInvoiceCreateInput!) {
@@ -50,12 +52,18 @@ export async function createBlinkInvoice(amount: number, memo: string) {
   const variables = {
     input: {
       amount,
-      walletId: BLINK_WALLET_ID,
+      walletId,
       memo,
     },
   };
 
   const data = await fetchBlink(mutation, variables);
+  
+  if (!data?.lnInvoiceCreate?.invoice) {
+    const error = data?.lnInvoiceCreate?.errors?.[0]?.message || "Unknown Blink error";
+    throw new Error(`Failed to create invoice: ${error}`);
+  }
+
   return data.lnInvoiceCreate.invoice;
 }
 

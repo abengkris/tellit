@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase';
+import { getSupabaseAdmin } from '@/lib/supabase';
 import { validateUsername } from '@/lib/nip05';
 import { createBlinkInvoice } from '@/lib/blink';
 
@@ -18,20 +18,24 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ available: false, error: validation.error });
   }
 
-  if (!supabaseAdmin) {
-    return NextResponse.json({ available: true, warning: 'Service temporarily limited' });
-  }
-
   try {
-    const { data } = await supabaseAdmin
+    const supabase = getSupabaseAdmin();
+    const { data, error } = await supabase
       .from('handles')
       .select('name')
       .eq('name', name.toLowerCase())
       .single();
 
+    if (error && error.code !== 'PGRST116') { // PGRST116 is "JSON object requested, but no rows returned"
+      console.error('[NIP-05 Register Availability] DB Error:', error);
+      return NextResponse.json({ available: false, error: 'Database error occurred' });
+    }
+
     return NextResponse.json({ available: !data });
-  } catch {
-    return NextResponse.json({ available: true });
+  } catch (err) {
+    console.error('[NIP-05 Register Availability] Catch Error:', err);
+    const message = err instanceof Error ? err.message : 'Service temporarily limited';
+    return NextResponse.json({ available: false, error: message });
   }
 }
 
@@ -49,12 +53,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: validation.error }, { status: 400 });
     }
 
-    if (!supabaseAdmin) {
-      return NextResponse.json({ error: 'NIP-05 registration is currently unavailable' }, { status: 503 });
-    }
+    const supabase = getSupabaseAdmin();
 
     // 1. Check if name is already taken in active handles
-    const { data: existing } = await supabaseAdmin
+    const { data: existing, error: checkError } = await supabase
       .from('handles')
       .select('name')
       .eq('name', name.toLowerCase())
@@ -64,16 +66,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Username already taken' }, { status: 409 });
     }
 
+    if (checkError && checkError.code !== 'PGRST116') {
+      throw new Error(`Database check failed: ${checkError.message}`);
+    }
+
     // 2. Generate Lightning Invoice via Blink
     const memo = `NIP-05: ${name}@tellit.id`;
     const invoice = await createBlinkInvoice(REGISTRATION_PRICE_SATS, memo);
 
     if (!invoice || !invoice.paymentRequest) {
-      throw new Error("Failed to generate invoice");
+      throw new Error("Failed to generate Lightning invoice via Blink");
     }
 
     // 3. Save pending registration to Supabase
-    const { error: regError } = await supabaseAdmin
+    const { error: regError } = await supabase
       .from('registrations')
       .insert({
         name: name.toLowerCase(),
@@ -86,7 +92,10 @@ export async function POST(req: NextRequest) {
 
     if (regError) {
       console.error('[NIP-05 Register] DB Error:', regError);
-      return NextResponse.json({ error: 'Failed to record registration' }, { status: 500 });
+      if (regError.code === '23505') { // Unique violation
+        return NextResponse.json({ error: 'A registration for this handle is already in progress' }, { status: 409 });
+      }
+      return NextResponse.json({ error: `Database error: ${regError.message}` }, { status: 500 });
     }
     
     return NextResponse.json({ 
