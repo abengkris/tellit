@@ -131,7 +131,7 @@ export default function SettingsPage() {
                       variant="outline"
                       className="rounded-2xl font-black h-12 bg-primary/10 text-primary border-none shadow-sm hover:bg-primary/20"
                     >
-                      <Link href="/settings/verify">
+                      <Link href={profile?.nip05?.endsWith("@tellit.id") ? "/settings/handle" : "/settings/verify"}>
                         <BadgeCheck className="size-4" />
                         <span>{profile?.nip05?.endsWith("@tellit.id") ? "Manage Handle" : "Get Verified"}</span>
                       </Link>

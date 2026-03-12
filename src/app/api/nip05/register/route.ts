@@ -21,12 +21,13 @@ export async function GET(req: NextRequest) {
     if (pubkey) {
       const { data } = await supabase
         .from('handles')
-        .select('name')
+        .select('name, created_at, relays')
         .eq('pubkey', pubkey)
         .single();
       
       return NextResponse.json({ 
-        existingHandle: data ? `${data.name}@tellit.id` : null 
+        existingHandle: data ? `${data.name}@tellit.id` : null,
+        handleDetails: data || null
       });
     }
 
