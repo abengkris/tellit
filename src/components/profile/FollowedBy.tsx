@@ -7,10 +7,11 @@ import Link from "next/link";
 /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
 import { NDKUser } from "@nostr-dev-kit/ndk";
 import { shortenPubkey } from "@/lib/utils/nip19";
+import { getProfileUrl } from "@/lib/utils/identity";
 
 export const FollowedBy = ({ pubkey }: { pubkey: string }) => {
   const { followedBy, count, loading } = useFollowedBy(pubkey);
-  const [displayUsers, setDisplayUsers] = useState<{ pubkey: string; name?: string; picture?: string; npub: string }[]>([]);
+  const [displayUsers, setDisplayUsers] = useState<{ pubkey: string; name?: string; picture?: string; profileUrl: string }[]>([]);
 
   useEffect(() => {
     if (followedBy.length > 0) {
@@ -20,7 +21,7 @@ export const FollowedBy = ({ pubkey }: { pubkey: string }) => {
         await user.fetchProfile();
         return {
           pubkey: user.pubkey,
-          npub: user.npub,
+          profileUrl: getProfileUrl({ ...user.profile, pubkey: user.pubkey }),
           name: user.profile?.display_name ? String(user.profile.display_name) : (user.profile?.name ? String(user.profile.name) : undefined),
           picture: user.profile?.picture
         };
@@ -51,7 +52,7 @@ export const FollowedBy = ({ pubkey }: { pubkey: string }) => {
           <>
             {displayUsers.map((user, i) => (
               <React.Fragment key={user.pubkey}>
-                <Link href={`/${user.npub}`} className="text-foreground font-black hover:underline hover:text-primary transition-colors">
+                <Link href={user.profileUrl} className="text-foreground font-black hover:underline hover:text-primary transition-colors">
                   {user.name || shortenPubkey(user.pubkey)}
                 </Link>
                 {i < displayUsers.length - 1 ? ", " : ""}

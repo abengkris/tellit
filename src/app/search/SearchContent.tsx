@@ -14,6 +14,7 @@ import { useFollowingList } from "@/hooks/useFollowingList";
 import { useAuthStore } from "@/store/auth";
 import { UserRecommendation } from "@/components/common/UserRecommendation";
 import { NDKUser } from "@nostr-dev-kit/ndk";
+import { getProfileUrl } from "@/lib/utils/identity";
 
 export function SearchContent() {
   const searchParams = useSearchParams();
@@ -134,7 +135,7 @@ export function SearchContent() {
             
             {directResult.user && (
               <Link 
-                href={`/${directResult.user.npub}`}
+                href={getProfileUrl({ ...directResult.user.profile, pubkey: directResult.user.pubkey })}
                 className="flex items-center gap-4 p-6 bg-white dark:bg-black hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
               >
                 <div className="relative">
@@ -229,7 +230,7 @@ export function SearchContent() {
               {profiles.map((user) => (
                 <Link
                   key={user.pubkey}
-                  href={`/${user.npub}`}
+                  href={getProfileUrl({ ...user.profile, pubkey: user.pubkey })}
                   className={`flex flex-col items-center min-w-[130px] max-w-[130px] p-4 rounded-3xl transition-all text-center group ${
                     directResult.user?.pubkey === user.pubkey 
                     ? "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800" 

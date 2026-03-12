@@ -64,7 +64,7 @@ export const PostCard: React.FC<PostCardProps> = ({
   const displayEvent = isRepost && repostedEvent ? repostedEvent : event;
   const isArticle = displayEvent.kind === 30023;
   const isPoll = displayEvent.kind === 1068;
-  const { profile, loading: profileLoading } = useProfile(displayEvent.pubkey);
+  const { profile, loading: profileLoading, profileUrl } = useProfile(displayEvent.pubkey);
   const { 
     likes, 
     reposts, 
@@ -303,6 +303,7 @@ export const PostCard: React.FC<PostCardProps> = ({
             avatar={avatar}
             isLoading={profileLoading}
             userNpub={userNpub}
+            profileUrl={profileUrl}
             pubkey={displayEvent.pubkey}
             nip05={profile?.nip05}
             createdAt={displayEvent.created_at}

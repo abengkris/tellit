@@ -5,9 +5,6 @@ import { useNotifications, TellItNotification } from "@/hooks/useNotifications";
 import { useProfile } from "@/hooks/useProfile";
 import { Loader2, Heart, Repeat2, MessageCircle, Zap, UserPlus, Bell, Mic, ExternalLink } from "lucide-react";
 import Link from "next/link";
-import Image from "next/image";
-import { FeedSkeleton } from "@/components/feed/FeedSkeleton";
-import { UserIdentity } from "@/components/common/UserIdentity";
 import { Avatar } from "@/components/common/Avatar";
 import { shortenPubkey } from "@/lib/utils/nip19";
 import { nip19 } from "nostr-tools";
@@ -26,10 +23,9 @@ const NotificationIcon = ({ type }: { type: string }) => {
 };
 
 const NotificationItem = ({ event }: { event: TellItNotification }) => {
-  const { profile } = useProfile(event.pubkey);
+  const { profile, profileUrl } = useProfile(event.pubkey);
   const router = useRouter();
   const display_name = profile?.display_name || profile?.name || shortenPubkey(event.pubkey);
-  const avatar = profile?.picture || `https://robohash.org/${event.pubkey}?set=set1`;
 
   // Extract podcast metadata from zap tags
   const podcastItem = event.kind === 9735 ? event.tags.find(t => t[0] === 'i' && t[1]?.startsWith('podcast:item:guid:')) : null;
@@ -37,7 +33,7 @@ const NotificationItem = ({ event }: { event: TellItNotification }) => {
   const podcastName = podcastItem?.[1]?.replace("podcast:item:guid:", "");
 
   const getTargetHref = () => {
-    if (event.type === 'follow') return `/${event.author.npub}`;
+    if (event.type === 'follow') return profileUrl;
     
     // For interactions, find the target event
     const eTag = event.tags.find(t => t[0] === 'e' || t[0] === 'E');
@@ -89,7 +85,7 @@ const NotificationItem = ({ event }: { event: TellItNotification }) => {
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center space-x-2 mb-1">
-            <Link href={`/${event.author.npub}`} className="shrink-0 z-10" onClick={e => e.stopPropagation()}>
+            <Link href={profileUrl} className="shrink-0 z-10" onClick={e => e.stopPropagation()}>
               <Avatar 
                 pubkey={event.pubkey} 
                 src={profile?.picture} 
@@ -98,7 +94,7 @@ const NotificationItem = ({ event }: { event: TellItNotification }) => {
               />
             </Link>
             <div className="flex flex-wrap items-center gap-x-1 min-w-0">
-              <Link href={`/${event.author.npub}`} className="font-bold hover:underline truncate max-w-[150px] z-10" onClick={e => e.stopPropagation()}>
+              <Link href={profileUrl} className="font-bold hover:underline truncate max-w-[150px] z-10" onClick={e => e.stopPropagation()}>
                 {display_name}
               </Link>
               <span className="text-gray-500 text-sm whitespace-nowrap">

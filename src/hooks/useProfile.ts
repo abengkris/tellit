@@ -1,5 +1,6 @@
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { useNDK } from "@/hooks/useNDK";
+import { getProfileUrl } from "@/lib/utils/identity";
 
 export interface ProfileMetadata {
   pubkey?: string;
@@ -113,5 +114,9 @@ export function useProfile(pubkey?: string) {
     fetchMetadata();
   }, [ndk, isReady, pubkey, profile, fetchMetadata]);
 
-  return { profile, loading, refresh: () => fetchMetadata(true) };
+  const profileUrl = useMemo(() => {
+    return getProfileUrl(profile ? { ...profile, pubkey } : { pubkey });
+  }, [profile, pubkey]);
+
+  return { profile, loading, profileUrl, refresh: () => fetchMetadata(true) };
 }

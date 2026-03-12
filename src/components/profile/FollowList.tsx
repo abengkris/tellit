@@ -10,6 +10,7 @@ import { nip19 } from "nostr-tools";
 import { shortenPubkey } from "@/lib/utils/nip19";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
+import { getProfileUrl } from "@/lib/utils/identity";
 
 interface FollowListProps {
   pubkeys: string[];
@@ -23,6 +24,7 @@ interface UserWithProfile {
   name?: string;
   about?: string;
   picture?: string;
+  profileUrl: string;
 }
 
 export function FollowList({
@@ -60,6 +62,7 @@ export function FollowList({
             name: profile.display_name ?? profile.name,
             about: profile.about,
             picture: profile.picture,
+            profileUrl: getProfileUrl({ ...profile, pubkey: event.pubkey })
           });
           return next;
         });
@@ -96,6 +99,7 @@ export function FollowList({
       {pubkeys.map((pubkey, index) => {
         const user = users.get(pubkey);
         const npub = user?.npub ?? nip19.npubEncode(pubkey);
+        const profileUrl = user?.profileUrl ?? `/${npub}`;
         const display_name = user?.name ?? shortenPubkey(npub);
 
         return (
@@ -104,7 +108,7 @@ export function FollowList({
               className="flex items-center gap-3 p-4 hover:bg-accent/50 transition-colors"
             >
               {/* Avatar */}
-              <Link href={`/${npub}`} className="shrink-0">
+              <Link href={profileUrl} className="shrink-0">
                 <Avatar
                   pubkey={pubkey}
                   src={user?.picture}
@@ -115,7 +119,7 @@ export function FollowList({
 
               {/* Info */}
               <div className="flex-1 min-w-0">
-                <Link href={`/${npub}`} className="block">
+                <Link href={profileUrl} className="block">
                   <p className="font-bold hover:underline truncate">
                     {display_name}
                   </p>

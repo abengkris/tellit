@@ -46,6 +46,7 @@ interface PostHeaderProps {
   avatar?: string;
   isLoading?: boolean;
   userNpub: string;
+  profileUrl?: string;
   pubkey: string;
   nip05?: string;
   createdAt: number | undefined;
@@ -72,6 +73,7 @@ export const PostHeader: React.FC<PostHeaderProps> = ({
   avatar,
   isLoading = false,
   userNpub,
+  profileUrl,
   pubkey,
   nip05,
   createdAt,
@@ -95,6 +97,7 @@ export const PostHeader: React.FC<PostHeaderProps> = ({
 }) => {
   const formattedTime = formatCompactDate(createdAt);
   const [showDeleteDialog, setShowDeleteDialog] = React.useState(false);
+  const finalProfileUrl = profileUrl || `/${userNpub}`;
 
   return (
     <>
@@ -109,7 +112,7 @@ export const PostHeader: React.FC<PostHeaderProps> = ({
       <div className="flex items-center justify-between mb-0.5 min-w-0">
         <div className="flex items-center space-x-1 truncate min-w-0" onClick={(e) => e.stopPropagation()}>
           <div className="mr-3 shrink-0 z-10">
-            <Link href={`/${userNpub}`}>
+            <Link href={finalProfileUrl}>
               <Avatar 
                 pubkey={pubkey} 
                 src={avatar} 
@@ -121,7 +124,7 @@ export const PostHeader: React.FC<PostHeaderProps> = ({
             </Link>
           </div>
           <div className="flex items-center gap-1 truncate min-w-0">
-            <Link href={`/${userNpub}`} className="flex items-center gap-1 truncate min-w-0 hover:underline">
+            <Link href={finalProfileUrl} className="flex items-center gap-1 truncate min-w-0 hover:underline">
               <UserIdentity 
                 pubkey={pubkey}
                 display_name={display_name}

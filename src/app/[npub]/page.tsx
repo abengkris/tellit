@@ -1,7 +1,9 @@
-import { Suspense, use } from "react";
+import { Suspense } from "react";
 import { Metadata } from "next";
+import { notFound } from "next/navigation";
 import { ProfileContent } from "./ProfileContent";
-import { decodeNip19, shortenPubkey } from "@/lib/utils/nip19";
+import { decodeNip19, shortenPubkey, toNpub } from "@/lib/utils/nip19";
+import { resolveVanitySlug, isVanitySlug } from "@/lib/utils/identity";
 import { connectNDK } from "@/lib/ndk";
 import { FeedSkeleton } from "@/components/feed/FeedSkeleton";
 
@@ -9,16 +11,41 @@ interface Props {
   params: Promise<{ npub: string }>;
 }
 
+async function resolveSlug(slug: string): Promise<string> {
+  // 1. Check if it's an npub
+  if (slug.startsWith("npub1")) {
+    const { id } = decodeNip19(slug);
+    return id;
+  }
+
+  // 2. Check if it's a vanity slug and resolve it
+  if (isVanitySlug(slug)) {
+    const pubkey = await resolveVanitySlug(slug);
+    if (pubkey) return pubkey;
+  }
+
+  // 3. Fallback to hex decoding if it's a 64 char hex string
+  if (/^[0-9a-fA-F]{64}$/.test(slug)) {
+    return slug;
+  }
+
+  return "";
+}
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { npub } = await params;
-  const { id: hexPubkey } = decodeNip19(npub);
+  const { npub: slug } = await params;
+  const hexPubkey = await resolveSlug(slug);
+  
+  if (!hexPubkey) {
+    return { title: "Profile Not Found" };
+  }
   
   try {
     const ndk = await connectNDK();
     const user = ndk.getUser({ pubkey: hexPubkey });
     const profile = await user.fetchProfile();
     
-    const display_name = profile?.display_name ? String(profile.display_name) : (profile?.name ? String(profile.name) : shortenPubkey(npub));
+    const display_name = profile?.display_name ? String(profile.display_name) : (profile?.name ? String(profile.name) : shortenPubkey(toNpub(hexPubkey)));
     const about = profile?.about || `Check out ${display_name}'s profile on Tell it!`;
     const image = profile?.picture || `https://robohash.org/${hexPubkey}?set=set1`;
 
@@ -26,7 +53,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       title: display_name,
       description: about,
       openGraph: {
-        title: `${display_name} (@${shortenPubkey(npub)})`,
+        title: `${display_name} (@${shortenPubkey(toNpub(hexPubkey))})`,
         description: about,
         images: [image],
       },
@@ -45,26 +72,34 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function ProfilePage({ params }: Props) {
-  const { npub } = await params;
+  const { npub: slug } = await params;
+  const hexPubkey = await resolveSlug(slug);
+
+  if (!hexPubkey) {
+    notFound();
+  }
 
   return (
     <Suspense fallback={
-      <>
-        <div className="h-48 bg-gray-200 dark:bg-gray-800 animate-pulse" />
+      <div className="max-w-2xl mx-auto">
+        <div className="h-48 bg-muted animate-pulse" />
         <div className="px-4 pb-4 animate-pulse">
           <div className="relative flex justify-between items-end -mt-16 mb-4">
-            <div className="w-32 h-32 rounded-full bg-gray-300 dark:bg-gray-700 ring-4 ring-white dark:ring-black" />
-            <div className="w-32 h-10 rounded-full bg-gray-200 dark:bg-gray-800" />
+            <div className="size-32 rounded-full bg-muted ring-4 ring-background shadow-lg" />
+            <div className="w-32 h-10 rounded-full bg-muted" />
           </div>
-          <div className="space-y-3">
-            <div className="h-8 bg-gray-200 dark:bg-gray-800 rounded w-1/3" />
-            <div className="h-4 bg-gray-100 dark:bg-gray-900 rounded w-full" />
+          <div className="space-y-4">
+            <div className="h-10 bg-muted rounded-xl w-1/3" />
+            <div className="h-4 bg-muted rounded-full w-full" />
+            <div className="h-4 bg-muted rounded-full w-2/3" />
           </div>
         </div>
-        <FeedSkeleton />
-      </>
+        <div className="border-t border-border mt-6">
+          <FeedSkeleton />
+        </div>
+      </div>
     }>
-      <ProfileContent npubParam={npub} />
+      <ProfileContent npubParam={toNpub(hexPubkey)} />
     </Suspense>
   );
 }

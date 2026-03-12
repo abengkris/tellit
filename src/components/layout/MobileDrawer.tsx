@@ -35,7 +35,7 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({ isOpen, onClose, onO
   const { sessions } = useNDK();
   const { unreadMessagesCount, hideBalance } = useUIStore();
   const { connectedCount, totalCount } = useRelayStatus();
-  const { profile, loading: profileLoading } = useProfile(user?.pubkey);
+  const { profile, loading: profileLoading, profileUrl } = useProfile(user?.pubkey);
   const { count: followingCount } = useFollowingList(user?.pubkey);
   const { count: followerCount } = useFollowerCount(user?.pubkey);
   const { balance, nwcPairingCode } = useWalletStore();
@@ -52,7 +52,7 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({ isOpen, onClose, onO
             {/* User Profile Summary */}
             <div className="p-5 flex flex-col gap-4">
               <div className="flex justify-between items-start">
-                <Link href={`/${user?.npub}`} onClick={onClose} className="block">
+                <Link href={profileUrl} onClick={onClose} className="block">
                   <Avatar 
                     pubkey={user?.pubkey || ""} 
                     src={profile?.picture || (profile as { image?: string })?.image} 
@@ -97,11 +97,11 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({ isOpen, onClose, onO
               </div>
 
               <div className="flex items-center gap-4 text-sm">
-                <Link href={`/${user?.npub}/following`} onClick={onClose} className="hover:underline">
+                <Link href={`${profileUrl}/following`} onClick={onClose} className="hover:underline">
                   <span className="font-black text-foreground">{followingCount}</span>
                   <span className="text-muted-foreground ml-1">Following</span>
                 </Link>
-                <Link href={`/${user?.npub}/followers`} onClick={onClose} className="hover:underline">
+                <Link href={`${profileUrl}/followers`} onClick={onClose} className="hover:underline">
                   <span className="font-black text-foreground">{followerCount}</span>
                   <span className="text-muted-foreground ml-1">Followers</span>
                 </Link>
@@ -119,7 +119,7 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({ isOpen, onClose, onO
                 onClick={onClose} 
               />
               <DrawerItem 
-                href={`/${user?.npub}`} 
+                href={profileUrl} 
                 icon={<User className="size-5" />} 
                 label="Profile" 
                 onClick={onClose} 

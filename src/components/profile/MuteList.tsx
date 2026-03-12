@@ -12,6 +12,7 @@ import { Volume2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
+import { getProfileUrl } from "@/lib/utils/identity";
 
 interface MuteListProps {
   pubkeys: string[];
@@ -24,6 +25,7 @@ interface UserWithProfile {
   name?: string;
   about?: string;
   picture?: string;
+  profileUrl: string;
 }
 
 export function MuteList({
@@ -61,6 +63,7 @@ export function MuteList({
             name: profile.name ?? profile.display_name,
             about: profile.about,
             picture: profile.picture,
+            profileUrl: getProfileUrl({ ...profile, pubkey: event.pubkey })
           });
           return next;
         });
@@ -117,6 +120,7 @@ export function MuteList({
       {pubkeys.map((pubkey, index) => {
         const user = users.get(pubkey);
         const npub = user?.npub ?? nip19.npubEncode(pubkey);
+        const profileUrl = user?.profileUrl ?? `/${npub}`;
         const display_name = user?.name ?? shortenPubkey(npub);
         const isUnmuting = unmuting.has(pubkey);
 
@@ -125,7 +129,7 @@ export function MuteList({
             <div
               className="flex items-center gap-3 p-4 hover:bg-accent/50 transition-colors"
             >
-              <Link href={`/${npub}`} className="shrink-0">
+              <Link href={profileUrl} className="shrink-0">
                 <Avatar
                   pubkey={pubkey}
                   src={user?.picture}
@@ -135,7 +139,7 @@ export function MuteList({
               </Link>
 
               <div className="flex-1 min-w-0">
-                <Link href={`/${npub}`} className="block">
+                <Link href={profileUrl} className="block">
                   <p className="font-black hover:underline truncate">
                     {display_name}
                   </p>

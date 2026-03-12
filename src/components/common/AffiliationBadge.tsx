@@ -4,7 +4,6 @@ import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useProfile } from '@/hooks/useProfile';
-import { toNpub } from '@/lib/utils/nip19';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -17,7 +16,7 @@ export const AffiliationBadge: React.FC<AffiliationBadgeProps> = ({
   affiliationPubkey,
   isPost = false,
 }) => {
-  const { profile, loading } = useProfile(affiliationPubkey);
+  const { profile, loading, profileUrl } = useProfile(affiliationPubkey);
 
   if (loading) {
     const size = isPost ? 16 : 22;
@@ -27,7 +26,6 @@ export const AffiliationBadge: React.FC<AffiliationBadgeProps> = ({
   if (!profile?.picture) return null;
 
   const size = isPost ? 16 : 22;
-  const npub = toNpub(affiliationPubkey);
 
   const content = (
     <Badge variant="secondary" className="p-0 overflow-hidden border-white/20 shadow-sm shrink-0" style={{ width: size, height: size }}>
@@ -49,7 +47,7 @@ export const AffiliationBadge: React.FC<AffiliationBadgeProps> = ({
 
   return (
     <Link 
-      href={`/${npub}`}
+      href={profileUrl}
       className="shrink-0 transition-transform hover:scale-110 active:scale-95 flex"
       onClick={(e) => e.stopPropagation()}
       title={`Affiliated with ${profile.display_name || profile.name || 'Organization'}`}

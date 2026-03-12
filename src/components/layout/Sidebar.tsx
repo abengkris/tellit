@@ -83,7 +83,7 @@ const SidebarItem = ({
 export const Sidebar = () => {
   const { user, isLoggedIn, login, logout } = useAuthStore();
   const { ndk, sessions } = useNDK();
-  const { loading: profileLoading } = useProfile(user?.pubkey);
+  const { loading: profileLoading, profileUrl } = useProfile(user?.pubkey);
   const { unreadCount } = useNotifications();
   const { unreadMessagesCount, hideBalance } = useUIStore();
   const { connectedCount, totalCount } = useRelayStatus();
@@ -109,7 +109,7 @@ export const Sidebar = () => {
             <SidebarItem href="/bookmarks" icon={Bookmark} label="Bookmarks" />
             <SidebarItem href="/settings" icon={Settings} label="Settings" />
             <SidebarItem 
-              href={`/${user?.npub}`} 
+              href={profileUrl} 
               label="Profile" 
               pubkey={user?.pubkey} 
               isLoading={profileLoading} 

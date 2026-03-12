@@ -7,7 +7,6 @@ import { FollowButton } from "@/components/profile/FollowButton";
 import Link from "next/link";
 import { UserIdentity } from "@/components/common/UserIdentity";
 import { useProfile } from "@/hooks/useProfile";
-import { toNpub } from "@/lib/utils/nip19";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -25,12 +24,11 @@ export const SuggestionCard: React.FC<SuggestionCardProps> = ({
   followedByCount,
   showAbout = false
 }) => {
-  const { profile } = useProfile(pubkey);
-  const npub = toNpub(pubkey);
+  const { profile, profileUrl } = useProfile(pubkey);
 
   return (
     <div className="flex items-start justify-between gap-3 group px-4 py-3 hover:bg-accent/30 transition-colors">
-      <Link href={`/${npub}`} className="shrink-0">
+      <Link href={profileUrl} className="shrink-0">
         <Avatar 
           pubkey={pubkey} 
           src={profile?.picture} 
@@ -40,7 +38,7 @@ export const SuggestionCard: React.FC<SuggestionCardProps> = ({
       </Link>
       
       <div className="flex-1 min-w-0">
-        <Link href={`/${npub}`} className="block">
+        <Link href={profileUrl} className="block">
           <UserIdentity 
             pubkey={pubkey}
             display_name={profile?.display_name}
