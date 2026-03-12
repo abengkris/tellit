@@ -12,6 +12,7 @@ import { useRouter } from "next/navigation";
 import { validateUsername } from "@/lib/nip05";
 import { useDebounce } from "use-debounce";
 import { updateProfileNIP05 } from "@/lib/actions/profile";
+import { LNPaymentModal } from "@/components/common/LNPaymentModal";
 
 export default function VerifyPage() {
   const { user, isLoggedIn } = useAuthStore();
@@ -27,6 +28,10 @@ export default function VerifyPage() {
   const [isRegistering, setIsRegistering] = useState(false);
   const [registeredHandle, setRegisteredHandle] = useState<string | null>(null);
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
+
+  // Payment state
+  const [paymentData, setPaymentData] = useState<{ pr: string; hash: string; amount: number } | null>(null);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
 
   useEffect(() => {
     if (!debouncedHandle) {
@@ -77,8 +82,12 @@ export default function VerifyPage() {
 
       const data = await res.json();
       if (data.success) {
-        setRegisteredHandle(data.handle);
-        addToast("Congratulations! Your handle is active.", "success");
+        setPaymentData({
+          pr: data.paymentRequest,
+          hash: data.paymentHash,
+          amount: data.amount
+        });
+        setShowPaymentModal(true);
       } else {
         addToast(data.error || "Registration failed", "error");
       }
@@ -87,6 +96,12 @@ export default function VerifyPage() {
     } finally {
       setIsRegistering(false);
     }
+  };
+
+  const handlePaid = (newHandle: string) => {
+    setShowPaymentModal(false);
+    setRegisteredHandle(newHandle);
+    addToast("Payment successful! Your handle is active.", "success");
   };
 
   const handleUpdateProfile = async () => {
@@ -280,6 +295,17 @@ export default function VerifyPage() {
           </div>
         </div>
       </div>
+
+      {paymentData && (
+        <LNPaymentModal
+          isOpen={showPaymentModal}
+          onClose={() => setShowPaymentModal(false)}
+          paymentRequest={paymentData.pr}
+          paymentHash={paymentData.hash}
+          amount={paymentData.amount}
+          onPaid={handlePaid}
+        />
+      )}
     </div>
   );
 }

@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { validateUsername } from '@/lib/nip05';
+import { createBlinkInvoice } from '@/lib/blink';
+
+const REGISTRATION_PRICE_SATS = 21000;
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -35,7 +38,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { name, pubkey, relays } = body;
+    const { name, pubkey } = body;
 
     if (!name || !pubkey) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -50,7 +53,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'NIP-05 registration is currently unavailable' }, { status: 503 });
     }
 
-    // Check if name taken
+    // 1. Check if name is already taken in active handles
     const { data: existing } = await supabase
       .from('handles')
       .select('name')
@@ -61,29 +64,41 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Username already taken' }, { status: 409 });
     }
 
-    // --- TEST MODE: DIRECT INSERTION ---
-    // In production, you would only do this after payment is verified.
-    const { error: insertError } = await supabase
-      .from('handles')
+    // 2. Generate Lightning Invoice via Blink
+    const memo = `NIP-05: ${name}@tellit.id`;
+    const invoice = await createBlinkInvoice(REGISTRATION_PRICE_SATS, memo);
+
+    if (!invoice || !invoice.paymentRequest) {
+      throw new Error("Failed to generate invoice");
+    }
+
+    // 3. Save pending registration to Supabase
+    const { error: regError } = await supabase
+      .from('registrations')
       .insert({
         name: name.toLowerCase(),
         pubkey: pubkey,
-        relays: relays || ["wss://relay.damus.io", "wss://nos.lol"]
+        payment_hash: invoice.paymentHash,
+        payment_request: invoice.paymentRequest,
+        amount: REGISTRATION_PRICE_SATS,
+        status: 'pending'
       });
 
-    if (insertError) {
-      console.error('[NIP-05 Register] DB Error:', insertError);
-      return NextResponse.json({ error: 'Failed to activate handle' }, { status: 500 });
+    if (regError) {
+      console.error('[NIP-05 Register] DB Error:', regError);
+      return NextResponse.json({ error: 'Failed to record registration' }, { status: 500 });
     }
     
     return NextResponse.json({ 
       success: true, 
-      message: 'Handle activated successfully!',
-      handle: `${name}@tellit.id`
+      paymentRequest: invoice.paymentRequest,
+      paymentHash: invoice.paymentHash,
+      amount: REGISTRATION_PRICE_SATS
     });
 
-  } catch (err) {
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Internal server error';
     console.error('[NIP-05 Register] Error:', err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
