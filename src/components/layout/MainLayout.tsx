@@ -16,6 +16,7 @@ import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { HandleExpirationBanner } from "./HandleExpirationBanner";
 
 export const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, isLoggedIn } = useAuthStore();
@@ -39,6 +40,7 @@ export const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }
 
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground overflow-clip">
+      <HandleExpirationBanner />
       {/* Mobile Header */}
       <header className="sm:hidden sticky top-0 z-20 bg-background/80 backdrop-blur-md border-b border-border flex items-center justify-between px-4 h-14 flex-none">
         {isLoggedIn ? (

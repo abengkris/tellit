@@ -14,6 +14,7 @@ import { updateProfileNIP05 } from "@/lib/actions/profile";
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { nip19 } from "nostr-tools";
+import { cn } from "@/lib/utils";
 import { 
   Dialog, 
   DialogContent, 
@@ -299,10 +300,17 @@ export default function ManageHandlePage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <div className="space-y-1">
                     <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest flex items-center gap-1.5">
-                      <Calendar size={12} /> Registered On
+                      <Calendar size={12} /> Expiration
                     </p>
-                    <p className="font-bold text-lg">
-                      {format(new Date(handleDetails.created_at), "MMMM d, yyyy")}
+                    <p className={cn(
+                      "font-bold text-lg",
+                      (() => {
+                        const expiresAt = new Date(new Date(handleDetails.created_at).setFullYear(new Date(handleDetails.created_at).getFullYear() + 1));
+                        const days = Math.ceil((expiresAt.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+                        return days <= 30 ? "text-orange-500" : "";
+                      })()
+                    )}>
+                      {format(new Date(new Date(handleDetails.created_at).setFullYear(new Date(handleDetails.created_at).getFullYear() + 1)), "MMMM d, yyyy")}
                     </p>
                   </div>
 
@@ -362,9 +370,30 @@ export default function ManageHandlePage() {
                   <div className="flex items-center justify-between gap-4 pt-2 border-t border-border/20">
                     <div className="flex items-center gap-2">
                       <span className="text-muted-foreground text-[10px] font-black uppercase tracking-widest">Status</span>
-                      <Badge variant="outline" className="text-green-500 border-green-500/20 bg-green-500/5 text-[10px]">Active</Badge>
+                      {(() => {
+                        const expiresAt = new Date(new Date(handleDetails.created_at).setFullYear(new Date(handleDetails.created_at).getFullYear() + 1));
+                        const days = Math.ceil((expiresAt.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+                        if (days <= 0) return <Badge variant="destructive" className="text-[10px]">Expired</Badge>;
+                        if (days <= 30) return <Badge variant="outline" className="text-orange-500 border-orange-500/20 bg-orange-500/5 text-[10px]">Expiring Soon ({days}d)</Badge>;
+                        return <Badge variant="outline" className="text-green-500 border-green-500/20 bg-green-500/5 text-[10px]">Active</Badge>;
+                      })()}
                     </div>
-                    <TransferHandleDialog handleName={handleDetails.name} onSuccess={fetchHandleDetails} />
+                    <div className="flex gap-2">
+                      {(() => {
+                        const expiresAt = new Date(new Date(handleDetails.created_at).setFullYear(new Date(handleDetails.created_at).getFullYear() + 1));
+                        const days = Math.ceil((expiresAt.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+                        if (days <= 30) return (
+                          <Button 
+                            onClick={() => router.push(`/settings/verify?renew=${handleDetails.name}`)}
+                            className="rounded-xl font-black bg-orange-500 hover:bg-orange-600 text-white"
+                          >
+                            Renew
+                          </Button>
+                        );
+                        return null;
+                      })()}
+                      <TransferHandleDialog handleName={handleDetails.name} onSuccess={fetchHandleDetails} />
+                    </div>
                   </div>
                 </div>
               </CardFooter>

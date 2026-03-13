@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { BadgeCheck, Loader2, ChevronLeft, Check, AlertCircle, Zap, RefreshCw } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { validateUsername } from "@/lib/nip05";
 import { useDebounce } from "use-debounce";
 import { updateProfileNIP05 } from "@/lib/actions/profile";
@@ -19,8 +19,10 @@ export default function VerifyPage() {
   const { ndk } = useNDK();
   const { addToast } = useUIStore();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const renewHandle = searchParams.get("renew");
   
-  const [handle, setHandle] = useState("");
+  const [handle, setHandle] = useState(renewHandle || "");
   const [debouncedHandle] = useDebounce(handle, 500);
   const [isChecking, setIsChecking] = useState(false);
   const [isAvailable, setIsAvailable] = useState<boolean | null>(null);
@@ -227,7 +229,7 @@ export default function VerifyPage() {
         >
           <ChevronLeft className="size-6" />
         </Button>
-        <h1 className="text-3xl font-black">Get Verified</h1>
+        <h1 className="text-3xl font-black">{renewHandle ? "Renew Handle" : "Get Verified"}</h1>
       </div>
 
       <div className="grid gap-6">
@@ -255,10 +257,13 @@ export default function VerifyPage() {
           <CardHeader className="relative z-10">
             <CardTitle className="text-2xl font-black flex items-center gap-2">
               <BadgeCheck className="text-primary size-6" />
-              Tell it! Verified
+              {renewHandle ? `Renew @${renewHandle}` : "Tell it! Verified"}
             </CardTitle>
             <CardDescription className="text-base font-medium">
-              Get a professional <span className="text-primary font-black">@tellit.id</span> handle and a verified checkmark on your profile.
+              {renewHandle 
+                ? "Extend your handle ownership for another year."
+                : <>Get a professional <span className="text-primary font-black">@tellit.id</span> handle and a verified checkmark on your profile.</>
+              }
             </CardDescription>
           </CardHeader>
           
@@ -329,7 +334,7 @@ export default function VerifyPage() {
                 className="rounded-2xl h-14 px-8 font-black text-lg shadow-lg shadow-primary/20"
               >
                 {isRegistering ? <Loader2 className="animate-spin mr-2" /> : null}
-                Get Verified Now
+                {renewHandle ? "Renew Now" : "Get Verified Now"}
               </Button>
             </div>
             <p className="text-[10px] text-center text-muted-foreground font-medium italic">
