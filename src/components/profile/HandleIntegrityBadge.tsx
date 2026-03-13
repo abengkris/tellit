@@ -22,9 +22,14 @@ export const HandleIntegrityBadge = ({ handle, onFixed }: { handle: HandleStatus
     try {
       const success = await updateProfileNIP05(ndk, handle.fullHandle);
       if (success) {
-        addToast("Profile updated! The checkmark should appear shortly.", "success");
-        refresh();
+        addToast("Profile updated! Syncing with relays...", "info");
+        
+        // Wait 2 seconds for relays to catch up
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        await refresh();
         onFixed();
+        addToast("Verification complete!", "success");
       } else {
         addToast("Failed to update profile", "error");
       }

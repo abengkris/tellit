@@ -19,15 +19,38 @@ export function useVerifyHandle(handle: HandleStatus | null) {
   const [result, setResult] = useState<VerificationResult | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const verify = useCallback(async () => {
+  const verify = useCallback(async (force = false) => {
     if (!ndk || !isReady || !handle) return;
 
     setLoading(true);
     try {
       const pubkey = handle.pubkey;
-      
-      const nostrUser = ndk.getUser({ pubkey });
-      const profile = await nostrUser.fetchProfile();
+      let profile = null;
+
+      if (force) {
+        // Aggressively fetch the latest kind 0 from relays
+        const event = await ndk.fetchEvent({
+          kinds: [0],
+          authors: [pubkey]
+        }, { 
+          cacheUsage: 2, // ONLY_RELAY
+          closeOnEose: true 
+        } as unknown as Record<string, unknown>);
+
+        if (event) {
+          try {
+            profile = JSON.parse(event.content);
+          } catch (e) {
+            console.error("Failed to parse fresh profile:", e);
+          }
+        }
+      }
+
+      // Fallback to standard fetch if force failed or wasn't requested
+      if (!profile) {
+        const nostrUser = ndk.getUser({ pubkey });
+        profile = await nostrUser.fetchProfile();
+      }
 
       const isNip05Valid = profile?.nip05 === handle.fullHandle;
       const isLud16Valid = profile?.lud16 === handle.fullHandle;
@@ -56,5 +79,5 @@ export function useVerifyHandle(handle: HandleStatus | null) {
     verify();
   }, [verify]);
 
-  return { result, loading, refresh: verify };
+  return { result, loading, refresh: () => verify(true) };
 }
