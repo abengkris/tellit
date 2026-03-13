@@ -28,6 +28,7 @@ export default function VerifyPage() {
   const [isRegistering, setIsRegistering] = useState(false);
   const [registeredHandle, setRegisteredHandle] = useState<string | null>(null);
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
+  const [hasHandles, setHasHandles] = useState(false);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
 
   // Payment state
@@ -41,8 +42,8 @@ export default function VerifyPage() {
       try {
         const res = await fetch(`/api/nip05/register?pubkey=${user.pubkey}`);
         const data = await res.json();
-        if (data.existingHandle) {
-          setRegisteredHandle(data.existingHandle);
+        if (data.handles && data.handles.length > 0) {
+          setHasHandles(true);
         }
       } catch (err) {
         console.error("Failed to check existing handle:", err);
@@ -228,6 +229,22 @@ export default function VerifyPage() {
       </div>
 
       <div className="grid gap-6">
+        {hasHandles && (
+          <div className="p-4 bg-primary/10 border border-primary/20 rounded-2xl flex items-center justify-between animate-in slide-in-from-top duration-500">
+            <div className="flex items-center gap-3 text-primary">
+              <BadgeCheck className="size-5" />
+              <p className="text-sm font-bold">You already have registered handles.</p>
+            </div>
+            <Button 
+              variant="link" 
+              onClick={() => router.push("/settings/handle")}
+              className="font-black text-primary p-0 h-auto hover:no-underline"
+            >
+              Manage them →
+            </Button>
+          </div>
+        )}
+
         <Card className="border-none shadow-xl bg-linear-to-br from-primary/5 to-purple-500/5 overflow-hidden">
           <div className="absolute top-0 right-0 p-6 opacity-10">
             <BadgeCheck size={120} className="text-primary" />

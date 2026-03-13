@@ -22,12 +22,13 @@ export async function GET(req: NextRequest) {
       const { data } = await supabase
         .from('handles')
         .select('name, created_at, relays')
-        .eq('pubkey', pubkey)
-        .single();
+        .eq('pubkey', pubkey);
       
       return NextResponse.json({ 
-        existingHandle: data ? `${data.name}@tellit.id` : null,
-        handleDetails: data || null
+        existingHandle: data && data.length > 0 ? `${data[0].name}@tellit.id` : null,
+        handles: data?.map(h => `${h.name}@tellit.id`) || [],
+        handleDetails: data && data.length > 0 ? data[0] : null,
+        allHandleDetails: data || []
       });
     }
 
@@ -73,19 +74,6 @@ export async function POST(req: NextRequest) {
     }
 
     const supabase = getSupabaseAdmin();
-
-    // 1. Check if pubkey already has a handle (One handle per user)
-    const { data: existingPubkey } = await supabase
-      .from('handles')
-      .select('name')
-      .eq('pubkey', pubkey)
-      .single();
-
-    if (existingPubkey) {
-      return NextResponse.json({ 
-        error: `This public key is already registered with the handle: ${existingPubkey.name}@tellit.id` 
-      }, { status: 403 });
-    }
 
     // 2. Check if name is already taken in active handles
     const { data: existingName, error: checkError } = await supabase
