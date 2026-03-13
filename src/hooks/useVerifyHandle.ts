@@ -5,6 +5,9 @@ import { HandleStatus } from "@/hooks/useHandleStatus";
 export interface VerificationResult {
   isValid: boolean;
   profileNip05?: string;
+  profileLud16?: string;
+  isNip05Valid: boolean;
+  isLud16Valid: boolean;
   error?: string;
 }
 
@@ -26,20 +29,24 @@ export function useVerifyHandle(handle: HandleStatus | null) {
       const nostrUser = ndk.getUser({ pubkey });
       const profile = await nostrUser.fetchProfile();
 
-      if (!profile || !profile.nip05) {
-        setResult({ isValid: false, error: "NIP-05 is not set on your profile" });
-      } else if (profile.nip05 !== handle.fullHandle) {
-        setResult({ 
-          isValid: false, 
-          profileNip05: profile.nip05, 
-          error: `Profile has ${profile.nip05}, but you are managing ${handle.fullHandle}` 
-        });
+      const isNip05Valid = profile?.nip05 === handle.fullHandle;
+      const isLud16Valid = profile?.lud16 === handle.fullHandle;
+
+      if (!profile) {
+        setResult({ isValid: false, isNip05Valid: false, isLud16Valid: false, error: "Profile not found" });
       } else {
-        setResult({ isValid: true, profileNip05: profile.nip05 });
+        setResult({ 
+          isValid: isNip05Valid && isLud16Valid, 
+          isNip05Valid,
+          isLud16Valid,
+          profileNip05: profile.nip05, 
+          profileLud16: profile.lud16,
+          error: !isNip05Valid ? "NIP-05 mismatch" : (!isLud16Valid ? "Lightning Address mismatch" : undefined)
+        });
       }
     } catch (err) {
       console.error("Verification error:", err);
-      setResult({ isValid: false, error: "Failed to fetch Nostr profile" });
+      setResult({ isValid: false, isNip05Valid: false, isLud16Valid: false, error: "Failed to fetch Nostr profile" });
     } finally {
       setLoading(false);
     }

@@ -41,16 +41,20 @@ export const HandleIntegrityBadge = ({ handle, onFixed }: { handle: HandleStatus
     return (
       <Badge variant="outline" className="bg-green-500/5 text-green-500 border-green-500/20 gap-1 h-6">
         <BadgeCheck size={12} fill="currentColor" />
-        Verified on Profile
+        Verified Identity & Zaps
       </Badge>
     );
   }
+
+  const label = !result?.isNip05Valid && !result?.isLud16Valid 
+    ? "Not Linked to Profile" 
+    : (!result?.isNip05Valid ? "NIP-05 Not Linked" : "Zaps Not Linked");
 
   return (
     <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
       <Badge variant="outline" className="bg-destructive/5 text-destructive border-destructive/20 gap-1 h-6">
         <AlertTriangle size={12} />
-        Not Linked to Profile
+        {label}
       </Badge>
       <Button 
         size="sm" 
@@ -60,7 +64,7 @@ export const HandleIntegrityBadge = ({ handle, onFixed }: { handle: HandleStatus
         disabled={isFixing}
       >
         {isFixing ? <Loader2 className="size-3 animate-spin mr-1" /> : <RefreshCw size={10} className="mr-1" />}
-        Fix Now
+        Fix Profile
       </Button>
     </div>
   );

@@ -30,7 +30,7 @@ export async function updateProfile(
 }
 
 /**
- * Specifically update only the NIP-05 field of a profile.
+ * Specifically update the NIP-05 and Lightning Address (lud16) fields of a profile.
  */
 export async function updateProfileNIP05(
   ndk: NDK,
@@ -42,14 +42,17 @@ export async function updateProfileNIP05(
     const user = await ndk.signer.user();
     await user.fetchProfile();
     
+    // We set both NIP-05 and LUD16 to the same handle
+    // username@tellit.id works for both identity and payments
     const metadata = {
       ...(user.profile || {}),
-      nip05
+      nip05,
+      lud16: nip05 
     };
 
     return updateProfile(ndk, metadata);
   } catch (error) {
-    console.error("Failed to update NIP-05 profile:", error);
+    console.error("Failed to update NIP-05/LUD16 profile:", error);
     return false;
   }
 }
