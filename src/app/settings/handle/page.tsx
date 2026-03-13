@@ -713,29 +713,35 @@ export default function ManageHandlePage() {
             <div className="grid gap-4">
               {pendingHandles.map((ph) => (
                 <Card key={ph.payment_hash} className={cn(
-                  "border-2 border-dashed overflow-hidden",
-                  ph.isExpired ? "border-destructive/30 bg-destructive/5" : "border-blue-500/30 bg-blue-500/5"
+                  "border-2 border-dashed overflow-hidden transition-all",
+                  ph.isTaken 
+                    ? "border-destructive/50 bg-destructive/10 grayscale-[0.5] opacity-80" 
+                    : ph.isExpired 
+                      ? "border-destructive/30 bg-destructive/5" 
+                      : "border-blue-500/30 bg-blue-500/5"
                 )}>
                   <CardHeader className="pb-3">
                     <div className="flex justify-between items-start">
                       <div className="space-y-1">
                         <CardTitle className="text-xl font-black flex items-center gap-2">
-                          <Zap className={cn("size-5 fill-current", ph.isExpired ? "text-destructive" : "text-blue-500")} />
+                          <Zap className={cn("size-5 fill-current", ph.isTaken || ph.isExpired ? "text-destructive" : "text-blue-500")} />
                           {ph.name}@tellit.id
                         </CardTitle>
                         <CardDescription className="text-xs font-medium">
-                          {ph.isExpired 
-                            ? "Invoice has expired. Regenerate to pay." 
-                            : "Unpaid registration. Secure it before someone else does!"
+                          {ph.isTaken 
+                            ? "This handle has been claimed by someone else." 
+                            : ph.isExpired 
+                              ? "Invoice has expired. Regenerate to pay." 
+                              : "Unpaid registration. Secure it before someone else does!"
                           }
                         </CardDescription>
                       </div>
                       <Badge variant="outline" className={cn(
-                        ph.isExpired 
+                        ph.isTaken || ph.isExpired
                           ? "text-destructive border-destructive/20 bg-destructive/10" 
                           : "text-blue-500 border-blue-500/20 bg-blue-500/10"
                       )}>
-                        {ph.isExpired ? "Expired" : "Pending"}
+                        {ph.isTaken ? "Already Taken" : ph.isExpired ? "Expired" : "Pending"}
                       </Badge>
                     </div>
                   </CardHeader>
@@ -749,26 +755,30 @@ export default function ManageHandlePage() {
                         paymentHash={ph.payment_hash} 
                         onSuccess={refreshStatus} 
                       />
-                      {ph.isExpired ? (
-                        <Button 
-                          size="sm"
-                          onClick={() => handleRegenerateInvoice(ph.payment_hash)}
-                          className="rounded-xl font-black bg-orange-500 hover:bg-orange-600 text-white shadow-lg shadow-orange-500/20"
-                        >
-                          <RefreshCw className="size-3 mr-1" />
-                          Regenerate
-                        </Button>
-                      ) : (
-                        <Button 
-                          size="sm"
-                          onClick={() => {
-                            setSelectedPending(ph);
-                            setShowPaymentModal(true);
-                          }}
-                          className="rounded-xl font-black bg-blue-500 hover:bg-blue-600 text-white shadow-lg shadow-blue-500/20"
-                        >
-                          Pay Now
-                        </Button>
+                      {!ph.isTaken && (
+                        <>
+                          {ph.isExpired ? (
+                            <Button 
+                              size="sm"
+                              onClick={() => handleRegenerateInvoice(ph.payment_hash)}
+                              className="rounded-xl font-black bg-orange-500 hover:bg-orange-600 text-white"
+                            >
+                              <RefreshCw className="size-3 mr-1" />
+                              Regenerate
+                            </Button>
+                          ) : (
+                            <Button 
+                              size="sm"
+                              onClick={() => {
+                                setSelectedPending(ph);
+                                setShowPaymentModal(true);
+                              }}
+                              className="rounded-xl font-black bg-blue-500 hover:bg-blue-600 text-white shadow-lg shadow-blue-500/20"
+                            >
+                              Pay Now
+                            </Button>
+                          )}
+                        </>
                       )}
                     </div>
                   </CardFooter>

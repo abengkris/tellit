@@ -30,13 +30,30 @@ export async function GET(req: NextRequest) {
         .select('name, amount, payment_request, payment_hash, created_at, status')
         .eq('pubkey', pubkey)
         .in('status', ['pending', 'expired']);
+
+      // Check if any pending names are now taken in the 'handles' table
+      let pendingWithAvailability = pending || [];
+      if (pending && pending.length > 0) {
+        const pendingNames = pending.map(p => p.name.toLowerCase());
+        const { data: takenHandles } = await supabase
+          .from('handles')
+          .select('name, pubkey')
+          .in('name', pendingNames);
+
+        pendingWithAvailability = pending.map(p => {
+          const taken = takenHandles?.find(th => th.name === p.name.toLowerCase());
+          // It's taken if it exists in handles and the owner is NOT this pubkey
+          const isTaken = taken && taken.pubkey !== pubkey;
+          return { ...p, isTaken };
+        });
+      }
       
       return NextResponse.json({ 
         existingHandle: handles && handles.length > 0 ? `${handles[0].name}@tellit.id` : null,
         handles: handles?.map(h => `${h.name}@tellit.id`) || [],
         handleDetails: handles && handles.length > 0 ? handles[0] : null,
         allHandleDetails: handles || [],
-        pendingRegistrations: pending || []
+        pendingRegistrations: pendingWithAvailability
       });
     }
 
