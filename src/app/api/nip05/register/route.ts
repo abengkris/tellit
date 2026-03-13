@@ -15,18 +15,27 @@ export async function GET(req: NextRequest) {
   try {
     const supabase = getSupabaseAdmin();
 
-    // If pubkey is provided, check if user already has a handle
+    // If pubkey is provided, check handles and pending registrations
     if (pubkey) {
-      const { data } = await supabase
+      // Fetch active handles
+      const { data: handles } = await supabase
         .from('handles')
         .select('name, created_at, relays')
         .eq('pubkey', pubkey);
       
+      // Fetch pending registrations (unpaid)
+      const { data: pending } = await supabase
+        .from('registrations')
+        .select('name, amount, payment_request, payment_hash, created_at')
+        .eq('pubkey', pubkey)
+        .eq('status', 'pending');
+      
       return NextResponse.json({ 
-        existingHandle: data && data.length > 0 ? `${data[0].name}@tellit.id` : null,
-        handles: data?.map(h => `${h.name}@tellit.id`) || [],
-        handleDetails: data && data.length > 0 ? data[0] : null,
-        allHandleDetails: data || []
+        existingHandle: handles && handles.length > 0 ? `${handles[0].name}@tellit.id` : null,
+        handles: handles?.map(h => `${h.name}@tellit.id`) || [],
+        handleDetails: handles && handles.length > 0 ? handles[0] : null,
+        allHandleDetails: handles || [],
+        pendingRegistrations: pending || []
       });
     }
 

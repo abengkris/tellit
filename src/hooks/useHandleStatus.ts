@@ -16,12 +16,21 @@ interface HandleDetail {
   relays: string[];
 }
 
+export interface PendingHandle {
+  name: string;
+  amount: number;
+  payment_request: string;
+  payment_hash: string;
+  created_at: string;
+}
+
 /**
  * Hook to check and monitor the expiration status of the user's registered handles.
  */
 export function useHandleStatus() {
   const { user, isLoggedIn } = useAuthStore();
   const [handles, setHandles] = useState<HandleStatus[]>([]);
+  const [pendingHandles, setPendingHandles] = useState<PendingHandle[]>([]);
   const [loading, setLoading] = useState(false);
 
   const checkStatus = useCallback(async () => {
@@ -32,7 +41,7 @@ export function useHandleStatus() {
       const res = await fetch(`/api/nip05/register?pubkey=${user.pubkey}`);
       const data = await res.json();
 
-      if (data.allHandleDetails && data.allHandleDetails.length > 0) {
+      if (data.allHandleDetails) {
         const statuses: HandleStatus[] = data.allHandleDetails.map((h: HandleDetail) => {
           const registeredAt = new Date(h.created_at);
           // Assuming 1 year duration
@@ -54,8 +63,12 @@ export function useHandleStatus() {
         });
         
         setHandles(statuses);
+      }
+
+      if (data.pendingRegistrations) {
+        setPendingHandles(data.pendingRegistrations);
       } else {
-        setHandles([]);
+        setPendingHandles([]);
       }
     } catch (err) {
       console.error("Failed to check handle status:", err);
@@ -72,6 +85,7 @@ export function useHandleStatus() {
 
   return { 
     handles, 
+    pendingHandles,
     expiringSoonHandles, 
     loading, 
     refresh: checkStatus 
