@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
       // Fetch active handles
       const { data: handles } = await supabase
         .from('handles')
-        .select('name, created_at, relays')
+        .select('name, created_at, relays, lightning_address, is_primary')
         .eq('pubkey', pubkey);
       
       // Fetch pending registrations (unpaid)

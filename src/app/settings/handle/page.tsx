@@ -77,8 +77,16 @@ const LightningAddressDialog = ({
       const data = await res.json();
       if (data.success) {
         addToast(data.message, "success");
+        
+        // Auto-sync to profile to fix the "Not linked" issue
+        if (address) {
+          const fullHandle = `${handleName}@tellit.id`;
+          await updateProfileNIP05(ndk, fullHandle);
+        }
+
         setIsOpen(false);
         onSuccess();
+        if (typeof window !== 'undefined') window.location.reload(); // Force refresh to ensure all hooks see the DB change
       } else {
         console.error("[LightningAddress] API Error:", data);
         addToast(data.error || "Failed to update address", "error");
