@@ -91,6 +91,13 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ status: 'PAID', handle: `${registration.name}@tellit.id` });
     }
 
+    if (blinkStatus === 'EXPIRED' && registration.status !== 'expired') {
+      await supabase
+        .from('registrations')
+        .update({ status: 'expired' })
+        .eq('payment_hash', hash);
+    }
+
     return NextResponse.json({ status: blinkStatus });
 
   } catch (err: unknown) {

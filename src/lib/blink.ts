@@ -54,6 +54,7 @@ export async function createBlinkInvoice(amount: number, memo: string) {
       amount,
       walletId,
       memo,
+      expiresIn: 1440, // 24 hours in minutes
     },
   };
 
