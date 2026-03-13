@@ -175,7 +175,7 @@ export const PostHeader: React.FC<PostHeaderProps> = ({
           )}
         </div>
         
-        <DropdownMenu>
+        <DropdownMenu modal={false}>
           <DropdownMenuTrigger asChild>
             <Button 
               variant="ghost" 
@@ -186,7 +186,7 @@ export const PostHeader: React.FC<PostHeaderProps> = ({
               <MoreHorizontal className="size-4" aria-hidden="true" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56">
+          <DropdownMenuContent align="end" className="w-56" onCloseAutoFocus={(e) => e.preventDefault()}>
             {onPinClick && (
               <DropdownMenuItem onClick={onPinClick} className="gap-2">
                 {isPinned ? <PinOff className="size-4" aria-hidden="true" /> : <Pin className="size-4" aria-hidden="true" />}

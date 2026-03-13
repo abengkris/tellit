@@ -232,7 +232,7 @@ export const PostActions: React.FC<PostActionsProps> = ({
 
         {/* Repost & Quote */}
         <div className="flex items-center">
-          <DropdownMenu>
+          <DropdownMenu modal={false}>
             <Tooltip>
               <TooltipTrigger asChild>
                 <DropdownMenuTrigger asChild>
@@ -251,7 +251,7 @@ export const PostActions: React.FC<PostActionsProps> = ({
               </TooltipTrigger>
               <TooltipContent side="bottom">Repost / Quote</TooltipContent>
             </Tooltip>
-            <DropdownMenuContent align="start">
+            <DropdownMenuContent align="start" onCloseAutoFocus={(e) => e.preventDefault()}>
               <DropdownMenuItem onClick={handleRepostAction} className="gap-2">
                 <Repeat2 className="size-4" />
                 <span>Repost</span>
