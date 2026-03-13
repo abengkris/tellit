@@ -308,12 +308,12 @@ export default function VerifyPage() {
                 <div className="p-4 bg-background/50 rounded-2xl border border-primary/10 space-y-1">
                   <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Pricing Tiers</p>
                   <p className="font-bold text-sm text-purple-500">Premium (2-3 chars)</p>
-                  <p className="text-xs text-muted-foreground">100,000 Sats / year</p>
+                  <p className="text-xs text-muted-foreground">50,000 Sats / year</p>
                 </div>
                 <div className="p-4 bg-background/50 rounded-2xl border border-primary/10 space-y-1 sm:col-span-2">
                   <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Pricing Tiers</p>
                   <p className="font-bold text-sm text-yellow-500">Ultra (1 char & Reserved)</p>
-                  <p className="text-xs text-muted-foreground">500,000 Sats / year</p>
+                  <p className="text-xs text-muted-foreground">100,000 Sats / year</p>
                 </div>
               </div>
             </div>

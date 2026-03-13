@@ -53,8 +53,8 @@ export function validateUsername(name: string): { valid: boolean; error?: string
  */
 export const PRICING = {
   STANDARD: 10000,
-  PREMIUM: 100000,
-  ULTRA: 500000
+  PREMIUM: 50000,
+  ULTRA: 100000
 };
 
 /**
