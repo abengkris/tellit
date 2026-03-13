@@ -30,16 +30,17 @@ export default function LoginPage() {
     loginWithPrivateKey, 
     generateNewKey, 
     isLoading, 
-    isLoggedIn 
+    isLoggedIn
   } = useAuthStore();
   
   const { ndk, sessions, isReady } = useNDK();
   const { addToast } = useUIStore();
   const router = useRouter();
 
-  // Redirect if already logged in
+  // Redirect if already logged in and not trying to add another account
+  // We can use a search param like ?add=true to stay on this page
   useEffect(() => {
-    if (isLoggedIn) {
+    if (isLoggedIn && !window.location.search.includes('add=true')) {
       router.push("/");
     }
   }, [isLoggedIn, router]);
@@ -48,7 +49,8 @@ export default function LoginPage() {
     if (!ndk || !sessions || !isReady) return;
     try {
       await login(ndk, sessions);
-      addToast("Logged in successfully!", "success");
+      addToast("Account added successfully!", "success");
+      router.push("/");
     } catch (err) {
       addToast("NIP-07 Login failed. Check extension.", "error");
     }
@@ -59,7 +61,8 @@ export default function LoginPage() {
     if (!ndk || !sessions || !isReady || !privateKey) return;
     try {
       await loginWithPrivateKey(ndk, sessions, privateKey);
-      addToast("Logged in successfully!", "success");
+      addToast("Account added successfully!", "success");
+      router.push("/");
     } catch (err) {
       addToast("Invalid private key.", "error");
     }
@@ -138,6 +141,14 @@ export default function LoginPage() {
           <p className="text-gray-500 dark:text-gray-400 mb-8">Whatever it is, just Tell It.</p>
 
           <div className="space-y-4">
+            {isLoggedIn && (
+              <button
+                onClick={() => router.back()}
+                className="w-full text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 font-medium py-2 transition-colors mb-2"
+              >
+                ← Back
+              </button>
+            )}
             <button
               onClick={handleNip07Login}
               disabled={isLoading || !isReady}

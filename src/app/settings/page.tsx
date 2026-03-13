@@ -35,7 +35,7 @@ interface ExtendedCacheAdapter {
 }
 
 export default function SettingsPage() {
-  const { isLoggedIn, user, logout } = useAuthStore();
+  const { isLoggedIn, user, logout, logoutAll, accounts } = useAuthStore();
   const { sessions, ndk, isReady } = useNDK();
   const { profile } = useProfile(user?.pubkey);
   const { mutedPubkeys, loading: loadingLists } = useLists();
@@ -99,7 +99,12 @@ export default function SettingsPage() {
 
   const handleLogout = () => {
     logout(sessions);
-    addToast("Logged out successfully", "info");
+    addToast("Logged out of current account", "info");
+  };
+
+  const handleLogoutAll = () => {
+    logoutAll(sessions);
+    addToast("Logged out of all accounts", "info");
   };
 
   return (
@@ -170,8 +175,19 @@ export default function SettingsPage() {
                       className="rounded-2xl font-black h-12 text-destructive hover:bg-destructive/10"
                     >
                       <LogOut className="size-4" />
-                      Logout
+                      Logout Current
                     </Button>
+
+                    {accounts.length > 1 && (
+                      <Button
+                        variant="ghost"
+                        onClick={handleLogoutAll}
+                        className="rounded-2xl font-black h-12 text-destructive hover:bg-destructive/10 sm:col-span-2"
+                      >
+                        <LogOut className="size-4" />
+                        Logout of All Accounts ({accounts.length})
+                      </Button>
+                    )}
                   </div>
                 </div>
               </CardContent>

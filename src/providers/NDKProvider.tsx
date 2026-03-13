@@ -49,7 +49,7 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
   const [isReady, setIsReady] = useState(false);
   const [isWalletReady, setIsWalletReady] = useState(false);
   
-  const { setUser, setLoginState } = useAuthStore();
+  const { setUser, setLoginState, setAccounts } = useAuthStore();
   const { 
     incrementUnreadMessagesCount, 
     addToast, 
@@ -76,6 +76,7 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
   const depsRef = useRef({
     setUser,
     setLoginState,
+    setAccounts,
     incrementUnreadMessagesCount,
     addToast,
     activeChatPubkey,
@@ -91,6 +92,7 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
     depsRef.current = {
       setUser,
       setLoginState,
+      setAccounts,
       incrementUnreadMessagesCount,
       addToast,
       activeChatPubkey,
@@ -267,6 +269,11 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
 
     const unsubscribeSessions = sessionManager.subscribe((state) => {
       console.log("[NDKProvider] Session state changed:", !!state.activePubkey);
+      
+      // Update accounts list
+      const pubkeys = Array.from(sessionManager.sessions.keys());
+      depsRef.current.setAccounts(pubkeys);
+
       if (state.activePubkey) {
         const session = sessionManager.activeSession;
         if (session) {

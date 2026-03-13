@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Search, LogIn, LogOut, Bell, MessageSquare, Activity, Bookmark, PenTool, Settings, Wallet } from "lucide-react";
+import { Home, Search, LogIn, Bell, MessageSquare, Activity, Bookmark, PenTool, Settings, Wallet } from "lucide-react";
 import { useAuthStore } from "@/store/auth";
 import { useNDK } from "@/hooks/useNDK";
 import { useNotifications } from "@/hooks/useNotifications";
@@ -15,6 +15,7 @@ import { RelayModal } from "@/components/common/RelayModal";
 import { Avatar } from "@/components/common/Avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { AccountSwitcher } from "./AccountSwitcher";
 import { 
   Tooltip, 
   TooltipContent, 
@@ -81,7 +82,7 @@ const SidebarItem = ({
 };
 
 export const Sidebar = () => {
-  const { user, isLoggedIn, login, logout } = useAuthStore();
+  const { user, isLoggedIn, login } = useAuthStore();
   const { ndk, sessions } = useNDK();
   const { loading: profileLoading, profileUrl } = useProfile(user?.pubkey);
   const { unreadCount } = useNotifications();
@@ -167,24 +168,7 @@ export const Sidebar = () => {
         </Tooltip>
 
         {isLoggedIn ? (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                onClick={() => logout(sessions)}
-                aria-label="Logout"
-                className="hidden sm:flex items-center justify-start gap-4 p-3 h-auto rounded-full hover:bg-destructive/10 text-destructive transition-colors w-fit lg:w-full"
-              >
-                <div className="flex items-center justify-center shrink-0 size-7">
-                  <LogOut className="size-7" aria-hidden="true" />
-                </div>
-                <span className="hidden lg:block text-xl font-bold">Logout</span>
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="right" className="lg:hidden">
-              Logout
-            </TooltipContent>
-          </Tooltip>
+          <AccountSwitcher />
         ) : (
           <Tooltip>
             <TooltipTrigger asChild>

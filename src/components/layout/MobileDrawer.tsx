@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { User, Bookmark, Activity, LogOut, Settings, MessageSquare, PenTool, Wallet } from "lucide-react";
+import { User, Bookmark, Activity, Settings, MessageSquare, PenTool, Wallet } from "lucide-react";
 import { useAuthStore } from "@/store/auth";
 import { useNDK } from "@/hooks/useNDK";
 import { useRelayStatus } from "@/hooks/useRelayStatus";
@@ -13,6 +13,7 @@ import { shortenPubkey } from "@/lib/utils/nip19";
 import { useFollowingList } from "@/hooks/useFollowingList";
 import { useFollowerCount } from "@/hooks/useFollowers";
 import { useProfile } from "@/hooks/useProfile";
+import { AccountSwitcher } from "./AccountSwitcher";
 import { 
   Sheet, 
   SheetContent, 
@@ -31,8 +32,7 @@ interface MobileDrawerProps {
 }
 
 export const MobileDrawer: React.FC<MobileDrawerProps> = ({ isOpen, onClose, onOpenRelays }) => {
-  const { user, logout } = useAuthStore();
-  const { sessions } = useNDK();
+  const { user } = useAuthStore();
   const { unreadMessagesCount, hideBalance } = useUIStore();
   const { connectedCount, totalCount } = useRelayStatus();
   const { profile, loading: profileLoading, profileUrl } = useProfile(user?.pubkey);
@@ -43,8 +43,9 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({ isOpen, onClose, onO
   return (
     <Sheet open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <SheetContent side="left" className="w-[280px] p-0 flex flex-col gap-0 border-r-0">
-        <SheetHeader className="p-4 border-b">
-          <SheetTitle className="text-xl font-black text-primary text-left">Account Info</SheetTitle>
+        <SheetHeader className="p-4 border-b flex flex-row items-center justify-between space-y-0">
+          <SheetTitle className="text-xl font-black text-primary text-left">Account</SheetTitle>
+          <AccountSwitcher />
         </SheetHeader>
 
         <ScrollArea className="flex-1">
@@ -171,15 +172,10 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({ isOpen, onClose, onO
           </div>
         </ScrollArea>
 
-        <div className="p-4 border-t mt-auto">
-          <Button
-            variant="ghost"
-            onClick={() => { onClose(); logout(sessions); }}
-            className="w-full justify-start gap-4 h-auto p-4 rounded-xl text-destructive hover:bg-destructive/10 font-bold"
-          >
-            <LogOut className="size-5" />
-            <span className="text-base">Logout</span>
-          </Button>
+        <div className="p-4 border-t mt-auto text-center">
+          <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest">
+            Whatever it is, just Tell It.
+          </p>
         </div>
       </SheetContent>
     </Sheet>
