@@ -7,7 +7,8 @@ import { useUIStore } from "@/store/ui";
 import { useProfile } from "@/hooks/useProfile";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { BadgeCheck, Loader2, ChevronLeft, Calendar, Globe, RefreshCw, ExternalLink, Share2 } from "lucide-react";
+import { BadgeCheck, Loader2, ChevronLeft, Calendar, Globe, RefreshCw, ExternalLink, Share2, Zap, Trash2, Plus, Server, Star, Bitcoin } from "lucide-react";
+
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { updateProfileNIP05 } from "@/lib/actions/profile";
@@ -16,8 +17,9 @@ import { Badge } from "@/components/ui/badge";
 import { nip19 } from "nostr-tools";
 import { cn } from "@/lib/utils";
 import { useHandleStatus, PendingHandle } from "@/hooks/useHandleStatus";
+import { useRelayList } from "@/hooks/useRelayList";
 import { LNPaymentModal } from "@/components/common/LNPaymentModal";
-import { Zap } from "lucide-react";
+import { HandleIntegrityBadge } from "@/components/profile/HandleIntegrityBadge";
 import { 
   Dialog, 
   DialogContent, 
@@ -31,6 +33,273 @@ import { Input } from "@/components/ui/input";
 import { NDKEvent } from "@nostr-dev-kit/ndk";
 import { Avatar } from "@/components/common/Avatar";
 import { shortenPubkey } from "@/lib/utils/nip19";
+const LightningAddressDialog = ({ 
+  handleName, 
+  initialAddress,
+  onSuccess 
+}: { 
+  handleName: string; 
+  initialAddress?: string;
+  onSuccess: () => void;
+}) => {
+  const { user } = useAuthStore();
+  const { ndk } = useNDK();
+  const { addToast } = useUIStore();
+  const [address, setAddress] = useState(initialAddress || "");
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
+
+  const handleSave = async () => {
+    if (!ndk || !user) return;
+    
+    if (address && !address.includes("@")) {
+      addToast("Invalid lightning address format (user@domain.com)", "error");
+      return;
+    }
+
+    setIsUpdating(true);
+    try {
+      const event = new NDKEvent(ndk);
+      event.kind = 4447;
+      event.content = `Update Lightning Address for ${handleName} to ${address}`;
+      event.tags = [
+        ["handle", handleName],
+        ["lightning_address", address]
+      ];
+      
+      await event.sign();
+      const res = await fetch("/api/nip05/lnaddress", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ event: event.rawEvent() })
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        addToast(data.message, "success");
+        setIsOpen(false);
+        onSuccess();
+      } else {
+        addToast(data.error || "Failed to update address", "error");
+      }
+    } catch (err) {
+      console.error(err);
+      addToast("An error occurred", "error");
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogTrigger asChild>
+        <Button variant="ghost" size="sm" className="h-8 gap-1 rounded-lg text-[10px] font-black uppercase tracking-widest text-orange-500 hover:bg-orange-500/10">
+          <Bitcoin size={12} />
+          {initialAddress ? "Edit Lightning" : "Add Lightning"}
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-md rounded-3xl border-none shadow-2xl">
+        <DialogHeader>
+          <DialogTitle className="text-2xl font-black flex items-center gap-2">
+            <Zap className="text-yellow-500 fill-current size-6" />
+            Lightning Address
+          </DialogTitle>
+          <DialogDescription className="font-medium">
+            Link your handle <span className="text-primary font-bold">@{handleName}</span> to a Lightning Address to receive zaps.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4 py-4">
+          <div className="space-y-2">
+            <label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest px-1">
+              Your Lightning Address (e.g. user@getalby.com)
+            </label>
+            <Input
+              placeholder="user@provider.com"
+              value={address}
+              onChange={(e) => setAddress(e.target.value.toLowerCase())}
+              className="h-14 rounded-2xl bg-muted/30 border-none text-lg font-bold"
+            />
+          </div>
+          
+          <div className="p-4 rounded-2xl bg-orange-500/5 border border-orange-500/10 space-y-2">
+            <p className="text-xs font-medium text-orange-600 dark:text-orange-400">
+              Once linked, your handle <span className="font-black italic">{handleName}@tellit.id</span> will redirect payments to your address.
+            </p>
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button 
+            onClick={handleSave} 
+            disabled={isUpdating}
+            className="w-full h-12 rounded-2xl font-black text-lg bg-yellow-500 hover:bg-yellow-600 text-white"
+          >
+            {isUpdating ? <Loader2 className="animate-spin mr-2" /> : null}
+            Save Address
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+const RelayEditorDialog = ({ 
+  handleName, 
+  initialRelays,
+  onSuccess 
+}: { 
+  handleName: string; 
+  initialRelays: string[];
+  onSuccess: () => void;
+}) => {
+  const { user } = useAuthStore();
+  const { ndk } = useNDK();
+  const { addToast } = useUIStore();
+  const { relays: profileRelays } = useRelayList(user?.pubkey);
+  const [relays, setRelays] = useState<string[]>(initialRelays);
+  const [newRelay, setNewRelay] = useState("");
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
+
+  const handleAddRelay = (url: string) => {
+    const cleanUrl = url.trim();
+    if (!cleanUrl) return;
+    if (!cleanUrl.startsWith("wss://") && !cleanUrl.startsWith("ws://")) {
+      addToast("Invalid relay URL", "error");
+      return;
+    }
+    if (relays.includes(cleanUrl)) {
+      addToast("Relay already added", "error");
+      return;
+    }
+    setRelays([...relays, cleanUrl]);
+    setNewRelay("");
+  };
+
+  const handleRemoveRelay = (url: string) => {
+    setRelays(relays.filter(r => r !== url));
+  };
+
+  const handleSyncFromProfile = () => {
+    const profileUrls = profileRelays.map(r => r.url);
+    const combined = Array.from(new Set([...relays, ...profileUrls])).slice(0, 10);
+    setRelays(combined);
+    addToast("Synced from your profile relays", "success");
+  };
+
+  const handleSave = async () => {
+    if (!ndk || !user) return;
+    if (relays.length === 0) {
+      addToast("At least one relay is required", "error");
+      return;
+    }
+
+    setIsUpdating(true);
+    try {
+      const event = new NDKEvent(ndk);
+      event.kind = 4445;
+      event.content = `Update relays for ${handleName}`;
+      event.tags = [
+        ["handle", handleName],
+        ["relays", ...relays]
+      ];
+
+      await event.sign();
+      const res = await fetch("/api/nip05/relays", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ event: event.rawEvent() })
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        addToast(data.message, "success");
+        setIsOpen(false);
+        onSuccess();
+      } else {
+        addToast(data.error || "Failed to update relays", "error");
+      }
+    } catch (err) {
+      console.error(err);
+      addToast("An error occurred while updating relays", "error");
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogTrigger asChild>
+        <Button variant="ghost" size="sm" className="h-8 gap-1 rounded-lg text-[10px] font-black uppercase tracking-widest text-primary hover:bg-primary/10">
+          <Server size={12} />
+          Edit Relays
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-md rounded-3xl border-none shadow-2xl">
+        <DialogHeader>
+          <DialogTitle className="text-2xl font-black">Assign Relays</DialogTitle>
+          <DialogDescription className="font-medium">
+            These relays will be returned in your NIP-05 file for discovery.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-6 py-4">
+          <div className="flex gap-2">
+            <Input
+              placeholder="wss://relay.example.com"
+              value={newRelay}
+              onChange={(e) => setNewRelay(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleAddRelay(newRelay)}
+              className="h-12 rounded-xl bg-muted/30 border-none font-mono text-xs"
+            />
+            <Button onClick={() => handleAddRelay(newRelay)} className="h-12 w-12 rounded-xl p-0 shrink-0">
+              <Plus size={20} />
+            </Button>
+          </div>
+
+          <div className="space-y-2 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
+            {relays.map((url) => (
+              <div key={url} className="flex items-center justify-between p-3 rounded-2xl bg-muted/20 border border-muted group">
+                <span className="text-xs font-mono truncate mr-2">{url.replace("wss://", "")}</span>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={() => handleRemoveRelay(url)}
+                  className="size-8 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <Trash2 size={14} />
+                </Button>
+              </div>
+            ))}
+          </div>
+
+          {profileRelays.length > 0 && (
+            <Button 
+              variant="outline" 
+              onClick={handleSyncFromProfile}
+              className="w-full h-12 rounded-xl font-bold border-dashed border-primary/30 text-primary hover:bg-primary/5"
+            >
+              <RefreshCw size={16} className="mr-2" />
+              Sync from Profile Relays
+            </Button>
+          )}
+        </div>
+
+        <DialogFooter className="flex-col sm:flex-row gap-2">
+          <Button 
+            onClick={handleSave} 
+            disabled={isUpdating}
+            className="w-full sm:flex-1 h-12 rounded-2xl font-black text-lg"
+          >
+            {isUpdating ? <Loader2 className="animate-spin mr-2" /> : null}
+            Save Relays
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
 
 const TransferHandleDialog = ({ 
   handleName, 
@@ -39,6 +308,7 @@ const TransferHandleDialog = ({
   handleName: string; 
   onSuccess: () => void;
 }) => {
+
   const { user, accounts } = useAuthStore();
   const { ndk } = useNDK();
   const { addToast } = useUIStore();
@@ -61,6 +331,7 @@ const TransferHandleDialog = ({
         ["handle", handleName],
         ["new_pubkey", pubkeyToUse]
       ];
+
       
       await event.sign();
       const signedEvent = event.rawEvent();
@@ -102,6 +373,7 @@ const TransferHandleDialog = ({
             Move <span className="text-primary font-bold">@{handleName}</span> to a different public key. This action is permanent.
           </DialogDescription>
         </DialogHeader>
+
 
         <div className="space-y-6 py-4">
           {otherAccounts.length > 0 && (
@@ -209,6 +481,35 @@ export default function ManageHandlePage() {
     addToast(`Payment successful! ${newHandle} is now active.`, "success");
     refreshStatus();
     refreshProfile();
+  };
+
+  const handleSetPrimary = async (handleName: string) => {
+    if (!ndk || !user) return;
+
+    try {
+      const event = new NDKEvent(ndk);
+      event.kind = 4446;
+      event.content = `Set ${handleName} as primary handle`;
+      event.tags = [["handle", handleName]];
+      
+      await event.sign();
+      const res = await fetch("/api/nip05/primary", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ event: event.rawEvent() })
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        addToast(data.message, "success");
+        refreshStatus();
+      } else {
+        addToast(data.error || "Failed to set primary", "error");
+      }
+    } catch (err) {
+      console.error(err);
+      addToast("An error occurred", "error");
+    }
   };
 
   const handleUpdateProfile = async (handleName: string) => {
@@ -336,14 +637,37 @@ export default function ManageHandlePage() {
                           <CardTitle className="text-2xl font-black flex items-center gap-2">
                             <BadgeCheck className="text-primary size-6" />
                             {fullHandle}
+                            {handleDetails.is_primary && (
+                              <Star className="size-5 fill-yellow-500 text-yellow-500" />
+                            )}
                           </CardTitle>
-                          <CardDescription className="text-base font-medium">
-                            Your premium Tell it! identity
-                          </CardDescription>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <CardDescription className="text-base font-medium">
+                              Your premium Tell it! identity
+                            </CardDescription>
+                            <span className="text-muted-foreground opacity-20">•</span>
+                            <RelayEditorDialog 
+                              handleName={handleDetails.name} 
+                              initialRelays={handleDetails.relays} 
+                              onSuccess={refreshStatus} 
+                            />
+                            <span className="text-muted-foreground opacity-20">•</span>
+                            <LightningAddressDialog 
+                              handleName={handleDetails.name} 
+                              initialAddress={handleDetails.lightning_address} 
+                              onSuccess={refreshStatus} 
+                            />
+                          </div>
+                          <div className="mt-2">
+                            <HandleIntegrityBadge handle={handleDetails} onFixed={refreshProfile} />
+                          </div>
+                          {handleDetails.lightning_address && (
+                            <p className="text-[10px] font-bold text-orange-500 flex items-center gap-1 mt-1">
+                              <Zap size={10} className="fill-current" />
+                              Zaps redirected to: {handleDetails.lightning_address}
+                            </p>
+                          )}
                         </div>
-                        <Badge variant={isProfileSynced ? "default" : "outline"} className={isProfileSynced ? "bg-green-500 hover:bg-green-600" : ""}>
-                          {isProfileSynced ? "Synced to Profile" : "Not Synced"}
-                        </Badge>
                       </div>
                     </CardHeader>
                     
@@ -430,6 +754,16 @@ export default function ManageHandlePage() {
                             })()}
                           </div>
                           <div className="flex gap-2">
+                            {!handleDetails.is_primary && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleSetPrimary(handleDetails.name)}
+                                className="rounded-xl font-bold text-muted-foreground hover:text-yellow-500"
+                              >
+                                Set Primary
+                              </Button>
+                            )}
                             {(() => {
                               const expiresAt = new Date(new Date(handleDetails.created_at).setFullYear(new Date(handleDetails.created_at).getFullYear() + 1));
                               const days = Math.ceil((expiresAt.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));

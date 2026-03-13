@@ -10,12 +10,18 @@ export interface HandleStatus {
   isExpiringSoon: boolean;
   created_at: string;
   relays: string[];
+  is_primary: boolean;
+  lightning_address?: string;
+  pubkey: string;
 }
 
 interface HandleDetail {
   name: string;
   created_at: string;
   relays: string[];
+  is_primary?: boolean;
+  lightning_address?: string;
+  pubkey: string;
 }
 
 export interface PendingHandle {
@@ -62,7 +68,10 @@ export function useHandleStatus() {
             daysRemaining,
             isExpiringSoon: daysRemaining <= 30 && daysRemaining > 0,
             created_at: h.created_at,
-            relays: h.relays
+            relays: h.relays,
+            is_primary: !!h.is_primary,
+            lightning_address: h.lightning_address,
+            pubkey: h.pubkey
           };
         });
         

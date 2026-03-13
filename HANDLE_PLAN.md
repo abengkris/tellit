@@ -1,0 +1,22 @@
+# Handle System Enhancements To-Do
+
+- [x] **1. Custom Relay Management**
+    - [x] Schema supports `relays text[]`.
+    - [x] Add relay editor to "Manage Handle" cards.
+    - [x] Update NIP-05 resolver to return user-selected relays.
+- [x] **2. Primary Handle Selection**
+    - [x] Add `is_primary` (boolean) to `handles` table.
+    - [x] Implement "Set as Primary" logic in UI.
+    - [x] Ensure "Sync to Profile" defaults to the primary handle.
+- [x] **3. Lightning Address Integration**
+    - [x] Add `lightning_address` (text) to `handles` table.
+    - [x] Create `/.well-known/lnurlp/[username]` API route.
+    - [x] Add Lightning Address field to "Manage Handle" UI.
+- [x] **4. Handle Verification Worker**
+    - [x] Create a hook/logic to verify if the handle is correctly set in user's Nostr metadata.
+    - [x] Display "Broken Link" warning if metadata doesn't match DB owner.
+- [x] **5. Verified Directory**
+    - [x] Create a public `/verified` page.
+    - [x] Implement discovery API to fetch active handles.
+- [ ] **6. Conflict/Refund Management**
+    - [ ] Implement a basic dashboard or logging for registrations with `conflict` status.

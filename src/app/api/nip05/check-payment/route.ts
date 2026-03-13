@@ -59,7 +59,7 @@ export async function GET(req: NextRequest) {
           
           return NextResponse.json({ 
             status: 'ERROR', 
-            error: 'Handle was claimed by someone else just before your payment was processed. Please contact support for a refund.' 
+            error: `Handle was claimed by someone else just before your payment was processed. Please contact support with your payment hash: ${hash}` 
           });
         }
       }
