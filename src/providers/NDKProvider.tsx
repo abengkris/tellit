@@ -271,7 +271,7 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
       console.log("[NDKProvider] Session state changed:", !!state.activePubkey);
       
       // Update accounts list
-      const pubkeys = Array.from(sessionManager.sessions.keys());
+      const pubkeys = Array.from(sessionManager.getSessions().keys());
       depsRef.current.setAccounts(pubkeys);
 
       if (state.activePubkey) {

@@ -131,7 +131,7 @@ export const useAuthStore = create<AuthState>()(
       switchAccount: async (pubkey, sessions) => {
         set({ isLoading: true });
         try {
-          await sessions.setActive(pubkey);
+          await sessions.switchTo(pubkey);
           // The NDKProvider's session subscription will handle updating the user and login state
           set({ isLoading: false });
         } catch (error) {
@@ -142,12 +142,21 @@ export const useAuthStore = create<AuthState>()(
       },
 
       removeAccount: (pubkey, sessions) => {
-        sessions.removeSession(pubkey);
+        sessions.logout(pubkey);
         const newAccounts = get().accounts.filter(a => a !== pubkey);
         
         if (get().publicKey === pubkey) {
-          // If we're removing the active account, log out
-          get().logout(sessions);
+          // If we're removing the active account, it's already handled by sessions.logout(pubkey)
+          // but we still want to reset our local state
+          resetWoT();
+          useWalletStore.getState().resetWallet();
+          set({ 
+            user: null, 
+            publicKey: null, 
+            privateKey: null, 
+            isLoggedIn: false, 
+            loginType: 'none' 
+          });
         }
         
         set({ accounts: newAccounts });
@@ -172,9 +181,8 @@ export const useAuthStore = create<AuthState>()(
         resetWoT();
         useWalletStore.getState().resetWallet();
         if (sessions) {
-          const pubkeys = Array.from(sessions.sessions.keys());
-          pubkeys.forEach(pk => sessions.removeSession(pk));
-          sessions.logout();
+          const pubkeys = Array.from(sessions.getSessions().keys());
+          pubkeys.forEach(pk => sessions.logout(pk));
         }
         set({ 
           user: null, 
