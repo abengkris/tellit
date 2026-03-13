@@ -114,6 +114,7 @@ export const AccountSwitcher = () => {
         align="start" 
         side="top" 
         className="w-64 p-2 rounded-2xl shadow-2xl border-accent/50 mb-2"
+        onCloseAutoFocus={(e) => e.preventDefault()}
       >
         <DropdownMenuLabel className="px-3 py-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
           Your Accounts
