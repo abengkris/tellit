@@ -34,14 +34,44 @@ export async function GET(req: NextRequest) {
     const blinkStatus = await checkBlinkInvoiceStatus(hash);
 
     if (blinkStatus === 'PAID') {
-      // 4. Activate Handle: Update or insert into 'handles' table
+      // 4. Double check handle availability/ownership before activating
+      // This prevents "overwriting" if someone else paid for the same name while this invoice was pending.
+      const { data: existingHandle } = await supabase
+        .from('handles')
+        .select('pubkey, created_at')
+        .eq('name', registration.name.toLowerCase())
+        .single();
+
+      if (existingHandle) {
+        const expiresAt = new Date(new Date(existingHandle.created_at).setFullYear(new Date(existingHandle.created_at).getFullYear() + 1));
+        const gracePeriodEnd = new Date(expiresAt.getTime() + (30 * 24 * 60 * 60 * 1000));
+        const now = new Date();
+
+        // If it's owned by someone else AND not released yet
+        if (existingHandle.pubkey !== registration.pubkey && now < gracePeriodEnd) {
+          // This is a rare edge case where two people paid for the same handle.
+          // The first one to have their payment checked by the server wins.
+          // We mark the registration as 'conflict' so admin can handle refund.
+          await supabase
+            .from('registrations')
+            .update({ status: 'conflict' })
+            .eq('payment_hash', hash);
+          
+          return NextResponse.json({ 
+            status: 'ERROR', 
+            error: 'Handle was claimed by someone else just before your payment was processed. Please contact support for a refund.' 
+          });
+        }
+      }
+
+      // 5. Activate/Renew Handle
       const { error: activateError } = await supabase
         .from('handles')
         .upsert({
           name: registration.name,
           pubkey: registration.pubkey,
           relays: ["wss://relay.damus.io", "wss://nos.lol"],
-          created_at: new Date().toISOString() // Refresh the 1-year period
+          created_at: new Date().toISOString()
         }, { onConflict: 'name' });
 
       if (activateError) {
