@@ -65,12 +65,13 @@ export async function GET(req: NextRequest) {
       }
 
       // 5. Activate/Renew Handle
+      const defaultRelays = ["wss://relay.damus.io", "wss://nos.lol"];
       const { error: activateError } = await supabase
         .from('handles')
         .upsert({
           name: registration.name,
           pubkey: registration.pubkey,
-          relays: ["wss://relay.damus.io", "wss://nos.lol"],
+          relays: (registration.relays && registration.relays.length > 0) ? registration.relays : defaultRelays,
           created_at: new Date().toISOString()
         }, { onConflict: 'name' });
 

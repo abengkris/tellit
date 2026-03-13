@@ -83,7 +83,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { name, pubkey } = body;
+    const { name, pubkey, relays } = body;
 
     if (!name || !pubkey) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -132,11 +132,13 @@ export async function POST(req: NextRequest) {
     }
 
     // 3. Save pending registration to Supabase
+    const defaultRelays = ["wss://relay.damus.io", "wss://nos.lol"];
     const { error: regError } = await supabase
       .from('registrations')
       .insert({
         name: name.toLowerCase(),
         pubkey: pubkey,
+        relays: (relays && relays.length > 0) ? relays : defaultRelays,
         payment_hash: invoice.paymentHash,
         payment_request: invoice.paymentRequest,
         amount: price,

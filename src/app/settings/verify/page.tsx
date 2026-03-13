@@ -13,6 +13,7 @@ import { validateUsername } from "@/lib/nip05";
 import { useDebounce } from "use-debounce";
 import { updateProfileNIP05 } from "@/lib/actions/profile";
 import { LNPaymentModal } from "@/components/common/LNPaymentModal";
+import { useRelayList } from "@/hooks/useRelayList";
 
 export default function VerifyPage() {
   const { user, isLoggedIn } = useAuthStore();
@@ -21,6 +22,7 @@ export default function VerifyPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const renewHandle = searchParams.get("renew");
+  const { relays: userRelays } = useRelayList(user?.pubkey);
   
   const [handle, setHandle] = useState(renewHandle || "");
   const [debouncedHandle] = useDebounce(handle, 500);
@@ -106,7 +108,7 @@ export default function VerifyPage() {
         body: JSON.stringify({
           name: handle,
           pubkey: user.pubkey,
-          relays: ["wss://relay.damus.io", "wss://nos.lol"] 
+          relays: userRelays.length > 0 ? userRelays.map(r => r.url) : ["wss://relay.damus.io", "wss://nos.lol"] 
         })
       });
 
