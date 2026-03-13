@@ -8,6 +8,8 @@ export interface HandleStatus {
   expiresAt: Date;
   daysRemaining: number;
   isExpiringSoon: boolean;
+  created_at: string;
+  relays: string[];
 }
 
 interface HandleDetail {
@@ -58,7 +60,9 @@ export function useHandleStatus() {
             registeredAt,
             expiresAt,
             daysRemaining,
-            isExpiringSoon: daysRemaining <= 30 && daysRemaining > 0
+            isExpiringSoon: daysRemaining <= 30 && daysRemaining > 0,
+            created_at: h.created_at,
+            relays: h.relays
           };
         });
         
