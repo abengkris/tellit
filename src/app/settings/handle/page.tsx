@@ -29,6 +29,17 @@ import {
   DialogTitle,
   DialogTrigger
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { NDKEvent } from "@nostr-dev-kit/ndk";
 import { Avatar } from "@/components/common/Avatar";
@@ -310,6 +321,90 @@ const RelayEditorDialog = ({
   );
 };
 
+const CancelRegistrationDialog = ({ 
+  handleName, 
+  paymentHash,
+  onSuccess 
+}: { 
+  handleName: string; 
+  paymentHash: string;
+  onSuccess: () => void;
+}) => {
+  const { user } = useAuthStore();
+  const { ndk } = useNDK();
+  const { addToast } = useUIStore();
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleCancel = async () => {
+    if (!ndk || !user) return;
+
+    setIsDeleting(true);
+    try {
+      const event = new NDKEvent(ndk);
+      event.kind = 4448;
+      event.content = `Cancel registration ${paymentHash}`;
+      event.tags = [["payment_hash", paymentHash]];
+      await event.sign();
+
+      const res = await fetch("/api/nip05/register", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ event: event.rawEvent() })
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        addToast("Registration cancelled", "success");
+        onSuccess();
+      } else {
+        addToast(data.error || "Failed to cancel", "error");
+      }
+    } catch (err) {
+      console.error(err);
+      addToast("An error occurred", "error");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  return (
+    <AlertDialog>
+      <AlertDialogTrigger asChild>
+        <Button 
+          size="sm"
+          variant="ghost"
+          className="rounded-xl font-bold text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+        >
+          Cancel
+        </Button>
+      </AlertDialogTrigger>
+      <AlertDialogContent className="rounded-3xl border-none shadow-2xl">
+        <AlertDialogHeader>
+          <AlertDialogTitle className="text-2xl font-black">Cancel Registration?</AlertDialogTitle>
+          <AlertDialogDescription className="font-medium">
+            Are you sure you want to cancel your registration for <span className="text-primary font-bold">@{handleName}</span>? 
+            This will release the handle for others to register.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+          <AlertDialogCancel className="rounded-2xl font-bold h-12">No, Keep it</AlertDialogCancel>
+          <AlertDialogAction 
+            onClick={(e) => {
+              e.preventDefault();
+              handleCancel();
+            }}
+            disabled={isDeleting}
+            className="rounded-2xl font-black h-12 bg-destructive hover:bg-destructive/90 text-white"
+          >
+            {isDeleting ? <Loader2 className="size-4 animate-spin mr-2" /> : <Trash2 size={16} className="mr-2" />}
+            Yes, Cancel
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+};
+
 const TransferHandleDialog = ({ 
   handleName, 
   onSuccess 
@@ -542,36 +637,6 @@ export default function ManageHandlePage() {
     }
   };
 
-  const handleCancelRegistration = async (hash: string) => {
-    if (!ndk || !user) return;
-    if (!confirm("Are you sure you want to cancel this registration?")) return;
-
-    try {
-      const event = new NDKEvent(ndk);
-      event.kind = 4448;
-      event.content = `Cancel registration ${hash}`;
-      event.tags = [["payment_hash", hash]];
-      await event.sign();
-
-      const res = await fetch("/api/nip05/register", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ event: event.rawEvent() })
-      });
-
-      const data = await res.json();
-      if (data.success) {
-        addToast("Registration cancelled", "success");
-        refreshStatus();
-      } else {
-        addToast(data.error || "Failed to cancel", "error");
-      }
-    } catch (err) {
-      console.error(err);
-      addToast("An error occurred", "error");
-    }
-  };
-
   const handleRegenerateInvoice = async (hash: string) => {
     if (!ndk || !user) return;
 
@@ -679,14 +744,11 @@ export default function ManageHandlePage() {
                       {ph.amount.toLocaleString()} <span className="text-muted-foreground text-xs text-nowrap">Sats</span>
                     </div>
                     <div className="flex gap-2">
-                      <Button 
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => handleCancelRegistration(ph.payment_hash)}
-                        className="rounded-xl font-bold text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                      >
-                        Cancel
-                      </Button>
+                      <CancelRegistrationDialog 
+                        handleName={ph.name} 
+                        paymentHash={ph.payment_hash} 
+                        onSuccess={refreshStatus} 
+                      />
                       {ph.isExpired ? (
                         <Button 
                           size="sm"
