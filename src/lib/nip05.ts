@@ -33,7 +33,7 @@ export const RESERVED_USERNAMES = new Set([
  */
 export function validateUsername(name: string): { valid: boolean; error?: string } {
   // Check length
-  if (name.length < 3) return { valid: false, error: 'Too short (min 3 characters)' };
+  if (name.length < 1) return { valid: false, error: 'Too short (min 1 characters)' };
   if (name.length > 20) return { valid: false, error: 'Too long (max 20 characters)' };
 
   // Alphanumeric + underscores only
@@ -42,10 +42,37 @@ export function validateUsername(name: string): { valid: boolean; error?: string
     return { valid: false, error: 'Only lowercase letters, numbers, and underscores allowed' };
   }
 
-  // Check reserved
-  if (RESERVED_USERNAMES.has(name)) {
-    return { valid: false, error: 'This username is reserved' };
-  }
+  // We no longer block reserved names entirely, we just charge more for them
+  // unless they are critically restricted (to be defined if needed)
 
   return { valid: true };
+}
+
+/**
+ * Pricing tiers in Satoshi
+ */
+export const PRICING = {
+  STANDARD: 10000,
+  PREMIUM: 100000,
+  ULTRA: 500000
+};
+
+/**
+ * Calculates the price for a handle based on its name.
+ */
+export function calculateHandlePrice(name: string): number {
+  const normalized = name.toLowerCase();
+
+  // 1. Reserved/Ultra Tier (1 character, or specific reserved words)
+  if (normalized.length === 1 || RESERVED_USERNAMES.has(normalized)) {
+    return PRICING.ULTRA;
+  }
+
+  // 2. Premium Tier (2 to 3 characters)
+  if (normalized.length >= 2 && normalized.length <= 3) {
+    return PRICING.PREMIUM;
+  }
+
+  // 3. Standard Tier (4 or more characters)
+  return PRICING.STANDARD;
 }

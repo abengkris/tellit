@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase';
-import { validateUsername } from '@/lib/nip05';
+import { validateUsername, calculateHandlePrice } from '@/lib/nip05';
 import { createBlinkInvoice } from '@/lib/blink';
-
-const REGISTRATION_PRICE_SATS = 21000;
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -51,7 +49,10 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ available: false, error: 'Database error occurred' });
     }
 
-    return NextResponse.json({ available: !data });
+    return NextResponse.json({ 
+      available: !data,
+      price: calculateHandlePrice(name)
+    });
   } catch (err) {
     console.error('[NIP-05 Register Availability] Catch Error:', err);
     const message = err instanceof Error ? err.message : 'Service temporarily limited';
@@ -91,8 +92,9 @@ export async function POST(req: NextRequest) {
     }
 
     // 2. Generate Lightning Invoice via Blink
+    const price = calculateHandlePrice(name);
     const memo = `NIP-05: ${name}@tellit.id`;
-    const invoice = await createBlinkInvoice(REGISTRATION_PRICE_SATS, memo);
+    const invoice = await createBlinkInvoice(price, memo);
 
     if (!invoice || !invoice.paymentRequest) {
       throw new Error("Failed to generate Lightning invoice via Blink");
@@ -106,7 +108,7 @@ export async function POST(req: NextRequest) {
         pubkey: pubkey,
         payment_hash: invoice.paymentHash,
         payment_request: invoice.paymentRequest,
-        amount: REGISTRATION_PRICE_SATS,
+        amount: price,
         status: 'pending'
       });
 
@@ -122,7 +124,7 @@ export async function POST(req: NextRequest) {
       success: true, 
       paymentRequest: invoice.paymentRequest,
       paymentHash: invoice.paymentHash,
-      amount: REGISTRATION_PRICE_SATS
+      amount: price
     });
 
   } catch (err: unknown) {

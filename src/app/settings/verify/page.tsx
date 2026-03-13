@@ -24,6 +24,7 @@ export default function VerifyPage() {
   const [debouncedHandle] = useDebounce(handle, 500);
   const [isChecking, setIsChecking] = useState(false);
   const [isAvailable, setIsAvailable] = useState<boolean | null>(null);
+  const [price, setPrice] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isRegistering, setIsRegistering] = useState(false);
   const [registeredHandle, setRegisteredHandle] = useState<string | null>(null);
@@ -83,6 +84,7 @@ export default function VerifyPage() {
       const res = await fetch(`/api/nip05/register?name=${name}`);
       const data = await res.json();
       setIsAvailable(data.available);
+      setPrice(data.price);
       if (data.error) setError(data.error);
     } catch (err) {
       console.error(err);
@@ -292,14 +294,19 @@ export default function VerifyPage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
                 <div className="p-4 bg-background/50 rounded-2xl border border-primary/10 space-y-1">
-                  <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Premium Benefit</p>
-                  <p className="font-bold text-sm">Professional Identity</p>
-                  <p className="text-xs text-muted-foreground">Stand out with a short, memorable handle.</p>
+                  <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Pricing Tiers</p>
+                  <p className="font-bold text-sm text-primary">Standard (4+ chars)</p>
+                  <p className="text-xs text-muted-foreground">10,000 Sats / year</p>
                 </div>
                 <div className="p-4 bg-background/50 rounded-2xl border border-primary/10 space-y-1">
-                  <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Premium Benefit</p>
-                  <p className="font-bold text-sm">Global Discovery</p>
-                  <p className="text-xs text-muted-foreground">Easily found across all Nostr clients.</p>
+                  <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Pricing Tiers</p>
+                  <p className="font-bold text-sm text-purple-500">Premium (2-3 chars)</p>
+                  <p className="text-xs text-muted-foreground">100,000 Sats / year</p>
+                </div>
+                <div className="p-4 bg-background/50 rounded-2xl border border-primary/10 space-y-1 sm:col-span-2">
+                  <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Pricing Tiers</p>
+                  <p className="font-bold text-sm text-yellow-500">Ultra (1 char & Reserved)</p>
+                  <p className="text-xs text-muted-foreground">500,000 Sats / year</p>
                 </div>
               </div>
             </div>
@@ -308,14 +315,13 @@ export default function VerifyPage() {
           <CardFooter className="bg-primary/5 border-t border-primary/10 p-6 flex flex-col gap-4">
             <div className="flex items-center justify-between w-full">
               <div>
-                <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">One-time payment</p>
+                <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Yearly payment</p>
                 <div className="flex items-center gap-1">
                   <Zap className="text-yellow-500 size-5 fill-current" />
-                  <span className="text-2xl font-black">21,000</span>
+                  <span className="text-2xl font-black">{price ? price.toLocaleString() : "---"}</span>
                   <span className="text-sm font-bold text-muted-foreground">Sats</span>
                 </div>
               </div>
-              
               <Button
                 size="lg"
                 disabled={!isAvailable || !!error || isRegistering}
@@ -340,8 +346,12 @@ export default function VerifyPage() {
               <p className="text-xs text-muted-foreground">It&apos;s a standard that allows Nostr users to map their public keys to a human-readable identifier, similar to an email address.</p>
             </div>
             <div>
-              <p className="font-bold text-sm">Why 21,000 Sats?</p>
-              <p className="text-xs text-muted-foreground">This helps prevent squatting and supports the development of the Tell it! platform.</p>
+              <p className="font-bold text-sm">How long does verification last?</p>
+              <p className="text-xs text-muted-foreground">Verification is active for one year. You will need to renew it annually to maintain ownership of your handle.</p>
+            </div>
+            <div>
+              <p className="font-bold text-sm">Why the tiered pricing?</p>
+              <p className="text-xs text-muted-foreground">Short handles and common words are highly desirable. Tiered pricing helps ensure fair access and prevents mass squatting of premium identities.</p>
             </div>
           </div>
         </div>
