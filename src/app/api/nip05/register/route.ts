@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase';
 import { validateUsername, calculateHandlePrice } from '@/lib/nip05';
 import { createBlinkInvoice } from '@/lib/blink';
+import { verifyEvent } from 'nostr-tools';
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -23,12 +24,12 @@ export async function GET(req: NextRequest) {
         .select('name, created_at, relays, lightning_address, is_primary')
         .eq('pubkey', pubkey);
       
-      // Fetch pending registrations (unpaid)
+      // Fetch pending or expired registrations (unpaid)
       const { data: pending } = await supabase
         .from('registrations')
-        .select('name, amount, payment_request, payment_hash, created_at')
+        .select('name, amount, payment_request, payment_hash, created_at, status')
         .eq('pubkey', pubkey)
-        .eq('status', 'pending');
+        .in('status', ['pending', 'expired']);
       
       return NextResponse.json({ 
         existingHandle: handles && handles.length > 0 ? `${handles[0].name}@tellit.id` : null,
@@ -164,5 +165,130 @@ export async function POST(req: NextRequest) {
     const message = err instanceof Error ? err.message : 'Internal server error';
     console.error('[NIP-05 Register] Error:', err);
     return NextResponse.json({ error: message }, { status: 500 });
+  }
+}
+
+/**
+ * Cancel a pending registration.
+ * Kind: 4448
+ * Tags: [["payment_hash", "..."]]
+ */
+export async function DELETE(req: NextRequest) {
+  try {
+    const body = await req.json();
+    const { event } = body;
+
+    if (!event || !verifyEvent(event)) {
+      return NextResponse.json({ error: 'Invalid or missing signed event' }, { status: 400 });
+    }
+
+    const hashTag = event.tags.find((t: string[]) => t[0] === 'payment_hash');
+    if (!hashTag) {
+      return NextResponse.json({ error: 'Missing payment_hash tag' }, { status: 400 });
+    }
+
+    const hash = hashTag[1];
+    const pubkey = event.pubkey;
+
+    const supabase = getSupabaseAdmin();
+
+    // 1. Verify ownership and status
+    const { data: registration } = await supabase
+      .from('registrations')
+      .select('pubkey, status')
+      .eq('payment_hash', hash)
+      .single();
+
+    if (!registration || registration.pubkey !== pubkey) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    }
+
+    if (registration.status === 'paid') {
+      return NextResponse.json({ error: 'Cannot cancel a paid registration' }, { status: 400 });
+    }
+
+    // 2. Delete the record
+    const { error: deleteError } = await supabase
+      .from('registrations')
+      .delete()
+      .eq('payment_hash', hash);
+
+    if (deleteError) throw deleteError;
+
+    return NextResponse.json({ success: true, message: 'Registration cancelled' });
+
+  } catch (err) {
+    console.error('[NIP-05 Register DELETE] Error:', err);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
+/**
+ * Regenerate an invoice for an expired pending registration.
+ * Kind: 4449
+ * Tags: [["payment_hash", "old_hash"]]
+ */
+export async function PATCH(req: NextRequest) {
+  try {
+    const body = await req.json();
+    const { event } = body;
+
+    if (!event || !verifyEvent(event)) {
+      return NextResponse.json({ error: 'Invalid or missing signed event' }, { status: 400 });
+    }
+
+    const hashTag = event.tags.find((t: string[]) => t[0] === 'payment_hash');
+    if (!hashTag) {
+      return NextResponse.json({ error: 'Missing payment_hash tag' }, { status: 400 });
+    }
+
+    const oldHash = hashTag[1];
+    const pubkey = event.pubkey;
+
+    const supabase = getSupabaseAdmin();
+
+    // 1. Fetch old registration
+    const { data: registration } = await supabase
+      .from('registrations')
+      .select('*')
+      .eq('payment_hash', oldHash)
+      .single();
+
+    if (!registration || registration.pubkey !== pubkey) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    }
+
+    // 2. Generate New Invoice
+    const price = calculateHandlePrice(registration.name);
+    const memo = `NIP-05 (Renew Invoice): ${registration.name}@tellit.id`;
+    const invoice = await createBlinkInvoice(price, memo);
+
+    if (!invoice || !invoice.paymentRequest) {
+      throw new Error("Failed to generate new Lightning invoice");
+    }
+
+    // 3. Update record with new invoice and reset status to pending
+    const { error: updateError } = await supabase
+      .from('registrations')
+      .update({
+        payment_hash: invoice.paymentHash,
+        payment_request: invoice.paymentRequest,
+        status: 'pending',
+        created_at: new Date().toISOString()
+      })
+      .eq('payment_hash', oldHash);
+
+    if (updateError) throw updateError;
+
+    return NextResponse.json({ 
+      success: true, 
+      paymentRequest: invoice.paymentRequest,
+      paymentHash: invoice.paymentHash,
+      amount: price
+    });
+
+  } catch (err) {
+    console.error('[NIP-05 Register PATCH] Error:', err);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

@@ -30,6 +30,16 @@ export interface PendingHandle {
   payment_request: string;
   payment_hash: string;
   created_at: string;
+  isExpired: boolean;
+}
+
+interface PendingHandleDetail {
+  name: string;
+  amount: number;
+  payment_request: string;
+  payment_hash: string;
+  created_at: string;
+  status: string;
 }
 
 /**
@@ -79,7 +89,19 @@ export function useHandleStatus() {
       }
 
       if (data.pendingRegistrations) {
-        setPendingHandles(data.pendingRegistrations);
+        setPendingHandles(data.pendingRegistrations.map((ph: PendingHandleDetail) => {
+          const createdAt = new Date(ph.created_at);
+          const now = new Date();
+          const isExpired = ph.status === 'expired' || (now.getTime() - createdAt.getTime() > 24 * 60 * 60 * 1000);
+          return {
+            name: ph.name,
+            amount: ph.amount,
+            payment_request: ph.payment_request,
+            payment_hash: ph.payment_hash,
+            created_at: ph.created_at,
+            isExpired
+          };
+        }));
       } else {
         setPendingHandles([]);
       }

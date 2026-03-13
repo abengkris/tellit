@@ -542,6 +542,65 @@ export default function ManageHandlePage() {
     }
   };
 
+  const handleCancelRegistration = async (hash: string) => {
+    if (!ndk || !user) return;
+    if (!confirm("Are you sure you want to cancel this registration?")) return;
+
+    try {
+      const event = new NDKEvent(ndk);
+      event.kind = 4448;
+      event.content = `Cancel registration ${hash}`;
+      event.tags = [["payment_hash", hash]];
+      await event.sign();
+
+      const res = await fetch("/api/nip05/register", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ event: event.rawEvent() })
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        addToast("Registration cancelled", "success");
+        refreshStatus();
+      } else {
+        addToast(data.error || "Failed to cancel", "error");
+      }
+    } catch (err) {
+      console.error(err);
+      addToast("An error occurred", "error");
+    }
+  };
+
+  const handleRegenerateInvoice = async (hash: string) => {
+    if (!ndk || !user) return;
+
+    try {
+      const event = new NDKEvent(ndk);
+      event.kind = 4449;
+      event.content = `Regenerate invoice for ${hash}`;
+      event.tags = [["payment_hash", hash]];
+      await event.sign();
+
+      const res = await fetch("/api/nip05/register", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ event: event.rawEvent() })
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        addToast("New invoice generated!", "success");
+        refreshStatus();
+      } else {
+        addToast(data.error || "Failed to regenerate", "error");
+      }
+    } catch (err) {
+      console.error(err);
+      addToast("An error occurred", "error");
+    }
+  };
+
   if (loading && activeHandles.length === 0 && pendingHandles.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh]">
@@ -588,37 +647,68 @@ export default function ManageHandlePage() {
             </h2>
             <div className="grid gap-4">
               {pendingHandles.map((ph) => (
-                <Card key={ph.payment_hash} className="border-2 border-dashed border-blue-500/30 bg-blue-500/5 overflow-hidden">
+                <Card key={ph.payment_hash} className={cn(
+                  "border-2 border-dashed overflow-hidden",
+                  ph.isExpired ? "border-destructive/30 bg-destructive/5" : "border-blue-500/30 bg-blue-500/5"
+                )}>
                   <CardHeader className="pb-3">
                     <div className="flex justify-between items-start">
                       <div className="space-y-1">
                         <CardTitle className="text-xl font-black flex items-center gap-2">
-                          <Zap className="text-blue-500 size-5 fill-current" />
+                          <Zap className={cn("size-5 fill-current", ph.isExpired ? "text-destructive" : "text-blue-500")} />
                           {ph.name}@tellit.id
                         </CardTitle>
                         <CardDescription className="text-xs font-medium">
-                          Unpaid registration. Secure it before someone else does!
+                          {ph.isExpired 
+                            ? "Invoice has expired. Regenerate to pay." 
+                            : "Unpaid registration. Secure it before someone else does!"
+                          }
                         </CardDescription>
                       </div>
-                      <Badge variant="outline" className="text-blue-500 border-blue-500/20 bg-blue-500/10">
-                        Pending
+                      <Badge variant="outline" className={cn(
+                        ph.isExpired 
+                          ? "text-destructive border-destructive/20 bg-destructive/10" 
+                          : "text-blue-500 border-blue-500/20 bg-blue-500/10"
+                      )}>
+                        {ph.isExpired ? "Expired" : "Pending"}
                       </Badge>
                     </div>
                   </CardHeader>
-                  <CardFooter className="pt-0 pb-4 px-6 flex justify-between items-center">
+                  <CardFooter className="pt-0 pb-4 px-6 flex justify-between items-center gap-4">
                     <div className="text-sm font-bold">
                       {ph.amount.toLocaleString()} <span className="text-muted-foreground text-xs text-nowrap">Sats</span>
                     </div>
-                    <Button 
-                      size="sm"
-                      onClick={() => {
-                        setSelectedPending(ph);
-                        setShowPaymentModal(true);
-                      }}
-                      className="rounded-xl font-black bg-blue-500 hover:bg-blue-600 text-white shadow-lg shadow-blue-500/20"
-                    >
-                      Pay Now
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button 
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleCancelRegistration(ph.payment_hash)}
+                        className="rounded-xl font-bold text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                      >
+                        Cancel
+                      </Button>
+                      {ph.isExpired ? (
+                        <Button 
+                          size="sm"
+                          onClick={() => handleRegenerateInvoice(ph.payment_hash)}
+                          className="rounded-xl font-black bg-orange-500 hover:bg-orange-600 text-white shadow-lg shadow-orange-500/20"
+                        >
+                          <RefreshCw className="size-3 mr-1" />
+                          Regenerate
+                        </Button>
+                      ) : (
+                        <Button 
+                          size="sm"
+                          onClick={() => {
+                            setSelectedPending(ph);
+                            setShowPaymentModal(true);
+                          }}
+                          className="rounded-xl font-black bg-blue-500 hover:bg-blue-600 text-white shadow-lg shadow-blue-500/20"
+                        >
+                          Pay Now
+                        </Button>
+                      )}
+                    </div>
                   </CardFooter>
                 </Card>
               ))}
