@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useAuthStore } from "@/store/auth";
 import { useNDK } from "@/hooks/useNDK";
 import { useUIStore } from "@/store/ui";
@@ -14,12 +14,165 @@ import { updateProfileNIP05 } from "@/lib/actions/profile";
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { nip19 } from "nostr-tools";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogDescription, 
+  DialogFooter, 
+  DialogHeader, 
+  DialogTitle,
+  DialogTrigger
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { NDKEvent } from "@nostr-dev-kit/ndk";
+import { Avatar } from "@/components/common/Avatar";
+import { shortenPubkey } from "@/lib/utils/nip19";
 
 interface HandleDetails {
   name: string;
   created_at: string;
   relays: string[];
 }
+
+const TransferHandleDialog = ({ 
+  handleName, 
+  onSuccess 
+}: { 
+  handleName: string; 
+  onSuccess: () => void;
+}) => {
+  const { user, accounts } = useAuthStore();
+  const { ndk } = useNDK();
+  const { addToast } = useUIStore();
+  const [targetPubkey, setTargetPubkey] = useState("");
+  const [isTransferring, setIsTransferring] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
+
+  const otherAccounts = accounts.filter(a => a !== user?.pubkey);
+
+  const handleTransfer = async (pubkeyToUse: string) => {
+    if (!ndk || !user) return;
+
+    setIsTransferring(true);
+    try {
+      // 1. Create a signed event for transfer authorization
+      const event = new NDKEvent(ndk);
+      event.kind = 4444; // Custom kind for handle transfer
+      event.content = `Transfer handle ${handleName} to ${pubkeyToUse}`;
+      event.tags = [
+        ["handle", handleName],
+        ["new_pubkey", pubkeyToUse]
+      ];
+      
+      await event.sign();
+      const signedEvent = event.rawEvent();
+
+      // 2. Call the transfer API
+      const res = await fetch("/api/nip05/transfer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ event: signedEvent })
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        addToast(data.message, "success");
+        setIsOpen(false);
+        onSuccess();
+      } else {
+        addToast(data.error || "Transfer failed", "error");
+      }
+    } catch (err) {
+      console.error(err);
+      addToast("An error occurred during transfer", "error");
+    } finally {
+      setIsTransferring(false);
+    }
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogTrigger asChild>
+        <Button variant="outline" className="rounded-xl font-bold border-primary/20 text-primary hover:bg-primary/5">
+          Transfer Handle
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-md rounded-3xl border-none shadow-2xl">
+        <DialogHeader>
+          <DialogTitle className="text-2xl font-black">Transfer Handle</DialogTitle>
+          <DialogDescription className="font-medium">
+            Move <span className="text-primary font-bold">@{handleName}</span> to a different public key. This action is permanent.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-6 py-4">
+          {otherAccounts.length > 0 && (
+            <div className="space-y-3">
+              <label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest px-1">
+                Transfer to your other accounts
+              </label>
+              <div className="grid gap-2">
+                {otherAccounts.map(pk => (
+                  <Button
+                    key={pk}
+                    variant="outline"
+                    className="h-14 justify-start gap-3 rounded-2xl border-muted bg-muted/20 hover:bg-primary/5 hover:border-primary/30 transition-all group"
+                    onClick={() => handleTransfer(pk)}
+                    disabled={isTransferring}
+                  >
+                    <Avatar pubkey={pk} size={32} />
+                    <div className="flex flex-col items-start min-w-0">
+                      <span className="text-sm font-bold truncate w-full">{shortenPubkey(pk)}</span>
+                      <span className="text-[10px] text-muted-foreground uppercase font-black">Click to transfer</span>
+                    </div>
+                  </Button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="space-y-3">
+            <label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest px-1">
+              Transfer to manual Pubkey (Hex)
+            </label>
+            <div className="flex gap-2">
+              <Input
+                placeholder="npub... or hex"
+                value={targetPubkey}
+                onChange={(e) => setTargetPubkey(e.target.value)}
+                className="h-12 rounded-xl bg-muted/30 border-none font-mono text-xs"
+              />
+              <Button 
+                onClick={() => {
+                  let pk = targetPubkey;
+                  if (pk.startsWith('npub')) {
+                    try {
+                      pk = nip19.decode(pk).data as string;
+                    } catch {
+                      addToast("Invalid npub", "error");
+                      return;
+                    }
+                  }
+                  handleTransfer(pk);
+                }}
+                disabled={!targetPubkey || isTransferring}
+                className="h-12 px-6 rounded-xl font-black shrink-0"
+              >
+                Go
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        <DialogFooter className="sm:justify-start">
+          <p className="text-[10px] text-muted-foreground italic font-medium">
+            You will need to sign this transaction with your current key.
+          </p>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
 
 export default function ManageHandlePage() {
   const { user, isLoggedIn } = useAuthStore();
@@ -32,32 +185,32 @@ export default function ManageHandlePage() {
   const [loading, setLoading] = useState(true);
   const [updatingHandle, setUpdatingHandle] = useState<string | null>(null);
 
-  useEffect(() => {
-    async function fetchHandleDetails() {
-      if (!user) return;
-      try {
-        const res = await fetch(`/api/nip05/register?pubkey=${user.pubkey}`);
-        const data = await res.json();
-        if (data.allHandleDetails && data.allHandleDetails.length > 0) {
-          setAllHandles(data.allHandleDetails);
-        } else {
-          // If no handle found, redirect back to verify
-          router.replace("/settings/verify");
-        }
-      } catch (err) {
-        console.error("Failed to fetch handle details:", err);
-        addToast("Failed to load handle details", "error");
-      } finally {
-        setLoading(false);
+  const fetchHandleDetails = useCallback(async () => {
+    if (!user) return;
+    try {
+      const res = await fetch(`/api/nip05/register?pubkey=${user.pubkey}`);
+      const data = await res.json();
+      if (data.allHandleDetails && data.allHandleDetails.length > 0) {
+        setAllHandles(data.allHandleDetails);
+      } else {
+        // If no handle found, redirect back to verify
+        router.replace("/settings/verify");
       }
+    } catch (err) {
+      console.error("Failed to fetch handle details:", err);
+      addToast("Failed to load handle details", "error");
+    } finally {
+      setLoading(false);
     }
+  }, [user, router, addToast]);
 
+  useEffect(() => {
     if (isLoggedIn) {
       fetchHandleDetails();
     } else {
       setLoading(false);
     }
-  }, [isLoggedIn, user, router, addToast]);
+  }, [isLoggedIn, fetchHandleDetails]);
 
   const handleUpdateProfile = async (handleName: string) => {
     if (!ndk) return;
@@ -204,6 +357,14 @@ export default function ManageHandlePage() {
                       tellit.id/{handleDetails.name}
                       <ExternalLink size={14} />
                     </Link>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-4 pt-2 border-t border-border/20">
+                    <div className="flex items-center gap-2">
+                      <span className="text-muted-foreground text-[10px] font-black uppercase tracking-widest">Status</span>
+                      <Badge variant="outline" className="text-green-500 border-green-500/20 bg-green-500/5 text-[10px]">Active</Badge>
+                    </div>
+                    <TransferHandleDialog handleName={handleDetails.name} onSuccess={fetchHandleDetails} />
                   </div>
                 </div>
               </CardFooter>
