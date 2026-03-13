@@ -80,10 +80,11 @@ const LightningAddressDialog = ({
         setIsOpen(false);
         onSuccess();
       } else {
+        console.error("[LightningAddress] API Error:", data);
         addToast(data.error || "Failed to update address", "error");
       }
     } catch (err) {
-      console.error(err);
+      console.error("[LightningAddress] Fetch Error:", err);
       addToast("An error occurred", "error");
     } finally {
       setIsUpdating(false);

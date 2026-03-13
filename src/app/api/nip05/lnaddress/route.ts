@@ -11,26 +11,32 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const { event } = body;
+if (!event) {
+  console.error('[NIP-05 LnAddress] Missing event');
+  return NextResponse.json({ error: 'Missing signed event' }, { status: 400 });
+}
 
-    if (!event) {
-      return NextResponse.json({ error: 'Missing signed event' }, { status: 400 });
-    }
+// 1. Verify the signature
+const isValid = verifyEvent(event);
+if (!isValid) {
+  console.error('[NIP-05 LnAddress] Invalid signature', event.id);
+  return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
+}
 
-    const isValid = verifyEvent(event);
-    if (!isValid) {
-      return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
-    }
 
     const handleTag = event.tags.find((t: string[]) => t[0] === 'handle');
     const lnTag = event.tags.find((t: string[]) => t[0] === 'lightning_address');
 
     if (!handleTag || !lnTag) {
+      console.error('[NIP-05 LnAddress] Missing tags', { handleTag, lnTag });
       return NextResponse.json({ error: 'Missing handle or lightning_address in event tags' }, { status: 400 });
     }
 
     const handleName = handleTag[1];
     const lightningAddress = lnTag[1];
     const pubkey = event.pubkey;
+
+    console.log(`[NIP-05 LnAddress] Attempting update: ${handleName} -> ${lightningAddress} by ${pubkey}`);
 
     const supabase = getSupabaseAdmin();
 
@@ -42,7 +48,12 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (!handle || handle.pubkey !== pubkey) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+      console.error('[NIP-05 LnAddress] Unauthorized', { 
+        handleExists: !!handle, 
+        owner: handle?.pubkey, 
+        requester: pubkey 
+      });
+      return NextResponse.json({ error: 'Unauthorized: You do not own this handle' }, { status: 403 });
     }
 
     // 2. Update the lightning address
@@ -52,9 +63,11 @@ export async function POST(req: NextRequest) {
       .eq('name', handleName.toLowerCase());
 
     if (updateError) {
-      return NextResponse.json({ error: 'Failed to update lightning address' }, { status: 500 });
+      console.error('[NIP-05 LnAddress] DB Update Error:', updateError);
+      return NextResponse.json({ error: `Database update failed: ${updateError.message}` }, { status: 500 });
     }
 
+    console.log(`[NIP-05 LnAddress] Success: ${handleName} updated to ${lightningAddress}`);
     return NextResponse.json({ success: true, message: `Lightning address for ${handleName} updated` });
 
   } catch (err: unknown) {
