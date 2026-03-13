@@ -15,18 +15,20 @@ export async function GET(req: NextRequest) {
     const supabase = getSupabaseAdmin();
     const { data, error } = await supabase
       .from('handles')
-      .select('name, pubkey, relays')
+      .select('name, pubkey, relays, created_at')
       .eq('name', name.toLowerCase())
       .single();
 
-    if (error) {
-      if (error.code === 'PGRST116') { // No rows found
-        return NextResponse.json({ names: {} });
+    if (error || !data) {
+      if (error && error.code !== 'PGRST116') {
+        console.error('[NIP-05 Resolver] DB Error:', error);
       }
-      throw new Error(`Database error: ${error.message}`);
+      return NextResponse.json({ names: {} });
     }
 
-    if (!data) {
+    // Check if handle is expired (1 year limit)
+    const expiresAt = new Date(new Date(data.created_at).setFullYear(new Date(data.created_at).getFullYear() + 1));
+    if (new Date() > expiresAt) {
       return NextResponse.json({ names: {} });
     }
 

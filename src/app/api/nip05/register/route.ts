@@ -40,7 +40,7 @@ export async function GET(req: NextRequest) {
     }
     const { data, error } = await supabase
       .from('handles')
-      .select('name')
+      .select('name, created_at')
       .eq('name', name.toLowerCase())
       .single();
 
@@ -49,8 +49,19 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ available: false, error: 'Database error occurred' });
     }
 
+    let available = !data;
+    
+    // If handle exists, check if it's past grace period
+    if (data) {
+      const expiresAt = new Date(new Date(data.created_at).setFullYear(new Date(data.created_at).getFullYear() + 1));
+      const gracePeriodEnd = new Date(expiresAt.getTime() + (30 * 24 * 60 * 60 * 1000));
+      if (new Date() > gracePeriodEnd) {
+        available = true;
+      }
+    }
+
     return NextResponse.json({ 
-      available: !data,
+      available,
       price: calculateHandlePrice(name)
     });
   } catch (err) {
@@ -77,14 +88,25 @@ export async function POST(req: NextRequest) {
     const supabase = getSupabaseAdmin();
 
     // 2. Check if name is already taken in active handles
-    const { data: existingName, error: checkError } = await supabase
+    const { data: existingHandle, error: checkError } = await supabase
       .from('handles')
-      .select('name')
+      .select('name, pubkey, created_at')
       .eq('name', name.toLowerCase())
       .single();
 
-    if (existingName) {
-      return NextResponse.json({ error: 'Username already taken' }, { status: 409 });
+    if (existingHandle) {
+      const expiresAt = new Date(new Date(existingHandle.created_at).setFullYear(new Date(existingHandle.created_at).getFullYear() + 1));
+      const gracePeriodEnd = new Date(expiresAt.getTime() + (30 * 24 * 60 * 60 * 1000));
+      const now = new Date();
+
+      // Block only if:
+      // 1. It's not owned by the requester AND
+      // 2. It's not past the grace period
+      if (existingHandle.pubkey !== pubkey && now < gracePeriodEnd) {
+        return NextResponse.json({ 
+          error: 'Username already taken and within grace period.' 
+        }, { status: 409 });
+      }
     }
 
     if (checkError && checkError.code !== 'PGRST116') {

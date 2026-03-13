@@ -34,18 +34,18 @@ export async function GET(req: NextRequest) {
     const blinkStatus = await checkBlinkInvoiceStatus(hash);
 
     if (blinkStatus === 'PAID') {
-      // 4. Activate Handle: Move to 'handles' table and update registration status
-      
+      // 4. Activate Handle: Update or insert into 'handles' table
       const { error: activateError } = await supabase
         .from('handles')
-        .insert({
+        .upsert({
           name: registration.name,
           pubkey: registration.pubkey,
-          relays: ["wss://relay.damus.io", "wss://nos.lol"]
-        });
+          relays: ["wss://relay.damus.io", "wss://nos.lol"],
+          created_at: new Date().toISOString() // Refresh the 1-year period
+        }, { onConflict: 'name' });
 
-      if (activateError && activateError.code !== '23505') { // Ignore if already exists
-        throw new Error(`Failed to activate handle: ${activateError.message}`);
+      if (activateError) {
+        throw new Error(`Failed to activate/renew handle: ${activateError.message}`);
       }
 
       const { error: updateError } = await supabase
