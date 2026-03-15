@@ -4,7 +4,7 @@ import { useEffect, useState, useRef, Fragment } from "react";
 import { getNDK } from "@/lib/ndk";
 import { Avatar } from "@/components/common/Avatar";
 import Link from "next/link";
-import { nip19 } from "nostr-tools";
+import { nip19 } from "@nostr-dev-kit/ndk";
 import { shortenPubkey } from "@/lib/utils/nip19";
 import { useLists } from "@/hooks/useLists";
 import { useUIStore } from "@/store/ui";

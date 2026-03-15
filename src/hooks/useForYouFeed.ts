@@ -125,34 +125,51 @@ export function useForYouFeed({
       },
       {
         closeOnEose: false,
+      },
+      {
+        onEvents: async (events) => {
+          const validEvents: NDKEvent[] = [];
+          for (const event of events) {
+            if (seenIds.current.has(event.id)) continue;
+            const ok = await validateEvent(event);
+            if (!ok) continue;
+            seenIds.current.add(event.id);
+            validEvents.push(event);
+          }
+
+          if (validEvents.length > 0) {
+            setRawEvents(prev => {
+              const combined = [...prev, ...validEvents];
+              return combined.filter((v, i, a) => a.findIndex(t => t.id === v.id) === i);
+            });
+          }
+        },
+        onEvent: async (event: NDKEvent) => {
+          if (seenIds.current.has(event.id)) return;
+          
+          const ok = await validateEvent(event);
+          if (!ok) return;
+
+          seenIds.current.add(event.id);
+
+          if (!isInitialLoadDone.current) {
+            setRawEvents(prev => {
+              const combined = [...prev, event];
+              return combined.filter((v, i, a) => a.findIndex(t => t.id === v.id) === i);
+            });
+          } else {
+            bufferRef.current = [event, ...bufferRef.current];
+            setNewCount(bufferRef.current.length);
+          }
+        },
+        onEose: () => {
+          setIsLoading(false);
+          setTimeout(() => {
+            isInitialLoadDone.current = true;
+          }, 1500);
+        }
       }
     );
-
-    sub.on("event", async (event: NDKEvent) => {
-      if (seenIds.current.has(event.id)) return;
-      
-      const ok = await validateEvent(event);
-      if (!ok) return;
-
-      seenIds.current.add(event.id);
-
-      if (!isInitialLoadDone.current) {
-        setRawEvents(prev => {
-          const combined = [...prev, event];
-          return combined.filter((v, i, a) => a.findIndex(t => t.id === v.id) === i);
-        });
-      } else {
-        bufferRef.current = [event, ...bufferRef.current];
-        setNewCount(bufferRef.current.length);
-      }
-    });
-
-    sub.on("eose", () => {
-      setIsLoading(false);
-      setTimeout(() => {
-        isInitialLoadDone.current = true;
-      }, 1500);
-    });
 
     return () => sub.stop();
   }, [ndk, isReady, wotStatus, followingList, wot]); // eslint-disable-line react-hooks/exhaustive-deps

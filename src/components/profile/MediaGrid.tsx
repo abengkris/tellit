@@ -6,7 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Play, FileText, Image as ImageIcon } from "lucide-react";
 import { tokenize, parseImeta } from "@/lib/content/tokenizer";
-import { nip19 } from "nostr-tools";
+import { nip19 } from "@nostr-dev-kit/ndk";
 import { Blurhash } from "react-blurhash";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";

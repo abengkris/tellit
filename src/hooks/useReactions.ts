@@ -82,15 +82,19 @@ export function useReactions(eventId?: string) {
       });
     };
 
-    const sub = ndk.subscribe(filter, { 
-      closeOnEose: true,
-      groupable: true 
-    });
-
-    sub.on("event", handleEvent);
-    sub.on("eose", () => {
-      setReactions(prev => ({ ...prev, loading: false }));
-    });
+    const sub = ndk.subscribe(
+      filter, 
+      { 
+        closeOnEose: true,
+        groupable: true 
+      },
+      {
+        onEvent: handleEvent,
+        onEose: () => {
+          setReactions(prev => ({ ...prev, loading: false }));
+        }
+      }
+    );
 
     return () => sub.stop();
   }, [ndk, isReady, eventId]);

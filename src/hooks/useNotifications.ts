@@ -110,6 +110,19 @@ export function useNotifications() {
       { 
         closeOnEose: false, 
         groupableDelay: 200,
+      },
+      {
+        onEvents: (events) => {
+          const processed = events
+            .map(e => processEvent(e))
+            .filter((e): e is TellItNotification => e !== null);
+          
+          if (processed.length > 0) {
+            setNotifications(processed.sort((a, b) => (b.created_at ?? 0) - (a.created_at ?? 0)));
+            oldestTimestampRef.current = processed[processed.length - 1].created_at;
+            setLoading(false);
+          }
+        },
         onEvent: (event: NDKEvent) => {
           const notif = processEvent(event);
           if (!notif) return;
@@ -120,18 +133,19 @@ export function useNotifications() {
           });
 
           setUnreadCount((prev) => prev + 1);
+          setLoading(false);
+        },
+        onEose: () => {
+          setLoading(false);
         }
       }
     );
     subscriptionRef.current = sub;
 
-    // Initial fetch
-    Promise.resolve().then(() => fetchNotifications());
-
     return () => {
       sub.stop();
     };
-  }, [ndk, isReady, isLoggedIn, user?.pubkey, fetchNotifications, processEvent]);
+  }, [ndk, isReady, isLoggedIn, user?.pubkey, processEvent]);
 
   const loadMore = () => {
     if (!loading && hasMore) {

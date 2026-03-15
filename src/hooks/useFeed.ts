@@ -109,23 +109,6 @@ export function useFeed(authors: string[], kinds: number[] = [1, 20, 1063, 1068,
       filter.until = oldestTimestampRef.current - 1;
     }
 
-    // Optimization: First attempt to load from cache ONLY for instant display
-    if (!isLoadMore && ndk.cacheAdapter) {
-      const cachedEvents = await ndk.fetchEvents(filter, { 
-        cacheUsage: NDKSubscriptionCacheUsage.ONLY_CACHE 
-      });
-      if (cachedEvents.size > 0) {
-        const sorted = Array.from(cachedEvents)
-          .filter(e => !mutedRef.current.has(e.pubkey) && matchesFilter(e))
-          .sort((a, b) => (b.created_at ?? 0) - (a.created_at ?? 0));
-        
-        setPosts(sorted.slice(0, MAX_POSTS));
-        if (sorted.length > 0) {
-          oldestTimestampRef.current = sorted[sorted.length - 1].created_at;
-        }
-      }
-    }
-
     const loadingTimeout = setTimeout(() => {
       setLoading(false);
     }, 8000);
@@ -138,6 +121,22 @@ export function useFeed(authors: string[], kinds: number[] = [1, 20, 1063, 1068,
         closeOnEose: true, 
         groupable: true,
         cacheUsage: NDKSubscriptionCacheUsage.PARALLEL,
+        relayGoalPerAuthor: authors.length > 50 ? 2 : 3, // Adjust redundancy based on list size
+      },
+      {
+        onEvents: (events) => {
+          eventsReceived += events.length;
+          if (isLoadMore) return; // onEvents is primarily for initial cache load
+          
+          const filtered = events
+            .filter(e => !mutedRef.current.has(e.pubkey) && matchesFilter(e))
+            .sort((a, b) => (b.created_at ?? 0) - (a.created_at ?? 0));
+          
+          if (filtered.length > 0) {
+            setPosts(filtered.slice(0, MAX_POSTS));
+            oldestTimestampRef.current = filtered[filtered.length - 1].created_at;
+          }
+        },
         onEvent: (event) => {
           clearTimeout(loadingTimeout);
           eventsReceived++;
@@ -184,23 +183,27 @@ export function useFeed(authors: string[], kinds: number[] = [1, 20, 1063, 1068,
       realtimeFilter.authors = authors;
     }
 
-    const sub = ndk.subscribe(realtimeFilter, { 
-      closeOnEose: false,
-      groupable: true,
-      cacheUsage: NDKSubscriptionCacheUsage.ONLY_RELAY // Only listen for NEW events from relays
-    });
+    const sub = ndk.subscribe(
+      realtimeFilter, 
+      { 
+        closeOnEose: false,
+        groupable: true,
+        cacheUsage: NDKSubscriptionCacheUsage.ONLY_RELAY // Only listen for NEW events from relays
+      },
+      {
+        onEvent: (event: NDKEvent) => {
+          if (mutedRef.current.has(event.pubkey)) return;
+          if (!matchesFilter(event)) return;
+          
+          setPosts((prev) => {
+            if (prev.find(p => p.id === event.id)) return prev;
+            const next = [event, ...prev].sort((a, b) => (b.created_at ?? 0) - (a.created_at ?? 0));
+            return next.slice(0, MAX_POSTS);
+          });
+        }
+      }
+    );
     realtimeSubRef.current = sub;
-
-    sub.on("event", (event: NDKEvent) => {
-      if (mutedRef.current.has(event.pubkey)) return;
-      if (!matchesFilter(event)) return;
-      
-      setPosts((prev) => {
-        if (prev.find(p => p.id === event.id)) return prev;
-        const next = [event, ...prev].sort((a, b) => (b.created_at ?? 0) - (a.created_at ?? 0));
-        return next.slice(0, MAX_POSTS);
-      });
-    });
 
     return () => {
       if (realtimeSubRef.current) realtimeSubRef.current.stop();

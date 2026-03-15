@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { Trash2, X, Users } from "lucide-react";
 import { ZapSplit } from "@/lib/actions/post";
-import { nip19 } from "nostr-tools";
+import { nip19 } from "@nostr-dev-kit/ndk";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

@@ -2,7 +2,7 @@
 
 import { useProfile } from "@/hooks/useProfile";
 import Link from "next/link";
-import { nip19 } from "nostr-tools";
+import { nip19 } from "@nostr-dev-kit/ndk";
 import { shortenPubkey } from "@/lib/utils/nip19";
 import { cn } from "@/lib/utils";
 

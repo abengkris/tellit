@@ -13,7 +13,7 @@ import { ArrowLeft, Send, Loader2, Image as ImageIcon, Smile, X } from "lucide-r
 import Link from "next/link";
 import { Avatar } from "@/components/common/Avatar";
 import { MessageBubbleContent } from "@/components/common/MessageBubbleContent";
-import { nip19 } from "nostr-tools";
+import { nip19 } from "@nostr-dev-kit/ndk";
 
 export default function ChatPage({ params }: { params: Promise<{ pubkey: string }> }) {
   const { pubkey } = use(params);

@@ -14,7 +14,7 @@ import { useRouter } from "next/navigation";
 import { updateProfileNIP05 } from "@/lib/actions/profile";
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
-import { nip19 } from "nostr-tools";
+import { nip19 } from "@nostr-dev-kit/ndk";
 import { cn } from "@/lib/utils";
 import { useHandleStatus, PendingHandle } from "@/hooks/useHandleStatus";
 import { useRelayList } from "@/hooks/useRelayList";

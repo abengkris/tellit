@@ -25,15 +25,6 @@ export function useZaps(targetId?: string, isUser = false) {
       filter["#e"] = [targetId];
     }
 
-    const sub = ndk.subscribe(
-      filter,
-      { 
-        closeOnEose: false, 
-        groupableDelay: 500,
-        groupableDelayType: "at-most",
-      }
-    );
-
     const processReceipt = (event: NDKEvent) => {
       // Find the 'description' tag which contains the Zap Request (kind 9734)
       const descriptionTag = event.tags.find(t => t[0] === "description");
@@ -53,7 +44,17 @@ export function useZaps(targetId?: string, isUser = false) {
       }
     };
 
-    sub.on("event", processReceipt);
+    const sub = ndk.subscribe(
+      filter,
+      { 
+        closeOnEose: false, 
+        groupableDelay: 500,
+        groupableDelayType: "at-most",
+      },
+      {
+        onEvent: processReceipt
+      }
+    );
 
     return () => sub.stop();
   }, [ndk, isReady, targetId, isUser]);

@@ -1,4 +1,4 @@
-import { nip19 } from "nostr-tools";
+import { nip19 } from "@nostr-dev-kit/ndk";
 
 /**
  * Decodes a NIP-19 string and returns its ID and any associated relays.

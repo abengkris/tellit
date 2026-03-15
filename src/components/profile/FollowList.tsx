@@ -6,7 +6,7 @@ import { getNDK } from "@/lib/ndk";
 import { FollowButton } from "./FollowButton";
 import { Avatar } from "@/components/common/Avatar";
 import Link from "next/link";
-import { nip19 } from "nostr-tools";
+import { nip19 } from "@nostr-dev-kit/ndk";
 import { shortenPubkey } from "@/lib/utils/nip19";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";

@@ -58,26 +58,26 @@ export function usePoll(pollEvent: NDKEvent) {
       
       const newSub = ndk.subscribe(
         { kinds: [1018 as NDKKind], "#e": [pollEvent.id] },
-        { closeOnEose: false }
+        { closeOnEose: false },
+        {
+          onEvent: (event: NDKEvent) => {
+            setResponses(prev => {
+              const existingIndex = prev.findIndex(r => r.pubkey === event.pubkey);
+              if (existingIndex !== -1) {
+                if ((event.created_at ?? 0) > (prev[existingIndex].created_at ?? 0)) {
+                  const next = [...prev];
+                  next[existingIndex] = event;
+                  return next;
+                }
+                return prev;
+              }
+              return [...prev, event];
+            });
+          },
+          onEose: () => setLoading(false)
+        }
       );
       subRef.current = newSub;
-
-      newSub.on("event", (event: NDKEvent) => {
-        setResponses(prev => {
-          const existingIndex = prev.findIndex(r => r.pubkey === event.pubkey);
-          if (existingIndex !== -1) {
-            if ((event.created_at ?? 0) > (prev[existingIndex].created_at ?? 0)) {
-              const next = [...prev];
-              next[existingIndex] = event;
-              return next;
-            }
-            return prev;
-          }
-          return [...prev, event];
-        });
-      });
-
-      newSub.on("eose", () => setLoading(false));
     }, 0);
 
     return () => {

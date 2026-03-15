@@ -65,41 +65,41 @@ export function usePausedFeed({
 
     const sub = ndk.subscribe(
       { ...filter, limit: 20 },
-      { closeOnEose: false }
+      { closeOnEose: false },
+      {
+        onEvent: async (event: NDKEvent) => {
+          if (seenIds.current.has(event.id)) return;
+          
+          // Perform automated spam check using NPolicy
+          const ok = await validateEvent(event);
+          if (!ok) return;
+
+          seenIds.current.add(event.id);
+
+          if (!isInitialLoadDone.current) {
+            setPosts(prev => {
+              const next = [...prev, event].sort(
+                (a, b) => (b.created_at ?? 0) - (a.created_at ?? 0)
+              );
+              return next.slice(0, maxVisible);
+            });
+          } else {
+            bufferRef.current = [event, ...bufferRef.current]
+              .sort((a, b) => (b.created_at ?? 0) - (a.created_at ?? 0))
+              .slice(0, maxBuffer);
+            setNewCount(bufferRef.current.length);
+          }
+        },
+        onEose: () => {
+          setIsLoading(false);
+          if (bufferDelayTimer.current) clearTimeout(bufferDelayTimer.current);
+          bufferDelayTimer.current = setTimeout(() => {
+            isInitialLoadDone.current = true;
+          }, bufferDelay);
+        }
+      }
     );
     subRef.current = sub;
-
-    sub.on("event", async (event: NDKEvent) => {
-      if (seenIds.current.has(event.id)) return;
-      
-      // Perform automated spam check using NPolicy
-      const ok = await validateEvent(event);
-      if (!ok) return;
-
-      seenIds.current.add(event.id);
-
-      if (!isInitialLoadDone.current) {
-        setPosts(prev => {
-          const next = [...prev, event].sort(
-            (a, b) => (b.created_at ?? 0) - (a.created_at ?? 0)
-          );
-          return next.slice(0, maxVisible);
-        });
-      } else {
-        bufferRef.current = [event, ...bufferRef.current]
-          .sort((a, b) => (b.created_at ?? 0) - (a.created_at ?? 0))
-          .slice(0, maxBuffer);
-        setNewCount(bufferRef.current.length);
-      }
-    });
-
-    sub.on("eose", () => {
-      setIsLoading(false);
-      if (bufferDelayTimer.current) clearTimeout(bufferDelayTimer.current);
-      bufferDelayTimer.current = setTimeout(() => {
-        isInitialLoadDone.current = true;
-      }, bufferDelay);
-    });
 
     return () => {
       sub.stop();

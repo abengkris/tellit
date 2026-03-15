@@ -35,7 +35,7 @@ export function useFollowers(pubkey: string | undefined): UseFollowersReturn {
     }
     Promise.resolve().then(() => setLoading(true));
 
-    const ndk = getNDK();
+    const seen = new Set<string>();
 
     // Subscribe ke kind:3 yang mengandung p-tag target
     // Ini akan stream follower secara real-time
@@ -45,27 +45,25 @@ export function useFollowers(pubkey: string | undefined): UseFollowersReturn {
         "#p": [pubkey],
         limit: 500,
       },
-      { closeOnEose: true }
-    );
-
-    const seen = new Set<string>();
-
-    sub.on("event", (event: NDKEvent) => {
-      // Setiap event kind:3 yang punya p-tag menunjuk ke pubkey kita
-      // = author event tersebut adalah follower kita
-      if (!seen.has(event.pubkey)) {
-        seen.add(event.pubkey);
-        setFollowers((prev) => {
-          if (prev.includes(event.pubkey)) return prev;
-          return [...prev, event.pubkey];
-        });
-        setCount((c) => c + 1);
+      { closeOnEose: true },
+      {
+        onEvent: (event: NDKEvent) => {
+          // Setiap event kind:3 yang punya p-tag menunjuk ke pubkey kita
+          // = author event tersebut adalah follower kita
+          if (!seen.has(event.pubkey)) {
+            seen.add(event.pubkey);
+            setFollowers((prev) => {
+              if (prev.includes(event.pubkey)) return prev;
+              return [...prev, event.pubkey];
+            });
+            setCount((c) => c + 1);
+          }
+        },
+        onEose: () => {
+          setLoading(false);
+        }
       }
-    });
-
-    sub.on("eose", () => {
-      setLoading(false);
-    });
+    );
 
     return () => sub.stop();
   }, [pubkey]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -93,6 +91,7 @@ export function useFollowerCount(pubkey: string | undefined): {
     if (!loading) Promise.resolve().then(() => setLoading(true));
 
     const ndk = getNDK();
+    const seen = new Set<string>();
 
     // Fetch kind:3 dengan limit kecil, hitung dari EOSE
     // Karena tidak semua relay support COUNT (NIP-45)
@@ -102,20 +101,18 @@ export function useFollowerCount(pubkey: string | undefined): {
         "#p": [pubkey],
         limit: 1000,
       },
-      { closeOnEose: true }
+      { closeOnEose: true },
+      {
+        onEvent: (event: NDKEvent) => {
+          seen.add(event.pubkey);
+          setCount(seen.size);
+        },
+        onEose: () => {
+          Promise.resolve().then(() => setLoading(false));
+          sub.stop();
+        }
+      }
     );
-
-    const seen = new Set<string>();
-
-    sub.on("event", (event: NDKEvent) => {
-      seen.add(event.pubkey);
-      setCount(seen.size);
-    });
-
-    sub.on("eose", () => {
-      Promise.resolve().then(() => setLoading(false));
-      sub.stop();
-    });
 
     return () => sub.stop();
   }, [pubkey]); // eslint-disable-line react-hooks/exhaustive-deps

@@ -1,5 +1,4 @@
-import NDK, { NDKEvent, NDKTag } from "@nostr-dev-kit/ndk";
-import { nip19 } from "nostr-tools";
+import NDK, { NDKEvent, NDKTag, nip19 } from "@nostr-dev-kit/ndk";
 
 import { createPoll, CreatePollOptions } from "./poll";
 

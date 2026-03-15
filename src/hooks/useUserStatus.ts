@@ -29,40 +29,40 @@ export function useUserStatus(pubkey?: string) {
       { 
         closeOnEose: false, 
         cacheUsage: NDKSubscriptionCacheUsage.CACHE_FIRST 
+      },
+      {
+        onEvent: (event: NDKEvent) => {
+          if (!isMounted) return;
+
+          const dTag = event.tags.find(t => t[0] === 'd');
+          if (!dTag) return;
+
+          const type = dTag[1];
+          const expirationTag = event.tags.find(t => t[0] === 'expiration');
+          const rTag = event.tags.find(t => t[0] === 'r');
+
+          const expiration = expirationTag ? parseInt(expirationTag[1]) : undefined;
+          
+          // Filter out expired statuses
+          if (expiration && expiration < Math.floor(Date.now() / 1000)) {
+            return;
+          }
+
+          setStatuses(prev => ({
+            ...prev,
+            [type]: {
+              content: event.content,
+              type,
+              link: rTag ? rTag[1] : undefined,
+              expiration
+            }
+          }));
+        },
+        onEose: () => {
+          if (isMounted) setLoading(false);
+        }
       }
     );
-
-    sub.on("event", (event: NDKEvent) => {
-      if (!isMounted) return;
-
-      const dTag = event.tags.find(t => t[0] === 'd');
-      if (!dTag) return;
-
-      const type = dTag[1];
-      const expirationTag = event.tags.find(t => t[0] === 'expiration');
-      const rTag = event.tags.find(t => t[0] === 'r');
-
-      const expiration = expirationTag ? parseInt(expirationTag[1]) : undefined;
-      
-      // Filter out expired statuses
-      if (expiration && expiration < Math.floor(Date.now() / 1000)) {
-        return;
-      }
-
-      setStatuses(prev => ({
-        ...prev,
-        [type]: {
-          content: event.content,
-          type,
-          link: rTag ? rTag[1] : undefined,
-          expiration
-        }
-      }));
-    });
-
-    sub.on("eose", () => {
-      if (isMounted) setLoading(false);
-    });
 
     return () => {
       isMounted = false;

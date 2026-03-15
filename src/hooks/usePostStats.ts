@@ -114,13 +114,17 @@ export function usePostStats(eventId?: string) {
       });
     };
 
-    const sub = ndk.subscribe(filter, { 
-      closeOnEose: false,
-      groupable: true,
-      groupableDelay: 250
-    });
-
-    sub.on("event", handleEvent);
+    const sub = ndk.subscribe(
+      filter, 
+      { 
+        closeOnEose: false,
+        groupable: true,
+        groupableDelay: 250
+      },
+      {
+        onEvent: handleEvent
+      }
+    );
 
     return () => sub.stop();
   }, [ndk, isReady, eventId, publicKey]);
