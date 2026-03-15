@@ -96,13 +96,17 @@ export function useFeed(authors: string[], kinds: number[] = [1, 20, 1063, 1068,
     setLoading(true);
     const fetchLimit = filterType === "all" ? 20 : 50;
 
+    // Clean filters to prevent NDK validation errors
+    const validAuthors = authors.filter(a => !!a && /^[0-9a-fA-F]{64}$/.test(a));
+    const validKinds = kinds.filter(k => typeof k === 'number' && !isNaN(k));
+
     const filter: NDKFilter = {
-      kinds: kinds,
+      kinds: validKinds,
       limit: fetchLimit,
     };
 
-    if (authors.length > 0) {
-      filter.authors = authors;
+    if (validAuthors.length > 0) {
+      filter.authors = validAuthors;
     }
 
     if (isLoadMore && oldestTimestampRef.current) {
@@ -121,7 +125,7 @@ export function useFeed(authors: string[], kinds: number[] = [1, 20, 1063, 1068,
         closeOnEose: true, 
         groupable: true,
         cacheUsage: NDKSubscriptionCacheUsage.PARALLEL,
-        relayGoalPerAuthor: authors.length > 50 ? 2 : 3, // Adjust redundancy based on list size
+        relayGoalPerAuthor: validAuthors.length > 50 ? 2 : 3, // Adjust redundancy based on list size
       },
       {
         onEvents: (events) => {
@@ -174,13 +178,17 @@ export function useFeed(authors: string[], kinds: number[] = [1, 20, 1063, 1068,
 
     if (realtimeSubRef.current) realtimeSubRef.current.stop();
 
+    // Clean filters for real-time listener
+    const validAuthors = authors.filter(a => !!a && /^[0-9a-fA-F]{64}$/.test(a));
+    const validKinds = kinds.filter(k => typeof k === 'number' && !isNaN(k));
+
     const realtimeFilter: NDKFilter = {
-      kinds: kinds,
+      kinds: validKinds,
       since: Math.floor(Date.now() / 1000),
     };
 
-    if (authors.length > 0) {
-      realtimeFilter.authors = authors;
+    if (validAuthors.length > 0) {
+      realtimeFilter.authors = validAuthors;
     }
 
     const sub = ndk.subscribe(

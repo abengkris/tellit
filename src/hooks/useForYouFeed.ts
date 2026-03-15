@@ -112,7 +112,10 @@ export function useForYouFeed({
       authors = [...followingList, ...fof.slice(0, 400)];
     }
 
-    if (!authors.length) {
+    // Clean authors array to prevent validation errors
+    const validAuthors = authors.filter(a => !!a && /^[0-9a-fA-F]{64}$/.test(a));
+
+    if (!validAuthors.length) {
       Promise.resolve().then(() => setIsLoading(false));
       return;
     }
@@ -120,7 +123,7 @@ export function useForYouFeed({
     const sub = ndk.subscribe(
       {
         kinds: [1, 6, 16, 1068, 30023] as NDKKind[],
-        authors,
+        authors: validAuthors,
         limit: 30,
       },
       {
@@ -201,9 +204,12 @@ export function useForYouFeed({
       authors = [...followingList, ...fof.slice(0, 400)];
     }
 
+    // Clean authors array to prevent validation errors
+    const validAuthors = authors.filter(a => !!a && /^[0-9a-fA-F]{64}$/.test(a));
+
     const older = await ndk.fetchEvents({
       kinds: [1, 6, 16, 1068, 30023] as NDKKind[],
-      authors,
+      authors: validAuthors,
       until: oldest - 1,
       limit: 30,
     });
