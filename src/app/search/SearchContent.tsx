@@ -15,6 +15,7 @@ import { UserRecommendation } from "@/components/common/UserRecommendation";
 import { NDKEvent, NDKUser } from "@nostr-dev-kit/ndk";
 import { getProfileUrl } from "@/lib/utils/identity";
 import { useNDK } from "@/hooks/useNDK";
+import { useTrending } from "@/hooks/useTrending";
 
 // Constants for API and pagination
 const NOSTR_WINE_API_URL = "https://api.nostr.wine/search";
@@ -49,6 +50,7 @@ export function SearchContent() {
   const { user } = useAuthStore();
   const { ndk, isReady } = useNDK();
   const { followingUsers, loading: loadingFollowing } = useFollowingList(user?.pubkey);
+  const { trending, loading: loadingTrending } = useTrending();
 
   const initialQuery = searchParams.get("q") || "";
   
@@ -239,7 +241,10 @@ export function SearchContent() {
     }
   }, [searchInput, router, searchParams]);
 
-  const trendingTags = ["nostr", "bitcoin", "tellit", "art", "tech", "zap", "photography", "meme"];
+  const displayTrending = useMemo(() => {
+    if (trending.length > 0) return trending.map(t => t.tag);
+    return ["nostr", "bitcoin", "tellit", "art", "tech", "zap", "photography", "meme"];
+  }, [trending]);
 
   return (
     <>
@@ -362,15 +367,23 @@ export function SearchContent() {
                 <span className="text-xs font-black uppercase tracking-widest">Trending Topics</span>
               </div>
               <div className="flex flex-wrap gap-2">
-                {trendingTags.map(tag => (
-                  <button
-                    key={tag}
-                    onClick={() => setSearchInput(`#${tag}`)}
-                    className="px-4 py-2 bg-gray-100 dark:bg-gray-900 hover:bg-blue-50 dark:hover:bg-blue-900/20 border border-gray-200 dark:border-gray-800 rounded-2xl text-sm font-bold transition-all active:scale-95"
-                  >
-                    #{tag}
-                  </button>
-                ))}
+                {loadingTrending && trending.length === 0 ? (
+                  <div className="flex flex-wrap gap-2 animate-pulse">
+                    {[1, 2, 3, 4, 5].map(i => (
+                      <div key={i} className="h-9 w-20 bg-gray-100 dark:bg-gray-900 rounded-2xl" />
+                    ))}
+                  </div>
+                ) : (
+                  displayTrending.map(tag => (
+                    <button
+                      key={tag}
+                      onClick={() => setSearchInput(`#${tag}`)}
+                      className="px-4 py-2 bg-gray-100 dark:bg-gray-900 hover:bg-blue-50 dark:hover:bg-blue-900/20 border border-gray-200 dark:border-gray-800 rounded-2xl text-sm font-bold transition-all active:scale-95"
+                    >
+                      #{tag}
+                    </button>
+                  ))
+                )}
               </div>
             </div>
           </div>
