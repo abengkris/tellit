@@ -1,4 +1,4 @@
-import { decodeNip19 } from "../utils/nip19";
+import { nip19 } from "@nostr-dev-kit/ndk";
 
 export type TokenType =
   | "text"
@@ -18,111 +18,83 @@ export type TokenType =
 export interface Token {
   type: TokenType;
   value: string;         // teks asli (raw dari content)
-  decoded?: DecodedRef;  // hasil decode bech32 (jika berlaku)
+  decoded?: DecodedRef;  // untuk mention/note_ref
 }
 
 export interface DecodedRef {
   type: "npub" | "nprofile" | "note" | "nevent" | "naddr";
-  pubkey?: string;   
-  eventId?: string;  
-  relays?: string[]; 
-  identifier?: string; // for naddr
-  kind?: number;       // for naddr
+  pubkey?: string;
+  eventId?: string;
+  identifier?: string;
+  kind?: number;
+  relays?: string[];
 }
 
-// URUTAN KRITIS sesuai hasil investigasi
-const PATTERNS: { re: RegExp; type: TokenType }[] = [
-  // 1. Nostr references (spesifik -> umum)
-  { re: /nostr:nevent1[a-z0-9]+/gi,   type: "note_ref"   },
-  { re: /nostr:naddr1[a-z0-9]+/gi,    type: "naddr_ref"  },
-  { re: /nostr:nprofile1[a-z0-9]+/gi, type: "mention"    },
-  { re: /nostr:note1[a-z0-9]+/gi,     type: "note_ref"   },
-  { re: /nostr:npub1[a-z0-9]+/gi,     type: "mention"    },
-
-  // 2. Lightning invoice (SEBELUM URL)
-  { re: /\blnbc[a-zA-Z0-9]{20,}\b/g,    type: "lightning"  },
-
-  // 4. Media URLs (SEBELUM URL biasa)
-  { re: /https?:\/\/[^\s\])"'<>]+?\.(?:jpg|jpeg|png|gif|webp|avif|svg|jfif)(?:\?\S*)?/gi, type: "image" },
-  { re: /https?:\/\/[^\s\])"'<>]+?\.(?:mp4|mov|webm|ogg)(?:\?\S*)?/gi,          type: "video" },
-  { re: /https?:\/\/[^\s\])"'<>]+?\.(?:mp3|wav|aac|flac|m4a)(?:\?\S*)?/gi,      type: "audio" },
-
-  // 5. URL biasa
-  { re: /https?:\/\/[^\s\])"'<>]+/g,  type: "url"        },
-
-  // 6. Hashtag
-  { re: /#[a-zA-Z]\w*/g,              type: "hashtag"    },
-];
-
+/**
+ * Tokenize Nostr content into manageable chunks.
+ * Handles mentions, hashtags, media URLs, and lightning invoices.
+ */
 export function tokenize(content: string): Token[] {
   if (!content) return [];
 
-  interface RawMatch {
-    start: number;
-    end: number;
-    value: string;
-    type: TokenType;
-  }
+  // 1. Regex patterns
+  // Order matters: more specific first
+  const patterns = [
+    // Mentions & Note refs (NIP-19)
+    /(nostr:(?:npub1|nprofile1|note1|nevent1|naddr1)[0-9a-z]+)/gi,
+    // Hashtags
+    /(#\w+)/g,
+    // Lightning
+    /(lnbc[0-9a-z]+1[0-9a-z]+)/gi,
+    // URLs (Images/Videos/General)
+    /(https?:\/\/[^\s]+)/gi,
+    // Linebreaks
+    /(\n)/g,
+  ];
 
-  const matches: RawMatch[] = [];
-
-  for (const { re, type } of PATTERNS) {
-    re.lastIndex = 0; 
-    let m: RegExpExecArray | null;
-    while ((m = re.exec(content)) !== null) {
-      matches.push({
-        start: m.index,
-        end: m.index + m[0].length,
-        value: m[0],
-        type,
-      });
-    }
-  }
-
-  matches.sort((a, b) => a.start - b.start);
-
-  const filtered: RawMatch[] = [];
-  let lastEnd = 0;
-  for (const match of matches) {
-    if (match.start >= lastEnd) {
-      filtered.push(match);
-      lastEnd = match.end;
-    }
-  }
+  const combinedRegex = new RegExp(patterns.map(p => p.source).join("|"), "gi");
+  const parts = content.split(combinedRegex);
+  const matches = content.match(combinedRegex) || [];
 
   const tokens: Token[] = [];
-  let cursor = 0;
+  let matchIndex = 0;
 
-  for (const match of filtered) {
-    if (match.start > cursor) {
-      const text = content.slice(cursor, match.start);
-      tokens.push(...splitByLinebreak(text));
+  for (const part of parts) {
+    if (part === undefined) continue;
+
+    if (matches[matchIndex] === part) {
+      // It's a special token
+      const value = part;
+      let type: TokenType = "text";
+
+      if (value.startsWith("nostr:")) {
+        const bech32 = value.split(":")[1].toLowerCase();
+        if (bech32.startsWith("npub1") || bech32.startsWith("nprofile1")) type = "mention";
+        else if (bech32.startsWith("naddr1")) type = "naddr_ref";
+        else type = "note_ref";
+      } else if (value.startsWith("#")) {
+        type = "hashtag";
+      } else if (value.startsWith("lnbc")) {
+        type = "lightning";
+      } else if (value.match(/\n/)) {
+        type = "linebreak";
+      } else if (value.match(/^https?:\/\//i)) {
+        type = "url"; // will be refined later based on extension
+      }
+
+      tokens.push({
+        type,
+        value,
+        decoded: decodeRef(value, type),
+      });
+      matchIndex++;
+    } else if (part !== "") {
+      // It's plain text
+      tokens.push({ type: "text", value: part });
     }
-
-    tokens.push({
-      type: match.type,
-      value: match.value,
-      decoded: decodeRef(match.value, match.type),
-    });
-
-    cursor = match.end;
-  }
-
-  if (cursor < content.length) {
-    tokens.push(...splitByLinebreak(content.slice(cursor)));
   }
 
   return tokens;
-}
-
-function splitByLinebreak(text: string): Token[] {
-  const parts = text.split(/(\n)/);
-  return parts
-    .filter(p => p !== "")
-    .map(p => ({
-      type: p === "\n" ? "linebreak" : "text",
-      value: p,
-    } as Token));
 }
 
 function decodeRef(value: string, type: TokenType): DecodedRef | undefined {
@@ -133,24 +105,27 @@ function decodeRef(value: string, type: TokenType): DecodedRef | undefined {
     const decoded = nip19.decode(bech32Part);
 
     if (decoded.type === "npub") {
-      return { type: "npub", pubkey: decoded.data };
+      return { type: "npub", pubkey: decoded.data as string };
     }
     if (decoded.type === "nprofile") {
-      return { type: "nprofile", pubkey: decoded.data.pubkey, relays: decoded.data.relays };
+      const data = decoded.data as nip19.ProfilePointer;
+      return { type: "nprofile", pubkey: data.pubkey, relays: data.relays };
     }
     if (decoded.type === "note") {
-      return { type: "note", eventId: decoded.data };
+      return { type: "note", eventId: decoded.data as string };
     }
     if (decoded.type === "nevent") {
-      return { type: "nevent", eventId: decoded.data.id, relays: decoded.data.relays };
+      const data = decoded.data as nip19.EventPointer;
+      return { type: "nevent", eventId: data.id, relays: data.relays };
     }
     if (decoded.type === "naddr") {
+      const data = decoded.data as nip19.AddressPointer;
       return { 
         type: "naddr", 
-        pubkey: decoded.data.pubkey, 
-        identifier: decoded.data.identifier, 
-        kind: decoded.data.kind,
-        relays: decoded.data.relays 
+        pubkey: data.pubkey, 
+        identifier: data.identifier, 
+        kind: data.kind,
+        relays: data.relays 
       };
     }
   } catch {
@@ -160,12 +135,15 @@ function decodeRef(value: string, type: TokenType): DecodedRef | undefined {
 }
 
 /**
- * Resolves NIP-08 #[index] mentions into nostr: references
+ * Resolves NIP-08 mentions (#[0]) using the event tags.
+ * Replaces them with nostr:npub1... or nostr:note1... for the tokenizer.
  */
 export function resolveDeprecatedMentions(content: string, tags: string[][]): string {
-  return content.replace(/#\[(\d+)\]/g, (match, indexStr) => {
-    const index = parseInt(indexStr);
-    const tag = tags[index];
+  if (!content || !tags.length) return content;
+
+  return content.replace(/#\[(\d+)\]/g, (match, index) => {
+    const i = parseInt(index);
+    const tag = tags[i];
     if (!tag) return match;
 
     if (tag[0] === "p") {
@@ -182,48 +160,50 @@ export function resolveDeprecatedMentions(content: string, tags: string[][]): st
   });
 }
 
-export interface ImetaData {
-  url: string;
-  mimeType?: string;
-  blurhash?: string;
-  dimensions?: { w: number; h: number };
-  alt?: string;
-  sha256?: string;
-  fallbackUrls?: string[];
-}
-
-export function parseImeta(tag: string[]): ImetaData | null {
-  if (tag[0] !== "imeta") return null;
-  const result: Partial<ImetaData> & { url?: string } = {};
-  const fallbackUrls: string[] = [];
-
+/**
+ * Parses imeta tags (NIP-92) for media information.
+ */
+export function parseImeta(tag: string[]): { url?: string; blurhash?: string; mimeType?: string; size?: string; dim?: string } | null {
+  if (tag[0] !== 'imeta') return null;
+  
+  const result: Record<string, string> = {};
   for (let i = 1; i < tag.length; i++) {
-    const space = tag[i].indexOf(" ");
-    if (space === -1) continue;
-    const key = tag[i].slice(0, space);
-    const val = tag[i].slice(space + 1);
-
-    if (key === "url")       result.url = val;
-    if (key === "m")         result.mimeType = val;
-    if (key === "blurhash")  result.blurhash = val;
-    if (key === "alt")       result.alt = val;
-    if (key === "x")         result.sha256 = val;
-    if (key === "fallback")  fallbackUrls.push(val);
-    if (key === "dim") {
-      const [w, h] = val.split("x").map(Number);
-      if (w && h) result.dimensions = { w, h };
+    const [key, value] = tag[i].split(' ');
+    if (key && value) result[key] = value;
+    else if (tag[i].includes(' ')) {
+        // Fallback for space separated values without explicit split
+        const parts = tag[i].split(' ');
+        if (parts.length >= 2) result[parts[0]] = parts[1];
     }
   }
-
-  if (!result.url) return null;
-  return { ...result as ImetaData, fallbackUrls };
+  
+  return {
+    url: result.url,
+    blurhash: result.blurhash,
+    mimeType: result.m,
+    size: result.size,
+    dim: result.dim
+  };
 }
 
-export function buildImetaMap(tags: string[][]): Map<string, ImetaData> {
-  const map = new Map<string, ImetaData>();
-  for (const tag of tags) {
+interface ImetaMetadata {
+  url?: string;
+  blurhash?: string;
+  mimeType?: string;
+  size?: string;
+  dim?: string;
+}
+
+/**
+ * Builds a map of URL -> imeta metadata.
+ */
+export function buildImetaMap(tags: string[][]): Map<string, ImetaMetadata> {
+  const map = new Map<string, ImetaMetadata>();
+  tags.forEach(tag => {
     const meta = parseImeta(tag);
-    if (meta) map.set(meta.url, meta);
-  }
+    if (meta && meta.url) {
+      map.set(meta.url, meta);
+    }
+  });
   return map;
 }

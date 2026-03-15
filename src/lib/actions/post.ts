@@ -1,4 +1,4 @@
-import NDK, { NDKEvent, NDKTag, nip19 } from "@nostr-dev-kit/ndk";
+import NDK, { NDKEvent, NDKTag } from "@nostr-dev-kit/ndk";
 
 import { decodeNip19 } from "@/lib/utils/nip19";
 
@@ -88,7 +88,7 @@ export const publishPost = async (
       if (pubkey && pubkey !== npub) {
         event.tags.push(["p", pubkey, "", "mention"]);
       }
-    } catch (e) {
+    } catch {
       console.warn("Invalid npub in mention:", match[1]);
     }
   }

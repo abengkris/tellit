@@ -7,7 +7,6 @@ import { Loader2, Heart, Repeat2, MessageCircle, Zap, UserPlus, Bell, Mic, Exter
 import Link from "next/link";
 import { Avatar } from "@/components/common/Avatar";
 import { shortenPubkey } from "@/lib/utils/nip19";
-import { nip19 } from "@nostr-dev-kit/ndk";
 import { useRouter } from "next/navigation";
 
 const NotificationIcon = ({ type }: { type: string }) => {

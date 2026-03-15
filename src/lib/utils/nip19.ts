@@ -140,5 +140,6 @@ export function shortenPubkey(pubkey: string, length = 8): string {
  * Helper to encode an NDK entity properly.
  */
 export function encodeEntity(entity: NDKEvent | NDKUser): string {
+  if (entity instanceof NDKUser) return entity.npub;
   return entity.encode();
 }
