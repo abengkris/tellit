@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { NDKEvent, NDKFilter, NDKUser, NDKRelaySet } from "@nostr-dev-kit/ndk";
+import { NDKEvent, NDKUser } from "@nostr-dev-kit/ndk";
 import { useNDK } from "@/hooks/useNDK";
 
-const SEARCH_RELAYS = ["wss://relay.nostr.band", "wss://search.nos.today", "wss://nos.lol"];
+const NOSTR_WINE_API_URL = "https://api.nostr.wine/search";
+const RESULTS_PER_PAGE = 20;
 
 export function useSearch(query: string) {
   const { ndk, isReady } = useNDK();
@@ -14,10 +15,10 @@ export function useSearch(query: string) {
   }>({});
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
-  const oldestTimestampRef = useRef<number | undefined>(undefined);
+  const pageRef = useRef(1);
 
   const performSearch = useCallback(async (isLoadMore = false) => {
-    if (!ndk || !isReady || !query || query.length < 3) {
+    if (!ndk || !isReady || !query || query.length < 2) {
       if (!isLoadMore) {
         setPosts([]);
         setProfiles([]);
@@ -29,10 +30,9 @@ export function useSearch(query: string) {
     setLoading(true);
 
     try {
-      const searchRelaySet = NDKRelaySet.fromRelayUrls(SEARCH_RELAYS, ndk);
-
       if (!isLoadMore) {
         setDirectResult({});
+        pageRef.current = 1;
         
         // 0. Check if query is NIP-19, hex ID, or NIP-05
         const isHex = /^[0-9a-fA-F]{64}$/.test(query);
@@ -42,7 +42,6 @@ export function useSearch(query: string) {
         const isNip05 = query.includes("@") || query.includes(".");
 
         if (isNip19 || isHex || isNip05) {
-          // Try to fetch as a user first if it looks like a user ID or NIP-05
           if (query.startsWith("npub") || query.startsWith("nprofile") || isNip05 || (isHex && !query.startsWith("note"))) {
             try {
               const user = await ndk.fetchUser(query);
@@ -55,7 +54,6 @@ export function useSearch(query: string) {
             }
           } 
           
-          // If not a user result, or also check if it's an event
           if (!directResult.user && (query.startsWith("note") || query.startsWith("nevent") || query.startsWith("naddr") || isHex)) {
             try {
               const event = await ndk.fetchEvent(query);
@@ -66,76 +64,56 @@ export function useSearch(query: string) {
           }
         }
 
-        // 1. Search Profiles (kind:0)
-        const profileFilter: NDKFilter = {
-          kinds: [0],
-          search: query,
-          limit: 15,
-        };
-
-        const profileEvents = await ndk.fetchEvents(profileFilter, undefined, searchRelaySet);
-        const foundProfiles = Array.from(profileEvents).map((event) => {
-          const user = ndk.getUser({ pubkey: event.pubkey });
-          try {
-            user.profile = JSON.parse(event.content);
-          } catch (e) {
-            // content might not be valid JSON
+        // 1. Search Profiles (kind:0) from api.nostr.wine
+        const profileUrl = `${NOSTR_WINE_API_URL}?query=${encodeURIComponent(query)}&kind=0&limit=15&sort=relevance`;
+        const profileResponse = await fetch(profileUrl);
+        if (profileResponse.ok) {
+          const result = await profileResponse.json();
+          const foundProfiles = (result.data || []).map((rawEvent: { pubkey: string; content: string }) => {
+            const user = ndk.getUser({ pubkey: rawEvent.pubkey });
+            try {
+              user.profile = JSON.parse(rawEvent.content);
+            } catch {
+              // content might not be valid JSON
+            }
+            return user;
+          });
+          
+          if (directResult.user) {
+            const exists = foundProfiles.some((p: NDKUser) => p.pubkey === directResult.user?.pubkey);
+            if (!exists) foundProfiles.unshift(directResult.user);
           }
-          return user;
-        });
-        
-        if (directResult.user) {
-          const exists = foundProfiles.some(p => p.pubkey === directResult.user?.pubkey);
-          if (!exists) foundProfiles.unshift(directResult.user);
+          setProfiles(foundProfiles);
         }
-
-        setProfiles(foundProfiles);
       }
 
       // 2. Search Posts (kind:1) and Articles (kind:30023)
-      let postFilter: NDKFilter;
-
-      if (query.startsWith("#")) {
-        // Hashtag search
-        postFilter = {
-          kinds: [1, 30023],
-          "#t": [query.slice(1).toLowerCase()],
-          limit: 20,
-        };
-      } else {
-        // NIP-50 Full-text search using dedicated search relays
-        postFilter = {
-          kinds: [1, 30023],
-          search: query,
-          limit: 20,
-        };
-      }
-
-      if (isLoadMore && oldestTimestampRef.current) {
-        postFilter.until = oldestTimestampRef.current - 1;
-      }
-
-      const postEvents = await ndk.fetchEvents(postFilter, undefined, searchRelaySet);
-      const newPostsList = Array.from(postEvents).sort((a, b) => (b.created_at ?? 0) - (a.created_at ?? 0));
+      const page = isLoadMore ? pageRef.current + 1 : 1;
+      const kinds = "1,30023"; // Search for posts and long-form articles
+      const url = `${NOSTR_WINE_API_URL}?query=${encodeURIComponent(query)}&kind=${kinds}&limit=${RESULTS_PER_PAGE}&page=${page}&sort=relevance`;
       
-      setPosts((prev) => {
-        let combined = isLoadMore ? [...prev, ...newPostsList] : newPostsList;
+      const response = await fetch(url);
+      if (response.ok) {
+        const result = await response.json();
+        const rawEvents = (result.data || []) as { id: string; pubkey: string; content: string; created_at: number; kind: number; tags: string[][]; sig: string }[];
+        const newPostsList = rawEvents.map((raw) => new NDKEvent(ndk, raw));
         
-        if (!isLoadMore && directResult.event) {
-          const exists = combined.some(p => p.id === directResult.event?.id);
-          if (!exists) combined = [directResult.event, ...combined];
-        }
+        setPosts((prev) => {
+          let combined = isLoadMore ? [...prev, ...newPostsList] : newPostsList;
+          
+          if (!isLoadMore && directResult.event) {
+            const exists = combined.some(p => p.id === directResult.event?.id);
+            if (!exists) combined = [directResult.event, ...combined];
+          }
 
-        const unique = combined.filter((v, i, a) => a.findIndex(t => t.id === v.id) === i);
-        
-        if (unique.length > 0) {
-          oldestTimestampRef.current = unique[unique.length - 1].created_at;
-        }
-        
-        return unique;
-      });
+          const unique = combined.filter((v, i, a) => a.findIndex(t => t.id === v.id) === i);
+          return unique;
+        });
 
-      setHasMore(postEvents.size >= 20);
+        setHasMore(!result.pagination?.last_page);
+        if (isLoadMore) pageRef.current = page;
+      }
+
     } catch (err) {
       console.error("Search error:", err);
     } finally {
@@ -145,7 +123,6 @@ export function useSearch(query: string) {
 
   useEffect(() => {
     setHasMore(true);
-    oldestTimestampRef.current = undefined;
     const timeout = setTimeout(() => performSearch(), 500); // Debounce
     return () => clearTimeout(timeout);
   }, [query, performSearch]);

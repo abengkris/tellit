@@ -1,8 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { Search, Loader2, TrendingUp, X, CheckCircle2 } from "lucide-react";
-import { useSearch } from "@/hooks/useSearch";
 import { useDebounce } from "use-debounce";
 import { PostCard } from "@/components/post/PostCard";
 import Link from "next/link";
@@ -13,13 +12,42 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { useFollowingList } from "@/hooks/useFollowingList";
 import { useAuthStore } from "@/store/auth";
 import { UserRecommendation } from "@/components/common/UserRecommendation";
-import { NDKUser } from "@nostr-dev-kit/ndk";
+import { NDKEvent, NDKUser } from "@nostr-dev-kit/ndk";
 import { getProfileUrl } from "@/lib/utils/identity";
+import { useNDK } from "@/hooks/useNDK";
+
+// Constants for API and pagination
+const NOSTR_WINE_API_URL = "https://api.nostr.wine/search";
+const RESULTS_PER_PAGE = 20;
+
+// Define types for API response
+interface NostrWineEvent {
+  content: string;
+  created_at: number;
+  id: string;
+  kind: number;
+  pubkey: string;
+  sig: string;
+  tags: string[][];
+}
+
+interface NostrWineResponse {
+  data: NostrWineEvent[];
+  pagination: {
+    last_page: boolean;
+    limit: number;
+    next_url: string | null;
+    page: number;
+    total_pages: number;
+    total_records: number;
+  };
+}
 
 export function SearchContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { user } = useAuthStore();
+  const { ndk, isReady } = useNDK();
   const { followingUsers, loading: loadingFollowing } = useFollowingList(user?.pubkey);
 
   const initialQuery = searchParams.get("q") || "";
@@ -28,11 +56,136 @@ export function SearchContent() {
   const [showMentions, setShowMentions] = useState(false);
   const [mentionQuery, setMentionQuery] = useState("");
 
-  const [debouncedQuery] = useDebounce(searchInput, 300);
-  const { posts, profiles, loading, loadMore, hasMore, directResult } = useSearch(debouncedQuery);
+  const [debouncedQuery] = useDebounce(searchInput, 500);
+
+  // New state variables for search results
+  const [fetchedPosts, setFetchedPosts] = useState<NDKEvent[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [hasMorePosts, setHasMorePosts] = useState(true);
+  const [searchError, setSearchError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [directMatch, setDirectMatch] = useState<{ type: 'user' | 'event', data: NDKUser | NDKEvent } | null>(null);
+
+  // Function to fetch search results
+  const fetchSearchResults = useCallback(async (query: string, page: number) => {
+    if (!query || !ndk || !isReady) {
+      if (!query) {
+        setFetchedPosts([]);
+        setDirectMatch(null);
+        setHasMorePosts(true);
+        setSearchError(null);
+        setIsLoading(false);
+      }
+      return;
+    }
+
+    setIsLoading(true);
+    setSearchError(null);
+    
+    // Clear previous results for new search
+    if (page === 1) {
+      setFetchedPosts([]);
+      setDirectMatch(null);
+    }
+
+    try {
+      // 0. Handle direct matches (npub, note, nevent, nprofile, naddr)
+      if (page === 1) {
+        const isHex = /^[0-9a-fA-F]{64}$/.test(query);
+        const isNip19 = query.startsWith("npub") || query.startsWith("nprofile") || 
+                        query.startsWith("note") || query.startsWith("nevent") || 
+                        query.startsWith("naddr");
+        
+        if (isNip19 || isHex) {
+          if (query.startsWith("npub") || query.startsWith("nprofile") || (isHex && !query.startsWith("note"))) {
+            try {
+              const user = ndk.getUser({ 
+                npub: query.startsWith("npub") ? query : undefined,
+                pubkey: isHex ? query : undefined
+              });
+              if (user) {
+                await user.fetchProfile();
+                setDirectMatch({ type: 'user', data: user });
+              }
+            } catch {
+              console.warn("Direct user fetch failed");
+            }
+          } else if (query.startsWith("note") || query.startsWith("nevent") || query.startsWith("naddr") || isHex) {
+            try {
+              const event = await ndk.fetchEvent(query);
+              if (event) setDirectMatch({ type: 'event', data: event });
+            } catch {
+              console.warn("Direct event fetch failed");
+            }
+          }
+        }
+      }
+
+      // 1. Fetch from api.nostr.wine
+      // Documentation parameters: query, kind, since, until, limit, pubkey, sort, page, order, first_seen
+      const kinds = "1,30023"; // Search for posts and long-form articles
+      const url = `${NOSTR_WINE_API_URL}?query=${encodeURIComponent(query)}&kind=${kinds}&limit=${RESULTS_PER_PAGE}&page=${page}&sort=relevance`;
+      
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`API error: ${response.statusText}`);
+      }
+
+      const result: NostrWineResponse = await response.json();
+
+      if (result.data && result.data.length > 0) {
+        const ndkEvents = result.data.map(rawEvent => {
+          const event = new NDKEvent(ndk, {
+            id: rawEvent.id,
+            pubkey: rawEvent.pubkey,
+            created_at: rawEvent.created_at,
+            kind: rawEvent.kind,
+            tags: rawEvent.tags,
+            content: rawEvent.content,
+            sig: rawEvent.sig
+          });
+          return event;
+        });
+
+        setFetchedPosts(prevPosts => page === 1 ? ndkEvents : [...prevPosts, ...ndkEvents]);
+        setHasMorePosts(!result.pagination.last_page);
+        setCurrentPage(page);
+      } else {
+        if (page === 1) setFetchedPosts([]);
+        setHasMorePosts(false);
+      }
+
+    } catch (error: unknown) {
+      console.error("Search API error:", error);
+      setSearchError(`Failed to fetch search results: ${error instanceof Error ? error.message : String(error)}`);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [ndk, isReady]);
+
+  // Trigger search when debouncedQuery changes
+  useEffect(() => {
+    if (debouncedQuery && debouncedQuery.length >= 2) {
+      fetchSearchResults(debouncedQuery, 1);
+    } else if (!debouncedQuery) {
+      setFetchedPosts([]);
+      setDirectMatch(null);
+      setHasMorePosts(true);
+      setSearchError(null);
+      setIsLoading(false);
+      setCurrentPage(1);
+    }
+  }, [debouncedQuery, fetchSearchResults]);
+
+  // Load more function
+  const loadMorePosts = useCallback(() => {
+    if (!isLoading && hasMorePosts && debouncedQuery) {
+      fetchSearchResults(debouncedQuery, currentPage + 1);
+    }
+  }, [isLoading, hasMorePosts, debouncedQuery, currentPage, fetchSearchResults]);
 
   // Mention filtering
-  const filteredUsers = React.useMemo(() => {
+  const filteredUsers = useMemo(() => {
     if (!mentionQuery) return followingUsers.slice(0, 8);
     const q = mentionQuery.toLowerCase();
     return followingUsers
@@ -53,32 +206,38 @@ export function SearchContent() {
       setShowMentions(true);
     } else {
       setShowMentions(false);
+      // Clear mention query if it's not a mention anymore
+      if (mentionQuery) {
+        setMentionQuery("");
+      }
     }
   };
 
   const handleSelectUser = (u: NDKUser) => {
-    setSearchInput(u.npub);
+    setSearchInput(u.npub); // Set input to npub for search
+    setMentionQuery(""); 
     setShowMentions(false);
+    // Optionally trigger search for npub here if direct user lookup is implemented
   };
 
-  // Sync URL with search input
+  // Sync URL with search input (reflects typing immediately)
   useEffect(() => {
     const params = new URLSearchParams(searchParams.toString());
-    if (debouncedQuery) {
-      params.set("q", debouncedQuery);
+    if (searchInput) {
+      params.set("q", searchInput);
     } else {
       params.delete("q");
     }
     
-    // Update URL without a full page reload
     const queryStr = params.toString();
     const newUrl = queryStr ? `/search?${queryStr}` : "/search";
     
     // Only push if the query actually changed to avoid history spam
+    // Compare against current window.location.search to prevent infinite loops
     if (window.location.search !== `?${queryStr}` && (window.location.search !== "" || queryStr !== "")) {
       router.replace(newUrl);
     }
-  }, [debouncedQuery, router, searchParams]);
+  }, [searchInput, router, searchParams]);
 
   const trendingTags = ["nostr", "bitcoin", "tellit", "art", "tech", "zap", "photography", "meme"];
 
@@ -111,7 +270,20 @@ export function SearchContent() {
           )}
           {searchInput && (
             <button 
-              onClick={() => setSearchInput("")}
+              onClick={() => {
+                setSearchInput("");
+                // Need to update debouncedQuery state as well to trigger the search effect
+                // Since debouncedQuery is derived, we can't directly set it. Setting searchInput will cause debouncedQuery to eventually become empty.
+                // To clear results immediately, we manually reset states.
+                setFetchedPosts([]); 
+                setDirectMatch(null);
+                setHasMorePosts(true);
+                setSearchError(null);
+                setIsLoading(false);
+                setCurrentPage(1);
+                setMentionQuery(""); // Clear mention query too
+                setShowMentions(false);
+              }}
               className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
             >
               <X size={18} />
@@ -121,8 +293,8 @@ export function SearchContent() {
       </div>
 
       <div className="p-0">
-        {/* Direct Results (Exact Matches) */}
-        {(directResult.event || directResult.user) && (
+        {/* Direct Results (Exact Matches) - Placeholder, requires specific API support */}
+        {directMatch && (
           <section className="border-b-4 border-gray-100 dark:border-gray-900 animate-in slide-in-from-top duration-500">
             <div className="bg-blue-50/50 dark:bg-blue-900/10 p-4 border-b border-blue-100 dark:border-blue-900/30 flex items-center justify-between">
               <span className="text-[10px] font-black uppercase tracking-tighter text-blue-500 flex items-center gap-1.5">
@@ -131,23 +303,22 @@ export function SearchContent() {
               </span>
             </div>
             
-            {directResult.event && <PostCard event={directResult.event} />}
-            
-            {directResult.user && (
+            {directMatch.type === 'event' && <PostCard event={directMatch.data as NDKEvent} />}
+            {directMatch.type === 'user' && (
               <Link 
-                href={getProfileUrl({ ...directResult.user.profile, pubkey: directResult.user.pubkey })}
+                href={getProfileUrl(directMatch.data as NDKUser)} 
                 className="flex items-center gap-4 p-6 bg-white dark:bg-black hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
               >
                 <div className="relative">
                   <Image
-                    src={directResult.user.profile?.picture || `https://robohash.org/${directResult.user.pubkey}?set=set1`}
-                    alt={directResult.user.profile?.name || "Profile"}
+                    src={directMatch.data.profile?.picture || `https://robohash.org/${directMatch.data.pubkey}?set=set1`}
+                    alt={directMatch.data.profile?.name || "Profile"}
                     width={64}
                     height={64}
                     className="w-16 h-16 rounded-2xl object-cover bg-zinc-100 dark:bg-zinc-800 shadow-sm"
                     unoptimized
                   />
-                  {directResult.user.profile?.nip05 && (
+                  {directMatch.data.profile?.nip05 && (
                     <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-blue-500 text-white rounded-full flex items-center justify-center border-2 border-white dark:border-black shadow-sm">
                       <CheckCircle2 size={10} fill="currentColor" />
                     </div>
@@ -155,12 +326,12 @@ export function SearchContent() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <h3 className="font-black text-lg truncate">
-                    {directResult.user.profile?.display_name || directResult.user.profile?.name || shortenPubkey(directResult.user.npub)}
+                    {directMatch.data.profile?.display_name || directMatch.data.profile?.name || shortenPubkey(directMatch.data.pubkey)}
                   </h3>
                   <p className="text-sm text-gray-500 font-mono truncate">
-                    {directResult.user.profile?.nip05 
-                      ? (directResult.user.profile.nip05.startsWith('_@') ? directResult.user.profile.nip05.substring(1) : directResult.user.profile.nip05)
-                      : `@${directResult.user.profile?.name || shortenPubkey(directResult.user.npub, 12)}`}
+                    {directMatch.data.profile?.nip05 
+                      ? (directMatch.data.profile.nip05.startsWith('_@') ? directMatch.data.profile.nip05.substring(1) : directMatch.data.profile.nip05)
+                      : `@${directMatch.data.profile?.name || shortenPubkey(directMatch.data.pubkey, 12)}`}
                   </p>
                 </div>
                 <div className="bg-blue-500 text-white text-xs font-black px-4 py-2 rounded-xl shadow-lg shadow-blue-500/20">
@@ -172,7 +343,7 @@ export function SearchContent() {
         )}
 
         {/* Initial/Empty Query State */}
-        {!debouncedQuery && !loading && (
+        {!debouncedQuery && !isLoading && fetchedPosts.length === 0 && !directMatch && searchError === null && (
           <div className="animate-in fade-in duration-500">
             <div className="p-8 text-center text-gray-500">
               <div className="inline-flex items-center justify-center w-20 h-20 bg-blue-50 dark:bg-blue-900/10 text-blue-500 rounded-3xl mb-6">
@@ -202,7 +373,8 @@ export function SearchContent() {
           </div>
         )}
 
-        {loading && profiles.length === 0 && posts.length === 0 && !directResult.event && (
+        {/* Loading State */}
+        {isLoading && fetchedPosts.length === 0 && !directMatch && (
           <div className="py-6 overflow-hidden">
             <div className="h-4 w-32 bg-gray-100 dark:bg-gray-900 rounded-full animate-pulse mb-6 px-6 mx-6" />
             <div className="flex overflow-x-auto pb-4 space-x-4 scrollbar-hide px-6">
@@ -220,73 +392,25 @@ export function SearchContent() {
           </div>
         )}
 
-        {debouncedQuery && profiles.length > 0 && (
-          <section className="py-6 border-b border-gray-100 dark:border-gray-900 animate-in fade-in duration-300 overflow-hidden">
-            <div className="flex items-center justify-between mb-6 px-6">
-              <h2 className="text-sm font-black uppercase tracking-widest text-gray-400">People</h2>
-              <span className="text-[10px] font-bold bg-gray-100 dark:bg-gray-900 px-2 py-0.5 rounded-full text-gray-500">{profiles.length} found</span>
-            </div>
-            <div className="flex overflow-x-auto pb-4 gap-4 scrollbar-hide px-6">
-              {profiles.map((user) => (
-                <Link
-                  key={user.pubkey}
-                  href={getProfileUrl({ ...user.profile, pubkey: user.pubkey })}
-                  className={`flex flex-col items-center min-w-[130px] max-w-[130px] p-4 rounded-3xl transition-all text-center group ${
-                    directResult.user?.pubkey === user.pubkey 
-                    ? "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800" 
-                    : "bg-gray-50 dark:bg-gray-900/50 hover:bg-blue-50 dark:hover:bg-blue-900/20 border-transparent"
-                  } border`}
-                >
-                  <div className="relative mb-3 shrink-0">
-                    <Image
-                      src={user.profile?.picture || `https://robohash.org/${user.pubkey}?set=set1`}
-                      alt={user.profile?.name || "Profile"}
-                      width={80}
-                      height={80}
-                      className="w-20 h-20 rounded-3xl object-cover bg-white dark:bg-black shadow-sm group-hover:scale-105 transition-transform duration-300"
-                      unoptimized={true}
-                    />
-                    {(user.profile?.nip05 || directResult.user?.pubkey === user.pubkey) && (
-                      <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center border-2 border-white dark:border-black shadow-sm">
-                        <CheckCircle2 size={12} fill="currentColor" className="text-white" />
-                      </div>
-                    )}
-                  </div>
-                  <p className="font-black text-sm truncate w-full text-gray-900 dark:text-white px-1">
-                    {user.profile?.display_name || user.profile?.name || shortenPubkey(user.npub)}
-                  </p>
-                  <p className="text-[10px] text-gray-500 font-mono truncate w-full mt-1 px-1 lowercase">
-                    {user.profile?.nip05 
-                      ? (user.profile.nip05.startsWith('_@') ? user.profile.nip05.substring(1) : user.profile.nip05)
-                      : `@${user.profile?.name || shortenPubkey(user.npub, 10)}`}
-                  </p>
-                </Link>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {(posts.length > 0 || directResult.event) && (
+        {/* Posts Results */}
+        {fetchedPosts.length > 0 && (
           <section className="pb-20 animate-in fade-in duration-500">
             <h2 className="text-sm font-black uppercase tracking-widest text-gray-400 p-6">
-              {directResult.event ? "Related Results" : "Posts & Articles"}
+              {directMatch?.type === 'event' ? "Related Results" : "Posts"}
             </h2>
             <div className="divide-y divide-gray-100 dark:divide-gray-900">
-              {posts
-                .filter(post => post.id !== directResult.event?.id)
-                .map((post) => (
-                  <PostCard key={post.id} event={post} />
-                ))
-              }
+              {fetchedPosts.map((post) => (
+                <PostCard key={post.id} event={post} />
+              ))}
             </div>
-            {hasMore && posts.length >= 20 && (
+            {hasMorePosts && fetchedPosts.length >= RESULTS_PER_PAGE && (
               <div className="p-10 text-center border-t border-gray-100 dark:divide-gray-900">
                 <button 
-                  onClick={() => loadMore()}
-                  disabled={loading}
+                  onClick={loadMorePosts}
+                  disabled={isLoading}
                   className="px-8 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-2xl text-sm font-black transition-all shadow-lg shadow-blue-500/20 active:scale-95 disabled:opacity-50"
                 >
-                  {loading ? (
+                  {isLoading ? (
                     <span className="flex items-center gap-2">
                       <Loader2 size={18} className="animate-spin" />
                       Loading Results…
@@ -297,14 +421,26 @@ export function SearchContent() {
             )}
           </section>
         )}
-
-        {!loading && debouncedQuery && profiles.length === 0 && posts.length === 0 && !directResult.event && (
+        
+        {/* No results found state */}
+        {!isLoading && debouncedQuery && fetchedPosts.length === 0 && !directMatch && searchError === null && (
           <div className="text-center p-20 animate-in zoom-in-95 duration-300">
             <div className="inline-flex items-center justify-center w-16 h-16 bg-red-50 dark:bg-red-900/10 text-red-500 rounded-2xl mb-6">
               <X size={32} />
             </div>
             <h3 className="text-xl font-black text-gray-900 dark:text-white mb-2">No matches found</h3>
             <p className="text-sm text-gray-500 max-w-xs mx-auto">We couldn&apos;t find anything for &quot;{debouncedQuery}&quot;. Try a different keyword or hashtag.</p>
+          </div>
+        )}
+        
+        {/* Error state */}
+        {searchError && (
+          <div className="text-center p-20 animate-in zoom-in-95 duration-300">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-red-50 dark:bg-red-900/10 text-red-500 rounded-2xl mb-6">
+              <X size={32} />
+            </div>
+            <h3 className="text-xl font-black text-gray-900 dark:text-white mb-2">Search Error</h3>
+            <p className="text-sm text-gray-500 max-w-xs mx-auto">{searchError}</p>
           </div>
         )}
       </div>
