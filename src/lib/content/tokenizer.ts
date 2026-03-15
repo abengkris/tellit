@@ -192,6 +192,8 @@ export interface ImetaMetadata {
   mimeType?: string;
   size?: string;
   dim?: string;
+  dimensions?: { w: number; h: number };
+  alt?: string;
 }
 
 /**
