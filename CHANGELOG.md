@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.7.11] - 2026-03-16
+
+### Added
+- **Trending Posts:** Integrated `nostr.wine` trending API into the search/discovery page. Users can now see top-zapped posts from the last 24 hours when the search bar is empty.
+- **Enhanced useTrendingPosts Hook:** Updated the hook to support custom timeframes (hours), ordering (zaps, reposts, etc.), and automatic NDK event resolution.
+
+## [0.7.10] - 2026-03-16
+
+### Added
+- **NDK Debugging:** Integrated NDK network debugging and general NDK logs. Developers can now enable detailed protocol logs by setting `localStorage.debug = 'ndk:*'` in the browser console. Network traffic (REQ/EVENT/CLOSE) can be specifically monitored by including `ndk:net` in the debug string.
+
 ## [0.7.9] - 2026-03-09
 
 ### Added

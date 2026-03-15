@@ -16,6 +16,7 @@ import { NDKEvent, NDKUser } from "@nostr-dev-kit/ndk";
 import { getProfileUrl } from "@/lib/utils/identity";
 import { useNDK } from "@/hooks/useNDK";
 import { useTrending } from "@/hooks/useTrending";
+import { useTrendingPosts } from "@/hooks/useTrendingPosts";
 
 // Constants for API and pagination
 const NOSTR_WINE_API_URL = "https://api.nostr.wine/search";
@@ -51,6 +52,7 @@ export function SearchContent() {
   const { ndk, isReady } = useNDK();
   const { followingUsers, loading: loadingFollowing } = useFollowingList(user?.pubkey);
   const { trending, loading: loadingTrending } = useTrending();
+  const { trendingPosts, loading: loadingTrendingPosts } = useTrendingPosts(ndk, { hours: 24, order: "zap_amount" });
 
   const initialQuery = searchParams.get("q") || "";
   
@@ -385,6 +387,26 @@ export function SearchContent() {
                   ))
                 )}
               </div>
+            </div>
+
+            {/* Trending Posts Section */}
+            <div className="mt-4">
+              <div className="px-6 py-4 flex items-center gap-2 text-gray-400 border-t border-gray-100 dark:border-gray-900">
+                <TrendingUp size={16} />
+                <span className="text-xs font-black uppercase tracking-widest">Trending Posts</span>
+              </div>
+              
+              {loadingTrendingPosts ? (
+                <div className="mt-2">
+                  <FeedSkeleton />
+                </div>
+              ) : (
+                <div className="divide-y divide-gray-100 dark:divide-gray-900">
+                  {trendingPosts.map((post) => (
+                    <PostCard key={post.id} event={post} />
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         )}

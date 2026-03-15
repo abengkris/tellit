@@ -49,3 +49,10 @@ As a "Tell it!" developer, you MUST adhere to local-first principles to ensure a
 - **Handling Failures:** Always listen to `event:publish-failed` globally to notify users. UI components should handle local state rollbacks if a persistent failure is detected.
 - **Resilience:** Ensure the application checks for unpublished events on boot-up and re-attempts to sync them with relays.
 - **Non-Blocking UI:** Avoid long-running spinners for network operations that NDK can handle asynchronously in the background. Update the local UI state immediately.
+
+## Debugging (NDK)
+
+NDK uses the `debug` package. Enable it in the browser console:
+- **General Logs:** `localStorage.debug = 'ndk:*'`
+- **Network Traffic:** `localStorage.debug = 'ndk:*,ndk:net'` (shows REQ, EVENT, CLOSE)
+- **Disable:** `localStorage.removeItem('debug')`
