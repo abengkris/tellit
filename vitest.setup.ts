@@ -28,10 +28,3 @@ const localStorageMock = (() => {
 Object.defineProperty(global, 'localStorage', {
   value: localStorageMock,
 });
-
-vi.mock('nostr-tools', () => ({
-  nip19: {
-    decode: vi.fn().mockReturnValue({ data: 'decoded-pubkey' }),
-    encode: vi.fn().mockReturnValue('npub1...'),
-  },
-}));

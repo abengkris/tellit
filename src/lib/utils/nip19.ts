@@ -1,4 +1,4 @@
-import * as nip19 from "nostr-tools/nip19";
+import { nip19 } from "nostr-tools";
 
 /**
  * Decodes a NIP-19 string and returns its ID and any associated relays.
@@ -13,43 +13,49 @@ export function decodeNip19(nip19String: string): {
 } {
   if (!nip19String) return { id: "" };
   
-  if (/^[0-9a-fA-F]{64}$/.test(nip19String)) {
-    return { id: nip19String };
+  const cleanString = nip19String.replace(/^nostr:/, "");
+  
+  if (/^[0-9a-fA-F]{64}$/.test(cleanString)) {
+    return { id: cleanString };
   }
 
   try {
-    const decoded = nip19.decode(nip19String);
-    
+    const decoded = nip19.decode(cleanString);
+
     switch (decoded.type) {
       case "npub":
       case "note":
         return { id: decoded.data as string };
       case "nprofile":
-        return { id: decoded.data.pubkey, relays: decoded.data.relays, pubkey: decoded.data.pubkey };
+        const profileData = decoded.data as { pubkey: string; relays?: string[] };
+        return { id: profileData.pubkey, relays: profileData.relays, pubkey: profileData.pubkey };
       case "nevent":
+        const eventData = decoded.data as { id: string; relays?: string[]; kind?: number; author?: string };
         return { 
-          id: decoded.data.id, 
-          relays: decoded.data.relays, 
-          kind: decoded.data.kind, 
-          author: decoded.data.author,
-          pubkey: decoded.data.author 
+          id: eventData.id, 
+          relays: eventData.relays, 
+          kind: eventData.kind, 
+          author: eventData.author,
+          pubkey: eventData.author 
         };
       case "naddr":
+        const addrData = decoded.data as { identifier: string; pubkey: string; kind: number; relays?: string[] };
         return { 
-          id: decoded.data.identifier, 
-          relays: decoded.data.relays, 
-          kind: decoded.data.kind, 
-          pubkey: decoded.data.pubkey,
-          identifier: decoded.data.identifier,
-          author: decoded.data.pubkey
+          id: addrData.identifier, 
+          relays: addrData.relays, 
+          kind: addrData.kind, 
+          pubkey: addrData.pubkey,
+          identifier: addrData.identifier,
+          author: addrData.pubkey
         };
       default:
-        return { id: nip19String };
+        return { id: cleanString };
     }
   } catch {
-    return { id: nip19String };
+    return { id: cleanString };
   }
 }
+
 
 /**
  * Decodes a NIP-19 string (npub, nprofile, note, nevent, naddr) to its hex ID or pubkey.

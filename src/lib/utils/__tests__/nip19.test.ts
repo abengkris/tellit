@@ -3,7 +3,8 @@ import {
   decodeNip19, 
   decodeToHex, 
   toNpub, 
-  toNote, 
+  toNote,
+  toNEvent,
   shortenPubkey 
 } from "../nip19";
 
@@ -22,6 +23,17 @@ describe("NIP-19 Utilities", () => {
     it("should decode note to hex id", () => {
       const result = decodeNip19(TEST_NOTE_BECH32);
       expect(result.id).toBe(TEST_NOTE_ID);
+    });
+
+    it("should decode nevent to hex id and relays", () => {
+      const relays = ["wss://relay.example.com"];
+      const nevent = toNEvent(TEST_NOTE_ID, TEST_PUBKEY, 1, relays);
+      const result = decodeNip19(nevent);
+      
+      expect(result.id).toBe(TEST_NOTE_ID);
+      expect(result.relays).toEqual(relays);
+      expect(result.author).toBe(TEST_PUBKEY);
+      expect(result.kind).toBe(1);
     });
 
     it("should return hex string as is if already hex", () => {
