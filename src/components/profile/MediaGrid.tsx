@@ -6,7 +6,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { Play, FileText, Image as ImageIcon } from "lucide-react";
 import { tokenize, parseImeta } from "@/lib/content/tokenizer";
-import { nip19 } from "@nostr-dev-kit/ndk";
 import { Blurhash } from "react-blurhash";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
@@ -104,11 +103,7 @@ function MediaItem({ post, onOpenLightbox }: { post: NDKEvent; onOpenLightbox: (
   };
 
   const href = post.kind === 30023 
-    ? `/article/${nip19.naddrEncode({
-        kind: 30023,
-        pubkey: post.pubkey,
-        identifier: post.tags.find(t => t[0] === 'd')?.[1] || ""
-      })}`
+    ? `/article/${post.encode()}`
     : `/post/${post.encode()}`;
 
   return (

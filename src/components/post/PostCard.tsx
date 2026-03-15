@@ -20,7 +20,6 @@ import { ReplyModal } from "./parts/ReplyModal";
 import { QuoteModal } from "./parts/QuoteModal";
 import { PollRenderer } from "./PollRenderer";
 import { shortenPubkey } from "@/lib/utils/nip19";
-import { nip19 } from "@nostr-dev-kit/ndk";
 import { useLists } from "@/hooks/useLists";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
@@ -125,16 +124,8 @@ export const PostCard: React.FC<PostCardProps> = ({
 
   const userNpub = displayEvent.author.npub;
   const eventNoteId = useMemo(() => {
-    if (isArticle) {
-      const dTag = displayEvent.tags.find(t => t[0] === 'd')?.[1] || "";
-      return nip19.naddrEncode({
-        kind: 30023,
-        pubkey: displayEvent.pubkey,
-        identifier: dTag
-      });
-    }
     return displayEvent.encode();
-  }, [displayEvent, isArticle]);
+  }, [displayEvent]);
 
   const navigationHref = useMemo(() => {
     if (isArticle) return `/article/${eventNoteId}`;

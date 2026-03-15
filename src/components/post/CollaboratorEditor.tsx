@@ -3,11 +3,12 @@
 import React, { useState } from "react";
 import { Trash2, X, Users } from "lucide-react";
 import { ZapSplit } from "@/lib/actions/post";
-import { nip19 } from "@nostr-dev-kit/ndk";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
+import { decodeNip19 } from "@/lib/utils/nip19";
+import { useUIStore } from "@/store/ui";
 
 interface CollaboratorEditorProps {
   splits: ZapSplit[];
@@ -18,29 +19,25 @@ interface CollaboratorEditorProps {
 export const CollaboratorEditor: React.FC<CollaboratorEditorProps> = ({ splits, setSplits, onClose }) => {
   const [inputVal, setInputVal] = useState("");
   const [weightVal, setWeightVal] = useState(50);
+  const { addToast } = useUIStore();
 
   const addCollaborator = () => {
     try {
-      let pubkey = inputVal.trim();
-      if (pubkey.startsWith("npub")) {
-        const decoded = nip19.decode(pubkey);
-        pubkey = decoded.data as string;
-      }
-
+      const pubkey = decodeNip19(inputVal).id;
       if (!/^[0-9a-fA-F]{64}$/.test(pubkey)) {
-        alert("Invalid pubkey or npub");
+        addToast("Invalid pubkey or npub", "error");
         return;
       }
 
       if (splits.some(s => s.pubkey === pubkey)) {
-        alert("Collaborator already added");
+        addToast("Collaborator already added", "info");
         return;
       }
 
       setSplits([...splits, { pubkey, weight: weightVal }]);
       setInputVal("");
     } catch {
-      alert("Invalid format");
+      addToast("Invalid format", "error");
     }
   };
 

@@ -13,7 +13,7 @@ import { ArrowLeft, Send, Loader2, Image as ImageIcon, Smile, X } from "lucide-r
 import Link from "next/link";
 import { Avatar } from "@/components/common/Avatar";
 import { MessageBubbleContent } from "@/components/common/MessageBubbleContent";
-import { nip19 } from "@nostr-dev-kit/ndk";
+import { decodeNip19 } from "@/lib/utils/nip19";
 
 export default function ChatPage({ params }: { params: Promise<{ pubkey: string }> }) {
   const { pubkey } = use(params);
@@ -34,7 +34,7 @@ export default function ChatPage({ params }: { params: Promise<{ pubkey: string 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const hexPubkey = pubkey.startsWith("npub") ? nip19.decode(pubkey).data as string : pubkey;
+  const hexPubkey = decodeNip19(pubkey).id;
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });

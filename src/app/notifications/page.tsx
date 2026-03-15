@@ -49,17 +49,7 @@ const NotificationItem = ({ event }: { event: TellItNotification }) => {
       // Handle NIP-33/Long-form links
       const parts = aTag[1].split(':');
       if (parts[0] === '30023') {
-        // Encode as naddr
-        try {
-          const naddr = nip19.naddrEncode({
-            kind: 30023,
-            pubkey: parts[1],
-            identifier: parts[2]
-          });
-          return `/article/${naddr}`;
-        } catch (e) {
-          return `/post/${event.encode()}`;
-        }
+        return `/article/${event.encode()}`;
       }
     }
 

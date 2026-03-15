@@ -14,7 +14,7 @@ import { ShortenedUrl } from "../tokens/ShortenedUrl";
 import { UrlPreview } from "../tokens/UrlPreview";
 import { PodcastEmbed } from "../tokens/PodcastEmbed";
 import { AsyncMediaEmbed } from "../tokens/AsyncMediaEmbed";
-import { NDKEvent, nip19 } from "@nostr-dev-kit/ndk";
+import { NDKEvent } from "@nostr-dev-kit/ndk";
 import { shortenPubkey, toNpub } from "@/lib/utils/nip19";
 import { useProfile } from "@/hooks/useProfile";
 import { Play } from "lucide-react";
@@ -75,19 +75,7 @@ export function PostContentRenderer({
       const parts = aTag[1].split(':');
       if (parts.length >= 3) {
         const kind = parseInt(parts[0]);
-        const pubkey = parts[1];
-        const identifier = parts.slice(2).join(':');
-        
-        try {
-          const naddr = nip19.naddrEncode({
-            kind,
-            pubkey,
-            identifier
-          });
-          return { id: naddr, type: kind === 30023 ? 'article' : 'event' as const };
-        } catch {
-          return { id: aTag[1], type: 'event' as const };
-        }
+        return { id: aTag[1], type: kind === 30023 ? 'article' : 'event' as const };
       }
       return { id: aTag[1], type: 'event' as const };
     }

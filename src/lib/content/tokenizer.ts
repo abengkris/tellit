@@ -1,4 +1,4 @@
-import { nip19 } from "@nostr-dev-kit/ndk";
+import { decodeNip19 } from "../utils/nip19";
 
 export type TokenType =
   | "text"

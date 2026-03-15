@@ -1,5 +1,7 @@
 import NDK, { NDKEvent, NDKTag, nip19 } from "@nostr-dev-kit/ndk";
 
+import { decodeNip19 } from "@/lib/utils/nip19";
+
 import { createPoll, CreatePollOptions } from "./poll";
 
 export interface ZapSplit {
@@ -82,8 +84,8 @@ export const publishPost = async (
   for (const match of mentions) {
     try {
       const npub = match[1];
-      const { data: pubkey } = nip19.decode(npub);
-      if (typeof pubkey === "string") {
+      const pubkey = decodeNip19(npub).id;
+      if (pubkey && pubkey !== npub) {
         event.tags.push(["p", pubkey, "", "mention"]);
       }
     } catch (e) {

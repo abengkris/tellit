@@ -43,7 +43,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { NDKEvent } from "@nostr-dev-kit/ndk";
 import { Avatar } from "@/components/common/Avatar";
-import { shortenPubkey } from "@/lib/utils/nip19";
+import { decodeNip19, shortenPubkey } from "@/lib/utils/nip19";
 const LightningAddressDialog = ({ 
   handleName, 
   initialAddress,
@@ -518,14 +518,10 @@ const TransferHandleDialog = ({
               />
               <Button 
                 onClick={() => {
-                  let pk = targetPubkey;
-                  if (pk.startsWith('npub')) {
-                    try {
-                      pk = nip19.decode(pk).data as string;
-                    } catch {
-                      addToast("Invalid npub", "error");
-                      return;
-                    }
+                  const pk = decodeNip19(targetPubkey).id;
+                  if (!/^[0-9a-fA-F]{64}$/.test(pk)) {
+                    addToast("Invalid pubkey", "error");
+                    return;
                   }
                   handleTransfer(pk);
                 }}
