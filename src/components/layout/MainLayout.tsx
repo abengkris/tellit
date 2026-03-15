@@ -131,12 +131,23 @@ export const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }
 const MobileNavItem = ({ href, icon: Icon, active, badge }: { href: string; icon: LucideIcon; active: boolean; badge?: number }) => {
   const label = href === "/" ? "Home" : href.replace("/", "").charAt(0).toUpperCase() + href.slice(2);
   
+  const handleClick = (e: React.MouseEvent) => {
+    if (active && href === "/") {
+      e.preventDefault();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  };
+
   return (
     <Button asChild variant="ghost" className={cn(
       "p-3 rounded-full transition-all active:scale-90 relative h-auto",
       active ? 'text-primary' : 'text-muted-foreground'
     )}>
-      <Link href={href} aria-label={`${label} ${badge && badge > 0 ? `(${badge} new)` : ""}`}>
+      <Link 
+        href={href} 
+        aria-label={`${label} ${badge && badge > 0 ? `(${badge} new)` : ""}`}
+        onClick={handleClick}
+      >
         <Icon 
           className="size-6"
           strokeWidth={active ? 3 : 2} 

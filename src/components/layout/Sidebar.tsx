@@ -19,7 +19,6 @@ import { AccountSwitcher } from "./AccountSwitcher";
 import { 
   Tooltip, 
   TooltipContent, 
-  TooltipProvider,
   TooltipTrigger 
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
@@ -42,6 +41,13 @@ const SidebarItem = ({
   const pathname = usePathname();
   const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
 
+  const handleClick = (e: React.MouseEvent) => {
+    if (active && href === "/") {
+      e.preventDefault();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  };
+
   return (
     <Tooltip>
       <TooltipTrigger asChild>
@@ -53,7 +59,7 @@ const SidebarItem = ({
             active ? "font-bold text-primary bg-accent/50" : "text-muted-foreground hover:text-foreground"
           )}
         >
-          <Link href={href} aria-label={label}>
+          <Link href={href} aria-label={label} onClick={handleClick}>
             <div className="relative flex items-center justify-center shrink-0 size-7">
               {pubkey ? (
                 <Avatar pubkey={pubkey} size={28} isLoading={isLoading} />
