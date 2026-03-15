@@ -170,11 +170,14 @@ export function useLists(targetPubkey?: string) {
 
       // Update NDK's internal mute list for immediate effect
       if (kind === ListKind.Mute && ndk.activeUser) {
-        // NDK will pick up the new event if we emit a change or just manually update its set
-        if (action === 'add') {
-          ndk.mutedIds.add(value);
-        } else {
-          ndk.mutedIds.delete(value);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const mutes = (ndk as any).mutedIds;
+        if (mutes) {
+          if (action === 'add') {
+            mutes.add(value);
+          } else {
+            mutes.delete(value);
+          }
         }
       }
 

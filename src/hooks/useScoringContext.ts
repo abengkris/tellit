@@ -10,7 +10,7 @@ export function useScoringContext(
   followingList: string[]
 ): ScoringContext | null {
   const { ndk, isReady } = useNDK();
-  const { wot, trustScores } = useWoT(viewerPubkey);
+  const { trustScores } = useWoT(viewerPubkey);
   const [ctx, setCtx] = useState<ScoringContext | null>(null);
   const buildingRef = useRef(false);
 
@@ -57,29 +57,17 @@ export function useScoringContext(
         }
       }
 
-      const mutedSet = new Set<string>();
-      const muteListEvent = await ndk.fetchEvent({
-        kinds: [10000],
-        authors: [viewerPubkey!],
-      });
-      if (muteListEvent) {
-        for (const tag of muteListEvent.tags) {
-          if (tag[0] === "p" && tag[1]) mutedSet.add(tag[1]);
-        }
-      }
-
       setCtx({
         viewerPubkey: viewerPubkey!,
         followingSet: new Set(followingList),
         followsOfFollowsSet: followsOfFollows,
         interactionHistory,
-        mutedSet,
         trustScores: trustScores,
       });
     }
 
     build().catch(console.error);
-  }, [ndk, isReady, viewerPubkey, followingList.join(","), trustScores]);
+  }, [ndk, isReady, viewerPubkey, followingList, trustScores]);  
 
   return ctx;
 }
