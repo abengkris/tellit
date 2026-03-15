@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
-import NDK, { NDKUser, NDKNip07Signer, NDKPrivateKeySigner } from "@nostr-dev-kit/ndk";
+import NDK, { NDKUser, NDKNip07Signer, NDKPrivateKeySigner, NDKNip46Signer } from "@nostr-dev-kit/ndk";
 import { NDKSessionManager } from "@nostr-dev-kit/sessions";
 import { resetWoT } from "@/hooks/useWoT";
 import { useWalletStore } from "./wallet";
@@ -9,10 +9,12 @@ interface AuthState {
   user: NDKUser | null;
   publicKey: string | null;
   privateKey: string | null; 
+  bunkerUri: string | null;
+  bunkerLocalNsec: string | null;
   accounts: string[]; // Array of public keys
   isLoggedIn: boolean;
   isLoading: boolean;
-  loginType: 'nip07' | 'privateKey' | 'none';
+  loginType: 'nip07' | 'privateKey' | 'bunker' | 'none';
   _hasHydrated: boolean;
   
   setHasHydrated: (state: boolean) => void;
@@ -20,6 +22,8 @@ interface AuthState {
   setAccounts: (accounts: string[]) => void;
   login: (ndk: NDK, sessions: NDKSessionManager) => Promise<void>;
   loginWithPrivateKey: (ndk: NDK, sessions: NDKSessionManager, privateKey: string) => Promise<void>;
+  loginWithNcryptsec: (ndk: NDK, sessions: NDKSessionManager, ncryptsec: string, password: string) => Promise<void>;
+  loginWithBunker: (ndk: NDK, sessions: NDKSessionManager, bunkerUri: string, localNsec?: string) => Promise<void>;
   generateNewKey: (ndk: NDK, sessions: NDKSessionManager) => Promise<string>;
   switchAccount: (pubkey: string, sessions: NDKSessionManager) => Promise<void>;
   removeAccount: (pubkey: string, sessions: NDKSessionManager) => void;
@@ -34,6 +38,8 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       publicKey: null,
       privateKey: null,
+      bunkerUri: null,
+      bunkerLocalNsec: null,
       accounts: [],
       isLoggedIn: false,
       isLoading: false,
@@ -104,6 +110,72 @@ export const useAuthStore = create<AuthState>()(
         }
       },
 
+      loginWithNcryptsec: async (ndk, sessions, ncryptsec, password) => {
+        set({ isLoading: true });
+        try {
+          const signer = NDKPrivateKeySigner.fromNcryptsec(ncryptsec, password);
+          const privateKey = signer.privateKey!;
+          
+          const pubkey = await sessions.login(signer, {
+            setActive: true
+          });
+
+          if (pubkey) {
+            const currentAccounts = get().accounts;
+            const newAccounts = currentAccounts.includes(pubkey) 
+              ? currentAccounts 
+              : [...currentAccounts, pubkey];
+
+            set({ 
+              publicKey: pubkey, 
+              privateKey: privateKey,
+              accounts: newAccounts,
+              isLoggedIn: true, 
+              isLoading: false,
+              loginType: 'privateKey'
+            });
+          }
+        } catch (error) {
+          console.error("Ncryptsec login failed:", error);
+          set({ isLoading: false });
+          throw error;
+        }
+      },
+
+      loginWithBunker: async (ndk, sessions, bunkerUri, localNsec) => {
+        set({ isLoading: true });
+        try {
+          const signer = NDKNip46Signer.bunker(ndk, bunkerUri, localNsec);
+          const user = await signer.blockUntilReady();
+          const pubkey = user.pubkey;
+
+          if (pubkey) {
+            const pubkey = await sessions.login(signer, {
+              setActive: true
+            });
+
+            const currentAccounts = get().accounts;
+            const newAccounts = currentAccounts.includes(pubkey) 
+              ? currentAccounts 
+              : [...currentAccounts, pubkey];
+
+            set({ 
+              publicKey: pubkey, 
+              bunkerUri: bunkerUri,
+              bunkerLocalNsec: signer.localSigner?.nsec || localNsec || null,
+              accounts: newAccounts,
+              isLoggedIn: true, 
+              isLoading: false,
+              loginType: 'bunker'
+            });
+          }
+        } catch (error) {
+          console.error("Bunker login failed:", error);
+          set({ isLoading: false });
+          throw error;
+        }
+      },
+
       generateNewKey: async (ndk, sessions) => {
         const { signer } = await sessions.createAccount({
           // Automatic setup could be added here
@@ -154,6 +226,8 @@ export const useAuthStore = create<AuthState>()(
             user: null, 
             publicKey: null, 
             privateKey: null, 
+            bunkerUri: null,
+            bunkerLocalNsec: null,
             isLoggedIn: false, 
             loginType: 'none' 
           });
@@ -172,6 +246,8 @@ export const useAuthStore = create<AuthState>()(
           user: null, 
           publicKey: null, 
           privateKey: null, 
+          bunkerUri: null,
+          bunkerLocalNsec: null,
           isLoggedIn: false, 
           loginType: 'none' 
         });
@@ -188,6 +264,8 @@ export const useAuthStore = create<AuthState>()(
           user: null, 
           publicKey: null, 
           privateKey: null, 
+          bunkerUri: null,
+          bunkerLocalNsec: null,
           accounts: [],
           isLoggedIn: false, 
           loginType: 'none' 
@@ -203,6 +281,8 @@ export const useAuthStore = create<AuthState>()(
       partialize: (state) => ({ 
         publicKey: state.publicKey, 
         privateKey: state.privateKey, 
+        bunkerUri: state.bunkerUri,
+        bunkerLocalNsec: state.bunkerLocalNsec,
         accounts: state.accounts,
         isLoggedIn: state.isLoggedIn, 
         loginType: state.loginType 

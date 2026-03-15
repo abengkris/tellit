@@ -15,12 +15,18 @@ import {
   EyeOff, 
   Copy, 
   CheckCircle2, 
-  Loader2 
+  Loader2,
+  Database,
+  Lock
 } from "lucide-react";
 
 export default function LoginPage() {
   const [privateKey, setPrivateKey] = useState("");
+  const [password, setPassword] = useState("");
+  const [bunkerUri, setBunkerUri] = useState("");
+  const [loginMethod, setLoginMethod] = useState<'nsec' | 'ncryptsec' | 'bunker'>('nsec');
   const [showPassword, setShowPassword] = useState(false);
+  const [showNcryptPassword, setShowNcryptPassword] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [newKey, setNewKey] = useState("");
   const [isCopied, setIsCopied] = useState(false);
@@ -28,9 +34,12 @@ export default function LoginPage() {
   const { 
     login, 
     loginWithPrivateKey, 
+    loginWithNcryptsec,
+    loginWithBunker,
     generateNewKey, 
     isLoading, 
-    isLoggedIn
+    isLoggedIn,
+    bunkerLocalNsec
   } = useAuthStore();
   
   const { ndk, sessions, isReady } = useNDK();
@@ -58,13 +67,25 @@ export default function LoginPage() {
 
   const handleKeyLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!ndk || !sessions || !isReady || !privateKey) return;
+    if (!ndk || !sessions || !isReady) return;
+
     try {
-      await loginWithPrivateKey(ndk, sessions, privateKey);
+      if (loginMethod === 'nsec') {
+        if (!privateKey) return;
+        await loginWithPrivateKey(ndk, sessions, privateKey);
+      } else if (loginMethod === 'ncryptsec') {
+        if (!privateKey || !password) return;
+        await loginWithNcryptsec(ndk, sessions, privateKey, password);
+      } else if (loginMethod === 'bunker') {
+        if (!bunkerUri) return;
+        await loginWithBunker(ndk, sessions, bunkerUri, bunkerLocalNsec || undefined);
+      }
+      
       addToast("Account added successfully!", "success");
       router.push("/");
-    } catch (err) {
-      addToast("Invalid private key.", "error");
+    } catch (err: unknown) {
+      console.error(err);
+      addToast(err instanceof Error ? err.message : "Login failed.", "error");
     }
   };
 
@@ -175,46 +196,109 @@ export default function LoginPage() {
               <div className="w-full border-t border-gray-200 dark:border-gray-800"></div>
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white dark:bg-gray-900 text-gray-500">Or use private key</span>
+              <span className="px-2 bg-white dark:bg-gray-900 text-gray-500">Manual Login</span>
             </div>
           </div>
 
+          <div className="flex p-1 bg-gray-100 dark:bg-black rounded-xl mb-6">
+            <button
+              onClick={() => setLoginMethod('nsec')}
+              className={`flex-1 flex items-center justify-center space-x-2 py-2 rounded-lg text-xs font-bold transition-all ${loginMethod === 'nsec' ? 'bg-white dark:bg-gray-800 shadow-sm text-blue-500' : 'text-gray-500'}`}
+            >
+              <Key size={14} />
+              <span>nsec</span>
+            </button>
+            <button
+              onClick={() => setLoginMethod('ncryptsec')}
+              className={`flex-1 flex items-center justify-center space-x-2 py-2 rounded-lg text-xs font-bold transition-all ${loginMethod === 'ncryptsec' ? 'bg-white dark:bg-gray-800 shadow-sm text-blue-500' : 'text-gray-500'}`}
+            >
+              <Lock size={14} />
+              <span>ncryptsec</span>
+            </button>
+            <button
+              onClick={() => setLoginMethod('bunker')}
+              className={`flex-1 flex items-center justify-center space-x-2 py-2 rounded-lg text-xs font-bold transition-all ${loginMethod === 'bunker' ? 'bg-white dark:bg-gray-800 shadow-sm text-blue-500' : 'text-gray-500'}`}
+            >
+              <Database size={14} />
+              <span>Bunker</span>
+            </button>
+          </div>
+
           <form onSubmit={handleKeyLogin} className="space-y-4">
-            <div className="bg-red-50 dark:bg-red-900/10 p-3 rounded-xl border border-red-100 dark:border-red-900/30 flex items-start space-x-3 mb-2">
-              <AlertTriangle size={16} className="text-red-500 shrink-0 mt-0.5" />
-              <p className="text-[11px] text-red-600 dark:text-red-400 text-left">
-                Security Warning: Pasting your private key (nsec) is risky. Use a browser extension like Alby for better security.
-              </p>
-            </div>
-            
-            <div className="relative">
-              <label htmlFor="private-key" className="sr-only">Private Key</label>
-              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                <Key className="h-5 w-5 text-gray-400" />
+            {loginMethod !== 'bunker' && (
+              <div className="bg-red-50 dark:bg-red-900/10 p-3 rounded-xl border border-red-100 dark:border-red-900/30 flex items-start space-x-3 mb-2">
+                <AlertTriangle size={16} className="text-red-500 shrink-0 mt-0.5" />
+                <p className="text-[11px] text-red-600 dark:text-red-400 text-left">
+                  Security Warning: Pasting your private key is risky. Use a browser extension like Alby for better security.
+                </p>
               </div>
-              <input
-                id="private-key"
-                type={showPassword ? "text" : "password"}
-                placeholder="nsec... or hex key"
-                value={privateKey}
-                onChange={(e) => setPrivateKey(e.target.value)}
-                className="block w-full pl-12 pr-12 py-4 border border-gray-200 dark:border-gray-800 rounded-2xl bg-gray-50 dark:bg-black focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all font-mono text-sm"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                aria-label={showPassword ? "Hide private key" : "Show private key"}
-                className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-gray-600"
-              >
-                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-              </button>
-            </div>
+            )}
+            
+            {loginMethod === 'bunker' ? (
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                  <Database className="h-5 w-5 text-gray-400" />
+                </div>
+                <input
+                  type="text"
+                  placeholder="bunker://... or user@provider.com"
+                  value={bunkerUri}
+                  onChange={(e) => setBunkerUri(e.target.value)}
+                  className="block w-full pl-12 pr-4 py-4 border border-gray-200 dark:border-gray-800 rounded-2xl bg-gray-50 dark:bg-black focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all font-mono text-sm"
+                />
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <Key className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    placeholder={loginMethod === 'ncryptsec' ? "ncryptsec1..." : "nsec1... or hex key"}
+                    value={privateKey}
+                    onChange={(e) => setPrivateKey(e.target.value)}
+                    className="block w-full pl-12 pr-12 py-4 border border-gray-200 dark:border-gray-800 rounded-2xl bg-gray-50 dark:bg-black focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all font-mono text-sm"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-gray-600"
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+
+                {loginMethod === 'ncryptsec' && (
+                  <div className="relative animate-in slide-in-from-top-2 duration-200">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                      <Lock className="h-5 w-5 text-gray-400" />
+                    </div>
+                    <input
+                      type={showNcryptPassword ? "text" : "password"}
+                      placeholder="Enter decryption password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="block w-full pl-12 pr-12 py-4 border border-gray-200 dark:border-gray-800 rounded-2xl bg-gray-50 dark:bg-black focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowNcryptPassword(!showNcryptPassword)}
+                      className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-gray-600"
+                    >
+                      {showNcryptPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
             <button
               type="submit"
-              disabled={isLoading || !privateKey || !isReady}
+              disabled={isLoading || !isReady || (loginMethod === 'nsec' && !privateKey) || (loginMethod === 'ncryptsec' && (!privateKey || !password)) || (loginMethod === 'bunker' && !bunkerUri)}
               className="w-full bg-gray-900 dark:bg-white text-white dark:text-black font-bold py-4 px-6 rounded-2xl hover:opacity-90 transition-all disabled:opacity-50 shadow-lg"
             >
-              {!isReady ? "Initializing..." : (isLoading ? "Logging in..." : "Login with Key")}
+              {!isReady ? "Initializing..." : (isLoading ? "Please wait..." : "Login")}
             </button>
           </form>
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useEffect, useState, ReactNode, useRef, useMemo } from "react";
-import NDK, { NDKEvent, NDKCacheAdapter, NDKRelay, NDKRelayAuthPolicies } from "@nostr-dev-kit/ndk";
+import NDK, { NDKEvent, NDKCacheAdapter, NDKRelay, NDKRelayAuthPolicies, NDKNip46Signer } from "@nostr-dev-kit/ndk";
 import NDKCacheAdapterDexie from "@nostr-dev-kit/ndk-cache-dexie";
 import { NDKMessenger, CacheModuleStorage, NDKMessage } from "@nostr-dev-kit/messages";
 import { NDKSessionManager, LocalStorage, NDKSession } from "@nostr-dev-kit/sessions";
@@ -49,7 +49,14 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
   const [isReady, setIsReady] = useState(false);
   const [isWalletReady, setIsWalletReady] = useState(false);
   
-  const { setUser, setLoginState, setAccounts } = useAuthStore();
+  const { 
+    setUser, 
+    setLoginState, 
+    setAccounts, 
+    loginType, 
+    bunkerUri, 
+    bunkerLocalNsec 
+  } = useAuthStore();
   const { 
     incrementUnreadMessagesCount, 
     addToast, 
@@ -85,7 +92,10 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
     nwcPairingCode,
     setBalance,
     setInfo,
-    walletType
+    walletType,
+    loginType,
+    bunkerUri,
+    bunkerLocalNsec
   });
 
   useEffect(() => {
@@ -101,7 +111,10 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
       nwcPairingCode,
       setBalance,
       setInfo,
-      walletType
+      walletType,
+      loginType,
+      bunkerUri,
+      bunkerLocalNsec
     };
   });
 
@@ -295,6 +308,22 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
 
     const initApp = async () => {
       console.log("[NDKProvider] Initializing App...");
+      
+      // Restore Bunker signer if needed before session restore
+      if (depsRef.current.loginType === 'bunker' && depsRef.current.bunkerUri) {
+        try {
+          const signer = NDKNip46Signer.bunker(
+            instance, 
+            depsRef.current.bunkerUri, 
+            depsRef.current.bunkerLocalNsec || undefined
+          );
+          instance.signer = signer;
+          signer.blockUntilReady().catch(e => console.error("Bunker signer failed to ready:", e));
+        } catch (e) {
+          console.error("Failed to restore Bunker signer:", e);
+        }
+      }
+
       await sessionManager.restore();
       await initWallet();
       setNdk(instance);
