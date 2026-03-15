@@ -17,7 +17,7 @@ import { useUIStore } from "@/store/ui";
 import { RawEventModal } from "./parts/RawEventModal";
 import { ReportModal } from "./parts/ReportModal";
 import { ReplyModal } from "./parts/ReplyModal";
-import { QuoteModal } from "./QuoteModal";
+import { QuoteModal } from "./parts/QuoteModal";
 import { PollRenderer } from "./PollRenderer";
 import { shortenPubkey } from "@/lib/utils/nip19";
 import { nip19 } from "@nostr-dev-kit/ndk";

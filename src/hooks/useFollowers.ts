@@ -35,6 +35,7 @@ export function useFollowers(pubkey: string | undefined): UseFollowersReturn {
     }
     Promise.resolve().then(() => setLoading(true));
 
+    const ndk = getNDK();
     const seen = new Set<string>();
 
     // Subscribe ke kind:3 yang mengandung p-tag target
