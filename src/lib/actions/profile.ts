@@ -18,10 +18,10 @@ export async function updateProfile(
     event.kind = 0;
     event.content = JSON.stringify(metadata);
     
-    // We should probably sign and publish
-    await event.publishReplaceable();
+    // sign and publish optimistically (fire and forget)
+    await event.sign();
+    event.publishReplaceable();
     
-    // Update local user object if possible or just rely on relay refresh
     return true;
   } catch (error) {
     console.error("Failed to update profile:", error);
@@ -83,7 +83,8 @@ export async function updateStatus(
       event.tags.push(["r", link]);
     }
 
-    await event.publishReplaceable();
+    await event.sign();
+    event.publishReplaceable();
     return true;
   } catch (error) {
     console.error("Failed to update status:", error);

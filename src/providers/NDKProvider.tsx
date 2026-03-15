@@ -242,6 +242,14 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
       depsRef.current.addToast(`Failed to publish event. It will be retried automatically.`, "error");
     });
 
+    instance.on("event:published", (event: NDKEvent) => {
+      console.log(`Event ${event.id} published successfully!`);
+      // Only show success toast for major user-initiated events like kind 1, 0, 3, etc.
+      if ([0, 1, 3, 6, 7, 30023].includes(event.kind || -1)) {
+        depsRef.current.addToast("Successfully synced with relays", "success", 3000);
+      }
+    });
+
     const initWallet = async () => {
       if (depsRef.current.nwcPairingCode) {
         try {
