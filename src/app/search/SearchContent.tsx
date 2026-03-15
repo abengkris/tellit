@@ -304,41 +304,44 @@ export function SearchContent() {
             </div>
             
             {directMatch.type === 'event' && <PostCard event={directMatch.data as NDKEvent} />}
-            {directMatch.type === 'user' && (
-              <Link 
-                href={getProfileUrl(directMatch.data as NDKUser)} 
-                className="flex items-center gap-4 p-6 bg-white dark:bg-black hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
-              >
-                <div className="relative">
-                  <Image
-                    src={directMatch.data.profile?.picture || `https://robohash.org/${directMatch.data.pubkey}?set=set1`}
-                    alt={directMatch.data.profile?.name || "Profile"}
-                    width={64}
-                    height={64}
-                    className="w-16 h-16 rounded-2xl object-cover bg-zinc-100 dark:bg-zinc-800 shadow-sm"
-                    unoptimized
-                  />
-                  {directMatch.data.profile?.nip05 && (
-                    <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-blue-500 text-white rounded-full flex items-center justify-center border-2 border-white dark:border-black shadow-sm">
-                      <CheckCircle2 size={10} fill="currentColor" />
-                    </div>
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-black text-lg truncate">
-                    {directMatch.data.profile?.display_name || directMatch.data.profile?.name || shortenPubkey(directMatch.data.pubkey)}
-                  </h3>
-                  <p className="text-sm text-gray-500 font-mono truncate">
-                    {directMatch.data.profile?.nip05 
-                      ? (directMatch.data.profile.nip05.startsWith('_@') ? directMatch.data.profile.nip05.substring(1) : directMatch.data.profile.nip05)
-                      : `@${directMatch.data.profile?.name || shortenPubkey(directMatch.data.pubkey, 12)}`}
-                  </p>
-                </div>
-                <div className="bg-blue-500 text-white text-xs font-black px-4 py-2 rounded-xl shadow-lg shadow-blue-500/20">
-                  View Profile
-                </div>
-              </Link>
-            )}
+            {directMatch.type === 'user' && (() => {
+              const userMatch = directMatch.data as NDKUser;
+              return (
+                <Link 
+                  href={getProfileUrl(userMatch)} 
+                  className="flex items-center gap-4 p-6 bg-white dark:bg-black hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
+                >
+                  <div className="relative">
+                    <Image
+                      src={userMatch.profile?.picture || `https://robohash.org/${userMatch.pubkey}?set=set1`}
+                      alt={userMatch.profile?.name || "Profile"}
+                      width={64}
+                      height={64}
+                      className="w-16 h-16 rounded-2xl object-cover bg-zinc-100 dark:bg-zinc-800 shadow-sm"
+                      unoptimized
+                    />
+                    {userMatch.profile?.nip05 && (
+                      <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-blue-500 text-white rounded-full flex items-center justify-center border-2 border-white dark:border-black shadow-sm">
+                        <CheckCircle2 size={10} fill="currentColor" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-black text-lg truncate">
+                      {userMatch.profile?.display_name || userMatch.profile?.name || shortenPubkey(userMatch.pubkey)}
+                    </h3>
+                    <p className="text-sm text-gray-500 font-mono truncate">
+                      {userMatch.profile?.nip05 
+                        ? (userMatch.profile.nip05.startsWith('_@') ? userMatch.profile.nip05.substring(1) : userMatch.profile.nip05)
+                        : `@${userMatch.profile?.name || shortenPubkey(userMatch.pubkey, 12)}`}
+                    </p>
+                  </div>
+                  <div className="bg-blue-500 text-white text-xs font-black px-4 py-2 rounded-xl shadow-lg shadow-blue-500/20">
+                    View Profile
+                  </div>
+                </Link>
+              );
+            })()}
           </section>
         )}
 
