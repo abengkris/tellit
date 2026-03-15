@@ -48,27 +48,31 @@ export function MuteList({
 
     const sub = ndk.subscribe(
       { kinds: [0], authors: toFetch },
-      { closeOnEose: true }
+      { 
+        closeOnEose: true,
+        includeMuted: true // We need to fetch profiles of muted users to show them in the list
+      },
+      {
+        onEvent: (event) => {
+          try {
+            const profile = JSON.parse(event.content);
+            const npub = nip19.npubEncode(event.pubkey);
+            setUsers((prev) => {
+              const next = new Map(prev);
+              next.set(event.pubkey, {
+                pubkey: event.pubkey,
+                npub,
+                name: profile.name ?? profile.display_name,
+                about: profile.about,
+                picture: profile.picture,
+                profileUrl: getProfileUrl({ ...profile, pubkey: event.pubkey })
+              });
+              return next;
+            });
+          } catch {}
+        }
+      }
     );
-
-    sub.on("event", (event) => {
-      try {
-        const profile = JSON.parse(event.content);
-        const npub = nip19.npubEncode(event.pubkey);
-        setUsers((prev) => {
-          const next = new Map(prev);
-          next.set(event.pubkey, {
-            pubkey: event.pubkey,
-            npub,
-            name: profile.name ?? profile.display_name,
-            about: profile.about,
-            picture: profile.picture,
-            profileUrl: getProfileUrl({ ...profile, pubkey: event.pubkey })
-          });
-          return next;
-        });
-      } catch {}
-    });
 
     return () => sub.stop();
   }, [pubkeys]);

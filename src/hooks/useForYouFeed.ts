@@ -32,7 +32,6 @@ export function useForYouFeed({
   const { ndk, isReady } = useNDK();
   const { wot, trustScores, status: wotStatus, pubkeyCount: wotSize } = useWoT(viewerPubkey);
   const { wotStrictMode } = useUIStore();
-  const { mutedPubkeys } = useLists();
 
   const [rawEvents, setRawEvents] = useState<NDKEvent[]>([]);
   const [newCount, setNewCount] = useState(0);
@@ -71,13 +70,12 @@ export function useForYouFeed({
       followingSet: new Set(followingList),
       followsOfFollowsSet: new Set(allWoTPubkeys),
       interactionHistory: new Map(), // To be implemented if we start tracking this
-      mutedSet: mutedPubkeys,
       trustScores,
       mutualsMap,
     };
 
     return rankEvents(baseEvents, context).map(se => se.event);
-  }, [rawEvents, wot, wotStrictMode, followingList, mutedPubkeys, viewerPubkey, trustScores]);
+  }, [rawEvents, wot, wotStrictMode, followingList, viewerPubkey, trustScores]);
 
   useEffect(() => {
     if (!ndk || !isReady || wotStatus === "idle") return;

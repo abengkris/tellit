@@ -17,7 +17,6 @@ export type FeedFilterType = "all" | "posts" | "replies" | "media";
  */
 export function useFeed(authors: string[], kinds: number[] = [1, 20, 1063, 1068, 30023] as NDKKind[], filterType: FeedFilterType = "all") {
   const { ndk, isReady } = useNDK();
-  const { mutedPubkeys } = useLists();
   const [posts, setPosts] = useState<NDKEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [hasMore, setHasMore] = useState(true);
@@ -27,11 +26,6 @@ export function useFeed(authors: string[], kinds: number[] = [1, 20, 1063, 1068,
   const oldestTimestampRef = useRef<number | undefined>(undefined);
   const lastAuthorsRef = useRef<string[]>([]);
   
-  const mutedRef = useRef(mutedPubkeys);
-  useEffect(() => {
-    mutedRef.current = mutedPubkeys;
-  }, [mutedPubkeys]);
-
   const cleanupSubscriptions = useCallback(() => {
     if (subscriptionRef.current) {
       subscriptionRef.current.stop();
@@ -133,7 +127,7 @@ export function useFeed(authors: string[], kinds: number[] = [1, 20, 1063, 1068,
           if (isLoadMore) return; // onEvents is primarily for initial cache load
           
           const filtered = events
-            .filter(e => !mutedRef.current.has(e.pubkey) && matchesFilter(e))
+            .filter(e => matchesFilter(e))
             .sort((a, b) => (b.created_at ?? 0) - (a.created_at ?? 0));
           
           if (filtered.length > 0) {
@@ -145,7 +139,6 @@ export function useFeed(authors: string[], kinds: number[] = [1, 20, 1063, 1068,
           clearTimeout(loadingTimeout);
           eventsReceived++;
           
-          if (mutedRef.current.has(event.pubkey)) return;
           if (!matchesFilter(event)) return;
 
           setPosts((prev) => {
@@ -200,7 +193,6 @@ export function useFeed(authors: string[], kinds: number[] = [1, 20, 1063, 1068,
       },
       {
         onEvent: (event: NDKEvent) => {
-          if (mutedRef.current.has(event.pubkey)) return;
           if (!matchesFilter(event)) return;
           
           setPosts((prev) => {

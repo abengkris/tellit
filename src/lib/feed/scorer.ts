@@ -5,7 +5,6 @@ export interface ScoringContext {
   followingSet: Set<string>;        
   followsOfFollowsSet: Set<string>; 
   interactionHistory: Map<string, number>; 
-  mutedSet: Set<string>;            
   trustScores?: Map<string, number>; // pubkey -> score (0-1)
   mutualsMap?: Map<string, number>;  // pubkey -> count of mutual followers
 }
@@ -37,10 +36,6 @@ export function scoreEvent(
 ): ScoredEvent {
   const signals: Record<string, number> = {};
   let score = 0;
-
-  if (ctx.mutedSet.has(event.pubkey)) {
-    return { event, score: -999, signals: { muted: -999 } };
-  }
 
   // --- Social graph signals ---
   if (ctx.followingSet.has(event.pubkey)) {
@@ -152,7 +147,6 @@ export function rankEvents(
 ): ScoredEvent[] {
   return events
     .map(e => scoreEvent(e, ctx, networkActivity))
-    .filter(se => se.score > -999) 
     .sort((a, b) => {
       if (b.score !== a.score) return b.score - a.score;
       return (b.event.created_at ?? 0) - (a.event.created_at ?? 0);

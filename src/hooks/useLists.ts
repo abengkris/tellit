@@ -168,6 +168,16 @@ export function useLists(targetPubkey?: string) {
       // Update cache
       listEventsRef.current.set(kind, newEvent);
 
+      // Update NDK's internal mute list for immediate effect
+      if (kind === ListKind.Mute && ndk.activeUser) {
+        // NDK will pick up the new event if we emit a change or just manually update its set
+        if (action === 'add') {
+          ndk.mutedIds.add(value);
+        } else {
+          ndk.mutedIds.delete(value);
+        }
+      }
+
       // Update local state
       if (kind === ListKind.Mute) {
         setMutedPubkeys(prev => {

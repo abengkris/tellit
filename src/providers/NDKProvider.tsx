@@ -308,6 +308,7 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
           Promise.resolve().then(() => {
             setActiveSession(session);
             const user = sessionManager.activeUser || instance.getUser({ pubkey: session.pubkey });
+            instance.activeUser = user; // Enable automatic mute list fetching
             depsRef.current.setUser(user);
             depsRef.current.setLoginState(true, session.pubkey);
           });
@@ -315,6 +316,7 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
       } else {
         Promise.resolve().then(() => {
           setActiveSession(null);
+          instance.activeUser = undefined;
           depsRef.current.setUser(null);
           depsRef.current.setLoginState(false, null);
         });
