@@ -13,7 +13,7 @@ export function ImageEmbed({
   objectFit = "contain"
 }: { 
   url: string; 
-  imeta?: ImetaData;
+  imeta?: ImetaMetadata;
   className?: string;
   noMargin?: boolean;
   objectFit?: "contain" | "cover";
