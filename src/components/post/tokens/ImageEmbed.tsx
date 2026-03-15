@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ImetaData } from "@/lib/content/tokenizer";
+import { ImetaMetadata } from "@/lib/content/tokenizer";
 import { Blurhash } from "react-blurhash";
 import { Lightbox } from "@/components/common/Lightbox";
 

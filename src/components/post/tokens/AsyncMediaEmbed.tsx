@@ -4,10 +4,10 @@ import { useEffect, useState } from "react";
 import { ImageEmbed } from "./ImageEmbed";
 import { VideoEmbed } from "./VideoEmbed";
 import { AudioEmbed } from "./AudioEmbed";
-import { ImetaData } from "@/lib/content/tokenizer";
+import { ImetaMetadata } from "@/lib/content/tokenizer";
 import { useBlossom } from "@/hooks/useBlossom";
 
-export function AsyncMediaEmbed({ url, imeta, pubkey }: { url: string; imeta?: ImetaData; pubkey?: string }) {
+export function AsyncMediaEmbed({ url, imeta, pubkey }: { url: string; imeta?: ImetaMetadata; pubkey?: string }) {
   const [type, setType] = useState<'image' | 'video' | 'audio' | 'url' | 'loading'>('loading');
   const [displayUrl, setDisplayUrl] = useState(url);
   const { fixUrl } = useBlossom();

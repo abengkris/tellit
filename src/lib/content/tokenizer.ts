@@ -108,18 +108,18 @@ function decodeRef(value: string, type: TokenType): DecodedRef | undefined {
       return { type: "npub", pubkey: decoded.data as string };
     }
     if (decoded.type === "nprofile") {
-      const data = decoded.data as nip19.ProfilePointer;
+      const data = decoded.data as { pubkey: string; relays?: string[] };
       return { type: "nprofile", pubkey: data.pubkey, relays: data.relays };
     }
     if (decoded.type === "note") {
       return { type: "note", eventId: decoded.data as string };
     }
     if (decoded.type === "nevent") {
-      const data = decoded.data as nip19.EventPointer;
+      const data = decoded.data as { id: string; relays?: string[]; author?: string; kind?: number };
       return { type: "nevent", eventId: data.id, relays: data.relays };
     }
     if (decoded.type === "naddr") {
-      const data = decoded.data as nip19.AddressPointer;
+      const data = decoded.data as { identifier: string; pubkey: string; kind: number; relays?: string[] };
       return { 
         type: "naddr", 
         pubkey: data.pubkey, 
@@ -186,7 +186,7 @@ export function parseImeta(tag: string[]): { url?: string; blurhash?: string; mi
   };
 }
 
-interface ImetaMetadata {
+export interface ImetaMetadata {
   url?: string;
   blurhash?: string;
   mimeType?: string;
