@@ -138,7 +138,7 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
     
     // Offload signature verification to a Web Worker (Speed Optimization)
     try {
-      const sigWorker = new Worker(new URL('@nostr-dev-kit/ndk/dist/workers/sig-verification.js', import.meta.url));
+      const sigWorker = new Worker(new URL('@nostr-dev-kit/ndk/workers/sig-verification', import.meta.url));
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (instance as any).signatureVerificationWorker = sigWorker;
       console.log("[NDKProvider] Signature verification offloaded to Web Worker");
