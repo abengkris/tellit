@@ -72,25 +72,24 @@ export const ZapModal: React.FC<ZapModalProps> = ({ event, user, onClose, onSucc
 
     setLoading(true);
     try {
-      // Pre-fetch profile if it's a user or if we need the author's profile for an event
-      // This ensures NDKZapper has the lud16/lud06 info it needs
-      if (user && !user.profile) {
-        await user.fetchProfile();
-      } else if (event && !event.author.profile) {
-        await event.author.fetchProfile();
+      // Pre-fetch profile with force: true to ensure we have the latest lud16/lud06
+      const targetUser = event ? event.author : user;
+      if (targetUser) {
+        console.log(`[ZapModal] Fetching profile for ${targetUser.pubkey}...`);
+        await targetUser.fetchProfile({ force: true });
       }
 
       const zapTarget = event || user;
       if (!zapTarget) throw new Error("No target for zap");
 
       // Check for LN address presence after fetching profile
-      const targetUser = event ? event.author : user;
       if (targetUser && !targetUser.profile?.lud16 && !targetUser.profile?.lud06) {
-        addToast("Recipient does not have a Lightning Address set in their profile.", "error");
+        addToast("Recipient does not have a Lightning Address set in their profile. They need an address like name@domain.com to receive zaps.", "error");
         setLoading(false);
         return;
       }
 
+      console.log(`[ZapModal] Creating zap invoice for ${targetUser?.profile?.lud16 || targetUser?.pubkey}...`);
       // Amount in millisats (1 sat = 1000 millisats)
       const { invoice: bolt11, alreadyPaid, error } = await createZapInvoice(ndk, amount * 1000, zapTarget, comment);
       

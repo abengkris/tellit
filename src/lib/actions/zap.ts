@@ -38,11 +38,17 @@ export const createZapInvoice = async (
         .then((receipt) => {
           if (isResolved) return;
           if (receipt) {
+            console.log("[Zap] Zap receipt received via wallet payment");
             isResolved = true;
             resolve({ invoice: null, alreadyPaid: true });
-          } else {
+          } else if (capturedInvoice) {
+            console.log("[Zap] Zap initiated, invoice captured manually");
             isResolved = true;
             resolve({ invoice: capturedInvoice, alreadyPaid: false });
+          } else {
+            console.warn("[Zap] NDKZapper.zap() resolved without receipt or invoice");
+            isResolved = true;
+            resolve({ invoice: null, alreadyPaid: false, error: "No invoice received from LNURL endpoint. Try again later." });
           }
         })
         .catch((err) => {
