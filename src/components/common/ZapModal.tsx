@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { NDKEvent, NDKUser } from "@nostr-dev-kit/ndk";
+import { NDKEvent, NDKUser, NDKSubscriptionCacheUsage } from "@nostr-dev-kit/ndk";
 import { useNDK } from "@/hooks/useNDK";
 import { createZapInvoice, listenForZapReceipt } from "@/lib/actions/zap";
 import { Zap, Loader2, CheckCircle2, ExternalLink, Copy } from "lucide-react";
@@ -72,11 +72,11 @@ export const ZapModal: React.FC<ZapModalProps> = ({ event, user, onClose, onSucc
 
     setLoading(true);
     try {
-      // Pre-fetch profile with force: true to ensure we have the latest lud16/lud06
+      // Pre-fetch profile with cacheUsage: ONLY_RELAY to ensure we have the latest lud16/lud06
       const targetUser = event ? event.author : user;
       if (targetUser) {
         console.log(`[ZapModal] Fetching profile for ${targetUser.pubkey}...`);
-        await targetUser.fetchProfile({ force: true });
+        await targetUser.fetchProfile({ cacheUsage: NDKSubscriptionCacheUsage.ONLY_RELAY });
       }
 
       const zapTarget = event || user;
