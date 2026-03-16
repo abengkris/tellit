@@ -73,7 +73,8 @@ export function useProfile(pubkey?: string) {
       const metadata: ProfileMetadata = { 
         ...(userProfile || {}), 
         name: userProfile?.name ? String(userProfile.name) : undefined,
-        display_name: userProfile?.display_name ? String(userProfile.display_name) : undefined,
+        // Map both display_name (raw) and displayName (NDK camelCase) to snake_case used in project
+        display_name: (userProfile?.display_name || userProfile?.displayName) ? String(userProfile.display_name || userProfile.displayName) : undefined,
         pubkey 
       };
       
