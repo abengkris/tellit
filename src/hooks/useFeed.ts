@@ -16,7 +16,7 @@ export type FeedFilterType = "all" | "posts" | "replies" | "media";
  * Handles initial loading, pagination (load more), and real-time updates.
  */
 export function useFeed(authors: string[], kinds: number[] = [1, 20, 1063, 1068, 30023] as NDKKind[], filterType: FeedFilterType = "all") {
-  const { ndk, isReady } = useNDK();
+  const { ndk, isReady, sync } = useNDK();
   const [posts, setPosts] = useState<NDKEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [hasMore, setHasMore] = useState(true);
@@ -113,57 +113,64 @@ export function useFeed(authors: string[], kinds: number[] = [1, 20, 1063, 1068,
 
     let eventsReceived = 0;
 
-    const sub = ndk.subscribe(
-      filter, 
-      { 
-        closeOnEose: true, 
-        groupable: true,
-        cacheUsage: NDKSubscriptionCacheUsage.PARALLEL,
-        relayGoalPerAuthor: validAuthors.length > 50 ? 2 : 3, // Adjust redundancy based on list size
-      },
-      {
-        onEvents: (events) => {
-          eventsReceived += events.length;
-          if (isLoadMore) return; // onEvents is primarily for initial cache load
-          
-          const filtered = events
-            .filter(e => matchesFilter(e))
-            .sort((a, b) => (b.created_at ?? 0) - (a.created_at ?? 0));
-          
-          if (filtered.length > 0) {
-            setPosts(filtered.slice(0, MAX_POSTS));
-            oldestTimestampRef.current = filtered[filtered.length - 1].created_at;
-          }
-        },
-        onEvent: (event) => {
-          clearTimeout(loadingTimeout);
-          eventsReceived++;
-          
-          if (!matchesFilter(event)) return;
+    const options = { 
+      closeOnEose: true, 
+      groupable: true,
+      cacheUsage: NDKSubscriptionCacheUsage.PARALLEL,
+      relayGoalPerAuthor: validAuthors.length > 50 ? 2 : 3, // Adjust redundancy based on list size
+    };
 
-          setPosts((prev) => {
-            if (prev.find(p => p.id === event.id)) return prev;
-            const combined = [...prev, event];
-            const sorted = combined.sort((a, b) => (b.created_at ?? 0) - (a.created_at ?? 0));
-            
-            if (sorted.length > 0) {
-              oldestTimestampRef.current = sorted[sorted.length - 1].created_at;
-            }
-            
-            return sorted.slice(0, MAX_POSTS);
-          });
-        },
-        onEose: () => {
-          clearTimeout(loadingTimeout);
-          if (eventsReceived < fetchLimit) {
-            setHasMore(false);
-          }
-          setLoading(false);
+    const handlers = {
+      onEvents: (events: NDKEvent[]) => {
+        eventsReceived += events.length;
+        if (isLoadMore) return; // onEvents is primarily for initial cache load
+        
+        const filtered = events
+          .filter(e => matchesFilter(e))
+          .sort((a, b) => (b.created_at ?? 0) - (a.created_at ?? 0));
+        
+        if (filtered.length > 0) {
+          setPosts(filtered.slice(0, MAX_POSTS));
+          oldestTimestampRef.current = filtered[filtered.length - 1].created_at;
         }
+      },
+      onEvent: (event: NDKEvent) => {
+        clearTimeout(loadingTimeout);
+        eventsReceived++;
+        
+        if (!matchesFilter(event)) return;
+
+        setPosts((prev) => {
+          if (prev.find(p => p.id === event.id)) return prev;
+          const combined = [...prev, event];
+          const sorted = combined.sort((a, b) => (b.created_at ?? 0) - (a.created_at ?? 0));
+          
+          if (sorted.length > 0) {
+            oldestTimestampRef.current = sorted[sorted.length - 1].created_at;
+          }
+          
+          return sorted.slice(0, MAX_POSTS);
+        });
+      },
+      onEose: () => {
+        clearTimeout(loadingTimeout);
+        if (eventsReceived < fetchLimit) {
+          setHasMore(false);
+        }
+        setLoading(false);
       }
-    );
-    subscriptionRef.current = sub;
-  }, [ndk, isReady, authors, kinds, filterType, matchesFilter]);
+    };
+
+    if (sync && !isLoadMore) {
+      sync.syncAndSubscribe(filter, options, handlers).then(sub => {
+        subscriptionRef.current = sub;
+      }).catch(() => {
+        subscriptionRef.current = ndk.subscribe(filter, options, handlers);
+      });
+    } else {
+      subscriptionRef.current = ndk.subscribe(filter, options, handlers);
+    }
+  }, [ndk, isReady, sync, authors, kinds, filterType, matchesFilter]);
 
   // Real-time listener: starts immediately, independent of loading history
   useEffect(() => {

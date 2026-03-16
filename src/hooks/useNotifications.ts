@@ -8,7 +8,7 @@ export interface TellItNotification extends NDKEvent {
 }
 
 export function useNotifications() {
-  const { ndk, isReady } = useNDK();
+  const { ndk, isReady, sync } = useNDK();
   const { user, isLoggedIn } = useAuthStore();
   const [notifications, setNotifications] = useState<TellItNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -98,54 +98,74 @@ export function useNotifications() {
   useEffect(() => {
     if (!ndk || !isReady || !isLoggedIn || !user) return;
 
-    // Real-time listener for NEW notifications
+    // Filter for sync and real-time updates
     const filter: NDKFilter = {
       kinds: [1, 3, 6, 7, 1111, 9735, 30023],
       "#p": [user.pubkey],
-      since: Math.floor(Date.now() / 1000),
+      limit: 30,
     };
 
-    const sub = ndk.subscribe(
-      filter,
-      { 
-        closeOnEose: false, 
-        groupableDelay: 200,
-      },
-      {
-        onEvents: (events) => {
-          const processed = events
-            .map(e => processEvent(e))
-            .filter((e): e is TellItNotification => e !== null);
-          
-          if (processed.length > 0) {
-            setNotifications(processed.sort((a, b) => (b.created_at ?? 0) - (a.created_at ?? 0)));
-            oldestTimestampRef.current = processed[processed.length - 1].created_at;
-            setLoading(false);
-          }
-        },
-        onEvent: (event: NDKEvent) => {
-          const notif = processEvent(event);
-          if (!notif) return;
+    const options = { 
+      closeOnEose: false, 
+      groupableDelay: 200,
+    };
 
-          setNotifications((prev) => {
-            if (prev.find((n) => n.id === notif.id)) return prev;
-            return [notif, ...prev].sort((a, b) => (b.created_at ?? 0) - (a.created_at ?? 0));
+    const handlers = {
+      onEvents: (events: NDKEvent[]) => {
+        const processed = events
+          .map(e => processEvent(e))
+          .filter((e): e is TellItNotification => e !== null);
+        
+        if (processed.length > 0) {
+          setNotifications(prev => {
+            const combined = [...prev, ...processed];
+            const unique = Array.from(new Map(combined.map(n => [n.id, n])).values())
+              .sort((a, b) => (b.created_at ?? 0) - (a.created_at ?? 0));
+            
+            if (unique.length > 0) {
+              oldestTimestampRef.current = unique[unique.length - 1].created_at;
+            }
+            return unique;
           });
-
-          setUnreadCount((prev) => prev + 1);
-          setLoading(false);
-        },
-        onEose: () => {
           setLoading(false);
         }
+      },
+      onEvent: (event: NDKEvent) => {
+        const notif = processEvent(event);
+        if (!notif) return;
+
+        setNotifications((prev) => {
+          if (prev.find((n) => n.id === notif.id)) return prev;
+          const next = [notif, ...prev].sort((a, b) => (b.created_at ?? 0) - (a.created_at ?? 0));
+          if (next.length > 0) {
+            oldestTimestampRef.current = next[next.length - 1].created_at;
+          }
+          return next;
+        });
+
+        // Only count as unread if it's a new event from relay (not from initial sync)
+        setUnreadCount((prev) => prev + 1);
+        setLoading(false);
+      },
+      onEose: () => {
+        setLoading(false);
       }
-    );
-    subscriptionRef.current = sub;
+    };
+
+    if (sync) {
+      sync.syncAndSubscribe(filter, options, handlers).then(sub => {
+        subscriptionRef.current = sub;
+      }).catch(() => {
+        subscriptionRef.current = ndk.subscribe(filter, options, handlers);
+      });
+    } else {
+      subscriptionRef.current = ndk.subscribe(filter, options, handlers);
+    }
 
     return () => {
-      sub.stop();
+      if (subscriptionRef.current) subscriptionRef.current.stop();
     };
-  }, [ndk, isReady, isLoggedIn, user?.pubkey, processEvent]);
+  }, [ndk, isReady, sync, isLoggedIn, user?.pubkey, processEvent]);
 
   const loadMore = () => {
     if (!loading && hasMore) {

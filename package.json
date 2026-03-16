@@ -25,6 +25,7 @@
     "@nostr-dev-kit/ndk-blossom": "^2.0.2",
     "@nostr-dev-kit/ndk-cache-dexie": "^2.6.44",
     "@nostr-dev-kit/sessions": "^1.0.0",
+    "@nostr-dev-kit/sync": "^1.0.0",
     "@nostr-dev-kit/wallet": "^1.0.0",
     "@nostr-dev-kit/wot": "^1.0.0",
     "@nostrify/ndk": "^0.35.21",
