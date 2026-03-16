@@ -11,6 +11,7 @@ interface AuthState {
   privateKey: string | null; 
   bunkerUri: string | null;
   bunkerLocalNsec: string | null;
+  signerPayload: string | null; // Serialized signer for persistence
   accounts: string[]; // Array of public keys
   isLoggedIn: boolean;
   isLoading: boolean;
@@ -40,6 +41,7 @@ export const useAuthStore = create<AuthState>()(
       privateKey: null,
       bunkerUri: null,
       bunkerLocalNsec: null,
+      signerPayload: null,
       accounts: [],
       isLoggedIn: false,
       isLoading: false,
@@ -70,9 +72,9 @@ export const useAuthStore = create<AuthState>()(
               accounts: newAccounts,
               isLoggedIn: true, 
               isLoading: false,
-              loginType: 'nip07'
-            });
-          }
+              loginType: 'nip07',
+              signerPayload: signer.toPayload()
+            });          }
         } catch (error) {
           console.error("NIP-07 login failed:", error);
           set({ isLoading: false });
@@ -100,7 +102,8 @@ export const useAuthStore = create<AuthState>()(
               accounts: newAccounts,
               isLoggedIn: true, 
               isLoading: false,
-              loginType: 'privateKey'
+              loginType: 'privateKey',
+              signerPayload: signer.toPayload()
             });
           }
         } catch (error) {
@@ -132,7 +135,8 @@ export const useAuthStore = create<AuthState>()(
               accounts: newAccounts,
               isLoggedIn: true, 
               isLoading: false,
-              loginType: 'privateKey'
+              loginType: 'privateKey',
+              signerPayload: signer.toPayload()
             });
           }
         } catch (error) {
@@ -166,7 +170,8 @@ export const useAuthStore = create<AuthState>()(
               accounts: newAccounts,
               isLoggedIn: true, 
               isLoading: false,
-              loginType: 'bunker'
+              loginType: 'bunker',
+              signerPayload: signer.toPayload()
             });
           }
         } catch (error) {
@@ -194,7 +199,8 @@ export const useAuthStore = create<AuthState>()(
           accounts: newAccounts,
           isLoggedIn: true,
           isLoading: false,
-          loginType: 'privateKey'
+          loginType: 'privateKey',
+          signerPayload: signer.toPayload()
         });
         
         return privateKey;
@@ -228,6 +234,7 @@ export const useAuthStore = create<AuthState>()(
             privateKey: null, 
             bunkerUri: null,
             bunkerLocalNsec: null,
+            signerPayload: null,
             isLoggedIn: false, 
             loginType: 'none' 
           });
@@ -248,6 +255,7 @@ export const useAuthStore = create<AuthState>()(
           privateKey: null, 
           bunkerUri: null,
           bunkerLocalNsec: null,
+          signerPayload: null,
           isLoggedIn: false, 
           loginType: 'none' 
         });
@@ -266,6 +274,7 @@ export const useAuthStore = create<AuthState>()(
           privateKey: null, 
           bunkerUri: null,
           bunkerLocalNsec: null,
+          signerPayload: null,
           accounts: [],
           isLoggedIn: false, 
           loginType: 'none' 
@@ -283,6 +292,7 @@ export const useAuthStore = create<AuthState>()(
         privateKey: state.privateKey, 
         bunkerUri: state.bunkerUri,
         bunkerLocalNsec: state.bunkerLocalNsec,
+        signerPayload: state.signerPayload,
         accounts: state.accounts,
         isLoggedIn: state.isLoggedIn, 
         loginType: state.loginType 

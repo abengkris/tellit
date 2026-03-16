@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useEffect, useState, ReactNode, useRef, useMemo } from "react";
-import NDK, { NDKEvent, NDKCacheAdapter, NDKRelay, NDKRelayAuthPolicies, NDKNip46Signer } from "@nostr-dev-kit/ndk";
+import NDK, { NDKEvent, NDKCacheAdapter, NDKRelay, NDKRelayAuthPolicies, NDKNip46Signer, ndkSignerFromPayload } from "@nostr-dev-kit/ndk";
 import NDKCacheAdapterDexie from "@nostr-dev-kit/ndk-cache-dexie";
 import { NDKMessenger, CacheModuleStorage, NDKMessage } from "@nostr-dev-kit/messages";
 import { NDKSessionManager, LocalStorage, NDKSession } from "@nostr-dev-kit/sessions";
@@ -55,7 +55,8 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
     setAccounts, 
     loginType, 
     bunkerUri, 
-    bunkerLocalNsec 
+    bunkerLocalNsec,
+    signerPayload
   } = useAuthStore();
   const { 
     incrementUnreadMessagesCount, 
@@ -95,7 +96,8 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
     walletType,
     loginType,
     bunkerUri,
-    bunkerLocalNsec
+    bunkerLocalNsec,
+    signerPayload
   });
 
   useEffect(() => {
@@ -114,7 +116,8 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
       walletType,
       loginType,
       bunkerUri,
-      bunkerLocalNsec
+      bunkerLocalNsec,
+      signerPayload
     };
   });
 
@@ -326,8 +329,24 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
     const initApp = async () => {
       console.log("[NDKProvider] Initializing App...");
       
-      // Restore Bunker signer if needed before session restore
-      if (depsRef.current.loginType === 'bunker' && depsRef.current.bunkerUri) {
+      // 1. Try to restore signer from payload (Preferred method)
+      if (depsRef.current.signerPayload) {
+        try {
+          const restoredSigner = await ndkSignerFromPayload(depsRef.current.signerPayload, instance);
+          if (restoredSigner) {
+            console.log("[NDKProvider] Signer restored from payload");
+            instance.signer = restoredSigner;
+            // Bunker signers might need to be "readied"
+            if (depsRef.current.loginType === 'bunker') {
+              restoredSigner.blockUntilReady().catch(e => console.error("Bunker signer failed to ready:", e));
+            }
+          }
+        } catch (e) {
+          console.error("Failed to restore signer from payload:", e);
+        }
+      } 
+      // 2. Legacy fallback for Bunker signer
+      else if (depsRef.current.loginType === 'bunker' && depsRef.current.bunkerUri) {
         try {
           const signer = NDKNip46Signer.bunker(
             instance, 
@@ -337,7 +356,7 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
           instance.signer = signer;
           signer.blockUntilReady().catch(e => console.error("Bunker signer failed to ready:", e));
         } catch (e) {
-          console.error("Failed to restore Bunker signer:", e);
+          console.error("Failed to restore Bunker signer (legacy):", e);
         }
       }
 

@@ -5,11 +5,13 @@ import { useAuthStore } from "../auth";
 vi.mock("@nostr-dev-kit/ndk", () => {
   class MockNDKNip07Signer {
     user = vi.fn().mockResolvedValue({ pubkey: "mock-pubkey" });
+    toPayload = vi.fn().mockReturnValue(JSON.stringify({ type: "nip07", payload: {} }));
   }
   class MockNDKPrivateKeySigner {
     privateKey: string;
     constructor(pk: string) { this.privateKey = pk; }
     user = vi.fn().mockResolvedValue({ pubkey: "mock-pubkey-from-pk" });
+    toPayload = vi.fn().mockReturnValue(JSON.stringify({ type: "private-key", payload: "mock-pk" }));
   }
   return {
     default: vi.fn(),
@@ -27,7 +29,8 @@ const mockSessions = {
   createAccount: vi.fn().mockResolvedValue({
     signer: {
       user: vi.fn().mockResolvedValue({ pubkey: "new-pubkey" }),
-      privateKey: "new-private-key"
+      privateKey: "new-private-key",
+      toPayload: vi.fn().mockReturnValue(JSON.stringify({ type: "private-key", payload: "new-pk" }))
     }
   }),
   logout: vi.fn()
