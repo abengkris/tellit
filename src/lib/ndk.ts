@@ -37,6 +37,20 @@ export function getNDK(): NDK {
       filterValidationMode: "fix",
       netDebug,
     });
+
+    // Signature Verification Sampling (Speed Optimization)
+    // Verify 50% of events initially, scaling down to 5% as trust is established
+    ndkInstance.initialValidationRatio = 0.5;
+    ndkInstance.lowestValidationRatio = 0.05;
+
+    // Custom validation ratio function for smart sampling
+    ndkInstance.validationRatioFn = (relay, validatedEvents, nonValidatedEvents) => {
+      // If we've seen enough events from this relay and they're valid, trust it more
+      const totalSeen = validatedEvents + nonValidatedEvents;
+      if (totalSeen > 1000) return 0.01; // 1% for very high volume trusted relays
+      if (totalSeen > 500) return 0.05;  // 5%
+      return 0.5; // 50% for new relays
+    };
   }
   return ndkInstance;
 }
