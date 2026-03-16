@@ -25,7 +25,8 @@ describe("NDKSync Integration", () => {
     });
 
     it("should fallback to fetchEvents if relay doesn't support NIP-77", async () => {
-        const alice = await UserGenerator.getUser("alice", ndk);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const alice = await UserGenerator.getUser("alice", ndk as any);
         const relay = pool.getMockRelay("wss://test.relay/");
         
         // Populate relay with an event

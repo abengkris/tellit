@@ -42,7 +42,8 @@ describe("useFeed with Sync", () => {
   });
 
   it("should load events from mock relay", async () => {
-    const alice = await UserGenerator.getUser("alice", ndk);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const alice = await UserGenerator.getUser("alice", ndk as any);
     
     // We need to wait for NDK to be ready in the hook
     const { result } = renderHook(() => useFeed([alice.pubkey]));
