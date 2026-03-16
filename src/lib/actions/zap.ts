@@ -48,7 +48,13 @@ export const createZapInvoice = async (
         .catch((err) => {
           if (isResolved) return;
           isResolved = true;
-          resolve({ invoice: capturedInvoice, alreadyPaid: false, error: err?.message || "Zap failed" });
+          
+          let friendlyError = err?.message || "Zap failed";
+          if (friendlyError === "All zap attempts failed") {
+            friendlyError = "All attempts failed. This usually means the recipient has no Lightning Address or their wallet is unreachable.";
+          }
+          
+          resolve({ invoice: capturedInvoice, alreadyPaid: false, error: friendlyError });
         });
 
       setTimeout(() => {
