@@ -15,7 +15,7 @@ export type FeedFilterType = "all" | "posts" | "replies" | "media";
  * Robust hook to manage and provide a stream of Nostr events.
  * Handles initial loading, pagination (load more), and real-time updates.
  */
-export function useFeed(authors: string[], kinds: number[] = [1, 20, 1063, 1068, 30023] as NDKKind[], filterType: FeedFilterType = "all") {
+export function useFeed(authors: string[], kinds: number[] = [1, 20, 1063, 1068, 1111, 30023] as NDKKind[], filterType: FeedFilterType = "all") {
   const { ndk, isReady, sync } = useNDK();
   const [posts, setPosts] = useState<NDKEvent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -221,6 +221,31 @@ export function useFeed(authors: string[], kinds: number[] = [1, 20, 1063, 1068,
       if (realtimeSubRef.current) realtimeSubRef.current.stop();
     };
   }, [ndk, isReady, authors, kinds, filterType, matchesFilter]);
+
+  // Optimistic UI: Listen for events saved to local cache (e.g. user's own new posts)
+  useEffect(() => {
+    if (!ndk || !isReady) return;
+
+    const handleLocalCacheSave = (event: NDKEvent) => {
+      if (!matchesFilter(event)) return;
+      if (event.kind !== undefined && !kinds.includes(event.kind as number)) return;
+      if (authors.length > 0 && !authors.includes(event.pubkey)) return;
+
+      setPosts((prev) => {
+        if (prev.find(p => p.id === event.id)) return prev;
+        const next = [event, ...prev].sort((a, b) => (b.created_at ?? 0) - (a.created_at ?? 0));
+        return next.slice(0, MAX_POSTS);
+      });
+    };
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (ndk as any).on("local-cache:save", handleLocalCacheSave);
+
+    return () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (ndk as any).off("local-cache:save", handleLocalCacheSave);
+    };
+  }, [ndk, isReady, authors, kinds, matchesFilter]);
 
   useEffect(() => {
     fetchFeed();

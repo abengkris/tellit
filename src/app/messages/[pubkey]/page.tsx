@@ -8,7 +8,7 @@ import { useAuthStore } from "@/store/auth";
 import { useUIStore } from "@/store/ui";
 import { useBlossom } from "@/hooks/useBlossom";
 import { useEmojis } from "@/hooks/useEmojis";
-import { sendMessage, publishReadReceipt } from "@/lib/actions/messages";
+import { sendMessage } from "@/lib/actions/messages";
 import { ArrowLeft, Send, Loader2, Image as ImageIcon, Smile, X } from "lucide-react";
 import Link from "next/link";
 import { Avatar } from "@/components/common/Avatar";
@@ -43,17 +43,6 @@ export default function ChatPage({ params }: { params: Promise<{ pubkey: string 
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
-
-  // Handle read receipts (Kind 15) specifically, useChat already handles conv.markAsRead()
-  useEffect(() => {
-    if (ndk && hexPubkey && messages.length > 0) {
-      const recipientUser = ndk.getUser({ pubkey: hexPubkey });
-      const lastMsg = messages[messages.length - 1];
-      if (lastMsg.sender === hexPubkey) {
-        publishReadReceipt(lastMsg.event, recipientUser);
-      }
-    }
-  }, [ndk, hexPubkey, messages]);
 
   const handleSendMessage = async (e?: React.FormEvent) => {
     e?.preventDefault();
