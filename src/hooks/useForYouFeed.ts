@@ -1,11 +1,10 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { NDKEvent, NDKKind } from "@nostr-dev-kit/ndk";
+import { NDKEvent, NDKKind, NDKSubscription } from "@nostr-dev-kit/ndk";
 import { useNDK } from "@/hooks/useNDK";
 import { useWoT } from "./useWoT";
 import { useUIStore } from "@/store/ui";
-import { useLists } from "@/hooks/useLists";
 import { rankEvents, ScoringContext } from "@/lib/feed/scorer";
 import { validateEvent } from "@/lib/policies";
 
@@ -29,7 +28,7 @@ export function useForYouFeed({
   viewerPubkey,
   followingList,
 }: UseForYouFeedOptions): UseForYouFeedReturn {
-  const { ndk, isReady } = useNDK();
+  const { ndk, isReady, sync } = useNDK();
   const { wot, trustScores, status: wotStatus, pubkeyCount: wotSize } = useWoT(viewerPubkey);
   const { wotStrictMode } = useUIStore();
 
@@ -38,6 +37,7 @@ export function useForYouFeed({
   const [isLoading, setIsLoading] = useState(true);
   const [hasMore, setHasMore] = useState(true);
 
+  const subscriptionRef = useRef<NDKSubscription | null>(null);
   const bufferRef = useRef<NDKEvent[]>([]);
   const seenIds = useRef(new Set<string>());
   const isInitialLoadDone = useRef(false);
@@ -118,62 +118,76 @@ export function useForYouFeed({
       return;
     }
 
-    const sub = ndk.subscribe(
-      {
-        kinds: [1, 6, 16, 1068, 30023] as NDKKind[],
-        authors: validAuthors,
-        limit: 30,
-      },
-      {
-        closeOnEose: false,
-      },
-      {
-        onEvents: async (events) => {
-          const validEvents: NDKEvent[] = [];
-          for (const event of events) {
-            if (seenIds.current.has(event.id)) continue;
-            const ok = await validateEvent(event);
-            if (!ok) continue;
-            seenIds.current.add(event.id);
-            validEvents.push(event);
-          }
+    const filter = {
+      kinds: [1, 6, 16, 1068, 30023] as NDKKind[],
+      authors: validAuthors,
+      limit: 30,
+    };
 
-          if (validEvents.length > 0) {
-            setRawEvents(prev => {
-              const combined = [...prev, ...validEvents];
-              return combined.filter((v, i, a) => a.findIndex(t => t.id === v.id) === i);
-            });
-          }
-        },
-        onEvent: async (event: NDKEvent) => {
-          if (seenIds.current.has(event.id)) return;
-          
+    const options = {
+      closeOnEose: false,
+    };
+
+    const handlers = {
+      onEvents: async (events: NDKEvent[]) => {
+        const validEvents: NDKEvent[] = [];
+        for (const event of events) {
+          if (seenIds.current.has(event.id)) continue;
           const ok = await validateEvent(event);
-          if (!ok) return;
-
+          if (!ok) continue;
           seenIds.current.add(event.id);
-
-          if (!isInitialLoadDone.current) {
-            setRawEvents(prev => {
-              const combined = [...prev, event];
-              return combined.filter((v, i, a) => a.findIndex(t => t.id === v.id) === i);
-            });
-          } else {
-            bufferRef.current = [event, ...bufferRef.current];
-            setNewCount(bufferRef.current.length);
-          }
-        },
-        onEose: () => {
-          setIsLoading(false);
-          setTimeout(() => {
-            isInitialLoadDone.current = true;
-          }, 1500);
+          validEvents.push(event);
         }
-      }
-    );
 
-    return () => sub.stop();
-  }, [ndk, isReady, wotStatus, followingList, wot]); // eslint-disable-line react-hooks/exhaustive-deps
+        if (validEvents.length > 0) {
+          setRawEvents(prev => {
+            const combined = [...prev, ...validEvents];
+            return combined.filter((v, i, a) => a.findIndex(t => t.id === v.id) === i);
+          });
+        }
+      },
+      onEvent: async (event: NDKEvent) => {
+        if (seenIds.current.has(event.id)) return;
+        
+        const ok = await validateEvent(event);
+        if (!ok) return;
+
+        seenIds.current.add(event.id);
+
+        if (!isInitialLoadDone.current) {
+          setRawEvents(prev => {
+            const combined = [...prev, event];
+            return combined.filter((v, i, a) => a.findIndex(t => t.id === v.id) === i);
+          });
+        } else {
+          bufferRef.current = [event, ...bufferRef.current];
+          setNewCount(bufferRef.current.length);
+        }
+      },
+      onEose: () => {
+        setIsLoading(false);
+        setTimeout(() => {
+          isInitialLoadDone.current = true;
+        }, 1500);
+      }
+    };
+
+    const syncOptions = { ...options, ...handlers };
+
+    if (sync) {
+      sync.syncAndSubscribe(filter, syncOptions).then(sub => {
+        subscriptionRef.current = sub;
+      }).catch(() => {
+        subscriptionRef.current = ndk.subscribe(filter, options, handlers);
+      });
+    } else {
+      subscriptionRef.current = ndk.subscribe(filter, options, handlers);
+    }
+
+    return () => {
+      if (subscriptionRef.current) subscriptionRef.current.stop();
+    };
+  }, [ndk, isReady, sync, wotStatus, followingList, wot]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const flushNewPosts = useCallback(() => {
     if (!bufferRef.current.length) return;
