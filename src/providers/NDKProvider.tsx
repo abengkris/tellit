@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useEffect, useState, ReactNode, useRef, useMemo } from "react";
+import { createContext, useEffect, useLayoutEffect, useState, ReactNode, useRef, useMemo, useCallback } from "react";
 import NDK, { NDKEvent, NDKCacheAdapter, NDKRelay, NDKRelayAuthPolicies, NDKNip46Signer, ndkSignerFromPayload } from "@nostr-dev-kit/ndk";
 import NDKCacheAdapterDexie from "@nostr-dev-kit/ndk-cache-dexie";
 import { NDKMessenger, CacheModuleStorage, NDKMessage } from "@nostr-dev-kit/messages";
@@ -74,18 +74,84 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
     walletType, 
     nwcPairingCode, 
     setBalance, 
-    setInfo 
+    setInfo,
+    isLocked
   } = useWalletStore();
   
   const messengerRef = useRef<NDKMessenger | null>(null);
   const sessionsRef = useRef<NDKSessionManager | null>(null);
   const walletRef = useRef<NDKNWCWallet | null>(null);
   const initializingRef = useRef(false);
+  const lastPairingCodeRef = useRef<string | null>(null);
   const invalidSigCountByRelay = useRef(new Map<string, number>());
   const lastToastTime = useRef(0);
 
+  const initWallet = useCallback(async (instance: NDK) => {
+    if (stableDepsRef.current.nwcPairingCode && !stableDepsRef.current.isLocked) {
+      if (lastPairingCodeRef.current === stableDepsRef.current.nwcPairingCode && walletRef.current) {
+        return;
+      }
+
+      console.log("[NDKProvider] Initializing NWC wallet...");
+      try {
+        const nwc = new NDKNWCWallet(instance, { 
+          pairingCode: stableDepsRef.current.nwcPairingCode,
+          timeout: 30000
+        });
+        
+        nwc.on("ready", () => {
+          console.log("[NDKProvider] NWC wallet ready");
+          setIsWalletReady(true);
+          walletRef.current = nwc;
+          lastPairingCodeRef.current = stableDepsRef.current.nwcPairingCode;
+          
+          if (stableDepsRef.current.walletType === 'nwc') {
+            instance.wallet = nwc;
+            stableDepsRef.current.addToast("NWC Wallet connected", "success");
+            nwc.getInfo().then((info) => { if (info) stableDepsRef.current.setInfo(info); }).catch(() => {});
+            nwc.updateBalance().catch(() => {});
+          }
+        });
+
+        nwc.on("balance_updated", (balance?: { amount: number }) => {
+          if (stableDepsRef.current.walletType === 'nwc') stableDepsRef.current.setBalance(balance?.amount || 0);
+        });
+
+        // Some versions of NDK might already be ready if created with pairing code
+        // and its internal async init finished quickly.
+        // NDK-wallet usually emits "ready" even if we attach listener late, 
+        // but let's check status if possible.
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        if ((nwc as any).status === "ready") {
+          setIsWalletReady(true);
+          walletRef.current = nwc;
+          if (stableDepsRef.current.walletType === 'nwc') {
+            instance.wallet = nwc;
+          }
+        }
+      } catch (err) {
+        console.error("[NDKProvider] Failed to initialize NWC wallet:", err);
+      }
+    } else {
+      // Clear wallet if pairing code is gone or locked
+      if (instance.wallet && instance.wallet instanceof NDKNWCWallet) {
+        instance.wallet = undefined;
+        setIsWalletReady(false);
+        walletRef.current = null;
+        lastPairingCodeRef.current = null;
+      }
+    }
+  }, []);
+
+  // Separate effect for wallet pairing code and lock state changes
+  useEffect(() => {
+    if (ndk) {
+      initWallet(ndk);
+    }
+  }, [ndk, nwcPairingCode, isLocked, initWallet]);
+
   // Memoize stable refs for dependencies that change but shouldn't re-trigger NDK init
-  const depsRef = useRef({
+  const stableDepsRef = useRef({
     setUser,
     setLoginState,
     setAccounts,
@@ -101,11 +167,12 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
     loginType,
     bunkerUri,
     bunkerLocalNsec,
-    signerPayload
+    signerPayload,
+    isLocked
   });
 
-  useEffect(() => {
-    depsRef.current = {
+  useLayoutEffect(() => {
+    Object.assign(stableDepsRef.current, {
       setUser,
       setLoginState,
       setAccounts,
@@ -121,8 +188,9 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
       loginType,
       bunkerUri,
       bunkerLocalNsec,
-      signerPayload
-    };
+      signerPayload,
+      isLocked
+    });
   });
 
   useEffect(() => {
@@ -181,7 +249,7 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
 
     // NIP-42 Relay Authentication
     instance.relayAuthDefaultPolicy = async (relay: NDKRelay, challenge: string) => {
-      const strategy = depsRef.current.relayAuthStrategy;
+      const strategy = stableDepsRef.current.relayAuthStrategy;
       console.log(`[NDKProvider] Relay ${relay.url} requested authentication. Strategy: ${strategy}`);
       
       if (strategy === "never") return false;
@@ -200,13 +268,13 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
       
       // Strategy is "ask"
       return new Promise<boolean>((resolve) => {
-        depsRef.current.addToast(`Relay ${relay.url} requested authentication.`, "info", 15000, {
+        stableDepsRef.current.addToast(`Relay ${relay.url} requested authentication.`, "info", 15000, {
           label: "Authenticate",
           onClick: () => {
             signInPolicy(relay, challenge)
               .then((result) => {
                 if (result) {
-                  depsRef.current.addToast(`Authenticated to ${relay.url}`, "success");
+                  stableDepsRef.current.addToast(`Authenticated to ${relay.url}`, "success");
                   resolve(true);
                 } else {
                   resolve(false);
@@ -214,7 +282,7 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
               })
               .catch((err) => {
                 console.error(`[NDKProvider] Authentication failed for ${relay.url}:`, err);
-                depsRef.current.addToast(`Authentication failed for ${relay.url}`, "error");
+                stableDepsRef.current.addToast(`Authentication failed for ${relay.url}`, "error");
                 resolve(false);
               });
           }
@@ -238,21 +306,21 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
       if (currentCount >= DISCONNECT_THRESHOLD && relay) {
         relay.disconnect();
         if (now - lastToastTime.current > TOAST_THROTTLE) {
-          depsRef.current.addToast(`Disconnected from malicious relay: ${relayUrl}`, "error");
+          stableDepsRef.current.addToast(`Disconnected from malicious relay: ${relayUrl}`, "error");
           lastToastTime.current = now;
         }
         return;
       }
 
       if (now - lastToastTime.current > TOAST_THROTTLE) {
-        depsRef.current.addToast(`Invalid signature detected from relay: ${relayUrl}`, "error");
+        stableDepsRef.current.addToast(`Invalid signature detected from relay: ${relayUrl}`, "error");
         lastToastTime.current = now;
       }
     });
 
     instance.on("event:publish-failed", (event: NDKEvent, error: Error) => {
       console.error(`Event ${event.id} failed to publish:`, error);
-      depsRef.current.addToast(`Failed to publish event. It will be retried automatically.`, "error");
+      stableDepsRef.current.addToast(`Failed to publish event. It will be retried automatically.`, "error");
     });
 
     // We use any casting because some NDK versions emit these events but might not have them in all Type definitions
@@ -261,7 +329,7 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
       console.log(`Event ${event.id} published successfully!`);
       // Only show success toast for major user-initiated events like kind 1, 0, 3, etc.
       if ([0, 1, 3, 6, 7, 30023].includes(event.kind || -1)) {
-        depsRef.current.addToast("Successfully synced with relays", "success", 3000);
+        stableDepsRef.current.addToast("Successfully synced with relays", "success", 3000);
       }
     });
 
@@ -269,36 +337,6 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
     (instance as any).on("local-cache:save", (event: NDKEvent) => {
       console.log(`Event ${event.id} saved to local cache`);
     });
-
-    const initWallet = async () => {
-      if (depsRef.current.nwcPairingCode) {
-        try {
-          const nwc = new NDKNWCWallet(instance, { 
-            pairingCode: depsRef.current.nwcPairingCode,
-            timeout: 30000
-          });
-          
-          nwc.on("ready", () => {
-            console.log("NWC wallet ready");
-            setIsWalletReady(true);
-            walletRef.current = nwc;
-            
-            if (depsRef.current.walletType === 'nwc') {
-              instance.wallet = nwc;
-              depsRef.current.addToast("NWC Wallet connected", "success");
-              nwc.getInfo().then((info) => { if (info) depsRef.current.setInfo(info); }).catch(() => {});
-              nwc.updateBalance().catch(() => {});
-            }
-          });
-
-          nwc.on("balance_updated", (balance?: { amount: number }) => {
-            if (depsRef.current.walletType === 'nwc') depsRef.current.setBalance(balance?.amount || 0);
-          });
-        } catch (err) {
-          console.error("Failed to initialize NWC wallet:", err);
-        }
-      }
-    };
 
     const sessionManager = new NDKSessionManager(instance, {
       storage: new LocalStorage("tellit-sessions"),
@@ -313,7 +351,7 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
       
       // Update accounts list
       const pubkeys = Array.from(sessionManager.getSessions().keys());
-      depsRef.current.setAccounts(pubkeys);
+      stableDepsRef.current.setAccounts(pubkeys);
 
       if (state.activePubkey) {
         const session = sessionManager.activeSession;
@@ -322,16 +360,16 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
             setActiveSession(session);
             const user = sessionManager.activeUser || instance.getUser({ pubkey: session.pubkey });
             instance.activeUser = user; // Enable automatic mute list fetching
-            depsRef.current.setUser(user);
-            depsRef.current.setLoginState(true, session.pubkey);
+            stableDepsRef.current.setUser(user);
+            stableDepsRef.current.setLoginState(true, session.pubkey);
           });
         }
       } else {
         Promise.resolve().then(() => {
           setActiveSession(null);
           instance.activeUser = undefined;
-          depsRef.current.setUser(null);
-          depsRef.current.setLoginState(false, null);
+          stableDepsRef.current.setUser(null);
+          stableDepsRef.current.setLoginState(false, null);
         });
       }
     });
@@ -340,14 +378,14 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
       console.log("[NDKProvider] Initializing App...");
       
       // 1. Try to restore signer from payload (Preferred method)
-      if (depsRef.current.signerPayload) {
+      if (stableDepsRef.current.signerPayload) {
         try {
-          const restoredSigner = await ndkSignerFromPayload(depsRef.current.signerPayload, instance);
+          const restoredSigner = await ndkSignerFromPayload(stableDepsRef.current.signerPayload, instance);
           if (restoredSigner) {
             console.log("[NDKProvider] Signer restored from payload");
             instance.signer = restoredSigner;
             // Bunker signers might need to be "readied"
-            if (depsRef.current.loginType === 'bunker') {
+            if (stableDepsRef.current.loginType === 'bunker') {
               restoredSigner.blockUntilReady().catch(e => console.error("Bunker signer failed to ready:", e));
             }
           }
@@ -356,12 +394,12 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
         }
       } 
       // 2. Legacy fallback for Bunker signer
-      else if (depsRef.current.loginType === 'bunker' && depsRef.current.bunkerUri) {
+      else if (stableDepsRef.current.loginType === 'bunker' && stableDepsRef.current.bunkerUri) {
         try {
           const signer = NDKNip46Signer.bunker(
             instance, 
-            depsRef.current.bunkerUri, 
-            depsRef.current.bunkerLocalNsec || undefined
+            stableDepsRef.current.bunkerUri, 
+            stableDepsRef.current.bunkerLocalNsec || undefined
           );
           instance.signer = signer;
           signer.blockUntilReady().catch(e => console.error("Bunker signer failed to ready:", e));
@@ -371,7 +409,7 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
       }
 
       await sessionManager.restore();
-      await initWallet();
+      await initWallet(instance);
       setNdk(instance);
       setSync(new NDKSync(instance));
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -422,10 +460,10 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
               msgInstance.on("message", (message: NDKMessage) => {
                 const currentPubkey = sessionManager.activePubkey;
                 if (message.sender?.pubkey !== currentPubkey && message.recipient?.pubkey === currentPubkey) {
-                  const isCurrentChat = depsRef.current.activeChatPubkey === message.sender?.pubkey;
+                  const isCurrentChat = stableDepsRef.current.activeChatPubkey === message.sender?.pubkey;
                   if (!isCurrentChat) {
-                    depsRef.current.incrementUnreadMessagesCount();
-                    if (depsRef.current.browserNotificationsEnabled && Notification.permission === "granted") {
+                    stableDepsRef.current.incrementUnreadMessagesCount();
+                    if (stableDepsRef.current.browserNotificationsEnabled && Notification.permission === "granted") {
                       const sender = message.sender;
                       sender.fetchProfile().then(() => {
                         const title = String(sender.profile?.display_name || sender.profile?.name || "New Message");
@@ -446,17 +484,7 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
       if (messengerRef.current) try { messengerRef.current.destroy(); } catch { /* ignore */ }
       initializingRef.current = false;
     };
-   
-  }, []); // Only run once on mount
-
-  // Separate effect for wallet pairing code changes
-  useEffect(() => {
-    if (ndk && nwcPairingCode && !isWalletReady) {
-      // Re-trigger wallet init if pairing code appears after initial load
-      // But we need to handle this carefully to not double-init.
-      // For now, let the user reload or implement a more robust wallet manager.
-    }
-  }, [ndk, nwcPairingCode, isWalletReady]);
+  }, [initWallet]);
 
   const refreshBalance = async () => {
     if (walletRef.current) {

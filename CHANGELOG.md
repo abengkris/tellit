@@ -8,6 +8,8 @@ All notable changes to this project will be documented in this file.
 - **Remote Signer Support (NIP-46):** Users can now log in using Nostr Connect / Bunker URIs. This allows using signers like Amber or other remote signing services.
 - **Password-Protected Keys (NIP-49):** Added support for `ncryptsec` login. Users can now use their password-encrypted private keys for a more secure manual login experience.
 - **Improved Login UI:** Refactored the login page with a tabbed manual login interface for better organization of nsec, ncryptsec, and Bunker methods.
+- **Reactive NWC Wallet:** Refactored NWC initialization to be reactive, supporting instant connection when unlocking or updating pairing codes.
+- **One-tap NWC Zaps:** Integrated `ndk.wallet` into the post feed actions to enable instant zapping for users with connected NWC wallets.
 
 ## [0.7.11] - 2026-03-16
 

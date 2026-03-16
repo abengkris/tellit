@@ -134,11 +134,14 @@ export const PostActions: React.FC<PostActionsProps> = ({
   const handleZap = async (e: React.MouseEvent) => {
     e.stopPropagation();
     
-    // Check for WebLN
-    if (typeof window !== "undefined" && window.webln && ndk && authorPubkey) {
+    // One-tap zap check: NWC (ndk.wallet) or WebLN
+    const hasNWC = !!ndk?.wallet;
+    const hasWebLN = typeof window !== "undefined" && !!window.webln;
+
+    if ((hasNWC || hasWebLN) && ndk && authorPubkey) {
       try {
         setIsZapping(true);
-        await window.webln.enable();
+        if (hasWebLN && !hasNWC) await window.webln?.enable();
         
         // Fetch event to ensure we have the full object for zapping
         const event = await ndk.fetchEvent(eventId);
@@ -155,9 +158,9 @@ export const PostActions: React.FC<PostActionsProps> = ({
           return;
         }
 
-        if (bolt11) {
-          const response = await window.webln.sendPayment(bolt11);
-          if (response.preimage) {
+        if (bolt11 && hasWebLN) {
+          const response = await window.webln?.sendPayment(bolt11);
+          if (response?.preimage) {
             triggerZapConfetti();
             setOptimisticZaps((prev: number) => prev + amount); // Add sats to counter
             addToast(`Zapped ${amount} sats!`, "success");
