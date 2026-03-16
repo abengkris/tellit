@@ -128,6 +128,8 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
           walletRef.current = nwc;
           if (stableDepsRef.current.walletType === 'nwc') {
             instance.wallet = nwc;
+            nwc.getInfo().then((info) => { if (info) stableDepsRef.current.setInfo(info); }).catch(() => {});
+            nwc.updateBalance().catch(() => {});
           }
         }
       } catch (err) {
