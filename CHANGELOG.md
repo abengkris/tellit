@@ -12,7 +12,7 @@ All notable changes to this project will be documented in this file.
 ## [0.7.11] - 2026-03-16
 
 ### Added
-- **Trending Posts:** Integrated `nostr.wine` trending API into the search/discovery page. Users can now see top-zapped posts from the last 24 hours when the search bar is empty.
+- **Trending Posts:** Integrated `nostr.wine` trending API into the search/discovery page. Users can now see the most discussed posts (ordered by replies) from the last 24 hours when the search bar is empty.
 - **Enhanced useTrendingPosts Hook:** Updated the hook to support custom timeframes (hours), ordering (zaps, reposts, etc.), and automatic NDK event resolution.
 
 ## [0.7.10] - 2026-03-16

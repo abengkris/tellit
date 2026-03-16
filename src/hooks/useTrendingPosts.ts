@@ -23,7 +23,7 @@ export function useTrendingPosts(ndk: NDK | null, options: {
   order?: "replies" | "reposts" | "reactions" | "zap_count" | "zap_amount", 
   limit?: number 
 } = {}) {
-  const { hours = 24, order = "zap_amount", limit = 10 } = options;
+  const { hours = 24, order = "replies", limit = 10 } = options;
   const [trendingPosts, setTrendingPosts] = useState<NDKEvent[]>([]);
   const [trendingStats, setTrendingStats] = useState<Record<string, TrendingPostRaw>>({});
   const [loading, setLoading] = useState(true);

@@ -52,7 +52,7 @@ export function SearchContent() {
   const { ndk, isReady } = useNDK();
   const { followingUsers, loading: loadingFollowing } = useFollowingList(user?.pubkey);
   const { trending, loading: loadingTrending } = useTrending();
-  const { trendingPosts, loading: loadingTrendingPosts } = useTrendingPosts(ndk, { hours: 24, order: "zap_amount" });
+  const { trendingPosts, loading: loadingTrendingPosts } = useTrendingPosts(ndk, { hours: 24, order: "replies" });
 
   const initialQuery = searchParams.get("q") || "";
   
