@@ -7,6 +7,7 @@ export interface ScoringContext {
   interactionHistory: Map<string, number>; 
   trustScores?: Map<string, number>; // pubkey -> score (0-1)
   mutualsMap?: Map<string, number>;  // pubkey -> count of mutual followers
+  interestsSet?: Set<string>;        // list of hashtags user is interested in
 }
 
 export interface ScoredEvent {
@@ -27,6 +28,7 @@ const WEIGHTS = {
   networkReply: 12,
   trustFactor: 40,        // multiplier for trust score (assumed 0-1)
   mutualsFactor: 15,      // multiplier for log10(mutuals)
+  interestMatch: 50,      // Boost for matching a topic user is interested in
 } as const;
 
 export function scoreEvent(
@@ -36,6 +38,21 @@ export function scoreEvent(
 ): ScoredEvent {
   const signals: Record<string, number> = {};
   let score = 0;
+
+  // --- Interests signals ---
+  if (ctx.interestsSet && ctx.interestsSet.size > 0) {
+    const eventTags = new Set(event.tags.filter(t => t[0] === 't').map(t => t[1].toLowerCase()));
+    let matches = 0;
+    ctx.interestsSet.forEach(interest => {
+      if (eventTags.has(interest.toLowerCase())) matches++;
+    });
+
+    if (matches > 0) {
+      const interestBoost = Math.min(matches * WEIGHTS.interestMatch, WEIGHTS.interestMatch * 2);
+      signals.interestMatch = interestBoost;
+      score += interestBoost;
+    }
+  }
 
   // --- Social graph signals ---
   if (ctx.followingSet.has(event.pubkey)) {

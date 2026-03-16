@@ -11,6 +11,7 @@ import { validateEvent } from "@/lib/policies";
 interface UseForYouFeedOptions {
   viewerPubkey: string;
   followingList: string[];
+  interests: string[];
 }
 
 interface UseForYouFeedReturn {
@@ -19,6 +20,7 @@ interface UseForYouFeedReturn {
   isLoading: boolean;
   wotStatus: "idle" | "loading" | "ready" | "error";
   wotSize: number;            
+  hasInterests: boolean;
   flushNewPosts: () => void;
   loadMore: () => void;
   hasMore: boolean;
@@ -27,6 +29,7 @@ interface UseForYouFeedReturn {
 export function useForYouFeed({
   viewerPubkey,
   followingList,
+  interests,
 }: UseForYouFeedOptions): UseForYouFeedReturn {
   const { ndk, isReady, sync } = useNDK();
   const { wot, trustScores, status: wotStatus, pubkeyCount: wotSize } = useWoT(viewerPubkey);
@@ -36,12 +39,31 @@ export function useForYouFeed({
   const [newCount, setNewCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [hasMore, setHasMore] = useState(true);
+  const hasInterests = interests.length > 0;
+
+  // Buffer for batching updates to rawEvents to avoid excessive re-renders
+  const updateBufferRef = useRef<NDKEvent[]>([]);
+  const updateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const subscriptionRef = useRef<NDKSubscription | null>(null);
   const bufferRef = useRef<NDKEvent[]>([]);
   const seenIds = useRef(new Set<string>());
   const isInitialLoadDone = useRef(false);
   const prevFollowingListRef = useRef<string>("");
+
+  // Memoized mutuals map to avoid re-calculating on every event
+  const mutualsMap = useMemo(() => {
+    if (!wot) return new Map<string, number>();
+    const map = new Map<string, number>();
+    const allWoTPubkeys = wot.getAllPubkeys();
+    for (const pk of allWoTPubkeys) {
+      const node = wot.getNode(pk);
+      if (node && node.followedBy) {
+        map.set(pk, node.followedBy.size);
+      }
+    }
+    return map;
+  }, [wot]);
 
   // Memoized ranked posts using advanced scorer
   const posts = useMemo(() => {
@@ -54,28 +76,43 @@ export function useForYouFeed({
 
     if (!wot) return sortByTime(baseEvents);
 
-    // Build mutuals map for the scorer
-    const mutualsMap = new Map<string, number>();
-    const allWoTPubkeys = wot.getAllPubkeys();
-    for (const pk of allWoTPubkeys) {
-      const node = wot.getNode(pk);
-      if (node && node.followedBy) {
-        mutualsMap.set(pk, node.followedBy.size);
-      }
-    }
-
     // Prepare context for the scorer
     const context: ScoringContext = {
       viewerPubkey,
       followingSet: new Set(followingList),
-      followsOfFollowsSet: new Set(allWoTPubkeys),
+      followsOfFollowsSet: new Set(wot.getAllPubkeys()),
       interactionHistory: new Map(), // To be implemented if we start tracking this
       trustScores,
       mutualsMap,
+      interestsSet: new Set(interests),
     };
 
     return rankEvents(baseEvents, context).map(se => se.event);
-  }, [rawEvents, wot, wotStrictMode, followingList, viewerPubkey, trustScores]);
+  }, [rawEvents, wot, wotStrictMode, followingList, viewerPubkey, trustScores, mutualsMap, interests]);
+
+  // Batch process new events into rawEvents state
+  const processUpdateBuffer = useCallback(() => {
+    if (updateBufferRef.current.length === 0) return;
+
+    const newEvents = [...updateBufferRef.current];
+    updateBufferRef.current = [];
+    updateTimeoutRef.current = null;
+
+    setRawEvents(prev => {
+      const combined = [...prev, ...newEvents];
+      // Faster way to deduplicate if list is already fairly large
+      const uniqueMap = new Map();
+      combined.forEach(e => uniqueMap.set(e.id, e));
+      return Array.from(uniqueMap.values());
+    });
+  }, []);
+
+  const queueUpdate = useCallback((events: NDKEvent[]) => {
+    updateBufferRef.current.push(...events);
+    if (!updateTimeoutRef.current) {
+      updateTimeoutRef.current = setTimeout(processUpdateBuffer, 200);
+    }
+  }, [processUpdateBuffer]);
 
   useEffect(() => {
     if (!ndk || !isReady || wotStatus === "idle") return;
@@ -84,16 +121,14 @@ export function useForYouFeed({
     const listChanged = followingStr !== prevFollowingListRef.current;
 
     if (listChanged) {
-      Promise.resolve().then(() => {
-        setIsLoading(true);
-        seenIds.current = new Set();
-        isInitialLoadDone.current = false;
-        bufferRef.current = [];
-        setRawEvents([]);
-      });
+      setIsLoading(true);
+      seenIds.current = new Set();
+      isInitialLoadDone.current = false;
+      bufferRef.current = [];
+      setRawEvents([]);
       prevFollowingListRef.current = followingStr;
     } else if (rawEvents.length > 0) {
-      Promise.resolve().then(() => setIsLoading(false));
+      setIsLoading(false);
       return;
     }
 
@@ -114,15 +149,19 @@ export function useForYouFeed({
     const validAuthors = authors.filter(a => !!a && /^[0-9a-fA-F]{64}$/.test(a));
 
     if (!validAuthors.length) {
-      Promise.resolve().then(() => setIsLoading(false));
+      setIsLoading(false);
       return;
     }
 
-    const filter = {
+    const filter: NDKFilter = {
       kinds: [1, 6, 16, 1068, 30023] as NDKKind[],
       authors: validAuthors,
       limit: 30,
     };
+
+    if (interests.length > 0) {
+      filter["#t"] = interests;
+    }
 
     const options = {
       closeOnEose: false,
@@ -130,20 +169,21 @@ export function useForYouFeed({
 
     const handlers = {
       onEvents: async (events: NDKEvent[]) => {
-        const validEvents: NDKEvent[] = [];
-        for (const event of events) {
-          if (seenIds.current.has(event.id)) continue;
-          const ok = await validateEvent(event);
-          if (!ok) continue;
-          seenIds.current.add(event.id);
-          validEvents.push(event);
-        }
+        // Parallelize validation for initial chunk
+        const validationResults = await Promise.all(
+          events.map(async (event) => {
+            if (seenIds.current.has(event.id)) return null;
+            const ok = await validateEvent(event);
+            if (!ok) return null;
+            return event;
+          })
+        );
 
+        const validEvents = validationResults.filter((e): e is NDKEvent => e !== null);
+        
         if (validEvents.length > 0) {
-          setRawEvents(prev => {
-            const combined = [...prev, ...validEvents];
-            return combined.filter((v, i, a) => a.findIndex(t => t.id === v.id) === i);
-          });
+          validEvents.forEach(e => seenIds.current.add(e.id));
+          queueUpdate(validEvents);
         }
       },
       onEvent: async (event: NDKEvent) => {
@@ -155,10 +195,7 @@ export function useForYouFeed({
         seenIds.current.add(event.id);
 
         if (!isInitialLoadDone.current) {
-          setRawEvents(prev => {
-            const combined = [...prev, event];
-            return combined.filter((v, i, a) => a.findIndex(t => t.id === v.id) === i);
-          });
+          queueUpdate([event]);
         } else {
           bufferRef.current = [event, ...bufferRef.current];
           setNewCount(bufferRef.current.length);
@@ -186,8 +223,9 @@ export function useForYouFeed({
 
     return () => {
       if (subscriptionRef.current) subscriptionRef.current.stop();
+      if (updateTimeoutRef.current) clearTimeout(updateTimeoutRef.current);
     };
-  }, [ndk, isReady, sync, wotStatus, followingList, wot]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [ndk, isReady, sync, wotStatus, followingList, wot, queueUpdate, interests]); 
 
   const flushNewPosts = useCallback(() => {
     if (!bufferRef.current.length) return;
@@ -219,12 +257,18 @@ export function useForYouFeed({
     // Clean authors array to prevent validation errors
     const validAuthors = authors.filter(a => !!a && /^[0-9a-fA-F]{64}$/.test(a));
 
-    const older = await ndk.fetchEvents({
+    const olderFilter: NDKFilter = {
       kinds: [1, 6, 16, 1068, 30023] as NDKKind[],
       authors: validAuthors,
       until: oldest - 1,
       limit: 30,
-    });
+    };
+
+    if (interests.length > 0) {
+      olderFilter["#t"] = interests;
+    }
+
+    const older = await ndk.fetchEvents(olderFilter);
 
     const newEvents = Array.from(older).filter(e => !seenIds.current.has(e.id));
     newEvents.forEach(e => seenIds.current.add(e.id));
@@ -234,13 +278,14 @@ export function useForYouFeed({
     const combined = [...prev, ...newEvents];
     return combined.filter((v, i, a) => a.findIndex(t => t.id === v.id) === i);
     });
-    }, [ndk, rawEvents, hasMore, followingList, wot, viewerPubkey]);
+    }, [ndk, rawEvents, hasMore, followingList, wot, viewerPubkey, interests]);
   return {
     posts,
     newCount,
     isLoading,
     wotStatus,
     wotSize,
+    hasInterests,
     flushNewPosts,
     loadMore,
     hasMore,

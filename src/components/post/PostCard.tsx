@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, memo } from "react";
 import { NDKEvent } from "@nostr-dev-kit/ndk";
 import { useProfile } from "@/hooks/useProfile";
 import { usePostStats } from "@/hooks/usePostStats";
@@ -33,12 +33,12 @@ interface PostCardProps {
   indent?: number;
 }
 
-export const PostCard: React.FC<PostCardProps> = ({ 
+export const PostCard = memo(({ 
   event, 
   threadLine = "none",
   isFocal = false,
   indent = 0
-}) => {
+}: PostCardProps) => {
   const [repostedEvent, setRepostedEvent] = useState<NDKEvent | null>(null);
   const [repostLoading, setRepostLoading] = useState(false);
   const [isDeleted, setIsDeleted] = useState(false);
@@ -400,4 +400,10 @@ export const PostCard: React.FC<PostCardProps> = ({
       )}
     </article>
   );
-};
+}, (prevProps, nextProps) => {
+  return prevProps.event.id === nextProps.event.id && 
+         prevProps.threadLine === nextProps.threadLine && 
+         prevProps.isFocal === nextProps.isFocal &&
+         prevProps.indent === nextProps.indent;
+});
+PostCard.displayName = "PostCard";

@@ -12,6 +12,7 @@ import { NewPostsIsland } from "@/components/feed/NewPostsIsland";
 import { usePausedFeed } from "@/hooks/usePausedFeed";
 import { useForYouFeed } from "@/hooks/useForYouFeed";
 import { ProfileSetupCard } from "@/components/profile/ProfileSetupCard";
+import { InterestSelector } from "@/components/feed/InterestSelector";
 import { useUIStore } from "@/store/ui";
 import { useLists } from "@/hooks/useLists";
 import { useProfile } from "@/hooks/useProfile";
@@ -190,6 +191,7 @@ export function HomeContent() {
           <ForYouFeedTab 
             viewerPubkey={user.pubkey} 
             followingList={followingPubkeys} 
+            interests={interestList}
           />
         </div>
         
@@ -249,9 +251,17 @@ const InterestsFeedTab = memo(({ interestList }: { interestList: string[] }) => 
 
 InterestsFeedTab.displayName = "InterestsFeedTab";
 
-const ForYouFeedTab = memo(({ viewerPubkey, followingList }: { viewerPubkey: string; followingList: string[] }) => {
-  const { posts, newCount, isLoading, wotStatus, wotSize, flushNewPosts, loadMore, hasMore } = 
-    useForYouFeed({ viewerPubkey, followingList });
+const ForYouFeedTab = memo(({ 
+  viewerPubkey, 
+  followingList,
+  interests
+}: { 
+  viewerPubkey: string; 
+  followingList: string[];
+  interests: string[];
+}) => {
+  const { posts, newCount, isLoading, wotStatus, wotSize, hasInterests, flushNewPosts, loadMore, hasMore } = 
+    useForYouFeed({ viewerPubkey, followingList, interests });
 
   const handleFlush = useCallback(() => {
     flushNewPosts();
@@ -260,6 +270,8 @@ const ForYouFeedTab = memo(({ viewerPubkey, followingList }: { viewerPubkey: str
 
   return (
     <div className="relative">
+      {!hasInterests && <InterestSelector />}
+
       <NewPostsIsland count={newCount} onFlush={handleFlush} />
       
       <WoTStatusBanner status={wotStatus} size={wotSize} />
@@ -269,7 +281,9 @@ const ForYouFeedTab = memo(({ viewerPubkey, followingList }: { viewerPubkey: str
         isLoading={isLoading}
         loadMore={loadMore}
         hasMore={hasMore}
-        emptyMessage="Looking for something for you… Try following more people!"
+        emptyMessage={hasInterests 
+          ? "Looking for something for you… Try following more people or adding more interests!"
+          : "Looking for something for you… Try following more people!"}
         showSuggestions={true}
       />
     </div>

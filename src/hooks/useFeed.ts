@@ -21,10 +21,45 @@ export function useFeed(authors: string[], kinds: number[] = [1, 20, 1063, 1068,
   const [loading, setLoading] = useState(true);
   const [hasMore, setHasMore] = useState(true);
   
+  const updateBufferRef = useRef<NDKEvent[]>([]);
+  const updateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   const subscriptionRef = useRef<NDKSubscription | null>(null);
   const realtimeSubRef = useRef<NDKSubscription | null>(null);
   const oldestTimestampRef = useRef<number | undefined>(undefined);
   const lastAuthorsRef = useRef<string[]>([]);
+
+  const processUpdateBuffer = useCallback(() => {
+    if (updateBufferRef.current.length === 0) return;
+
+    const newEvents = [...updateBufferRef.current];
+    updateBufferRef.current = [];
+    updateTimeoutRef.current = null;
+
+    setPosts((prev) => {
+      const uniqueMap = new Map();
+      // Add existing posts
+      prev.forEach(p => uniqueMap.set(p.id, p));
+      // Add new ones
+      newEvents.forEach(e => uniqueMap.set(e.id, e));
+      
+      const combined = Array.from(uniqueMap.values());
+      const sorted = combined.sort((a, b) => (b.created_at ?? 0) - (a.created_at ?? 0));
+      
+      if (sorted.length > 0) {
+        oldestTimestampRef.current = sorted[sorted.length - 1].created_at;
+      }
+      
+      return sorted.slice(0, MAX_POSTS);
+    });
+  }, []);
+
+  const queueUpdate = useCallback((events: NDKEvent[]) => {
+    updateBufferRef.current.push(...events);
+    if (!updateTimeoutRef.current) {
+      updateTimeoutRef.current = setTimeout(processUpdateBuffer, 100);
+    }
+  }, [processUpdateBuffer]);
   
   const cleanupSubscriptions = useCallback(() => {
     if (subscriptionRef.current) {
@@ -34,6 +69,10 @@ export function useFeed(authors: string[], kinds: number[] = [1, 20, 1063, 1068,
     if (realtimeSubRef.current) {
       realtimeSubRef.current.stop();
       realtimeSubRef.current = null;
+    }
+    if (updateTimeoutRef.current) {
+      clearTimeout(updateTimeoutRef.current);
+      updateTimeoutRef.current = null;
     }
   }, []);
 
@@ -125,13 +164,9 @@ export function useFeed(authors: string[], kinds: number[] = [1, 20, 1063, 1068,
         eventsReceived += events.length;
         if (isLoadMore) return; // onEvents is primarily for initial cache load
         
-        const filtered = events
-          .filter(e => matchesFilter(e))
-          .sort((a, b) => (b.created_at ?? 0) - (a.created_at ?? 0));
-        
+        const filtered = events.filter(e => matchesFilter(e));
         if (filtered.length > 0) {
-          setPosts(filtered.slice(0, MAX_POSTS));
-          oldestTimestampRef.current = filtered[filtered.length - 1].created_at;
+          queueUpdate(filtered);
         }
       },
       onEvent: (event: NDKEvent) => {
@@ -139,18 +174,7 @@ export function useFeed(authors: string[], kinds: number[] = [1, 20, 1063, 1068,
         eventsReceived++;
         
         if (!matchesFilter(event)) return;
-
-        setPosts((prev) => {
-          if (prev.find(p => p.id === event.id)) return prev;
-          const combined = [...prev, event];
-          const sorted = combined.sort((a, b) => (b.created_at ?? 0) - (a.created_at ?? 0));
-          
-          if (sorted.length > 0) {
-            oldestTimestampRef.current = sorted[sorted.length - 1].created_at;
-          }
-          
-          return sorted.slice(0, MAX_POSTS);
-        });
+        queueUpdate([event]);
       },
       onEose: () => {
         clearTimeout(loadingTimeout);
@@ -206,12 +230,7 @@ export function useFeed(authors: string[], kinds: number[] = [1, 20, 1063, 1068,
       {
         onEvent: (event: NDKEvent) => {
           if (!matchesFilter(event)) return;
-          
-          setPosts((prev) => {
-            if (prev.find(p => p.id === event.id)) return prev;
-            const next = [event, ...prev].sort((a, b) => (b.created_at ?? 0) - (a.created_at ?? 0));
-            return next.slice(0, MAX_POSTS);
-          });
+          queueUpdate([event]);
         }
       }
     );
@@ -220,9 +239,8 @@ export function useFeed(authors: string[], kinds: number[] = [1, 20, 1063, 1068,
     return () => {
       if (realtimeSubRef.current) realtimeSubRef.current.stop();
     };
-  }, [ndk, isReady, authors, kinds, filterType, matchesFilter]);
+  }, [ndk, isReady, authors, kinds, filterType, matchesFilter, queueUpdate]);
 
-  // Optimistic UI: Listen for events saved to local cache (e.g. user's own new posts)
   useEffect(() => {
     if (!ndk || !isReady) return;
 
@@ -231,11 +249,7 @@ export function useFeed(authors: string[], kinds: number[] = [1, 20, 1063, 1068,
       if (event.kind !== undefined && !kinds.includes(event.kind as number)) return;
       if (authors.length > 0 && !authors.includes(event.pubkey)) return;
 
-      setPosts((prev) => {
-        if (prev.find(p => p.id === event.id)) return prev;
-        const next = [event, ...prev].sort((a, b) => (b.created_at ?? 0) - (a.created_at ?? 0));
-        return next.slice(0, MAX_POSTS);
-      });
+      queueUpdate([event]);
     };
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -245,7 +259,7 @@ export function useFeed(authors: string[], kinds: number[] = [1, 20, 1063, 1068,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (ndk as any).off("local-cache:save", handleLocalCacheSave);
     };
-  }, [ndk, isReady, authors, kinds, matchesFilter]);
+  }, [ndk, isReady, authors, kinds, matchesFilter, queueUpdate]);
 
   useEffect(() => {
     fetchFeed();

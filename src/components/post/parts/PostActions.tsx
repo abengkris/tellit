@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, memo } from "react";
 import { MessageCircle, Repeat2, Heart, Zap, Bookmark, Quote, Share, Loader2 } from "lucide-react";
 import { useUIStore } from "@/store/ui";
 import { useLists } from "@/hooks/useLists";
@@ -39,7 +39,7 @@ interface PostActionsProps {
   onShareClick?: (e: React.MouseEvent) => void;
 }
 
-export const PostActions: React.FC<PostActionsProps> = ({
+export const PostActions = memo(({
   eventId,
   authorPubkey,
   likes: initialLikes,
@@ -57,7 +57,7 @@ export const PostActions: React.FC<PostActionsProps> = ({
   onZapClick,
   onQuoteClick,
   onShareClick
-}) => {
+}: PostActionsProps) => {
   const [optimisticLikes, setOptimisticLikes] = useState(initialLikes);
   const [optimisticReacted, setOptimisticReacted] = useState(initialUserReacted);
   const [optimisticReposted, setOptimisticReposted] = useState(initialUserReposted);
@@ -395,4 +395,5 @@ export const PostActions: React.FC<PostActionsProps> = ({
       />
     </>
   );
-};
+});
+PostActions.displayName = "PostActions";
