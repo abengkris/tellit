@@ -11,7 +11,7 @@ import { ZapModal } from "@/components/common/ZapModal";
 import { PostHeader } from "./parts/PostHeader";
 import { PostContentRenderer } from "./parts/PostContent";
 import { PostActions } from "./parts/PostActions";
-import { deletePost, repostEvent } from "@/lib/actions/post";
+import { deletePost, repostEvent, requestSummarization } from "@/lib/actions/post";
 import { reactToEvent } from "@/lib/actions/reactions";
 import { useUIStore } from "@/store/ui";
 import { RawEventModal } from "./parts/RawEventModal";
@@ -244,6 +244,18 @@ export const PostCard = memo(({
     }
   };
 
+  const handleSummarize = async () => {
+    if (!ndk) return;
+    try {
+      addToast("Requesting AI summary...", "info");
+      await requestSummarization(ndk, displayEvent);
+      addToast("Summary requested! It may take a moment for DVMs to respond.", "success");
+    } catch (err) {
+      console.error(err);
+      addToast("Failed to request summary", "error");
+    }
+  };
+
   if (isDeleted || (currentUser?.pubkey !== displayEvent.pubkey && isMuted(displayEvent.pubkey))) return null;
 
   if (isRepost && repostLoading) {
@@ -314,6 +326,7 @@ export const PostCard = memo(({
             onDeleteClick={currentUser?.pubkey === displayEvent.pubkey ? handleDelete : undefined}
             onReportClick={currentUser?.pubkey !== displayEvent.pubkey ? () => setShowReportModal(true) : undefined}
             onMoreClick={() => setShowRawModal(true)}
+            onSummarizeClick={handleSummarize}
             tags={isRepost ? (repostAuthorProfile?.tags || displayEvent.tags) : displayEvent.tags}
             navigationHref={navigationHref}
           />

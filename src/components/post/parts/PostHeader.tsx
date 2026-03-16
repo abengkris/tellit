@@ -68,6 +68,7 @@ interface PostHeaderProps {
   isPoll?: boolean;
   tags?: string[][];
   navigationHref?: string;
+  onSummarizeClick?: () => void;
 }
 
 export const PostHeader: React.FC<PostHeaderProps> = ({
@@ -96,7 +97,8 @@ export const PostHeader: React.FC<PostHeaderProps> = ({
   isPoll,
   tags,
   name,
-  navigationHref
+  navigationHref,
+  onSummarizeClick
 }) => {
   const formattedTime = formatCompactDate(createdAt);
   const [showDeleteDialog, setShowDeleteDialog] = React.useState(false);
@@ -225,6 +227,12 @@ export const PostHeader: React.FC<PostHeaderProps> = ({
               <DropdownMenuItem onClick={onMoreClick} className="gap-2">
                 <Code className="size-4" aria-hidden="true" />
                 <span>View Raw Data</span>
+              </DropdownMenuItem>
+            )}
+            {onSummarizeClick && (
+              <DropdownMenuItem onClick={onSummarizeClick} className="gap-2 text-purple-500 focus:text-purple-600 focus:bg-purple-500/10">
+                <BarChart2 className="size-4" aria-hidden="true" />
+                <span>Summarize with AI</span>
               </DropdownMenuItem>
             )}
             {onDeleteClick && (

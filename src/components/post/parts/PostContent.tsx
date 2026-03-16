@@ -14,7 +14,7 @@ import { ShortenedUrl } from "../tokens/ShortenedUrl";
 import { UrlPreview } from "../tokens/UrlPreview";
 import { PodcastEmbed } from "../tokens/PodcastEmbed";
 import { AsyncMediaEmbed } from "../tokens/AsyncMediaEmbed";
-import { NDKEvent } from "@nostr-dev-kit/ndk";
+import { NDKEvent, NDKArticle, NDKHighlight } from "@nostr-dev-kit/ndk";
 import { shortenPubkey, toNpub } from "@/lib/utils/nip19";
 import { useProfile } from "@/hooks/useProfile";
 import { Play } from "lucide-react";
@@ -64,27 +64,29 @@ export function PostContentRenderer({
   const [showSensitive, setShowSensitive] = useState(false);
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
 
-  const comment = useMemo(() => isHighlight ? event.tags.find(t => t[0] === "comment")?.[1] : null, [isHighlight, event.tags]);
+  const highlight = useMemo(() => isHighlight ? NDKHighlight.from(event) : null, [event, isHighlight]);
+  const comment = useMemo(() => highlight?.context || event.tags.find(t => t[0] === "comment")?.[1], [highlight, event.tags]);
   const highlightSource = useMemo(() => {
-    if (!isHighlight) return null;
-    const eTag = event.tags.find(t => t[0] === 'e');
-    const aTag = event.tags.find(t => t[0] === 'a');
-    const rTag = event.tags.find(t => t[0] === 'r');
+    if (!highlight) return null;
     
-    if (aTag?.[1]) {
-      const parts = aTag[1].split(':');
+    // Check if it's already an explicit NDKEvent/Article attached (though usually it's string in raw events)
+    const articleTag = highlight.getArticleTag();
+    if (!articleTag) return null;
+
+    if (articleTag[0] === 'a') {
+      const parts = articleTag[1].split(':');
       if (parts.length >= 3) {
         const kind = parseInt(parts[0]);
-        return { id: aTag[1], type: kind === 30023 ? 'article' : 'event' as const };
+        return { id: articleTag[1], type: kind === 30023 ? 'article' : 'event' as const };
       }
-      return { id: aTag[1], type: 'event' as const };
+      return { id: articleTag[1], type: 'event' as const };
     }
     
-    if (eTag?.[1]) return { id: eTag[1], type: 'event' as const };
-    if (rTag?.[1]) return { url: rTag[1], type: 'url' as const };
+    if (articleTag[0] === 'e') return { id: articleTag[1], type: 'event' as const };
+    if (articleTag[0] === 'r') return { url: articleTag[1], type: 'url' as const };
     
     return null;
-  }, [isHighlight, event.tags]);
+  }, [highlight]);
 
   const nudeDetections = useMemo(() => {
     const map = new Map<string, number>();

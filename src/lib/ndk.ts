@@ -33,6 +33,7 @@ export function getNDK(): NDK {
   if (!ndkInstance) {
     ndkInstance = new NDK({
       explicitRelayUrls: DEFAULT_RELAYS,
+      outboxRelayUrls: ["wss://purplepag.es", "wss://relay.nos.social", "wss://user.kindpag.es"],
       enableOutboxModel: true,
       filterValidationMode: "fix",
       netDebug,

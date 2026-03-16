@@ -1,6 +1,4 @@
-import NDK, { NDKEvent, NDKTag } from "@nostr-dev-kit/ndk";
-
-import { decodeNip19 } from "@/lib/utils/nip19";
+import NDK, { NDKEvent, NDKTag, NDKArticle, NDKDVMRequest, NDKKind } from "@nostr-dev-kit/ndk";
 
 import { createPoll, CreatePollOptions } from "./poll";
 
@@ -78,20 +76,8 @@ export const publishPost = async (
     event.tags.push(["t", tag.toLowerCase()]);
   });
 
-  // 2. Handle Mentions (@npub...) -> p tags
-  const npubRegex = /@(npub1[0-9a-z]+)/g;
-  const mentions = [...content.matchAll(npubRegex)];
-  for (const match of mentions) {
-    try {
-      const npub = match[1];
-      const pubkey = decodeNip19(npub).id;
-      if (pubkey && pubkey !== npub) {
-        event.tags.push(["p", pubkey, "", "mention"]);
-      }
-    } catch {
-      console.warn("Invalid npub in mention:", match[1]);
-    }
-  }
+  // Automatically parse and generate tags for profiles and other entities in content
+  await event.generateTags();
 
   // 3. Handle Reply (NIP-10 or NIP-22)
   if (options?.replyTo) {
@@ -169,30 +155,16 @@ export const publishArticle = async (
   content: string,
   options: ArticleOptions
 ): Promise<NDKEvent> => {
-  const event = new NDKEvent(ndk);
-  event.kind = 30023;
-  event.content = content;
+  const article = new NDKArticle(ndk);
+  article.content = content;
+  article.title = options.title;
   
-  const now = Math.floor(Date.now() / 1000);
-  const identifier = `article-${now}`;
-
-  event.tags = [
-    ["d", identifier],
-    ["title", options.title],
-    ["published_at", String(now)],
-  ];
-
-  if (options.summary) {
-    event.tags.push(["summary", options.summary]);
-  }
-
-  if (options.image) {
-    event.tags.push(["image", options.image]);
-  }
+  if (options.summary) article.summary = options.summary;
+  if (options.image) article.image = options.image;
 
   if (options.tags) {
     options.tags.forEach(t => {
-      event.tags.push(["t", t.toLowerCase()]);
+      article.tags.push(["t", t.toLowerCase()]);
     });
   }
 
@@ -200,15 +172,17 @@ export const publishArticle = async (
   const hashtagRegex = /#(\w+)/g;
   const hashtags = [...content.matchAll(hashtagRegex)].map((m) => m[1]);
   hashtags.forEach((tag) => {
-    if (!event.tags.some(t => t[0] === 't' && t[1] === tag.toLowerCase())) {
-      event.tags.push(["t", tag.toLowerCase()]);
+    if (!article.tags.some(t => t[0] === 't' && t[1] === tag.toLowerCase())) {
+      article.tags.push(["t", tag.toLowerCase()]);
     }
   });
 
-  await event.sign();
+  await article.generateTags();
+
+  await article.sign();
   // Fire and forget (optimistic)
-  event.publishReplaceable();
-  return event;
+  article.publishReplaceable();
+  return article;
 };
 
 /**
@@ -276,3 +250,20 @@ export const deletePost = async (ndk: NDK, eventId: string): Promise<boolean> =>
     return false;
   }
 };
+
+/**
+ * Request a summary of an event using a Data Vending Machine (NIP-90).
+ */
+export const requestSummarization = async (ndk: NDK, eventToSummarize: NDKEvent): Promise<NDKDVMRequest> => {
+  if (!ndk.signer) throw new Error("No signer available");
+  
+  const req = new NDKDVMRequest(ndk);
+  req.kind = NDKKind.DVMReqTextSummarization;
+  req.tags.push(["i", eventToSummarize.id, "event"]);
+  
+  await req.sign();
+  req.publish();
+  
+  return req;
+};
+

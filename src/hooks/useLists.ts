@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useNDK } from "@/hooks/useNDK";
-import { NDKEvent, NDKSubscriptionCacheUsage } from "@nostr-dev-kit/ndk";
+import { NDKEvent, NDKSubscriptionCacheUsage, NDKInterestList } from "@nostr-dev-kit/ndk";
 import { useAuthStore } from "@/store/auth";
 
 /**
@@ -147,19 +147,31 @@ export function useLists(targetPubkey?: string) {
         (a, b) => (b.created_at ?? 0) - (a.created_at ?? 0)
       )[0];
 
-      const newEvent = new NDKEvent(ndk);
-      newEvent.kind = kind;
-      newEvent.tags = currentEvent ? [...currentEvent.tags] : [];
+      let newEvent: NDKEvent;
 
-      if (action === 'add') {
-        const exists = newEvent.tags.some(t => t[0] === tagType && t[1] === value);
-        if (!exists) {
-          newEvent.tags.push([tagType, value, ...extraTags]);
+      if (kind === ListKind.Interests) {
+        const list = currentEvent ? NDKInterestList.from(currentEvent) : new NDKInterestList(ndk);
+        if (action === 'add') {
+          list.addInterest(value);
         } else {
-          return true; // Already exists
+          list.removeInterest(value);
         }
+        newEvent = list;
       } else {
-        newEvent.tags = newEvent.tags.filter(t => !(t[0] === tagType && t[1] === value));
+        newEvent = new NDKEvent(ndk);
+        newEvent.kind = kind;
+        newEvent.tags = currentEvent ? [...currentEvent.tags] : [];
+
+        if (action === 'add') {
+          const exists = newEvent.tags.some(t => t[0] === tagType && t[1] === value);
+          if (!exists) {
+            newEvent.tags.push([tagType, value, ...extraTags]);
+          } else {
+            return true; // Already exists
+          }
+        } else {
+          newEvent.tags = newEvent.tags.filter(t => !(t[0] === tagType && t[1] === value));
+        }
       }
 
       await newEvent.sign();
