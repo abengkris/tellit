@@ -152,8 +152,13 @@ export function useNotifications() {
       }
     };
 
+    const syncOptions = {
+      ...options,
+      ...handlers
+    };
+
     if (sync) {
-      sync.syncAndSubscribe(filter, options, handlers).then(sub => {
+      sync.syncAndSubscribe(filter, syncOptions).then(sub => {
         subscriptionRef.current = sub;
       }).catch(() => {
         subscriptionRef.current = ndk.subscribe(filter, options, handlers);

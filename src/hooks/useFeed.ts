@@ -161,8 +161,13 @@ export function useFeed(authors: string[], kinds: number[] = [1, 20, 1063, 1068,
       }
     };
 
+    const syncOptions = { 
+      ...options,
+      ...handlers
+    };
+
     if (sync && !isLoadMore) {
-      sync.syncAndSubscribe(filter, options, handlers).then(sub => {
+      sync.syncAndSubscribe(filter, syncOptions).then(sub => {
         subscriptionRef.current = sub;
       }).catch(() => {
         subscriptionRef.current = ndk.subscribe(filter, options, handlers);
