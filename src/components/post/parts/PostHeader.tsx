@@ -12,7 +12,8 @@ import {
   VolumeX, 
   Volume2, 
   Bookmark,
-  BarChart2
+  BarChart2,
+  MessageSquareReply
 } from "lucide-react";
 import Link from "next/link";
 
@@ -51,6 +52,7 @@ interface PostHeaderProps {
   nip05?: string;
   createdAt: number | undefined;
   isRepost?: boolean;
+  isReply?: boolean;
   repostAuthorName?: string;
   onMoreClick?: () => void;
   onDeleteClick?: () => void;
@@ -78,6 +80,7 @@ export const PostHeader: React.FC<PostHeaderProps> = ({
   nip05,
   createdAt,
   isRepost,
+  isReply,
   repostAuthorName,
   onMoreClick,
   onDeleteClick,
@@ -135,6 +138,12 @@ export const PostHeader: React.FC<PostHeaderProps> = ({
               />
             </Link>
             <div className="flex items-center gap-1 shrink-0 mt-1">
+              {isReply && !isRepost && (
+                <Badge variant="secondary" className="h-4 px-1.5 gap-1 text-blue-500 bg-blue-500/10 border-blue-500/20 font-black uppercase text-[8px] tracking-tighter">
+                  <MessageSquareReply className="size-2" fill="currentColor" aria-hidden="true" />
+                  <span>Reply</span>
+                </Badge>
+              )}
               {isPinned && (
                 <Badge variant="secondary" className="h-4 px-1.5 gap-1 text-primary bg-primary/10 border-primary/20 font-black uppercase text-[8px] tracking-tighter">
                   <Pin className="size-2" fill="currentColor" aria-hidden="true" />

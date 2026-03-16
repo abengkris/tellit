@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, memo } from "react";
-import { NDKEvent } from "@nostr-dev-kit/ndk";
+import { NDKEvent, isEventOriginalPost } from "@nostr-dev-kit/ndk";
 import { useProfile } from "@/hooks/useProfile";
 import { usePostStats } from "@/hooks/usePostStats";
 import { useNDK } from "@/hooks/useNDK";
@@ -58,6 +58,7 @@ export const PostCard = memo(({
 
   const isRepost = event.kind === 6 || event.kind === 16;
   const isHighlight = event.kind === 9802;
+  const isReply = !isEventOriginalPost(event);
   const { profile: repostAuthorProfile } = useProfile(isRepost ? event.pubkey : undefined);
   
   const displayEvent = isRepost && repostedEvent ? repostedEvent : event;
@@ -299,6 +300,7 @@ export const PostCard = memo(({
             nip05={profile?.nip05}
             createdAt={displayEvent.created_at}
             isRepost={isRepost}
+            isReply={isReply}
             repostAuthorName={repostAuthorName}
             bot={profile?.bot}
             isArticle={isArticle}
