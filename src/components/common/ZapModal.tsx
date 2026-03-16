@@ -73,7 +73,7 @@ export const ZapModal: React.FC<ZapModalProps> = ({ event, user, onClose, onSucc
     setLoading(true);
     try {
       // Amount in millisats (1 sat = 1000 millisats)
-      const { invoice: bolt11, alreadyPaid } = await createZapInvoice(ndk, amount * 1000, target, comment);
+      const { invoice: bolt11, alreadyPaid, error } = await createZapInvoice(ndk, amount * 1000, target, comment);
       
       if (alreadyPaid) {
         setPaid(true);
@@ -99,7 +99,7 @@ export const ZapModal: React.FC<ZapModalProps> = ({ event, user, onClose, onSucc
           }
         }
       } else {
-        addToast("Failed to create zap invoice.", "error");
+        addToast(error ? `Zap failed: ${error}` : "Failed to create zap invoice. Ensure recipient has a valid LN address.", "error");
       }
     } catch (err) {
       console.error(err);
