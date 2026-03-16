@@ -1,6 +1,6 @@
 import NDK, { NDKRelay } from "@nostr-dev-kit/ndk";
 
-const DEFAULT_RELAYS = [
+export const DEFAULT_RELAYS = [
   "wss://relay.primal.net",
   "wss://nos.lol",
   "wss://relay.damus.io",

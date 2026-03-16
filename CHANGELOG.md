@@ -10,6 +10,8 @@ All notable changes to this project will be documented in this file.
 - **Improved Login UI:** Refactored the login page with a tabbed manual login interface for better organization of nsec, ncryptsec, and Bunker methods.
 - **Reactive NWC Wallet:** Refactored NWC initialization to be reactive, supporting instant connection when unlocking or updating pairing codes.
 - **One-tap NWC Zaps:** Integrated `ndk.wallet` into the post feed actions to enable instant zapping for users with connected NWC wallets.
+- **NDK Messages (NIP-17):** Fully implemented the `@nostr-dev-kit/messages` protocol with support for persistent storage (Dexie), automatic relay discovery (Kind 10050), and real-time conversation management.
+- **Unified Chat API:** Refactored `useChat` and `useMessages` hooks to use the `NDKMessenger` event-driven architecture with built-in read receipt handling and error monitoring.
 
 ## [0.7.11] - 2026-03-16
 

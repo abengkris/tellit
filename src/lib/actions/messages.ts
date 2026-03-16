@@ -21,6 +21,20 @@ export const sendMessage = async (
 };
 
 /**
+ * Publish the user's preferred DM relays (Kind 10050)
+ */
+export const syncDMRelays = async (
+  messenger: NDKMessenger,
+  relays: string[]
+): Promise<void> => {
+  try {
+    await messenger.publishDMRelays(relays);
+  } catch (err) {
+    console.warn("Failed to publish DM relays:", err);
+  }
+};
+
+/**
  * Publish a Kind 15 Read Receipt for a conversation
  */
 export const publishReadReceipt = async (

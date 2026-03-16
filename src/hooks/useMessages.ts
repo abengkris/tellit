@@ -112,10 +112,16 @@ export function useMessages() {
       });
     };
 
+    const handleError = (err: Error) => {
+      console.error("NDKMessenger error:", err);
+    };
+
     messenger.on("message", handleMessage);
+    messenger.on("error", handleError);
     
     return () => {
       messenger.off("message", handleMessage);
+      messenger.off("error", handleError);
     };
   }, [messenger, isReady, user, ndk, fetchConversations]);
 

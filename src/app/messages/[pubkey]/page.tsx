@@ -22,7 +22,7 @@ export default function ChatPage({ params }: { params: Promise<{ pubkey: string 
   const { addToast } = useUIStore();
   const { uploadFile } = useBlossom();
   const { emojis } = useEmojis();
-  const { messages, loading, refresh } = useChat(pubkey);
+  const { messages, loading, sendMessage: sendMsg, markAsRead } = useChat(pubkey);
   const { profile } = useProfile(pubkey);
   
   const [content, setContent] = useState("");
@@ -44,38 +44,27 @@ export default function ChatPage({ params }: { params: Promise<{ pubkey: string 
     scrollToBottom();
   }, [messages]);
 
-  // Mark as read when entering the chat or receiving messages
+  // Handle read receipts (Kind 15) specifically, useChat already handles conv.markAsRead()
   useEffect(() => {
-    if (messenger && ndk && hexPubkey) {
+    if (ndk && hexPubkey && messages.length > 0) {
       const recipientUser = ndk.getUser({ pubkey: hexPubkey });
-      messenger.getConversation(recipientUser).then(conv => {
-        if (conv) {
-          conv.markAsRead();
-          
-          // Also publish a read receipt for the last message if it's from the partner
-          if (messages.length > 0) {
-            const lastMsg = messages[messages.length - 1];
-            if (lastMsg.sender === hexPubkey) {
-              publishReadReceipt(lastMsg.event, recipientUser);
-            }
-          }
-        }
-      });
+      const lastMsg = messages[messages.length - 1];
+      if (lastMsg.sender === hexPubkey) {
+        publishReadReceipt(lastMsg.event, recipientUser);
+      }
     }
-  }, [messenger, ndk, hexPubkey, messages]);
+  }, [ndk, hexPubkey, messages]);
 
   const handleSendMessage = async (e?: React.FormEvent) => {
     e?.preventDefault();
-    if (!content.trim() || !messenger || !ndk || isSubmitting) return;
+    if (!content.trim() || isSubmitting) return;
 
     setIsSubmitting(true);
     try {
-      const recipient = ndk.getUser({ pubkey: hexPubkey });
-      const success = await sendMessage(messenger, recipient, content);
+      const success = await sendMsg(content);
       if (success) {
         setContent("");
         setShowEmojiPicker(false);
-        refresh();
       }
     } catch (err) {
       console.error("Failed to send message:", err);

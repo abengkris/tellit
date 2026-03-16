@@ -12,7 +12,8 @@ import { NStore } from "@nostrify/nostrify";
 import { useAuthStore } from "@/store/auth";
 import { useUIStore } from "@/store/ui";
 import { useWalletStore } from "@/store/wallet";
-import { getNDK } from "@/lib/ndk";
+import { getNDK, DEFAULT_RELAYS } from "@/lib/ndk";
+import { syncDMRelays } from "@/lib/actions/messages";
 
 interface ExtendedCacheAdapter extends NDKCacheAdapter {
   getUnpublishedEvents?: () => Promise<{ event: NDKEvent; relays?: string[]; lastTryAt?: number }[]>;
@@ -457,6 +458,9 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
           if (sessionManager.activePubkey && msgInstance) {
             try {
               await msgInstance.start();
+              // Publish preferred DM relays for NIP-17 discovery
+              syncDMRelays(msgInstance, DEFAULT_RELAYS).catch(() => {});
+              
               msgInstance.on("message", (message: NDKMessage) => {
                 const currentPubkey = sessionManager.activePubkey;
                 if (message.sender?.pubkey !== currentPubkey && message.recipient?.pubkey === currentPubkey) {
