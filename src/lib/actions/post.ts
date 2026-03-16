@@ -207,7 +207,7 @@ export const publishArticle = async (
 
   await event.sign();
   // Fire and forget (optimistic)
-  event.publish();
+  event.publishReplaceable();
   return event;
 };
 

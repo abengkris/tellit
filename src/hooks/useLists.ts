@@ -163,7 +163,7 @@ export function useLists(targetPubkey?: string) {
       }
 
       await newEvent.sign();
-      await newEvent.publish();
+      await newEvent.publishReplaceable();
       
       // Update cache
       listEventsRef.current.set(kind, newEvent);
