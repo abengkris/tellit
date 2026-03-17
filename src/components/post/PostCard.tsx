@@ -387,8 +387,8 @@ export const PostCard = memo(({
                 isArticle={isArticle}
                 event={displayEvent}
                 className={variant === "detail" ? "prose-xl" : ""}
-              />
-            </div>
+                variant={variant}
+              />            </div>
 
             {isPoll && (
               <PollRenderer event={displayEvent} />
