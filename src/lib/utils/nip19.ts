@@ -141,5 +141,31 @@ export function shortenPubkey(pubkey: string, length = 8): string {
  */
 export function encodeEntity(entity: NDKEvent | NDKUser): string {
   if (entity instanceof NDKUser) return entity.npub;
-  return entity.encode();
+  return getEventNip19(entity);
+}
+
+/**
+ * Returns a nevent1 string for an event, ensuring relay hints are included.
+ * This is more reliable than note1 for routing.
+ */
+export function getEventNip19(event: NDKEvent): string {
+  try {
+    // If it's already encoded and is an nevent, return it
+    // But usually we want to re-encode to ensure current relay hints
+    const relays = event.onRelays?.map(r => r.url) || [];
+    
+    // Fallback to NDK's encode which prefers nevent if possible
+    const encoded = event.encode();
+    if (encoded.startsWith('nevent1')) return encoded;
+
+    // Force nevent if NDK returned a note1
+    return nip19.neventEncode({
+      id: event.id,
+      relays: relays.slice(0, 3),
+      author: event.pubkey,
+      kind: event.kind
+    });
+  } catch {
+    return event.id;
+  }
 }

@@ -19,7 +19,7 @@ import { ReportModal } from "./parts/ReportModal";
 import { ReplyModal } from "./parts/ReplyModal";
 import { QuoteModal } from "./parts/QuoteModal";
 import { PollRenderer } from "./PollRenderer";
-import { shortenPubkey } from "@/lib/utils/nip19";
+import { shortenPubkey, getEventNip19 } from "@/lib/utils/nip19";
 import { formatFullTimestamp } from "@/lib/utils/date";
 import { useLists } from "@/hooks/useLists";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -141,9 +141,7 @@ export const PostCard = memo(({
   const eventNoteId = useMemo(() => {
     if (!displayEvent) return "";
     try {
-      // Use displayEvent.encode() if it's a real NDKEvent instance,
-      // otherwise fallback to a basic NIP-19 encode if we had the tool
-      return typeof displayEvent.encode === 'function' ? displayEvent.encode() : (displayEvent.id || "");
+      return getEventNip19(displayEvent);
     } catch {
       return displayEvent.id || "";
     }

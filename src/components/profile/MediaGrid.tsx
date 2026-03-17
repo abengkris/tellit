@@ -6,6 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Play, FileText, Image as ImageIcon } from "lucide-react";
 import { tokenize, parseImeta } from "@/lib/content/tokenizer";
+import { getEventNip19 } from "@/lib/utils/nip19";
 import { Blurhash } from "react-blurhash";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
@@ -104,7 +105,7 @@ function MediaItem({ post, onOpenLightbox }: { post: NDKEvent; onOpenLightbox: (
 
   const href = post.kind === 30023 
     ? `/article/${post.encode()}`
-    : `/post/${post.encode()}`;
+    : `/post/${getEventNip19(post)}`;
 
   return (
     <Link 
