@@ -147,8 +147,7 @@ export function ArticleRenderer({ content }: ArticleRendererProps) {
       </ReactMarkdown>
 
       <Lightbox 
-        src={lightboxSrc || ""} 
-        alt={lightboxAlt} 
+        media={lightboxSrc ? [{ url: lightboxSrc, type: "image", alt: lightboxAlt }] : []} 
         isOpen={!!lightboxSrc} 
         onClose={() => setLightboxSrc(null)} 
       />
