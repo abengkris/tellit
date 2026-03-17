@@ -138,19 +138,96 @@ export default function WalletPage() {
 
   // Load transactions
   useEffect(() => {
-    if (!wallet || isLocked) return;
+    if (!ndk || !user?.pubkey || isLocked) return;
 
-    const loadTx = async () => {
+    const isMounted = { current: true };
+
+    const loadData = async () => {
       setIsLoadingTx(true);
-      const txs = await fetchTransactions();
-      setTransactions(txs);
-      setIsLoadingTx(false);
+      try {
+        // 1. Fetch from wallet provider (NWC/Cashu)
+        let walletTxs: NDKWalletTransaction[] = [];
+        if (wallet) {
+          walletTxs = await fetchTransactions();
+        }
+
+        // 2. Fetch Zap Receipts (Kind 9735) as fallback/supplement
+        const filter: NDKFilter = {
+          kinds: [9735],
+          authors: [user.pubkey], 
+          limit: 30
+        };
+        const receivedFilter: NDKFilter = {
+          kinds: [9735],
+          "#p": [user.pubkey], 
+          limit: 30
+        };
+
+        const fetchZaps = async (f: NDKFilter) => {
+          return new Promise<Set<NDKEvent>>((resolve) => {
+            const events = new Set<NDKEvent>();
+            const sub = ndk.subscribe(f, { closeOnEose: true });
+            sub.on("event", (e) => events.add(e));
+            sub.on("eose", () => resolve(events));
+            setTimeout(() => { sub.stop(); resolve(events); }, 5000);
+          });
+        };
+
+        const [sent, received] = await Promise.all([
+          fetchZaps(filter),
+          fetchZaps(receivedFilter)
+        ]);
+
+        if (!isMounted.current) return;
+
+        const allZaps = Array.from(new Set([...Array.from(sent), ...Array.from(received)]));
+        const mappedZaps: NDKWalletTransaction[] = allZaps.map(zap => {
+          const parsed = parseZapReceipt(zap, user.pubkey);
+          return {
+            id: `zap-${zap.id}`, // Prefix to avoid collisions
+            direction: parsed.isSent ? 'out' : 'in',
+            amount: parsed.amount,
+            timestamp: parsed.timestamp,
+            description: parsed.isSent ? 'Sent Zap' : 'Received Zap',
+          };
+        });
+
+        // 3. Merge and Deduplicate
+        const deduplicated = new Map<string, NDKWalletTransaction>();
+        
+        // Add wallet transactions first (preferred IDs)
+        walletTxs.forEach(tx => deduplicated.set(tx.id, tx));
+
+        // Add Zap receipts with fuzzy matching to avoid duplicates if they represent the same event
+        mappedZaps.forEach(zapTx => {
+          // Check if we already have a similar wallet transaction
+          const isDuplicate = walletTxs.some(wTx => 
+            wTx.amount === zapTx.amount && 
+            Math.abs(wTx.timestamp - zapTx.timestamp) < 5 &&
+            wTx.direction === zapTx.direction
+          );
+
+          if (!isDuplicate) {
+            deduplicated.set(zapTx.id, zapTx);
+          }
+        });
+
+        const combined = Array.from(deduplicated.values())
+          .sort((a, b) => b.timestamp - a.timestamp)
+          .slice(0, 50);
+
+        setTransactions(combined);
+      } catch (err) {
+        console.error("Failed to load history:", err);
+      } finally {
+        if (isMounted.current) setIsLoadingTx(false);
+      }
     };
 
-    loadTx();
-    // Refresh balance on load
-    refreshBalance();
-  }, [wallet, isLocked, fetchTransactions, refreshBalance]);
+    loadData();
+    if (wallet) refreshBalance();
+    return () => { isMounted.current = false; };
+  }, [ndk, user?.pubkey, wallet, isLocked, fetchTransactions, refreshBalance]);
 
   const handleRefresh = async () => {
     if (isLocked) {

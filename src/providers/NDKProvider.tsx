@@ -555,7 +555,7 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
     };
   }, [initWallet]);
 
-  const refreshBalance = async () => {
+  const refreshBalance = useCallback(async () => {
     if (walletRef.current) {
       try {
         if (typeof walletRef.current.updateBalance === 'function') {
@@ -563,7 +563,7 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
         }
       } catch { /* ignore */ }
     }
-  };
+  }, []);
 
   const contextValue = useMemo(() => ({ 
     ndk, 
