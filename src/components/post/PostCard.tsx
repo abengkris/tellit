@@ -395,47 +395,33 @@ export const PostCard = memo(({
             )}
 
             {variant === "detail" && (
-              <div className="py-4 border-y border-border/50 my-4 flex items-center gap-6 text-sm">
-                {combinedReposts > 0 && (
-                  <div 
-                    className="flex items-center gap-1.5 hover:underline cursor-pointer" 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      // We'll pass handlers to PostActions, or just use state here
-                      // To keep it simple and consistent, let's just use the existing logic in PostActions
-                      // but since they are separate, I'll add a way to trigger them.
-                      // For now, let's just make them look good and add specific handlers if needed.
-                    }}
-                  >
-                    <span className="font-black text-foreground">{combinedReposts.toLocaleString()}</span>
-                    <span className="text-muted-foreground font-bold">Reposts</span>
-                  </div>
-                )}
-                {likes > 0 && (
-                  <div 
-                    className="flex items-center gap-1.5 hover:underline cursor-pointer" 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                    }}
-                  >
-                    <span className="font-black text-foreground">{likes.toLocaleString()}</span>
-                    <span className="text-muted-foreground font-bold">Likes</span>
-                  </div>
-                )}
-                {totalSats > 0 && (
-                  <div 
-                    className="flex items-center gap-1.5 hover:underline cursor-pointer" 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                    }}
-                  >
-                    <span className="font-black text-foreground">{totalSats.toLocaleString()}</span>
-                    <span className="text-muted-foreground font-bold">Sats</span>
-                  </div>
-                )}
-                <div className="ml-auto text-muted-foreground font-medium">
+              <div className="flex flex-col mt-4">
+                <div className="py-3 text-muted-foreground text-sm font-medium border-t border-border/50">
                   {formatFullTimestamp(displayEvent.created_at)}
                 </div>
+                
+                {(combinedReposts > 0 || likes > 0 || totalSats > 0) && (
+                  <div className="py-4 border-t border-border/50 flex items-center gap-6 text-sm">
+                    {combinedReposts > 0 && (
+                      <div className="flex items-center gap-1.5 hover:underline cursor-pointer" onClick={() => {}}>
+                        <span className="font-black text-foreground">{combinedReposts.toLocaleString()}</span>
+                        <span className="text-muted-foreground font-bold">Reposts</span>
+                      </div>
+                    )}
+                    {likes > 0 && (
+                      <div className="flex items-center gap-1.5 hover:underline cursor-pointer" onClick={() => {}}>
+                        <span className="font-black text-foreground">{likes.toLocaleString()}</span>
+                        <span className="text-muted-foreground font-bold">Likes</span>
+                      </div>
+                    )}
+                    {totalSats > 0 && (
+                      <div className="flex items-center gap-1.5 hover:underline cursor-pointer" onClick={() => {}}>
+                        <span className="font-black text-foreground">{totalSats.toLocaleString()}</span>
+                        <span className="text-muted-foreground font-bold">Sats</span>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
             <PostActions
