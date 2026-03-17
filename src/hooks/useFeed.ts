@@ -168,6 +168,16 @@ export function useFeed(authors: string[], kinds: number[] = [1, 20, 1063, 1068,
         if (filtered.length > 0) {
           queueUpdate(filtered);
         }
+        
+        // After receiving initial batch from cache, we can determine a 'since' timestamp
+        // for more efficient sync reconciliation if needed.
+        if (events.length > 0 && !isLoadMore && sync) {
+          const latestCached = Math.max(...events.map(e => e.created_at || 0));
+          if (latestCached > 0) {
+            // We can optionally refine the sync filter here if NDKSync supports it
+            // but syncAndSubscribe usually handles this internally if the filter has a 'since'
+          }
+        }
       },
       onEvent: (event: NDKEvent) => {
         clearTimeout(loadingTimeout);
@@ -191,9 +201,19 @@ export function useFeed(authors: string[], kinds: number[] = [1, 20, 1063, 1068,
     };
 
     if (sync && !isLoadMore) {
-      sync.syncAndSubscribe(filter, syncOptions).then(sub => {
+      // Determine the 'since' parameter from existing posts if we have them, 
+      // otherwise trust the cache provider's behavior or use a sensible default (e.g. 24h)
+      const lastSessionTimestamp = posts.length > 0 ? posts[0].created_at : undefined;
+      
+      const syncFilter = { ...filter };
+      if (lastSessionTimestamp) {
+        syncFilter.since = lastSessionTimestamp;
+      }
+
+      sync.syncAndSubscribe(syncFilter, syncOptions).then(sub => {
         subscriptionRef.current = sub;
-      }).catch(() => {
+      }).catch((err) => {
+        console.warn("[useFeed] NDKSync failed, falling back to standard subscribe:", err);
         subscriptionRef.current = ndk.subscribe(filter, options, handlers);
       });
     } else {

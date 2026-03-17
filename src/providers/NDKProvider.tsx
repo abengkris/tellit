@@ -501,6 +501,22 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
             // Publish preferred DM relays for NIP-17 discovery
             syncDMRelays(msgInstance, DEFAULT_RELAYS).catch(() => {});
             
+            // Background sync for historical messages using NDKSync (Negentropy)
+            if (instance.activeUser && sync) {
+              const dmFilter = { 
+                kinds: [1059, 14], 
+                "#p": [instance.activeUser.pubkey],
+                since: Math.floor(Date.now() / 1000) - (7 * 24 * 60 * 60) // Last 7 days
+              };
+              
+              console.log("[NDKProvider] Starting background DM sync...");
+              sync.sync(dmFilter, { autoFetch: true }).then((result) => {
+                console.log(`[NDKProvider] DM sync complete. Synced ${result.events.length} messages.`);
+              }).catch(err => {
+                console.warn("[NDKProvider] Background DM sync failed:", err);
+              });
+            }
+
             msgInstance.on("message", (message: NDKMessage) => {
               console.log("[NDKProvider] Received incoming message event", message.id);
               const currentPubkey = sessionManager.activePubkey;

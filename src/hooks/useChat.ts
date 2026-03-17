@@ -6,11 +6,12 @@ import { useNDK } from "@/hooks/useNDK";
 import { useAuthStore } from "@/store/auth";
 import { useUIStore } from "@/store/ui";
 import { NDKMessage, NDKConversation } from "@nostr-dev-kit/messages";
+import { NDKKind, NDKSubscriptionCacheUsage } from "@nostr-dev-kit/ndk";
 import { mapNDKMessage } from "@/lib/utils/messages";
 import { sendMessage as sendChatMessage } from "@/lib/actions/messages";
 
 export function useChat(targetPubkey: string) {
-  const { messenger, isReady, ndk } = useNDK();
+  const { messenger, isReady, ndk, sync } = useNDK();
   const { user } = useAuthStore();
   const { setActiveChatPubkey } = useUIStore();
   const [messages, setMessages] = useState<Message[]>([]);
@@ -25,18 +26,39 @@ export function useChat(targetPubkey: string) {
       const conv = await messenger.getConversation(recipientUser);
       convRef.current = conv;
       if (conv) {
+        // Initial load from local cache
         const events = await conv.getMessages();
         const mapped = events
           .map(msg => mapNDKMessage(msg, ndk))
           .sort((a, b) => a.timestamp - b.timestamp);
         setMessages(mapped);
+
+        // Efficiency boost: Sync gaps with Negentropy if available
+        if (sync) {
+          console.log(`[useChat] Performing sync for ${targetPubkey}...`);
+          const syncFilter = { 
+            kinds: [1059, 14], 
+            "#p": [user.pubkey, targetPubkey],
+            since: Math.floor(Date.now() / 1000) - (30 * 24 * 60 * 60) // Sync last 30 days
+          };
+          
+          sync.sync(syncFilter, { autoFetch: true }).then(() => {
+            // Re-fetch from cache after sync to update state
+            conv.getMessages().then(newEvents => {
+              const remapped = newEvents
+                .map(msg => mapNDKMessage(msg, ndk))
+                .sort((a, b) => a.timestamp - b.timestamp);
+              setMessages(remapped);
+            });
+          }).catch(e => console.warn("[useChat] Sync failed:", e));
+        }
       }
     } catch (err) {
       console.error("Failed to fetch chat messages:", err);
     } finally {
       setLoading(false);
     }
-  }, [messenger, user, targetPubkey, ndk]);
+  }, [messenger, user, targetPubkey, ndk, sync]);
 
   const markAsRead = useCallback(async () => {
     if (convRef.current) {
