@@ -1,7 +1,6 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { NDKEvent, NDKFilter, NDKSubscription, NDKKind, NDKSubscriptionCacheUsage } from "@nostr-dev-kit/ndk";
 import { useNDK } from "@/hooks/useNDK";
-import { useLists } from "@/hooks/useLists";
 import { tokenize } from "@/lib/content/tokenizer";
 
 const MAX_POSTS = 100;
@@ -39,9 +38,9 @@ export function useFeed(authors: string[], kinds: number[] = [1, 20, 1063, 1068,
     setPosts((prev) => {
       const uniqueMap = new Map();
       // Add existing posts
-      prev.forEach(p => uniqueMap.set(p.id, p));
+      prev.filter(p => p && p.id).forEach(p => uniqueMap.set(p.id, p));
       // Add new ones
-      newEvents.forEach(e => uniqueMap.set(e.id, e));
+      newEvents.filter(e => e && e.id).forEach(e => uniqueMap.set(e.id, e));
       
       const combined = Array.from(uniqueMap.values());
       const sorted = combined.sort((a, b) => (b.created_at ?? 0) - (a.created_at ?? 0));
@@ -77,6 +76,7 @@ export function useFeed(authors: string[], kinds: number[] = [1, 20, 1063, 1068,
   }, []);
 
   const matchesFilter = useCallback((event: NDKEvent) => {
+    if (!event || !event.id) return false;
     if (filterType === "all") return true;
     
     if (filterType === "media") {
@@ -286,11 +286,11 @@ export function useFeed(authors: string[], kinds: number[] = [1, 20, 1063, 1068,
     return () => cleanupSubscriptions();
   }, [fetchFeed, cleanupSubscriptions]);
 
-  const loadMore = () => {
+  const loadMore = useCallback(() => {
     if (!loading && hasMore) {
       fetchFeed(true);
     }
-  };
+  }, [loading, hasMore, fetchFeed]);
 
   return { posts, loading, loadMore, hasMore };
 }

@@ -91,28 +91,32 @@ export function FeedList({
 
       {/* Feed */}
       <div className="flex flex-col">
-        {posts.map((event, index) => (
-          <div 
-            key={event.id} 
-            className="flex flex-col"
-            style={{ contentVisibility: "auto", containIntrinsicSize: "0 200px" }}
-          >
-            <ErrorBoundary fallback={
-              <div className="p-4 text-xs text-muted-foreground italic border-b">
-                Failed to render post {event.id.slice(0, 8)}…
-              </div>
-            }>
-              <PostCard event={event} />
-            </ErrorBoundary>
-            {index < posts.length - 1 && <Separator />}
-            {showSuggestions && index === 4 && (
-              <div style={{ contentVisibility: "auto", containIntrinsicSize: "0 400px" }}>
-                <WhoToFollow />
-                <Separator />
-              </div>
-            )}
-          </div>
-        ))}
+        {posts.map((event, index) => {
+          if (!event || !event.id) return null;
+          
+          return (
+            <div 
+              key={event.id} 
+              className="flex flex-col"
+              style={{ contentVisibility: "auto", containIntrinsicSize: "0 200px" }}
+            >
+              <ErrorBoundary fallback={
+                <div className="p-4 text-xs text-muted-foreground italic border-b">
+                  Failed to render post {event.id ? event.id.slice(0, 8) : "unknown"}…
+                </div>
+              }>
+                <PostCard event={event} />
+              </ErrorBoundary>
+              {index < posts.length - 1 && <Separator />}
+              {showSuggestions && index === 4 && (
+                <div style={{ contentVisibility: "auto", containIntrinsicSize: "0 400px" }}>
+                  <WhoToFollow />
+                  <Separator />
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
 
       {/* Load more trigger + indicator */}

@@ -56,15 +56,18 @@ export const PostCard = memo(({
     isBookmarked, bookmarkPost, unbookmarkPost
   } = useLists();
 
-  const isRepost = event.kind === 6 || event.kind === 16;
-  const isHighlight = event.kind === 9802;
-  const isReply = !isEventOriginalPost(event);
-  const { profile: repostAuthorProfile } = useProfile(isRepost ? event.pubkey : undefined);
+  const isRepost = event?.kind === 6 || event?.kind === 16;
+  const isHighlight = event?.kind === 9802;
+  const isReply = event ? !isEventOriginalPost(event) : false;
+  
+  // Call hooks unconditionally
+  const { profile: repostAuthorProfile } = useProfile(isRepost ? event?.pubkey : undefined);
   
   const displayEvent = isRepost && repostedEvent ? repostedEvent : event;
-  const isArticle = displayEvent.kind === 30023;
-  const isPoll = displayEvent.kind === 1068;
-  const { profile, loading: profileLoading, profileUrl } = useProfile(displayEvent.pubkey);
+  const isArticle = displayEvent?.kind === 30023;
+  const isPoll = displayEvent?.kind === 1068;
+  
+  const { profile, loading: profileLoading, profileUrl } = useProfile(displayEvent?.pubkey);
   const { 
     likes, 
     reposts, 
@@ -75,10 +78,10 @@ export const PostCard = memo(({
     totalSats, 
     userLiked, 
     userReposted 
-  } = usePostStats(displayEvent.id);
+  } = usePostStats(displayEvent?.id);
 
   useEffect(() => {
-    if (isRepost && isReady && ndk) {
+    if (isRepost && isReady && ndk && event) {
       if (event.content && event.content.trim().startsWith('{')) {
         try {
           const raw = JSON.parse(event.content);
@@ -112,32 +115,64 @@ export const PostCard = memo(({
   }, [isRepost, event, isReady, ndk]);
 
   const display_name = useMemo(() => 
-    profile?.display_name || profile?.name || shortenPubkey(displayEvent.pubkey),
-  [profile, displayEvent.pubkey]);
+    profile?.display_name || profile?.name || (displayEvent?.pubkey ? shortenPubkey(displayEvent.pubkey) : ""),
+  [profile, displayEvent?.pubkey]);
 
   const avatar = profile?.picture || (profile as { image?: string })?.image;
 
   const repostAuthorName = useMemo(() => {
+    if (!event) return "";
     return event.pubkey === currentUser?.pubkey 
       ? "You" 
-      : (repostAuthorProfile?.display_name || repostAuthorProfile?.name || shortenPubkey(event.pubkey));
-  }, [event.pubkey, currentUser?.pubkey, repostAuthorProfile]);
+      : (repostAuthorProfile?.display_name || repostAuthorProfile?.name || (event.pubkey ? shortenPubkey(event.pubkey) : ""));
+  }, [event, currentUser?.pubkey, repostAuthorProfile]);
 
-  const userNpub = displayEvent.author.npub;
+  const userNpub = useMemo(() => {
+    try {
+      return displayEvent?.author?.npub || "";
+    } catch {
+      return "";
+    }
+  }, [displayEvent]);
+
   const eventNoteId = useMemo(() => {
-    return displayEvent.encode();
+    if (!displayEvent) return "";
+    try {
+      // Use displayEvent.encode() if it's a real NDKEvent instance,
+      // otherwise fallback to a basic NIP-19 encode if we had the tool
+      return typeof displayEvent.encode === 'function' ? displayEvent.encode() : (displayEvent.id || "");
+    } catch {
+      return displayEvent.id || "";
+    }
   }, [displayEvent]);
 
   const navigationHref = useMemo(() => {
+    if (!eventNoteId) return "#";
     if (isArticle) return `/article/${eventNoteId}`;
     return `/post/${eventNoteId}`;
   }, [isArticle, eventNoteId]);
 
   const replyingToPubkey = useMemo(() => {
+    if (!displayEvent?.tags) return null;
     const replyPTag = displayEvent.tags.find(t => t[0] === 'p' && t[3] === 'reply') || 
                       [...displayEvent.tags].reverse().find(t => t[0] === 'p');
     return replyPTag ? replyPTag[1] : null;
-  }, [displayEvent.tags]);
+  }, [displayEvent?.tags]);
+
+  // NOW we can have early returns
+  // Safety check: if event is missing essential fields, return a small error UI or null
+  if (!event || !event.id || !event.pubkey) {
+    return (
+      <div className="p-4 text-xs text-muted-foreground italic border-b opacity-50">
+        Invalid event data
+      </div>
+    );
+  }
+
+  // Ensure displayEvent is valid
+  if (!displayEvent || !displayEvent.id) {
+    return null; // Or some fallback
+  }
 
   const handleDelete = async (e?: React.MouseEvent) => {
     e?.stopPropagation();
@@ -188,6 +223,7 @@ export const PostCard = memo(({
   };
 
   const handlePin = async () => {
+    if (!displayEvent.id) return;
     if (isPinned(displayEvent.id)) {
       const success = await unpinPost(displayEvent.id);
       if (success) addToast("Unpinned from profile", "success");
@@ -198,6 +234,7 @@ export const PostCard = memo(({
   };
 
   const handleMute = async () => {
+    if (!displayEvent.pubkey) return;
     if (isMuted(displayEvent.pubkey)) {
       const success = await unmuteUser(displayEvent.pubkey);
       if (success) addToast(`Unmuted ${display_name}`, "success");
@@ -208,6 +245,7 @@ export const PostCard = memo(({
   };
 
   const handleBookmarkToggle = async () => {
+    if (!displayEvent.id) return;
     if (isBookmarked(displayEvent.id)) {
       const success = await unbookmarkPost(displayEvent.id);
       if (success) addToast("Removed from bookmarks", "success");
@@ -225,7 +263,7 @@ export const PostCard = memo(({
       try {
         await navigator.share({
           title: `Post by ${display_name} on Tell it!`,
-          text: displayEvent.content.slice(0, 100) + (displayEvent.content.length > 100 ? '…' : ''),
+          text: (displayEvent.content || "").slice(0, 100) + ((displayEvent.content || "").length > 100 ? '…' : ''),
           url: shareUrl,
         });
       } catch (err) {
@@ -276,149 +314,158 @@ export const PostCard = memo(({
     );
   }
 
-  return (
-    <article 
-      className={cn(
-        "group relative flex flex-col p-4 border-b border-border hover:bg-accent/30 transition-colors overflow-visible",
-        isFocal && "bg-primary/5 border-l-4 border-l-primary"
-      )}
-      style={{ paddingLeft: `${1 + indent * 1.5}rem` }}
-    >
-      <Link 
-        href={navigationHref}
-        className="absolute inset-0 z-0"
-        aria-label={`View post by ${display_name}`}
-      />
-
-      <div className="flex relative min-w-0 z-10 pointer-events-none">
-        {/* Simplified Thread Lines */}
-        {(threadLine === "top" || threadLine === "both") && (
-          <div className="absolute top-[-1.5rem] left-5 w-0.5 h-[2.5rem] bg-border/50" />
+  try {
+    return (
+      <article 
+        className={cn(
+          "group relative flex flex-col p-4 border-b border-border hover:bg-accent/30 transition-colors overflow-visible",
+          isFocal && "bg-primary/5 border-l-4 border-l-primary"
         )}
-        {(threadLine === "bottom" || threadLine === "both") && (
-          <div className="absolute top-[3.5rem] bottom-[-1.5rem] left-5 w-0.5 bg-border/50" />
-        )}
+        style={{ paddingLeft: `${1 + indent * 1.5}rem` }}
+      >
+        <Link 
+          href={navigationHref}
+          className="absolute inset-0 z-0"
+          aria-label={`View post by ${display_name}`}
+        />
 
-        {/* Content Area */}
-        <div className="flex-1 min-w-0 overflow-visible pointer-events-auto z-10">
-          <PostHeader
-            display_name={display_name}
-            name={profile?.name}
-            avatar={avatar}
-            isLoading={profileLoading}
-            userNpub={userNpub}
-            profileUrl={profileUrl}
-            pubkey={displayEvent.pubkey}
-            nip05={profile?.nip05}
-            createdAt={displayEvent.created_at}
-            isRepost={isRepost}
-            isReply={isReply}
-            repostAuthorName={repostAuthorName}
-            bot={profile?.bot}
-            isArticle={isArticle}
-            isPoll={isPoll}
-            isPinned={isPinned(displayEvent.id)}
-            isMuted={isMuted(displayEvent.pubkey)}
-            isBookmarked={isBookmarked(displayEvent.id)}
-            onPinClick={currentUser?.pubkey === displayEvent.pubkey ? handlePin : undefined}
-            onMuteClick={currentUser?.pubkey !== displayEvent.pubkey ? handleMute : undefined}
-            onBookmarkClick={handleBookmarkToggle}
-            onDeleteClick={currentUser?.pubkey === displayEvent.pubkey ? handleDelete : undefined}
-            onReportClick={currentUser?.pubkey !== displayEvent.pubkey ? () => setShowReportModal(true) : undefined}
-            onMoreClick={() => setShowRawModal(true)}
-            onSummarizeClick={handleSummarize}
-            tags={isRepost ? (repostAuthorProfile?.tags || displayEvent.tags) : displayEvent.tags}
-            navigationHref={navigationHref}
-          />
-
-          <PostContentRenderer
-            content={displayEvent.content}
-            replyingToPubkey={replyingToPubkey}
-            isRepost={isRepost}
-            isHighlight={isHighlight}
-            isArticle={isArticle}
-            event={displayEvent}
-          />
-
-          {isPoll && (
-            <PollRenderer event={displayEvent} />
+        <div className="flex relative min-w-0 z-10 pointer-events-none">
+          {/* Simplified Thread Lines */}
+          {(threadLine === "top" || threadLine === "both") && (
+            <div className="absolute top-[-1.5rem] left-5 w-0.5 h-[2.5rem] bg-border/50" />
+          )}
+          {(threadLine === "bottom" || threadLine === "both") && (
+            <div className="absolute top-[3.5rem] bottom-[-1.5rem] left-5 w-0.5 bg-border/50" />
           )}
 
-          <PostActions
-            eventId={displayEvent.id}
-            authorPubkey={displayEvent.pubkey}
-            likes={likes}
-            reposts={reposts}
-            comments={comments}
-            quotes={quotes}
-            combinedReposts={combinedReposts}
-            bookmarks={bookmarks}
-            zaps={totalSats}
-            userReacted={userLiked ? '+' : null}
-            userReposted={userReposted}
-            onZapClick={() => setShowZapModal(true)}
-            onReplyClick={() => setShowReplyModal(true)}
-            onLikeClick={handleLike}
-            onRepostClick={handleRepost}
-            onQuoteClick={handleQuote}
-            onShareClick={handleShare}
-          />
+          {/* Content Area */}
+          <div className="flex-1 min-w-0 overflow-visible pointer-events-auto z-10">
+            <PostHeader
+              display_name={display_name}
+              name={profile?.name}
+              avatar={avatar}
+              isLoading={profileLoading}
+              userNpub={userNpub}
+              profileUrl={profileUrl}
+              pubkey={displayEvent.pubkey}
+              nip05={profile?.nip05}
+              createdAt={displayEvent.created_at}
+              isRepost={isRepost}
+              isReply={isReply}
+              repostAuthorName={repostAuthorName}
+              bot={profile?.bot}
+              isArticle={isArticle}
+              isPoll={isPoll}
+              isPinned={isPinned(displayEvent.id)}
+              isMuted={isMuted(displayEvent.pubkey)}
+              isBookmarked={isBookmarked(displayEvent.id)}
+              onPinClick={currentUser?.pubkey === displayEvent.pubkey ? handlePin : undefined}
+              onMuteClick={currentUser?.pubkey !== displayEvent.pubkey ? handleMute : undefined}
+              onBookmarkClick={handleBookmarkToggle}
+              onDeleteClick={currentUser?.pubkey === displayEvent.pubkey ? handleDelete : undefined}
+              onReportClick={currentUser?.pubkey !== displayEvent.pubkey ? () => setShowReportModal(true) : undefined}
+              onMoreClick={() => setShowRawModal(true)}
+              onSummarizeClick={handleSummarize}
+              tags={isRepost ? (repostAuthorProfile?.tags || displayEvent.tags) : displayEvent.tags}
+              navigationHref={navigationHref}
+            />
+
+            <PostContentRenderer
+              content={displayEvent.content || ""}
+              replyingToPubkey={replyingToPubkey}
+              isRepost={isRepost}
+              isHighlight={isHighlight}
+              isArticle={isArticle}
+              event={displayEvent}
+            />
+
+            {isPoll && (
+              <PollRenderer event={displayEvent} />
+            )}
+
+            <PostActions
+              eventId={displayEvent.id}
+              authorPubkey={displayEvent.pubkey}
+              likes={likes}
+              reposts={reposts}
+              comments={comments}
+              quotes={quotes}
+              combinedReposts={combinedReposts}
+              bookmarks={bookmarks}
+              zaps={totalSats}
+              userReacted={userLiked ? '+' : null}
+              userReposted={userReposted}
+              onZapClick={() => setShowZapModal(true)}
+              onReplyClick={() => setShowReplyModal(true)}
+              onLikeClick={handleLike}
+              onRepostClick={handleRepost}
+              onQuoteClick={handleQuote}
+              onShareClick={handleShare}
+            />
+          </div>
         </div>
+
+        {showReplyModal && (
+          <div className="relative">
+            <ReplyModal
+              event={displayEvent}
+              onClose={() => setShowReplyModal(false)}
+            />
+          </div>
+        )}
+
+        {showQuoteModal && (
+          <div className="relative">
+            <QuoteModal
+              event={displayEvent}
+              onClose={() => setShowQuoteModal(false)}
+            />
+          </div>
+        )}
+
+        {showZapModal && (
+          <div className="relative">
+            <ZapModal
+              event={displayEvent}
+              onClose={() => setShowZapModal(false)}
+            />
+          </div>
+        )}
+
+        {showRawModal && (
+          <div className="relative">
+            <RawEventModal
+              event={displayEvent}
+              isOpen={showRawModal}
+              onClose={() => setShowRawModal(false)}
+            />
+          </div>
+        )}
+
+        {showReportModal && (
+          <div className="relative">
+            <ReportModal
+              targetPubkey={displayEvent.pubkey}
+              targetEventId={displayEvent.id}
+              isOpen={showReportModal}
+              onClose={() => setShowReportModal(false)}
+            />
+          </div>
+        )}
+      </article>
+    );
+  } catch (err) {
+    console.error("[PostCard] Render crash for event:", event.id, err);
+    return (
+      <div className="p-4 text-xs text-muted-foreground italic border-b opacity-50">
+        Error rendering post content
       </div>
-
-      {showReplyModal && (
-        <div className="relative">
-          <ReplyModal
-            event={displayEvent}
-            onClose={() => setShowReplyModal(false)}
-          />
-        </div>
-      )}
-
-      {showQuoteModal && (
-        <div className="relative">
-          <QuoteModal
-            event={displayEvent}
-            onClose={() => setShowQuoteModal(false)}
-          />
-        </div>
-      )}
-
-      {showZapModal && (
-        <div className="relative">
-          <ZapModal
-            event={displayEvent}
-            onClose={() => setShowZapModal(false)}
-          />
-        </div>
-      )}
-
-      {showRawModal && (
-        <div className="relative">
-          <RawEventModal
-            event={displayEvent}
-            isOpen={showRawModal}
-            onClose={() => setShowRawModal(false)}
-          />
-        </div>
-      )}
-
-      {showReportModal && (
-        <div className="relative">
-          <ReportModal
-            targetPubkey={displayEvent.pubkey}
-            targetEventId={displayEvent.id}
-            isOpen={showReportModal}
-            onClose={() => setShowReportModal(false)}
-          />
-        </div>
-      )}
-    </article>
-  );
+    );
+  }
 }, (prevProps, nextProps) => {
-  return prevProps.event.id === nextProps.event.id && 
-         prevProps.threadLine === nextProps.threadLine && 
-         prevProps.isFocal === nextProps.isFocal &&
-         prevProps.indent === nextProps.indent;
+  return prevProps?.event?.id === nextProps?.event?.id && 
+         prevProps?.threadLine === nextProps?.threadLine && 
+         prevProps?.isFocal === nextProps?.isFocal &&
+         prevProps?.indent === nextProps?.indent;
 });
 PostCard.displayName = "PostCard";

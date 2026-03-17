@@ -87,7 +87,9 @@ export function useForYouFeed({
       interestsSet: new Set(interests),
     };
 
-    return rankEvents(baseEvents, context).map(se => se.event);
+    return rankEvents(baseEvents, context)
+      .filter(se => se && se.event && se.event.id)
+      .map(se => se.event);
   }, [rawEvents, wot, wotStrictMode, followingList, viewerPubkey, trustScores, mutualsMap, interests]);
 
   // Batch process new events into rawEvents state
@@ -102,7 +104,7 @@ export function useForYouFeed({
       const combined = [...prev, ...newEvents];
       // Faster way to deduplicate if list is already fairly large
       const uniqueMap = new Map();
-      combined.forEach(e => uniqueMap.set(e.id, e));
+      combined.filter(e => e && e.id).forEach(e => uniqueMap.set(e.id, e));
       return Array.from(uniqueMap.values());
     });
   }, []);
@@ -225,14 +227,14 @@ export function useForYouFeed({
       if (subscriptionRef.current) subscriptionRef.current.stop();
       if (updateTimeoutRef.current) clearTimeout(updateTimeoutRef.current);
     };
-  }, [ndk, isReady, sync, wotStatus, followingList, wot, queueUpdate, interests]); 
+  }, [ndk, isReady, sync, wotStatus, followingList, wot, queueUpdate, interests, viewerPubkey, rawEvents.length]); 
 
   const flushNewPosts = useCallback(() => {
     if (!bufferRef.current.length) return;
 
     setRawEvents(prev => {
       const combined = [...bufferRef.current, ...prev].slice(0, 150);
-      return combined.filter((v, i, a) => a.findIndex(t => t.id === v.id) === i);
+      return combined.filter((v, i, a) => v && v.id && a.findIndex(t => t && t.id === v.id) === i);
     });
 
     bufferRef.current = [];
@@ -270,15 +272,15 @@ export function useForYouFeed({
 
     const older = await ndk.fetchEvents(olderFilter);
 
-    const newEvents = Array.from(older).filter(e => !seenIds.current.has(e.id));
+    const newEvents = Array.from(older).filter(e => e && e.id && !seenIds.current.has(e.id));
     newEvents.forEach(e => seenIds.current.add(e.id));
     if (newEvents.length < 30) setHasMore(false);
 
     setRawEvents(prev => {
-    const combined = [...prev, ...newEvents];
-    return combined.filter((v, i, a) => a.findIndex(t => t.id === v.id) === i);
+      const combined = [...prev, ...newEvents];
+      return combined.filter((v, i, a) => v && v.id && a.findIndex(t => t && t.id === v.id) === i);
     });
-    }, [ndk, rawEvents, hasMore, followingList, wot, viewerPubkey, interests]);
+  }, [ndk, rawEvents, hasMore, followingList, wot, viewerPubkey, interests]); 
   return {
     posts,
     newCount,
