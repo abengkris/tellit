@@ -65,16 +65,31 @@ export function useThread(focalId?: string, hintRelays?: string[]) {
   }, [ndk, focalId, relaySet, focalPost]);
 
   const fetchThread = useCallback(async () => {
-    if (!ndk || !isReady || !focalId) return;
+    if (!ndk || !isReady || !focalId) {
+      console.log("[useThread] Skip fetch: ndk/ready/id missing", { hasNdk: !!ndk, isReady, focalId });
+      return;
+    }
 
+    console.log("[useThread] Starting fetch for", focalId);
     setLoading(true);
+    
+    // Safety timeout: stop loading after 10s regardless of result
+    const safetyTimeout = setTimeout(() => {
+      console.warn("[useThread] Safety timeout reached for", focalId);
+      setLoading(false);
+    }, 10000);
+
     try {
       // 1. Fetch the focal post
+      console.log("[useThread] Fetching focal event...");
       const focal = await ndk.fetchEvent(focalId, undefined, relaySet);
       if (!focal) {
+        console.warn("[useThread] Focal event not found", focalId);
         setLoading(false);
+        clearTimeout(safetyTimeout);
         return;
       }
+      console.log("[useThread] Focal event found, fetching ancestors...");
       setFocalPost(focal);
 
       // 2. Identify and Batch Fetch Ancestors
@@ -92,20 +107,25 @@ export function useThread(focalId?: string, hintRelays?: string[]) {
       }
 
       const idsToFetch = Array.from(new Set([rootId, replyId, fallbackReplyId].filter(Boolean) as string[]));
+      console.log("[useThread] Ancestor IDs to fetch:", idsToFetch);
       
       if (idsToFetch.length > 0) {
         const ancestorEvents = await ndk.fetchEvents({ ids: idsToFetch }, undefined, relaySet);
         const sortedAncestors = Array.from(ancestorEvents).sort((a, b) => (a.created_at ?? 0) - (b.created_at ?? 0));
+        console.log(`[useThread] Found ${sortedAncestors.length} ancestors`);
         setAncestors(sortedAncestors);
       } else {
         setAncestors([]);
       }
 
       // 3. Initial Fetch Direct Replies
+      console.log("[useThread] Fetching replies...");
       await fetchMoreReplies(false, focalId);
+      console.log("[useThread] Fetch complete");
     } catch (err) {
-      console.error("Thread fetch error:", err);
+      console.error("[useThread] Thread fetch error:", err);
     } finally {
+      clearTimeout(safetyTimeout);
       setLoading(false);
     }
   }, [ndk, isReady, focalId, fetchMoreReplies, relaySet]);

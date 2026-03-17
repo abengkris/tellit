@@ -60,6 +60,22 @@ export function PostDetailContent({ noteId }: { noteId: string }) {
             </div>
             <FeedSkeleton />
           </div>
+        ) : !focalPost ? (
+          <div className="p-12 text-center flex flex-col items-center gap-4">
+            <div className="size-16 rounded-full bg-muted flex items-center justify-center mb-2">
+              <Loader2 size={32} className="text-muted-foreground opacity-20" />
+            </div>
+            <h2 className="text-xl font-black">Post not found</h2>
+            <p className="text-muted-foreground text-sm max-w-xs mx-auto">
+              This note may have been deleted or the relays are currently unreachable.
+            </p>
+            <button 
+              onClick={() => router.back()}
+              className="mt-4 px-8 py-3 bg-primary text-primary-foreground rounded-full font-black shadow-lg shadow-primary/20 hover:scale-105 transition-transform"
+            >
+              Go Back
+            </button>
+          </div>
         ) : (
           <>
             {/* Ancestors with connecting lines */}
