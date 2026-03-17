@@ -82,7 +82,9 @@ export function useWallet() {
 
     try {
       // Use NDK's native zap method which automatically uses the configured wallet
-      const zapResult = await target.zap(amount * 1000, comment);
+      // We use any cast as zap might be missing from some NDK type definitions but present at runtime
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const zapResult = await (target as any).zap(amount * 1000, comment);
       if (zapResult) {
         addToast(`Zapped ${amount} sats!`, "success");
         return true;

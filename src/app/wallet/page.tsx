@@ -25,9 +25,9 @@ import {
   Mic,
   Plus,
   Coins,
-  Browser,
   X,
-  Loader2
+  Loader2,
+  Globe
 } from "lucide-react";
 import { NDKEvent, NDKFilter } from "@nostr-dev-kit/ndk";
 import { NDKWalletTransaction } from "@nostr-dev-kit/wallet";
@@ -341,7 +341,7 @@ export default function WalletPage() {
               <Card className="rounded-3xl border-2 border-dashed hover:border-orange-500/50 transition-colors cursor-pointer" onClick={handleEnableWebLN}>
                 <CardContent className="p-6 flex flex-col items-center text-center gap-3">
                   <div className="p-3 bg-orange-500/10 text-orange-500 rounded-2xl">
-                    <Browser size={24} />
+                    <Globe size={24} />
                   </div>
                   <div>
                     <h3 className="font-black">WebLN</h3>
