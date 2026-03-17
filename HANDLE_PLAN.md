@@ -18,5 +18,5 @@
 - [x] **5. Verified Directory**
     - [x] Create a public `/verified` page.
     - [x] Implement discovery API to fetch active handles.
-- [ ] **6. Conflict/Refund Management**
-    - [ ] Implement a basic dashboard or logging for registrations with `conflict` status.
+- [x] **6. Conflict/Refund Management**
+    - [x] Implement a basic dashboard or logging for registrations with `conflict` status.

@@ -707,79 +707,107 @@ export default function ManageHandlePage() {
               Pending Registrations
             </h2>
             <div className="grid gap-4">
-              {pendingHandles.map((ph) => (
-                <Card key={ph.payment_hash} className={cn(
-                  "border-2 border-dashed overflow-hidden transition-all",
-                  ph.isTaken 
-                    ? "border-destructive/50 bg-destructive/10 grayscale-[0.5] opacity-80" 
-                    : ph.isExpired 
-                      ? "border-destructive/30 bg-destructive/5" 
-                      : "border-blue-500/30 bg-blue-500/5"
-                )}>
-                  <CardHeader className="pb-3">
-                    <div className="flex justify-between items-start">
-                      <div className="space-y-1">
-                        <CardTitle className="text-xl font-black flex items-center gap-2">
-                          <Zap className={cn("size-5 fill-current", ph.isTaken || ph.isExpired ? "text-destructive" : "text-blue-500")} />
-                          {ph.name}@tellit.id
-                        </CardTitle>
-                        <CardDescription className="text-xs font-medium">
-                          {ph.isTaken 
-                            ? "This handle has been claimed by someone else." 
-                            : ph.isExpired 
-                              ? "Invoice has expired. Regenerate to pay." 
-                              : "Unpaid registration. Secure it before someone else does!"
-                          }
-                        </CardDescription>
+              {pendingHandles.map((ph) => {
+                const isConflict = ph.status === 'conflict';
+                
+                return (
+                  <Card key={ph.payment_hash} className={cn(
+                    "border-2 border-dashed overflow-hidden transition-all",
+                    isConflict
+                      ? "border-orange-500/50 bg-orange-500/5"
+                      : ph.isTaken 
+                        ? "border-destructive/50 bg-destructive/10 grayscale-[0.5] opacity-80" 
+                        : ph.isExpired 
+                          ? "border-destructive/30 bg-destructive/5" 
+                          : "border-blue-500/30 bg-blue-500/5"
+                  )}>
+                    <CardHeader className="pb-3">
+                      <div className="flex justify-between items-start">
+                        <div className="space-y-1">
+                          <CardTitle className="text-xl font-black flex items-center gap-2">
+                            <Zap className={cn(
+                              "size-5 fill-current", 
+                              isConflict ? "text-orange-500" : (ph.isTaken || ph.isExpired ? "text-destructive" : "text-blue-500")
+                            )} />
+                            {ph.name}@tellit.id
+                          </CardTitle>
+                          <CardDescription className="text-xs font-medium">
+                            {isConflict
+                              ? "Payment received, but handle was claimed by another user first."
+                              : ph.isTaken 
+                                ? "This handle has been claimed by someone else." 
+                                : ph.isExpired 
+                                  ? "Invoice has expired. Regenerate to pay." 
+                                  : "Unpaid registration. Secure it before someone else does!"
+                            }
+                          </CardDescription>
+                        </div>
+                        <Badge variant="outline" className={cn(
+                          isConflict
+                            ? "text-orange-500 border-orange-500/20 bg-orange-500/10"
+                            : ph.isTaken || ph.isExpired
+                              ? "text-destructive border-destructive/20 bg-destructive/10" 
+                              : "text-blue-500 border-blue-500/20 bg-blue-500/10"
+                        )}>
+                          {isConflict ? "Payment Conflict" : (ph.isTaken ? "Already Taken" : ph.isExpired ? "Expired" : "Pending")}
+                        </Badge>
                       </div>
-                      <Badge variant="outline" className={cn(
-                        ph.isTaken || ph.isExpired
-                          ? "text-destructive border-destructive/20 bg-destructive/10" 
-                          : "text-blue-500 border-blue-500/20 bg-blue-500/10"
-                      )}>
-                        {ph.isTaken ? "Already Taken" : ph.isExpired ? "Expired" : "Pending"}
-                      </Badge>
-                    </div>
-                  </CardHeader>
-                  <CardFooter className="pt-0 pb-4 px-6 flex justify-between items-center gap-4">
-                    <div className="text-sm font-bold">
-                      {ph.amount.toLocaleString()} <span className="text-muted-foreground text-xs text-nowrap">Sats</span>
-                    </div>
-                    <div className="flex gap-2">
-                      <CancelRegistrationDialog 
-                        handleName={ph.name} 
-                        paymentHash={ph.payment_hash} 
-                        onSuccess={refreshStatus} 
-                      />
-                      {!ph.isTaken && (
-                        <>
-                          {ph.isExpired ? (
-                            <Button 
-                              size="sm"
-                              onClick={() => handleRegenerateInvoice(ph.payment_hash)}
-                              className="rounded-xl font-black bg-orange-500 hover:bg-orange-600 text-white"
-                            >
-                              <RefreshCw className="size-3 mr-1" />
-                              Regenerate
-                            </Button>
-                          ) : (
-                            <Button 
-                              size="sm"
-                              onClick={() => {
-                                setSelectedPending(ph);
-                                setShowPaymentModal(true);
-                              }}
-                              className="rounded-xl font-black bg-blue-500 hover:bg-blue-600 text-white shadow-lg shadow-blue-500/20"
-                            >
-                              Pay Now
-                            </Button>
-                          )}
-                        </>
-                      )}
-                    </div>
-                  </CardFooter>
-                </Card>
-              ))}
+                    </CardHeader>
+                    
+                    {isConflict && (
+                      <CardContent className="pb-4">
+                        <div className="p-3 rounded-xl bg-orange-500/10 border border-orange-500/20 text-[11px] font-bold text-orange-700 dark:text-orange-400 space-y-2">
+                          <p>We detected your payment, but someone else completed their payment for this handle slightly earlier.</p>
+                          <p>Please contact <span className="underline">support@tellit.id</span> with your payment hash below for a refund or credit:</p>
+                          <code className="block p-2 bg-background/50 rounded-lg text-[9px] break-all font-mono opacity-80 select-all">
+                            {ph.payment_hash}
+                          </code>
+                        </div>
+                      </CardContent>
+                    )}
+
+                    <CardFooter className="pt-0 pb-4 px-6 flex justify-between items-center gap-4">
+                      <div className="text-sm font-bold">
+                        {ph.amount.toLocaleString()} <span className="text-muted-foreground text-xs text-nowrap">Sats</span>
+                      </div>
+                      <div className="flex gap-2">
+                        {!isConflict && (
+                          <CancelRegistrationDialog 
+                            handleName={ph.name} 
+                            paymentHash={ph.payment_hash} 
+                            onSuccess={refreshStatus} 
+                          />
+                        )}
+                        {!ph.isTaken && !isConflict && (
+                          <>
+                            {ph.isExpired ? (
+                              <Button 
+                                size="sm"
+                                onClick={() => handleRegenerateInvoice(ph.payment_hash)}
+                                className="rounded-xl font-black bg-orange-500 hover:bg-orange-600 text-white"
+                              >
+                                <RefreshCw className="size-3 mr-1" />
+                                Regenerate
+                              </Button>
+                            ) : (
+                              <Button 
+                                size="sm"
+                                onClick={() => {
+                                  setSelectedPending(ph);
+                                  setShowPaymentModal(true);
+                                }}
+                                className="rounded-xl font-black bg-blue-500 hover:bg-blue-600 text-white shadow-lg shadow-blue-500/20"
+                              >
+                                Pay Now
+                              </Button>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    </CardFooter>
+                  </Card>
+                );
+              })}
             </div>
           </div>
         )}

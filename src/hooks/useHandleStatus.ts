@@ -32,6 +32,7 @@ export interface PendingHandle {
   created_at: string;
   isExpired: boolean;
   isTaken: boolean;
+  status: string;
 }
 
 interface PendingHandleDetail {
@@ -102,7 +103,8 @@ export function useHandleStatus() {
             payment_hash: ph.payment_hash,
             created_at: ph.created_at,
             isExpired,
-            isTaken: !!ph.isTaken
+            isTaken: !!ph.isTaken,
+            status: ph.status
           };
         }));
       } else {

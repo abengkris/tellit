@@ -24,12 +24,12 @@ export async function GET(req: NextRequest) {
         .select('name, created_at, relays, lightning_address, is_primary')
         .eq('pubkey', pubkey);
       
-      // Fetch pending or expired registrations (unpaid)
+      // Fetch pending, expired, or conflict registrations (unpaid or contested)
       const { data: pending } = await supabase
         .from('registrations')
         .select('name, amount, payment_request, payment_hash, created_at, status')
         .eq('pubkey', pubkey)
-        .in('status', ['pending', 'expired']);
+        .in('status', ['pending', 'expired', 'conflict']);
 
       // Check if any pending names are now taken in the 'handles' table
       let pendingWithAvailability = pending || [];
