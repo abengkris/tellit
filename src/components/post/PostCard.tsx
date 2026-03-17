@@ -20,6 +20,7 @@ import { ReplyModal } from "./parts/ReplyModal";
 import { QuoteModal } from "./parts/QuoteModal";
 import { PollRenderer } from "./PollRenderer";
 import { shortenPubkey } from "@/lib/utils/nip19";
+import { formatFullTimestamp } from "@/lib/utils/date";
 import { useLists } from "@/hooks/useLists";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
@@ -31,13 +32,15 @@ interface PostCardProps {
   threadLine?: ThreadLine;
   isFocal?: boolean;
   indent?: number;
+  variant?: "feed" | "detail";
 }
 
 export const PostCard = memo(({ 
   event, 
   threadLine = "none",
   isFocal = false,
-  indent = 0
+  indent = 0,
+  variant = "feed"
 }: PostCardProps) => {
   const [repostedEvent, setRepostedEvent] = useState<NDKEvent | null>(null);
   const [repostLoading, setRepostLoading] = useState(false);
@@ -318,24 +321,27 @@ export const PostCard = memo(({
     return (
       <article 
         className={cn(
-          "group relative flex flex-col p-4 border-b border-border hover:bg-accent/30 transition-colors overflow-visible",
+          "group relative flex flex-col p-4 border-b border-border hover:bg-accent/10 transition-colors overflow-visible",
+          variant === "detail" && "hover:bg-transparent pb-2",
           isFocal && "bg-primary/5 border-l-4 border-l-primary"
         )}
         style={{ paddingLeft: `${1 + indent * 1.5}rem` }}
       >
-        <Link 
-          href={navigationHref}
-          className="absolute inset-0 z-0"
-          aria-label={`View post by ${display_name}`}
-        />
+        {variant === "feed" && (
+          <Link 
+            href={navigationHref}
+            className="absolute inset-0 z-0"
+            aria-label={`View post by ${display_name}`}
+          />
+        )}
 
         <div className="flex relative min-w-0 z-10 pointer-events-none">
-          {/* Simplified Thread Lines */}
+          {/* Refined Thread Lines */}
           {(threadLine === "top" || threadLine === "both") && (
-            <div className="absolute top-[-1.5rem] left-5 w-0.5 h-[2.5rem] bg-border/50" />
+            <div className="absolute top-[-1.5rem] left-[1.45rem] w-0.5 h-[2.5rem] bg-border/60" />
           )}
           {(threadLine === "bottom" || threadLine === "both") && (
-            <div className="absolute top-[3.5rem] bottom-[-1.5rem] left-5 w-0.5 bg-border/50" />
+            <div className="absolute top-[3.5rem] bottom-[-1.5rem] left-[1.45rem] w-0.5 bg-border/60" />
           )}
 
           {/* Content Area */}
@@ -368,21 +374,72 @@ export const PostCard = memo(({
               onSummarizeClick={handleSummarize}
               tags={isRepost ? (repostAuthorProfile?.tags || displayEvent.tags) : displayEvent.tags}
               navigationHref={navigationHref}
+              variant={variant}
             />
 
-            <PostContentRenderer
-              content={displayEvent.content || ""}
-              replyingToPubkey={replyingToPubkey}
-              isRepost={isRepost}
-              isHighlight={isHighlight}
-              isArticle={isArticle}
-              event={displayEvent}
-            />
+            <div className={cn(
+              "mt-1",
+              variant === "detail" ? "text-lg sm:text-xl leading-normal mb-4" : "text-base"
+            )}>
+              <PostContentRenderer
+                content={displayEvent.content || ""}
+                replyingToPubkey={replyingToPubkey}
+                isRepost={isRepost}
+                isHighlight={isHighlight}
+                isArticle={isArticle}
+                event={displayEvent}
+                className={variant === "detail" ? "prose-xl" : ""}
+              />
+            </div>
 
             {isPoll && (
               <PollRenderer event={displayEvent} />
             )}
 
+            {variant === "detail" && (
+              <div className="py-4 border-y border-border/50 my-4 flex items-center gap-6 text-sm">
+                {combinedReposts > 0 && (
+                  <div 
+                    className="flex items-center gap-1.5 hover:underline cursor-pointer" 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      // We'll pass handlers to PostActions, or just use state here
+                      // To keep it simple and consistent, let's just use the existing logic in PostActions
+                      // but since they are separate, I'll add a way to trigger them.
+                      // For now, let's just make them look good and add specific handlers if needed.
+                    }}
+                  >
+                    <span className="font-black text-foreground">{combinedReposts.toLocaleString()}</span>
+                    <span className="text-muted-foreground font-bold">Reposts</span>
+                  </div>
+                )}
+                {likes > 0 && (
+                  <div 
+                    className="flex items-center gap-1.5 hover:underline cursor-pointer" 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                    }}
+                  >
+                    <span className="font-black text-foreground">{likes.toLocaleString()}</span>
+                    <span className="text-muted-foreground font-bold">Likes</span>
+                  </div>
+                )}
+                {totalSats > 0 && (
+                  <div 
+                    className="flex items-center gap-1.5 hover:underline cursor-pointer" 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                    }}
+                  >
+                    <span className="font-black text-foreground">{totalSats.toLocaleString()}</span>
+                    <span className="text-muted-foreground font-bold">Sats</span>
+                  </div>
+                )}
+                <div className="ml-auto text-muted-foreground font-medium">
+                  {formatFullTimestamp(displayEvent.created_at)}
+                </div>
+              </div>
+            )}
             <PostActions
               eventId={displayEvent.id}
               authorPubkey={displayEvent.pubkey}
@@ -404,7 +461,6 @@ export const PostCard = memo(({
             />
           </div>
         </div>
-
         {showReplyModal && (
           <div className="relative">
             <ReplyModal

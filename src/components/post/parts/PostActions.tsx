@@ -37,6 +37,7 @@ interface PostActionsProps {
   onZapClick?: (e: React.MouseEvent) => void;
   onQuoteClick?: (e: React.MouseEvent) => void;
   onShareClick?: (e: React.MouseEvent) => void;
+  variant?: "feed" | "detail";
 }
 
 export const PostActions = memo(({
@@ -56,7 +57,8 @@ export const PostActions = memo(({
   onLikeClick,
   onZapClick,
   onQuoteClick,
-  onShareClick
+  onShareClick,
+  variant = "feed"
 }: PostActionsProps) => {
   const [optimisticLikes, setOptimisticLikes] = useState(initialLikes);
   const [optimisticReacted, setOptimisticReacted] = useState(initialUserReacted);
@@ -210,7 +212,10 @@ export const PostActions = memo(({
 
   return (
     <>
-      <div className="flex items-center justify-between max-w-lg text-muted-foreground -ml-2">
+      <div className={cn(
+        "flex items-center justify-between max-w-lg text-muted-foreground -ml-2",
+        variant === "detail" ? "py-2 border-t border-border/50 mt-2" : ""
+      )}>
         {/* Reply */}
         <div className="flex items-center">
           <Tooltip>
@@ -230,7 +235,9 @@ export const PostActions = memo(({
             </TooltipTrigger>
             <TooltipContent side="bottom">Reply</TooltipContent>
           </Tooltip>
-          <span className="text-xs ml-0.5">{comments > 0 ? formatCount(comments) : ""}</span>
+          {variant === "feed" && (
+            <span className="text-xs ml-0.5">{comments > 0 ? formatCount(comments) : ""}</span>
+          )}
         </div>
 
         {/* Repost & Quote */}
@@ -267,13 +274,15 @@ export const PostActions = memo(({
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          <button 
-            className="text-xs cursor-pointer hover:underline ml-0.5 pr-2 py-2 outline-none focus-visible:underline focus-visible:text-primary"
-            onClick={openRepostsModal}
-            aria-label={`${optimisticCombined} reposts and quotes`}
-          >
-            {optimisticCombined > 0 ? formatCount(optimisticCombined) : ""}
-          </button>
+          {variant === "feed" && (
+            <button 
+              className="text-xs cursor-pointer hover:underline ml-0.5 pr-2 py-2 outline-none focus-visible:underline focus-visible:text-primary"
+              onClick={openRepostsModal}
+              aria-label={`${optimisticCombined} reposts and quotes`}
+            >
+              {optimisticCombined > 0 ? formatCount(optimisticCombined) : ""}
+            </button>
+          )}
         </div>
 
         {/* Like */}
@@ -298,13 +307,15 @@ export const PostActions = memo(({
             </TooltipTrigger>
             <TooltipContent side="bottom">Like</TooltipContent>
           </Tooltip>
-          <button 
-            className="text-xs cursor-pointer hover:underline ml-0.5 pr-2 py-2 outline-none focus-visible:underline focus-visible:text-pink-500"
-            onClick={openLikesModal}
-            aria-label={`${optimisticLikes} likes`}
-          >
-            {optimisticLikes > 0 ? formatCount(optimisticLikes) : ""}
-          </button>
+          {variant === "feed" && (
+            <button 
+              className="text-xs cursor-pointer hover:underline ml-0.5 pr-2 py-2 outline-none focus-visible:underline focus-visible:text-pink-500"
+              onClick={openLikesModal}
+              aria-label={`${optimisticLikes} likes`}
+            >
+              {optimisticLikes > 0 ? formatCount(optimisticLikes) : ""}
+            </button>
+          )}
         </div>
 
         {/* Zap */}
@@ -332,16 +343,18 @@ export const PostActions = memo(({
             </TooltipTrigger>
             <TooltipContent side="bottom">Zap (Right-click for custom)</TooltipContent>
           </Tooltip>
-          <button 
-            className={cn(
-              "text-xs cursor-pointer hover:underline ml-0.5 pr-2 py-2 outline-none focus-visible:underline",
-              optimisticZaps > 0 && "text-yellow-600 dark:text-yellow-400 font-bold"
-            )}
-            onClick={openZapsModal}
-            aria-label={`${optimisticZaps} zaps`}
-          >
-            {optimisticZaps > 0 ? formatCount(optimisticZaps) : ""}
-          </button>
+          {variant === "feed" && (
+            <button 
+              className={cn(
+                "text-xs cursor-pointer hover:underline ml-0.5 pr-2 py-2 outline-none focus-visible:underline",
+                optimisticZaps > 0 && "text-yellow-600 dark:text-yellow-400 font-bold"
+              )}
+              onClick={openZapsModal}
+              aria-label={`${optimisticZaps} zaps`}
+            >
+              {optimisticZaps > 0 ? formatCount(optimisticZaps) : ""}
+            </button>
+          )}
         </div>
 
         {/* Bookmark */}
@@ -366,7 +379,9 @@ export const PostActions = memo(({
             </TooltipTrigger>
             <TooltipContent side="bottom">Bookmark</TooltipContent>
           </Tooltip>
-          <span className="text-xs ml-0.5">{bookmarks > 0 ? formatCount(bookmarks) : ""}</span>
+          {variant === "feed" && (
+            <span className="text-xs ml-0.5">{bookmarks > 0 ? formatCount(bookmarks) : ""}</span>
+          )}
         </div>
 
         {/* Share */}

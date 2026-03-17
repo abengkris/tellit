@@ -69,26 +69,29 @@ export function PostDetailContent({ noteId }: { noteId: string }) {
                   key={parent.id} 
                   event={parent} 
                   threadLine={index === ancestors.length - 1 ? "bottom" : "both"} 
+                  variant="feed"
                 />
               ))}
             </div>
 
-            {/* Focal Post - Highlighted and connected to ancestors */}
+            {/* Focal Post - Prominent and connected to ancestors if any */}
             {focalPost && (
               <>
-                <div className="relative border-b border-gray-100 dark:border-gray-900">
+                <div className="relative">
                   <PostCard 
                     event={focalPost} 
                     isFocal={true} 
+                    variant="detail"
                     threadLine={ancestors.length > 0 ? "top" : "none"} 
                   />
                 </div>
                 
                 {/* Inline Reply Composer */}
-                <div className="border-b-8 border-gray-50 dark:border-gray-900/30">
+                <div className="border-b border-gray-100 dark:border-gray-900 pb-2">
                   <PostComposer 
                     replyTo={focalPost} 
                     placeholder="Post your reply"
+                    autoFocus={false}
                   />
                 </div>
               </>

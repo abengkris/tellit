@@ -69,6 +69,7 @@ interface PostHeaderProps {
   tags?: string[][];
   navigationHref?: string;
   onSummarizeClick?: () => void;
+  variant?: "feed" | "detail";
 }
 
 export const PostHeader: React.FC<PostHeaderProps> = ({
@@ -98,11 +99,154 @@ export const PostHeader: React.FC<PostHeaderProps> = ({
   tags,
   name,
   navigationHref,
-  onSummarizeClick
+  onSummarizeClick,
+  variant = "feed"
 }) => {
   const formattedTime = formatCompactDate(createdAt);
   const [showDeleteDialog, setShowDeleteDialog] = React.useState(false);
   const finalProfileUrl = profileUrl || `/${userNpub}`;
+
+  if (variant === "detail") {
+    return (
+      <>
+        {/* Repost Header */}
+        {isRepost && (
+          <div className="flex items-center space-x-2 text-muted-foreground text-xs font-bold mb-4 ml-0 truncate min-w-0">
+            <Repeat2 size={14} className="shrink-0" aria-hidden="true" />
+            <span className="truncate">{repostAuthorName} reposted</span>
+          </div>
+        )}
+
+        <div className="flex items-start justify-between mb-4 min-w-0">
+          <div className="flex items-center space-x-3 truncate min-w-0" onClick={(e) => e.stopPropagation()}>
+            <Link href={finalProfileUrl} aria-label={`View ${display_name}'s profile`} className="shrink-0">
+              <Avatar 
+                pubkey={pubkey} 
+                src={avatar} 
+                isLoading={isLoading} 
+                size={56} 
+                className="w-14 h-14 ring-4 ring-background shadow-sm" 
+                aria-hidden="true"
+              />
+            </Link>
+            <div className="flex flex-col truncate min-w-0">
+              <Link href={finalProfileUrl} className="flex flex-col truncate min-w-0 hover:underline">
+                <span className="font-black text-lg text-foreground leading-tight truncate">{display_name}</span>
+                <span className="text-muted-foreground text-sm truncate">@{name || userNpub.slice(0, 12) + "..."}</span>
+              </Link>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1">
+            {/* Badges in detail mode could be stacked or shown differently, for now keep it simple */}
+            <div className="hidden sm:flex items-center gap-1 mr-2">
+              {isArticle && (
+                <Badge variant="secondary" className="h-5 px-2 rounded-full font-bold uppercase tracking-tighter text-[10px] bg-purple-500/10 text-purple-500 border-purple-500/20">
+                  Article
+                </Badge>
+              )}
+            </div>
+
+            <DropdownMenu modal={false}>
+              <DropdownMenuTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  aria-label="More options"
+                  className="text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-full transition-colors shrink-0"
+                >
+                  <MoreHorizontal className="size-5" aria-hidden="true" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56" onCloseAutoFocus={(e) => e.preventDefault()}>
+                {onPinClick && (
+                  <DropdownMenuItem onClick={onPinClick} className="gap-2">
+                    {isPinned ? <PinOff className="size-4" aria-hidden="true" /> : <Pin className="size-4" aria-hidden="true" />}
+                    <span>{isPinned ? "Unpin from Profile" : "Pin to Profile"}</span>
+                  </DropdownMenuItem>
+                )}
+                {onBookmarkClick && (
+                  <DropdownMenuItem onClick={onBookmarkClick} className="gap-2">
+                    <Bookmark className={cn("size-4", isBookmarked && "fill-current")} aria-hidden="true" />
+                    <span>{isBookmarked ? "Remove Bookmark" : "Save Bookmark"}</span>
+                  </DropdownMenuItem>
+                )}
+                {onMuteClick && (
+                  <DropdownMenuItem onClick={onMuteClick} className={cn("gap-2", !isMuted && "text-destructive focus:text-destructive")}>
+                    {isMuted ? <Volume2 className="size-4" aria-hidden="true" /> : <VolumeX className="size-4" aria-hidden="true" />}
+                    <span>{isMuted ? `Unmute @${display_name}` : `Mute @${display_name}`}</span>
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuSeparator />
+                {onReportClick && (
+                  <DropdownMenuItem onClick={onReportClick} className="gap-2">
+                    <Flag className="size-4" aria-hidden="true" />
+                    <span>Report Content</span>
+                  </DropdownMenuItem>
+                )}
+                {onMoreClick && (
+                  <DropdownMenuItem onClick={onMoreClick} className="gap-2">
+                    <Code className="size-4" aria-hidden="true" />
+                    <span>View Raw Data</span>
+                  </DropdownMenuItem>
+                )}
+                {onSummarizeClick && (
+                  <DropdownMenuItem onClick={onSummarizeClick} className="gap-2 text-purple-500 focus:text-purple-600 focus:bg-purple-500/10">
+                    <BarChart2 className="size-4" aria-hidden="true" />
+                    <span>Summarize with AI</span>
+                  </DropdownMenuItem>
+                )}
+                {onDeleteClick && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem 
+                      onSelect={(e) => {
+                        e.preventDefault();
+                        setShowDeleteDialog(true);
+                      }} 
+                      className="gap-2 text-destructive focus:text-destructive focus:bg-destructive/10"
+                    >
+                      <Trash2 className="size-4" aria-hidden="true" />
+                      <span>Delete Post</span>
+                    </DropdownMenuItem>
+                  </>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
+
+        <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+          <AlertDialogContent className="rounded-3xl border-none shadow-2xl overflow-hidden max-w-[340px] sm:max-w-md p-0">
+            <AlertDialogHeader className="p-8 pb-4">
+              <div className="size-12 rounded-2xl bg-destructive/10 text-destructive flex items-center justify-center mb-4">
+                <Trash2 className="size-6" />
+              </div>
+              <AlertDialogTitle className="text-xl font-black text-left">Delete post?</AlertDialogTitle>
+              <AlertDialogDescription className="text-left text-muted-foreground text-sm font-medium leading-relaxed">
+                This will remove this post from your profile and search results. This sends a request to relays, but decentralized deletion is not guaranteed across all clients and relays.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter className="bg-muted/30 p-4 px-8 flex-row items-center gap-3">
+              <AlertDialogCancel className="flex-1 rounded-2xl h-12 font-black border-none bg-muted hover:bg-muted/80 m-0">
+                Cancel
+              </AlertDialogCancel>
+              <AlertDialogAction 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDeleteClick?.();
+                  setShowDeleteDialog(false);
+                }}
+                className="flex-1 rounded-2xl h-12 font-black bg-destructive hover:bg-destructive/90 text-destructive-foreground shadow-lg shadow-destructive/20 m-0"
+              >
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </>
+    );
+  }
 
   return (
     <>

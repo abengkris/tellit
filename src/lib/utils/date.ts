@@ -29,3 +29,16 @@ export function formatCompactDate(timestamp: number | undefined): string {
 
   return format(date, "MMM d, yyyy");
 }
+
+/**
+ * Format a Unix timestamp into a full date string for detail views.
+ * Example: '4:30 PM · Mar 17, 2026'
+ * 
+ * @param timestamp Unix timestamp in seconds
+ * @returns Formatted full date string
+ */
+export function formatFullTimestamp(timestamp: number | undefined): string {
+  if (!timestamp) return "unknown";
+  const date = new Date(timestamp * 1000);
+  return format(date, "h:mm a · MMM d, yyyy");
+}

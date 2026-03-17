@@ -43,24 +43,24 @@ export const ThreadNode: React.FC<ThreadNodeProps> = ({
         {/* Thread connection line for nested items */}
         {depth > 0 && (
           <div 
-            className="absolute left-0 top-0 w-6 h-10 border-l-2 border-b-2 border-border/50 rounded-bl-xl z-0"
-            style={{ left: "-1.5rem", top: "-1rem" }}
+            className="absolute left-[-1.5rem] top-[-1rem] w-[1.5rem] h-[2.5rem] border-l-2 border-b-2 border-border/60 rounded-bl-2xl z-0"
             aria-hidden="true"
           />
         )}
 
         <PostCard 
           event={event} 
-          indent={0} // We handle indentation via the container now
+          indent={0} 
           threadLine={nestedReplies.length > 0 && expanded ? "bottom" : "none"} 
+          variant="feed"
         />
         
         {!hasFetched && depth < 3 && (
           <Button 
-            variant="outline"
+            variant="ghost"
             size="sm"
             onClick={handleExpand}
-            className="absolute left-6 bottom-2 z-20 h-7 text-[10px] font-black uppercase tracking-widest text-primary hover:text-primary hover:bg-primary/5 bg-background px-3 rounded-full border-primary/20 shadow-sm transition-all active:scale-95"
+            className="absolute left-14 bottom-2 z-20 h-7 text-[10px] font-black uppercase tracking-widest text-primary hover:bg-primary/5 px-3 rounded-full transition-all active:scale-95"
             aria-label="Show replies"
           >
             {loading ? <Loader2 size={10} className="animate-spin" aria-hidden="true" /> : "Show replies"}
@@ -70,10 +70,10 @@ export const ThreadNode: React.FC<ThreadNodeProps> = ({
 
       {expanded && nestedReplies.length > 0 && (
         <div 
-          className="flex flex-col ml-6 sm:ml-10 border-l-2 border-border/30"
+          className="flex flex-col ml-[1.45rem] border-l-2 border-border/60"
         >
           {nestedReplies.map((reply) => (
-            <div key={reply.id} className="pl-4 sm:pl-6">
+            <div key={reply.id} className="pl-4">
               <ThreadNode 
                 event={reply} 
                 depth={depth + 1} 
