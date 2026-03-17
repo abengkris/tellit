@@ -12,7 +12,10 @@ export function useThread(focalId?: string, hintRelays?: string[]) {
   const [loading, setLoading] = useState(true);
   const [loadingReplies, setLoadingReplies] = useState(false);
   const [hasMoreReplies, setHasMoreReplies] = useState(true);
+  
   const oldestReplyTimestampRef = useRef<number | undefined>(undefined);
+  const focalPostRef = useRef<NDKEvent | null>(null);
+  const lastProcessedId = useRef<string | undefined>(undefined);
 
   const relaySet = useMemo(() => {
     if (!ndk || !hintRelays || hintRelays.length === 0) return undefined;
@@ -41,9 +44,9 @@ export function useThread(focalId?: string, hintRelays?: string[]) {
       const replyEvents = await ndk.fetchEvents(filter, undefined, relaySet);
       const directReplies = Array.from(replyEvents)
         .filter(ev => {
-          // Use NDK's eventIsReply utility
+          // Use the ref to avoid dependency loop
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const baseEvent = focalPost || new NDKEvent(ndk, { id: targetId } as any);
+          const baseEvent = focalPostRef.current || new NDKEvent(ndk, { id: targetId } as any);
           return eventIsReply(baseEvent, ev);
         })
         .sort((a, b) => (a.created_at ?? 0) - (b.created_at ?? 0));
@@ -58,11 +61,11 @@ export function useThread(focalId?: string, hintRelays?: string[]) {
 
       setHasMoreReplies(replyEvents.size >= 20);
     } catch (err) {
-      console.error("Error fetching replies:", err);
+      console.error("[useThread] Error fetching replies:", err);
     } finally {
       setLoadingReplies(false);
     }
-  }, [ndk, focalId, relaySet, focalPost]);
+  }, [ndk, focalId, relaySet]); // Removed focalPost from dependencies
 
   const fetchThread = useCallback(async () => {
     if (!ndk || !isReady || !focalId) {
@@ -70,7 +73,14 @@ export function useThread(focalId?: string, hintRelays?: string[]) {
       return;
     }
 
-    console.log("[useThread] Starting fetch for", focalId);
+    // Prevent redundant fetches if already loading or loaded for this ID
+    if (lastProcessedId.current === focalId && (loading || focalPostRef.current)) {
+      console.log("[useThread] Already loading or loaded for", focalId);
+      return;
+    }
+
+    console.log("[useThread] Starting fetch for", focalId, "with relays:", relaySet?.relays?.map(r => r.url));
+    lastProcessedId.current = focalId;
     setLoading(true);
     
     // Safety timeout: stop loading after 10s regardless of result
@@ -82,35 +92,36 @@ export function useThread(focalId?: string, hintRelays?: string[]) {
     try {
       // 1. Fetch the focal post
       console.log("[useThread] Fetching focal event...");
-      const focal = await ndk.fetchEvent(focalId, undefined, relaySet);
+      // Try to get from cache first for speed
+      let focal = await ndk.fetchEvent(focalId, { cacheUsage: 1 }, relaySet); // 1 is CACHE_FIRST
+      
       if (!focal) {
-        console.warn("[useThread] Focal event not found", focalId);
+        // If not in cache, fetch from relays
+        focal = await ndk.fetchEvent(focalId, undefined, relaySet);
+      }
+
+      if (!focal) {
+        console.warn("[useThread] Focal event not found on relays or cache", focalId);
         setLoading(false);
         clearTimeout(safetyTimeout);
         return;
       }
-      console.log("[useThread] Focal event found, fetching ancestors...");
+      
+      console.log("[useThread] Focal event found:", focal.id);
+      focalPostRef.current = focal;
       setFocalPost(focal);
 
       // 2. Identify and Batch Fetch Ancestors
       const rootId = getRootEventId(focal);
-      const replyId = focal.tags.find(t => t[0] === 'e' && t[3] === 'reply')?.[1];
+      const eTags = focal.tags.filter(t => t[0] === 'e');
+      const replyId = focal.tags.find(t => t[0] === 'e' && t[3] === 'reply')?.[1] || 
+                      (eTags.length > 0 ? eTags[eTags.length - 1][1] : undefined);
       
-      // Fallback for replyId if marker is missing
-      let fallbackReplyId: string | undefined;
-      if (!replyId) {
-        const eTags = focal.tags.filter(t => t[0] === 'e');
-        if (eTags.length > 0) {
-          fallbackReplyId = eTags[eTags.length - 1][1];
-          if (fallbackReplyId === rootId) fallbackReplyId = undefined;
-        }
-      }
-
-      const idsToFetch = Array.from(new Set([rootId, replyId, fallbackReplyId].filter(Boolean) as string[]));
+      const idsToFetch = Array.from(new Set([rootId, replyId].filter(Boolean) as string[]));
       console.log("[useThread] Ancestor IDs to fetch:", idsToFetch);
       
       if (idsToFetch.length > 0) {
-        const ancestorEvents = await ndk.fetchEvents({ ids: idsToFetch }, undefined, relaySet);
+        const ancestorEvents = await ndk.fetchEvents({ ids: idsToFetch }, { cacheUsage: 1 }, relaySet);
         const sortedAncestors = Array.from(ancestorEvents).sort((a, b) => (a.created_at ?? 0) - (b.created_at ?? 0));
         console.log(`[useThread] Found ${sortedAncestors.length} ancestors`);
         setAncestors(sortedAncestors);
@@ -121,24 +132,29 @@ export function useThread(focalId?: string, hintRelays?: string[]) {
       // 3. Initial Fetch Direct Replies
       console.log("[useThread] Fetching replies...");
       await fetchMoreReplies(false, focalId);
-      console.log("[useThread] Fetch complete");
+      console.log("[useThread] Fetch cycle complete for", focalId);
     } catch (err) {
       console.error("[useThread] Thread fetch error:", err);
     } finally {
       clearTimeout(safetyTimeout);
       setLoading(false);
     }
-  }, [ndk, isReady, focalId, fetchMoreReplies, relaySet]);
+  }, [ndk, isReady, focalId, fetchMoreReplies, relaySet, loading]);
 
   useEffect(() => {
-    // Only reset state if the focalId actually changed to prevent flickering
-    setFocalPost(null);
-    setAncestors([]);
-    setReplies([]);
-    oldestReplyTimestampRef.current = undefined;
+    // Only reset state if the focalId actually changed
+    if (focalId && lastProcessedId.current !== focalId) {
+      setFocalPost(null);
+      setAncestors([]);
+      setReplies([]);
+      focalPostRef.current = null;
+      oldestReplyTimestampRef.current = undefined;
+    }
     
-    fetchThread();
-  }, [focalId, fetchThread]);
+    if (isReady && focalId) {
+      fetchThread();
+    }
+  }, [focalId, isReady, fetchThread]);
 
   const loadMoreReplies = () => {
     if (!loadingReplies && hasMoreReplies) {
