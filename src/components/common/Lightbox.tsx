@@ -1,30 +1,79 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { 
   Dialog, 
   DialogContent, 
   DialogTitle,
   DialogDescription
 } from "@/components/ui/dialog";
-import { X, Download, ExternalLink } from "lucide-react";
+import { X, Download, ExternalLink, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { motion, AnimatePresence } from "framer-motion";
+
+interface LightboxMedia {
+  url: string;
+  type: "image" | "video";
+  alt?: string;
+}
 
 interface LightboxProps {
-  src: string;
-  alt?: string;
+  media: LightboxMedia[];
+  initialIndex?: number;
   isOpen: boolean;
   onClose: () => void;
   postHref?: string;
 }
 
-export const Lightbox: React.FC<LightboxProps> = ({ src, alt, isOpen, onClose, postHref }) => {
+export const Lightbox: React.FC<LightboxProps> = ({ 
+  media, 
+  initialIndex = 0, 
+  isOpen, 
+  onClose, 
+  postHref 
+}) => {
+  const [currentIndex, setCurrentIndex] = useState(initialIndex);
+  const [direction, setDirection] = useState(0);
+
+  useEffect(() => {
+    if (isOpen) {
+      setCurrentIndex(initialIndex);
+    }
+  }, [isOpen, initialIndex]);
+
+  const goToNext = useCallback(() => {
+    if (currentIndex < media.length - 1) {
+      setDirection(1);
+      setCurrentIndex(prev => prev + 1);
+    }
+  }, [currentIndex, media.length]);
+
+  const goToPrevious = useCallback(() => {
+    if (currentIndex > 0) {
+      setDirection(-1);
+      setCurrentIndex(prev => prev - 1);
+    }
+  }, [currentIndex]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!isOpen) return;
+      if (e.key === "ArrowRight") goToNext();
+      if (e.key === "ArrowLeft") goToPrevious();
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, goToNext, goToPrevious, onClose]);
+
+  const currentMedia = media[currentIndex];
+  if (!currentMedia && media.length > 0) return null;
+
   const handleDownload = (e: React.MouseEvent) => {
     e.stopPropagation();
-    // Simple download logic
     const link = document.createElement("a");
-    link.href = src;
-    link.download = alt || "image";
+    link.href = currentMedia.url;
+    link.download = currentMedia.alt || "media";
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -32,86 +81,183 @@ export const Lightbox: React.FC<LightboxProps> = ({ src, alt, isOpen, onClose, p
 
   const handleOpenOriginal = (e: React.MouseEvent) => {
     e.stopPropagation();
-    window.open(src, "_blank");
+    window.open(currentMedia.url, "_blank");
+  };
+
+  const variants = {
+    enter: (direction: number) => ({
+      x: direction > 0 ? 300 : -300,
+      opacity: 0,
+      scale: 0.9,
+    }),
+    center: {
+      zIndex: 1,
+      x: 0,
+      opacity: 1,
+      scale: 1,
+    },
+    exit: (direction: number) => ({
+      zIndex: 0,
+      x: direction < 0 ? 300 : -300,
+      opacity: 0,
+      scale: 0.9,
+    }),
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-[95vw] max-h-[95vh] p-0 border-none bg-black/90 shadow-2xl flex flex-col items-center justify-center overflow-hidden gap-0 sm:rounded-3xl">
-        <DialogTitle className="sr-only">Image Preview</DialogTitle>
+      <DialogContent className="max-w-[100vw] w-screen h-screen p-0 border-none bg-black/95 shadow-2xl flex flex-col items-center justify-center overflow-hidden gap-0 sm:rounded-none">
+        <DialogTitle className="sr-only">Media Preview</DialogTitle>
         <DialogDescription className="sr-only">
-          {alt || "Full screen image preview"}
+          {currentMedia?.alt || "Full screen media preview"}
         </DialogDescription>
         
         {/* Controls Overlay */}
-        <div className="absolute top-4 right-4 z-50 flex items-center gap-2 animate-in fade-in duration-500">
-          {postHref && (
+        <div className="absolute top-0 left-0 right-0 z-50 flex items-center justify-between p-4 bg-linear-to-b from-black/60 to-transparent pointer-events-none">
+          <div className="flex items-center gap-2 pointer-events-auto">
+            {media.length > 1 && (
+              <span className="text-white/80 text-xs font-black bg-black/20 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10">
+                {currentIndex + 1} / {media.length}
+              </span>
+            )}
+          </div>
+          
+          <div className="flex items-center gap-2 pointer-events-auto">
+            {postHref && (
+              <Button
+                asChild
+                variant="ghost"
+                size="sm"
+                className="text-white hover:bg-white/20 rounded-full bg-black/20 backdrop-blur-sm px-4 gap-2 h-10 hidden sm:flex"
+              >
+                <a href={postHref}>
+                  <ExternalLink className="size-4" />
+                  <span className="font-bold">View Post</span>
+                </a>
+              </Button>
+            )}
             <Button
-              asChild
               variant="ghost"
-              size="sm"
-              className="text-white hover:bg-white/20 rounded-full bg-black/20 backdrop-blur-sm px-4 gap-2 h-10 hidden sm:flex"
+              size="icon"
+              onClick={handleDownload}
+              className="text-white hover:bg-white/20 rounded-full bg-black/20 backdrop-blur-sm h-10 w-10"
+              title="Download"
             >
-              <a href={postHref}>
-                <ExternalLink className="size-4" />
-                <span className="font-bold">View Post</span>
-              </a>
+              <Download className="size-5" />
             </Button>
-          )}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleDownload}
-            className="text-white hover:bg-white/20 rounded-full bg-black/20 backdrop-blur-sm"
-            title="Download"
-          >
-            <Download className="size-5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleOpenOriginal}
-            className="text-white hover:bg-white/20 rounded-full bg-black/20 backdrop-blur-sm"
-            title="Open Original"
-          >
-            <ExternalLink className="size-5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onClose}
-            className="text-white hover:bg-white/20 rounded-full bg-black/20 backdrop-blur-sm"
-            title="Close"
-          >
-            <X className="size-5" />
-          </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleOpenOriginal}
+              className="text-white hover:bg-white/20 rounded-full bg-black/20 backdrop-blur-sm h-10 w-10"
+              title="Open Original"
+            >
+              <ExternalLink className="size-5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onClose}
+              className="text-white hover:bg-white/20 rounded-full bg-black/20 backdrop-blur-sm h-10 w-10"
+              title="Close"
+            >
+              <X className="size-5" />
+            </Button>
+          </div>
         </div>
 
-        <div className="relative w-full h-full flex items-center justify-center p-2 sm:p-8">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={src}
-            alt={alt || ""}
-            className="max-w-full max-h-[90vh] object-contain select-none animate-in zoom-in-95 duration-300 shadow-2xl rounded-lg"
-            onClick={(e) => e.stopPropagation()}
-          />
+        {/* Navigation Buttons */}
+        {media.length > 1 && (
+          <>
+            <div className="absolute left-4 top-1/2 -translate-y-1/2 z-50 hidden sm:block">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={(e) => { e.stopPropagation(); goToPrevious(); }}
+                disabled={currentIndex === 0}
+                className="text-white hover:bg-white/20 rounded-full bg-black/20 backdrop-blur-md h-14 w-14 disabled:opacity-30"
+              >
+                <ChevronLeft className="size-8" />
+              </Button>
+            </div>
+            <div className="absolute right-4 top-1/2 -translate-y-1/2 z-50 hidden sm:block">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={(e) => { e.stopPropagation(); goToNext(); }}
+                disabled={currentIndex === media.length - 1}
+                className="text-white hover:bg-white/20 rounded-full bg-black/20 backdrop-blur-md h-14 w-14 disabled:opacity-30"
+              >
+                <ChevronRight className="size-8" />
+              </Button>
+            </div>
+          </>
+        )}
+
+        <div className="relative w-full h-full flex items-center justify-center overflow-hidden">
+          <AnimatePresence initial={false} custom={direction} mode="wait">
+            <motion.div
+              key={currentIndex}
+              custom={direction}
+              variants={variants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={{
+                x: { type: "spring", stiffness: 300, damping: 30 },
+                opacity: { duration: 0.2 },
+                scale: { duration: 0.2 }
+              }}
+              drag="x"
+              dragConstraints={{ left: 0, right: 0 }}
+              dragElastic={1}
+              onDragEnd={(_, info) => {
+                if (info.offset.x < -100) goToNext();
+                else if (info.offset.x > 100) goToPrevious();
+              }}
+              className="absolute inset-0 flex items-center justify-center p-2 sm:p-12 cursor-grab active:cursor-grabbing"
+              onClick={onClose}
+            >
+              {currentMedia?.type === "image" ? (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img
+                  src={currentMedia.url}
+                  alt={currentMedia.alt || ""}
+                  className="max-w-full max-h-full object-contain select-none shadow-2xl"
+                  onClick={(e) => e.stopPropagation()}
+                />
+              ) : (
+                <video
+                  src={currentMedia?.url}
+                  controls
+                  autoPlay
+                  className="max-w-full max-h-full object-contain shadow-2xl"
+                  onClick={(e) => e.stopPropagation()}
+                />
+              )}
+            </motion.div>
+          </AnimatePresence>
         </div>
         
-        {alt && (
-          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-50 bg-black/40 backdrop-blur-md px-4 py-2 rounded-full border border-white/10 text-white text-xs font-medium max-w-[80vw] truncate animate-in slide-in-from-bottom-4 duration-500">
-            {alt}
+        {currentMedia?.alt && (
+          <div className="absolute bottom-20 sm:bottom-10 left-1/2 -translate-x-1/2 z-50 bg-black/60 backdrop-blur-md px-6 py-2.5 rounded-full border border-white/10 text-white text-sm font-bold max-w-[80vw] truncate">
+            {currentMedia.alt}
           </div>
         )}
 
-        {/* Mobile View Post Link */}
-        {postHref && (
-          <div className="sm:hidden absolute bottom-6 left-1/2 -translate-x-1/2 z-50 w-[90%]">
-            <Button asChild className="w-full rounded-2xl h-12 font-black shadow-xl" variant="default">
-              <a href={postHref}>View Original Post</a>
-            </Button>
+        {/* Mobile Swipe Indicator */}
+        {media.length > 1 && (
+          <div className="sm:hidden absolute bottom-6 left-1/2 -translate-x-1/2 z-50 flex gap-1.5">
+            {media.map((_, i) => (
+              <div 
+                key={i} 
+                className={`h-1.5 rounded-full transition-all duration-300 ${i === currentIndex ? 'w-6 bg-white' : 'w-1.5 bg-white/30'}`}
+              />
+            ))}
           </div>
         )}
       </DialogContent>
     </Dialog>
   );
 };
+

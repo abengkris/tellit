@@ -62,7 +62,7 @@ export function PostContentRenderer({
 }: PostContentRendererProps) {
   const [showFull, setShowFull] = useState(false);
   const [showSensitive, setShowSensitive] = useState(false);
-  const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
   const highlight = useMemo(() => isHighlight ? NDKHighlight.from(event) : null, [event, isHighlight]);
   const comment = useMemo(() => highlight?.context || event.tags.find(t => t[0] === "comment")?.[1], [highlight, event.tags]);
@@ -197,6 +197,25 @@ export function PostContentRenderer({
     return { textTokens: text, mediaTokens: media, audioTokens: audio, quoteTokens: quote, cardTokens: card, urlTokens: url };
   }, [tokens, renderQuotes, imetaMap]);
 
+  const allMediaForLightbox = useMemo(() => {
+    const media = mediaTokens.map(t => ({
+      url: t.value.replace(/[.,;]$/, ""),
+      type: t.type as "image" | "video",
+      alt: imetaMap.get(t.value.replace(/[.,;]$/, ""))?.alt
+    }));
+
+    const articleImage = event.tags.find(t => t[0] === 'image')?.[1];
+    if (isArticle && articleImage && !media.some(m => m.url === articleImage)) {
+      media.unshift({
+        url: articleImage,
+        type: "image",
+        alt: event.tags.find(t => t[0] === 'title')?.[1] || "Article hero"
+      });
+    }
+
+    return media;
+  }, [mediaTokens, imetaMap, event.tags, isArticle]);
+
   // NIP-18: Collect quotes from 'q' tags that aren't already in the text
   const extraQuotes = useMemo(() => {
     if (!renderQuotes) return [];
@@ -228,7 +247,7 @@ export function PostContentRenderer({
                 className="w-full h-full object-cover cursor-zoom-in"
                 onClick={(e) => {
                   e.stopPropagation();
-                  setLightboxSrc(event.tags.find(t => t[0] === 'image')?.[1] || null);
+                  setLightboxIndex(0);
                 }}
               />
             </div>
@@ -356,9 +375,19 @@ export function PostContentRenderer({
                   const cleanUrl = token.value.replace(/[.,;]$/, "");
                   const imeta = imetaMap.get(cleanUrl);
                   return token.type === "image" ? (
-                    <ImageEmbed key={i} url={cleanUrl} imeta={imeta} noMargin />
+                    <ImageEmbed 
+                      key={i} 
+                      url={cleanUrl} 
+                      imeta={imeta} 
+                      noMargin 
+                      onClick={() => setLightboxIndex(i)}
+                    />
                   ) : (
-                    <VideoEmbed key={i} url={cleanUrl} />
+                    <VideoEmbed 
+                      key={i} 
+                      url={cleanUrl} 
+                      onClick={() => setLightboxIndex(i)}
+                    />
                   );
                 })
               ) : (
@@ -381,9 +410,16 @@ export function PostContentRenderer({
                             noMargin 
                             objectFit="cover"
                             className="w-full h-full"
+                            onClick={() => setLightboxIndex(i)}
                           />
                         ) : (
-                          <div className="w-full h-full bg-black flex items-center justify-center">
+                          <div 
+                            className="w-full h-full bg-black flex items-center justify-center cursor-pointer"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setLightboxIndex(i);
+                            }}
+                          >
                             <video src={cleanUrl} className="w-full h-full object-cover" />
                             <div className="absolute inset-0 flex items-center justify-center bg-black/20">
                               <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white">
@@ -454,10 +490,10 @@ export function PostContentRenderer({
       ))}
 
       <Lightbox 
-        src={lightboxSrc || ""} 
-        alt={event.tags.find(t => t[0] === 'title')?.[1] || "Article image"} 
-        isOpen={!!lightboxSrc} 
-        onClose={() => setLightboxSrc(null)} 
+        media={allMediaForLightbox} 
+        initialIndex={lightboxIndex || 0}
+        isOpen={lightboxIndex !== null} 
+        onClose={() => setLightboxIndex(null)} 
       />
     </div>
   );

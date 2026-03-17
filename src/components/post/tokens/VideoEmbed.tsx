@@ -5,9 +5,10 @@ import { Play, Pause, Volume2, VolumeX, Maximize, Loader2 } from "lucide-react";
 
 interface VideoEmbedProps {
   url: string;
+  onClick?: () => void;
 }
 
-export function VideoEmbed({ url }: VideoEmbedProps) {
+export function VideoEmbed({ url, onClick }: VideoEmbedProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -117,7 +118,14 @@ export function VideoEmbed({ url }: VideoEmbedProps) {
       className="group relative rounded-2xl overflow-hidden bg-black max-h-[80vh] border border-gray-200 dark:border-gray-800 w-full mt-3 flex items-center justify-center cursor-pointer"
       onMouseEnter={() => setIsHovering(true)}
       onMouseLeave={() => setIsHovering(false)}
-      onClick={togglePlay}
+      onClick={(e) => {
+        if (onClick) {
+          e.stopPropagation();
+          onClick();
+        } else {
+          togglePlay(e);
+        }
+      }}
     >
       <video
         ref={videoRef}

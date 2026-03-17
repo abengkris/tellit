@@ -10,17 +10,18 @@ export function ImageEmbed({
   imeta, 
   className = "", 
   noMargin = false,
-  objectFit = "contain"
+  objectFit = "contain",
+  onClick
 }: { 
   url: string; 
   imeta?: ImetaMetadata;
   className?: string;
   noMargin?: boolean;
   objectFit?: "contain" | "cover";
+  onClick?: () => void;
 }) {
   const [error, setError] = useState(false);
   const [loaded, setLoaded] = useState(false);
-  const [showLightbox, setShowLightbox] = useState(false);
 
   // We'll skip optimization for now to ensure maximum compatibility
   const displayUrl = url;
@@ -88,15 +89,8 @@ export function ImageEmbed({
         loading="lazy"
         onClick={e => {
           e.stopPropagation();
-          setShowLightbox(true);
+          onClick?.();
         }}
-      />
-
-      <Lightbox 
-        src={url} 
-        alt={imeta?.alt} 
-        isOpen={showLightbox} 
-        onClose={() => setShowLightbox(false)} 
       />
     </div>
   );
