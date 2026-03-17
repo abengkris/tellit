@@ -400,8 +400,14 @@ export const PostCard = memo(({
                   {formatFullTimestamp(displayEvent.created_at)}
                 </div>
                 
-                {(combinedReposts > 0 || likes > 0 || totalSats > 0) && (
+                {(combinedReposts > 0 || likes > 0 || totalSats > 0 || comments > 0) && (
                   <div className="py-4 border-t border-border/50 flex items-center gap-6 text-sm">
+                    {comments > 0 && (
+                      <div className="flex items-center gap-1.5 hover:underline cursor-pointer" onClick={() => {}}>
+                        <span className="font-black text-foreground">{comments.toLocaleString()}</span>
+                        <span className="text-muted-foreground font-bold">Comments</span>
+                      </div>
+                    )}
                     {combinedReposts > 0 && (
                       <div className="flex items-center gap-1.5 hover:underline cursor-pointer" onClick={() => {}}>
                         <span className="font-black text-foreground">{combinedReposts.toLocaleString()}</span>

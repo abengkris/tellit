@@ -118,15 +118,15 @@ export function PostDetailContent({ noteId }: { noteId: string }) {
               <span className="bg-gray-200 dark:bg-gray-800 px-2 py-0.5 rounded text-[10px]">{replies.length}</span>
             </div>
 
-            {/* Direct Replies & Nested Threading */}
+            {/* Direct Replies Only (Flattened) */}
             <div className="flex flex-col">
               {replies.length > 0 ? (
                 <>
                   {replies.map(reply => (
-                    <ThreadNode 
+                    <PostCard 
                       key={reply.id} 
                       event={reply} 
-                      fetchReplies={fetchRepliesFor} 
+                      variant="feed"
                     />
                   ))}
                   {hasMoreReplies && (
@@ -141,7 +141,7 @@ export function PostDetailContent({ noteId }: { noteId: string }) {
                             <Loader2 size={16} className="animate-spin" />
                             Loading...
                           </span>
-                        ) : "Show more top-level replies"}
+                        ) : "Show more replies"}
                       </button>
                     </div>
                   )}
