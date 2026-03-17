@@ -102,7 +102,7 @@ export function HomeContent() {
               role="tab"
               aria-selected={activeTab === "forYou"}
               onClick={() => setActiveTab("forYou")}
-              className={`flex-none px-5 py-4 text-sm font-bold transition-colors hover:bg-gray-100 dark:hover:bg-gray-900 relative whitespace-nowrap outline-none focus-visible:bg-gray-100 dark:focus-visible:bg-gray-900 ${
+              className={`flex-none px-5 py-4 text-sm font-bold transition-colors hover:bg-gray-100 dark:hover:bg-gray-900 relative whitespace-nowrap outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 ${
                 activeTab === "forYou" ? "text-blue-500" : "text-gray-500"
               }`}
             >
@@ -119,7 +119,7 @@ export function HomeContent() {
               role="tab"
               aria-selected={activeTab === "following"}
               onClick={() => setActiveTab("following")}
-              className={`flex-none px-5 py-4 text-sm font-bold transition-colors hover:bg-gray-100 dark:hover:bg-gray-900 relative whitespace-nowrap outline-none focus-visible:bg-gray-100 dark:focus-visible:bg-gray-900 ${
+              className={`flex-none px-5 py-4 text-sm font-bold transition-colors hover:bg-gray-100 dark:hover:bg-gray-900 relative whitespace-nowrap outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 ${
                 activeTab === "following" ? "text-blue-500" : "text-gray-500"
               }`}
             >
@@ -138,7 +138,7 @@ export function HomeContent() {
                 role="tab"
                 aria-selected={activeTab === tag}
                 onClick={() => setActiveTab(tag)}
-                className={`flex-none px-5 py-4 text-sm font-bold transition-colors hover:bg-gray-100 dark:hover:bg-gray-900 relative whitespace-nowrap outline-none focus-visible:bg-gray-100 dark:focus-visible:bg-gray-900 ${
+                className={`flex-none px-5 py-4 text-sm font-bold transition-colors hover:bg-gray-100 dark:hover:bg-gray-900 relative whitespace-nowrap outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 ${
                   activeTab === tag ? "text-blue-500" : "text-gray-500"
                 }`}
               >
@@ -156,7 +156,7 @@ export function HomeContent() {
               role="tab"
               aria-selected={activeTab === "global"}
               onClick={() => setActiveTab("global")}
-              className={`flex-none px-5 py-4 text-sm font-bold transition-colors hover:bg-gray-100 dark:hover:bg-gray-900 relative whitespace-nowrap outline-none focus-visible:bg-gray-100 dark:focus-visible:bg-gray-900 ${
+              className={`flex-none px-5 py-4 text-sm font-bold transition-colors hover:bg-gray-100 dark:hover:bg-gray-900 relative whitespace-nowrap outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 ${
                 activeTab === "global" ? "text-blue-500" : "text-gray-500"
               }`}
             >
@@ -171,8 +171,9 @@ export function HomeContent() {
 
             <Link
               href="/settings/profile"
-              className="flex-none px-5 py-4 text-gray-400 hover:text-blue-500 transition-colors outline-none"
+              className="flex-none px-5 py-4 text-gray-400 hover:text-blue-500 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500"
               title="Manage Interests"
+              aria-label="Manage Interests"
             >
               <Settings size={18} />
             </Link>
@@ -335,7 +336,7 @@ function WoTStatusBanner({
       <div className="flex items-center gap-2 px-4 py-3 bg-blue-50/30 dark:bg-blue-900/5 text-[10px] text-blue-600 dark:text-blue-400 border-b border-gray-100 dark:border-gray-900 font-bold uppercase tracking-widest">
         <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse" />
         <span>Building Web of Trust…</span>
-      </div>
+        </div>
     );
   }
 

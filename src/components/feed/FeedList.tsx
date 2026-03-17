@@ -58,13 +58,13 @@ export function FeedList({
       {!isLoading && posts.length === 0 && (
         <div className="flex flex-col items-center">
           <div className="py-16 text-center px-4 w-full">
-            <p className="text-4xl mb-3">🌐</p>
+            <p className="text-4xl mb-3" aria-hidden="true">🌐</p>
             <p className="text-xl font-black">{emptyMessage}</p>
             <p className="text-sm mt-2 mb-8 max-w-xs mx-auto text-muted-foreground font-medium">Nostr is better with friends. Start by following someone or share your first thought!</p>
             
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
               <Button asChild size="lg" className="rounded-full font-black px-8 bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20">
-                <Link href="/search">
+                <Link href="/search" aria-label="Find people to follow">
                   <Search data-icon="inline-start" />
                   Find People to Follow
                 </Link>
@@ -74,6 +74,7 @@ export function FeedList({
                 size="lg" 
                 className="rounded-full font-black px-8"
                 onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                aria-label="Create your first post"
               >
                 <Plus data-icon="inline-start" />
                 Create a Post
@@ -91,7 +92,11 @@ export function FeedList({
       {/* Feed */}
       <div className="flex flex-col">
         {posts.map((event, index) => (
-          <React.Fragment key={event.id}>
+          <div 
+            key={event.id} 
+            className="flex flex-col"
+            style={{ contentVisibility: "auto", containIntrinsicSize: "0 200px" }}
+          >
             <ErrorBoundary fallback={
               <div className="p-4 text-xs text-muted-foreground italic border-b">
                 Failed to render post {event.id.slice(0, 8)}…
@@ -101,23 +106,23 @@ export function FeedList({
             </ErrorBoundary>
             {index < posts.length - 1 && <Separator />}
             {showSuggestions && index === 4 && (
-              <>
+              <div style={{ contentVisibility: "auto", containIntrinsicSize: "0 400px" }}>
                 <WhoToFollow />
                 <Separator />
-              </>
+              </div>
             )}
-          </React.Fragment>
+          </div>
         ))}
       </div>
 
       {/* Load more trigger + indicator */}
       <div ref={bottomRef} className="py-12 flex justify-center">
         {hasMore && posts.length > 0 && (
-          <div className="flex gap-1.5">
+          <div className="flex gap-1.5" aria-label="Loading more posts…">
             {[0, 1, 2].map(i => (
               <div
                 key={i}
-                className="w-2.5 h-2.5 bg-primary/40 rounded-full animate-bounce"
+                className="w-2.5 h-2.5 bg-primary/40 rounded-full animate-bounce motion-reduce:animate-none"
                 style={{ animationDelay: `${i * 150}ms` }}
               />
             ))}

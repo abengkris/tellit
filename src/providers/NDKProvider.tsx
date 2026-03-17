@@ -561,7 +561,19 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
         if (typeof walletRef.current.updateBalance === 'function') {
           await walletRef.current.updateBalance();
         }
-      } catch { /* ignore */ }
+        
+        // After updating (or if no update method), check the balance property
+        const balance = walletRef.current.balance;
+        if (balance !== undefined && balance !== null) {
+          if (typeof balance === 'number') {
+            stableDepsRef.current.setBalance(balance);
+          } else if (typeof (balance as { amount?: number }).amount === 'number') {
+            stableDepsRef.current.setBalance((balance as { amount: number }).amount);
+          }
+        }
+      } catch (err) {
+        console.error("[NDKProvider] refreshBalance failed:", err);
+      }
     }
   }, []);
 
@@ -576,7 +588,7 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
     isReady, 
     isWalletReady, 
     refreshBalance 
-  }), [ndk, messenger, sessions, activeSession, sync, relay, nutzapMonitor, isReady, isWalletReady]);
+  }), [ndk, messenger, sessions, activeSession, sync, relay, nutzapMonitor, isReady, isWalletReady, refreshBalance]);
 
   return (
     <NDKContext.Provider value={contextValue}>

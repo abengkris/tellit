@@ -116,7 +116,7 @@ export default function LoginPage() {
             <div className="inline-flex items-center justify-center w-16 h-16 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-500 rounded-2xl mb-6">
               <AlertTriangle size={32} />
             </div>
-            <h1 className="text-2xl font-bold mb-4">SAVE YOUR PRIVATE KEY!</h1>
+            <h1 className="text-2xl font-bold mb-4">Save your private key!</h1>
             <p className="text-gray-500 dark:text-gray-400 mb-6 text-sm">
               We generated a new Nostr identity for you. If you lose this key, you lose your account forever. We don&apos;t store it on our servers.
             </p>
@@ -139,10 +139,10 @@ export default function LoginPage() {
                 onClick={() => router.push("/onboarding")}
                 className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-6 rounded-2xl transition-all shadow-lg shadow-blue-500/20"
               >
-                I&apos;ve Saved It, Let&apos;s Go!
+                I&apos;ve saved it, let&apos;s go!
               </button>
               <p className="text-[10px] text-red-500 font-bold uppercase tracking-wider">
-                NO RECOVERY POSSIBLE IF LOST
+                No recovery possible if lost
               </p>
             </div>
           </div>
@@ -176,8 +176,8 @@ export default function LoginPage() {
               className="w-full flex items-center justify-center space-x-3 bg-white dark:bg-gray-800 border-2 border-gray-100 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-500 text-gray-900 dark:text-white font-bold py-4 px-6 rounded-2xl transition-all group disabled:opacity-50"
             >
               <LogIn size={20} className="group-hover:text-blue-500" />
-              <span>
-                {!isReady ? "Initializing..." : (isLoading ? "Connecting..." : "Use Browser Extension")}
+              <span aria-live="polite">
+                {!isReady ? "Initializing…" : (isLoading ? "Connecting…" : "Use browser extension")}
               </span>
             </button>
 
@@ -186,8 +186,10 @@ export default function LoginPage() {
               disabled={isLoading || !isReady}
               className="w-full flex items-center justify-center space-x-3 bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-6 rounded-2xl transition-all shadow-lg shadow-blue-500/20 disabled:opacity-50"
             >
-              {isLoading ? <Loader2 className="animate-spin" /> : <PlusCircle size={20} />}
-              <span>{!isReady ? "Please wait..." : "Create New Identity"}</span>
+              <div aria-live="polite" className="flex items-center gap-2">
+                {isLoading ? <Loader2 className="animate-spin" /> : <PlusCircle size={20} />}
+                <span>{!isReady ? "Please wait…" : "Create new identity"}</span>
+              </div>
             </button>
           </div>
 
@@ -204,6 +206,7 @@ export default function LoginPage() {
             <button
               onClick={() => setLoginMethod('nsec')}
               className={`flex-1 flex items-center justify-center space-x-2 py-2 rounded-lg text-xs font-bold transition-all ${loginMethod === 'nsec' ? 'bg-white dark:bg-gray-800 shadow-sm text-blue-500' : 'text-gray-500'}`}
+              aria-pressed={loginMethod === 'nsec'}
             >
               <Key size={14} />
               <span>nsec</span>
@@ -211,6 +214,7 @@ export default function LoginPage() {
             <button
               onClick={() => setLoginMethod('ncryptsec')}
               className={`flex-1 flex items-center justify-center space-x-2 py-2 rounded-lg text-xs font-bold transition-all ${loginMethod === 'ncryptsec' ? 'bg-white dark:bg-gray-800 shadow-sm text-blue-500' : 'text-gray-500'}`}
+              aria-pressed={loginMethod === 'ncryptsec'}
             >
               <Lock size={14} />
               <span>ncryptsec</span>
@@ -218,6 +222,7 @@ export default function LoginPage() {
             <button
               onClick={() => setLoginMethod('bunker')}
               className={`flex-1 flex items-center justify-center space-x-2 py-2 rounded-lg text-xs font-bold transition-all ${loginMethod === 'bunker' ? 'bg-white dark:bg-gray-800 shadow-sm text-blue-500' : 'text-gray-500'}`}
+              aria-pressed={loginMethod === 'bunker'}
             >
               <Database size={14} />
               <span>Bunker</span>
@@ -229,7 +234,7 @@ export default function LoginPage() {
               <div className="bg-red-50 dark:bg-red-900/10 p-3 rounded-xl border border-red-100 dark:border-red-900/30 flex items-start space-x-3 mb-2">
                 <AlertTriangle size={16} className="text-red-500 shrink-0 mt-0.5" />
                 <p className="text-[11px] text-red-600 dark:text-red-400 text-left">
-                  Security Warning: Pasting your private key is risky. Use a browser extension like Alby for better security.
+                  Security warning: Pasting your private key is risky. Use a browser extension like Alby for better security.
                 </p>
               </div>
             )}
@@ -241,7 +246,8 @@ export default function LoginPage() {
                 </div>
                 <input
                   type="text"
-                  placeholder="bunker://... or user@provider.com"
+                  placeholder="bunker://… or user@provider.com"
+                  aria-label="Bunker URI or handle"
                   value={bunkerUri}
                   onChange={(e) => setBunkerUri(e.target.value)}
                   className="block w-full pl-12 pr-4 py-4 border border-gray-200 dark:border-gray-800 rounded-2xl bg-gray-50 dark:bg-black focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all font-mono text-sm"
@@ -255,7 +261,8 @@ export default function LoginPage() {
                   </div>
                   <input
                     type={showPassword ? "text" : "password"}
-                    placeholder={loginMethod === 'ncryptsec' ? "ncryptsec1..." : "nsec1... or hex key"}
+                    placeholder={loginMethod === 'ncryptsec' ? "ncryptsec1…" : "nsec1… or hex key"}
+                    aria-label={loginMethod === 'ncryptsec' ? "Encrypted private key" : "Private key"}
                     value={privateKey}
                     onChange={(e) => setPrivateKey(e.target.value)}
                     className="block w-full pl-12 pr-12 py-4 border border-gray-200 dark:border-gray-800 rounded-2xl bg-gray-50 dark:bg-black focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all font-mono text-sm"
@@ -263,6 +270,7 @@ export default function LoginPage() {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
+                    aria-label={showPassword ? "Hide private key" : "Show private key"}
                     className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-gray-600"
                   >
                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -277,6 +285,7 @@ export default function LoginPage() {
                     <input
                       type={showNcryptPassword ? "text" : "password"}
                       placeholder="Enter decryption password"
+                      aria-label="Decryption password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       className="block w-full pl-12 pr-12 py-4 border border-gray-200 dark:border-gray-800 rounded-2xl bg-gray-50 dark:bg-black focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm"
@@ -284,6 +293,7 @@ export default function LoginPage() {
                     <button
                       type="button"
                       onClick={() => setShowNcryptPassword(!showNcryptPassword)}
+                      aria-label={showNcryptPassword ? "Hide password" : "Show password"}
                       className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-gray-600"
                     >
                       {showNcryptPassword ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -298,7 +308,9 @@ export default function LoginPage() {
               disabled={isLoading || !isReady || (loginMethod === 'nsec' && !privateKey) || (loginMethod === 'ncryptsec' && (!privateKey || !password)) || (loginMethod === 'bunker' && !bunkerUri)}
               className="w-full bg-gray-900 dark:bg-white text-white dark:text-black font-bold py-4 px-6 rounded-2xl hover:opacity-90 transition-all disabled:opacity-50 shadow-lg"
             >
-              {!isReady ? "Initializing..." : (isLoading ? "Please wait..." : "Login")}
+              <span aria-live="polite">
+                {!isReady ? "Initializing…" : (isLoading ? "Please wait…" : "Login")}
+              </span>
             </button>
           </form>
 

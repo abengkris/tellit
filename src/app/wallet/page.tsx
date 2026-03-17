@@ -148,10 +148,13 @@ export default function WalletPage() {
         // 1. Fetch from wallet provider (NWC/Cashu)
         let walletTxs: NDKWalletTransaction[] = [];
         if (wallet) {
+          console.log(`[WalletPage] Fetching transactions from ${walletType} wallet...`);
           walletTxs = await fetchTransactions();
+          console.log(`[WalletPage] Received ${walletTxs.length} transactions from wallet`);
         }
 
         // 2. Fetch Zap Receipts (Kind 9735) as fallback/supplement
+        console.log(`[WalletPage] Fetching Zap receipts for ${user.pubkey}...`);
         const filter: NDKFilter = {
           kinds: [9735],
           authors: [user.pubkey], 

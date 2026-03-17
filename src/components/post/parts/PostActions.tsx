@@ -267,12 +267,13 @@ export const PostActions = memo(({
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          <span 
-            className="text-xs cursor-pointer hover:underline ml-0.5 pr-2 py-2"
+          <button 
+            className="text-xs cursor-pointer hover:underline ml-0.5 pr-2 py-2 outline-none focus-visible:underline focus-visible:text-primary"
             onClick={openRepostsModal}
+            aria-label={`${optimisticCombined} reposts and quotes`}
           >
             {optimisticCombined > 0 ? formatCount(optimisticCombined) : ""}
-          </span>
+          </button>
         </div>
 
         {/* Like */}
@@ -297,12 +298,13 @@ export const PostActions = memo(({
             </TooltipTrigger>
             <TooltipContent side="bottom">Like</TooltipContent>
           </Tooltip>
-          <span 
-            className="text-xs cursor-pointer hover:underline ml-0.5 pr-2 py-2"
+          <button 
+            className="text-xs cursor-pointer hover:underline ml-0.5 pr-2 py-2 outline-none focus-visible:underline focus-visible:text-pink-500"
             onClick={openLikesModal}
+            aria-label={`${optimisticLikes} likes`}
           >
             {optimisticLikes > 0 ? formatCount(optimisticLikes) : ""}
-          </span>
+          </button>
         </div>
 
         {/* Zap */}
@@ -330,15 +332,16 @@ export const PostActions = memo(({
             </TooltipTrigger>
             <TooltipContent side="bottom">Zap (Right-click for custom)</TooltipContent>
           </Tooltip>
-          <span 
+          <button 
             className={cn(
-              "text-xs cursor-pointer hover:underline ml-0.5 pr-2 py-2",
+              "text-xs cursor-pointer hover:underline ml-0.5 pr-2 py-2 outline-none focus-visible:underline",
               optimisticZaps > 0 && "text-yellow-600 dark:text-yellow-400 font-bold"
             )}
             onClick={openZapsModal}
+            aria-label={`${optimisticZaps} zaps`}
           >
             {optimisticZaps > 0 ? formatCount(optimisticZaps) : ""}
-          </span>
+          </button>
         </div>
 
         {/* Bookmark */}

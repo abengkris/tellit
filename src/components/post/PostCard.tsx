@@ -225,7 +225,7 @@ export const PostCard = memo(({
       try {
         await navigator.share({
           title: `Post by ${display_name} on Tell it!`,
-          text: displayEvent.content.slice(0, 100) + (displayEvent.content.length > 100 ? '...' : ''),
+          text: displayEvent.content.slice(0, 100) + (displayEvent.content.length > 100 ? '…' : ''),
           url: shareUrl,
         });
       } catch (err) {

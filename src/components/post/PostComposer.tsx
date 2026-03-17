@@ -284,6 +284,7 @@ export const PostComposer: React.FC<PostComposerProps> = ({
             onClick={() => setCursorPos(textareaRef.current?.selectionStart || 0)}
             onKeyUp={() => setCursorPos(textareaRef.current?.selectionStart || 0)}
             placeholder={placeholder}
+            aria-label={placeholder}
             autoFocus={autoFocus}
             rows={3}
             className="w-full bg-transparent text-lg resize-none border-none focus-visible:ring-0 placeholder:text-muted-foreground py-2 shadow-none min-h-[100px]"
@@ -380,7 +381,7 @@ export const PostComposer: React.FC<PostComposerProps> = ({
                     className="text-primary hover:bg-primary/10 rounded-full"
                     aria-label="Add media"
                   >
-                    {isUploading ? <Loader2 className="size-5 animate-spin" /> : <ImageIcon className="size-5" />}
+                    {isUploading ? <Loader2 className="size-5 animate-spin" /> : <ImageIcon className="size-5" aria-hidden="true" />}
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent side="bottom">Add media</TooltipContent>
@@ -396,7 +397,7 @@ export const PostComposer: React.FC<PostComposerProps> = ({
                     className={cn("text-primary hover:bg-primary/10 rounded-full", showEmojiPicker && "bg-primary/10")}
                     aria-label="Add emoji"
                   >
-                    <Smile className="size-5" />
+                    <Smile className="size-5" aria-hidden="true" />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent side="bottom">Add emoji</TooltipContent>
@@ -413,12 +414,12 @@ export const PostComposer: React.FC<PostComposerProps> = ({
                       if (!showPollEditor) setShowCollaboratorEditor(false);
                     }}
                     className={cn("text-primary hover:bg-primary/10 rounded-full", showPollEditor && "bg-primary/10")}
-                    aria-label="Poll"
+                    aria-label="Add poll"
                   >
-                    <BarChart2 className="size-5" />
+                    <BarChart2 className="size-5" aria-hidden="true" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent side="bottom">Poll</TooltipContent>
+                <TooltipContent side="bottom">Add poll</TooltipContent>
               </Tooltip>
 
               <Tooltip>
@@ -432,12 +433,12 @@ export const PostComposer: React.FC<PostComposerProps> = ({
                       if (!showCollaboratorEditor) setShowPollEditor(false);
                     }}
                     className={cn("text-purple-500 hover:bg-purple-500/10 rounded-full", showCollaboratorEditor && "bg-purple-500/10")}
-                    aria-label="Add Collaborator (Zap Split)"
+                    aria-label="Add collaborator (zap split)"
                   >
-                    <Users className="size-5" />
+                    <Users className="size-5" aria-hidden="true" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent side="bottom">Zap Split</TooltipContent>
+                <TooltipContent side="bottom">Zap split</TooltipContent>
               </Tooltip>
             </div>
 

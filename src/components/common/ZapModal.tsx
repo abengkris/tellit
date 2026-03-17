@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { NDKEvent, NDKUser, NDKSubscriptionCacheUsage } from "@nostr-dev-kit/ndk";
 import { useNDK } from "@/hooks/useNDK";
+import { useWallet } from "@/hooks/useWallet";
 import { createZapInvoice, listenForZapReceipt } from "@/lib/actions/zap";
 import { Zap, Loader2, CheckCircle2, ExternalLink, Copy } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
@@ -38,7 +39,8 @@ interface ZapModalProps {
 }
 
 export const ZapModal: React.FC<ZapModalProps> = ({ event, user, onClose, onSuccess }) => {
-  const { ndk, refreshBalance } = useNDK();
+  const { ndk, refreshBalance: refreshNDKBalance } = useNDK();
+  const { wallet, balance, walletType } = useWallet();
   const { addToast, defaultZapAmount } = useUIStore();
   const [amount, setAmount] = useState<number>(defaultZapAmount || 21);
   const [comment, setComment] = useState("");
@@ -60,12 +62,12 @@ export const ZapModal: React.FC<ZapModalProps> = ({ event, user, onClose, onSucc
       setPaid(true);
       triggerZapConfetti();
       addToast("Zap received!", "success");
-      refreshBalance(); // Update balance in store
+      refreshNDKBalance(); // Update balance in store
       if (onSuccess) onSuccess();
     }, !!user);
 
     return () => stopListening();
-  }, [ndk, event, user, invoice, onSuccess, addToast, target, refreshBalance]);
+  }, [ndk, event, user, invoice, onSuccess, addToast, target, refreshNDKBalance]);
 
   const handleZap = async () => {
     if (!ndk || loading || !target) return;
@@ -96,13 +98,28 @@ export const ZapModal: React.FC<ZapModalProps> = ({ event, user, onClose, onSucc
       }
 
       console.log(`[ZapModal] Creating zap invoice for ${lud16 || targetUser?.pubkey}...`);
+      
+      // Force refresh balance right before check
+      await refreshNDKBalance();
+
+      // Balance check for internal wallets (Cashu/NWC)
+      if (wallet && (walletType === 'nip-60' || walletType === 'nwc')) {
+        // If balance is exactly 0 or null, or less than requested amount
+        if (balance === 0 || balance === null || balance < amount) {
+          const currentBalance = balance || 0;
+          addToast(`Insufficient balance. You have ${currentBalance} sats, but need ${amount}.`, "error");
+          setLoading(false);
+          return;
+        }
+      }
+
       const { invoice: bolt11, alreadyPaid, error } = await createZapInvoice(ndk, amount * 1000, zapTarget, comment);
       
       if (alreadyPaid) {
         setPaid(true);
         triggerZapConfetti();
         addToast("Zap sent via connected wallet!", "success");
-        refreshBalance(); // Update balance in store
+        refreshNDKBalance(); // Update balance in store
         if (onSuccess) onSuccess();
         return;
       }

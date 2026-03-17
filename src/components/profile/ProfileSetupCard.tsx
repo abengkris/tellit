@@ -52,7 +52,7 @@ export const ProfileSetupCard = ({ pubkey }: { pubkey: string }) => {
         <div className="flex justify-between items-start">
           <div className="space-y-1">
             <CardTitle className="text-blue-900 dark:text-blue-100 font-black">Complete your profile</CardTitle>
-            <CardDescription className="text-blue-700 dark:text-blue-400 font-medium">Verified accounts get more engagement</CardDescription>
+            <CardDescription className="text-blue-700 dark:text-blue-400 font-medium">Get more engagement with a verified account</CardDescription>
           </div>
           <CardAction>
             <Button 
@@ -60,6 +60,7 @@ export const ProfileSetupCard = ({ pubkey }: { pubkey: string }) => {
               size="icon-xs" 
               onClick={() => setIsVisible(false)}
               className="text-blue-400 hover:text-blue-600 dark:text-blue-800 dark:hover:text-blue-600"
+              aria-label="Dismiss setup card"
             >
               <X />
             </Button>
@@ -91,7 +92,7 @@ export const ProfileSetupCard = ({ pubkey }: { pubkey: string }) => {
                 {!step.completed && (
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Button variant="ghost" size="icon-xs" className="size-3 p-0 h-auto">
+                      <Button variant="ghost" size="icon-xs" className="size-3 p-0 h-auto" aria-label={`More info about ${step.label}`}>
                         <Info className="size-3 text-muted-foreground" />
                       </Button>
                     </TooltipTrigger>
@@ -107,7 +108,7 @@ export const ProfileSetupCard = ({ pubkey }: { pubkey: string }) => {
 
         <Button asChild className="w-full bg-blue-500 hover:bg-blue-600 text-white rounded-2xl font-black shadow-lg shadow-blue-500/20 active:scale-[0.98]">
           <Link href="/settings/profile">
-            Setup My Profile
+            Set Up My Profile
             <ArrowRight data-icon="inline-end" />
           </Link>
         </Button>

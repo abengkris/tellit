@@ -60,7 +60,7 @@ export const Avatar: React.FC<AvatarProps> = ({
       <AvatarFallback>
         <Image
           src={robohashUrl}
-          alt=""
+          alt={`Generated avatar for ${pubkey}`}
           width={size}
           height={size}
           className="aspect-square size-full object-cover rounded-full"
