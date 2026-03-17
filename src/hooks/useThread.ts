@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import { NDKEvent, NDKFilter, NDKRelaySet, eventIsReply, getRootEventId } from "@nostr-dev-kit/ndk";
+import { NDKEvent, NDKFilter, NDKRelaySet, eventIsReply, getRootEventId, NDKSubscriptionCacheUsage } from "@nostr-dev-kit/ndk";
 import { useNDK } from "@/hooks/useNDK";
 
 export function useThread(focalId?: string, hintRelays?: string[]) {
@@ -79,7 +79,8 @@ export function useThread(focalId?: string, hintRelays?: string[]) {
       return;
     }
 
-    console.log("[useThread] Starting fetch for", focalId, "with relays:", relaySet?.relays?.map(r => r.url));
+    const relayUrls = relaySet ? Array.from(relaySet.relays).map(r => r.url) : [];
+    console.log("[useThread] Starting fetch for", focalId, "with relays:", relayUrls);
     lastProcessedId.current = focalId;
     setLoading(true);
     
@@ -93,7 +94,7 @@ export function useThread(focalId?: string, hintRelays?: string[]) {
       // 1. Fetch the focal post
       console.log("[useThread] Fetching focal event...");
       // Try to get from cache first for speed
-      let focal = await ndk.fetchEvent(focalId, { cacheUsage: 1 }, relaySet); // 1 is CACHE_FIRST
+      let focal = await ndk.fetchEvent(focalId, { cacheUsage: NDKSubscriptionCacheUsage.CACHE_FIRST }, relaySet);
       
       if (!focal) {
         // If not in cache, fetch from relays
@@ -121,7 +122,7 @@ export function useThread(focalId?: string, hintRelays?: string[]) {
       console.log("[useThread] Ancestor IDs to fetch:", idsToFetch);
       
       if (idsToFetch.length > 0) {
-        const ancestorEvents = await ndk.fetchEvents({ ids: idsToFetch }, { cacheUsage: 1 }, relaySet);
+        const ancestorEvents = await ndk.fetchEvents({ ids: idsToFetch }, { cacheUsage: NDKSubscriptionCacheUsage.CACHE_FIRST }, relaySet);
         const sortedAncestors = Array.from(ancestorEvents).sort((a, b) => (a.created_at ?? 0) - (b.created_at ?? 0));
         console.log(`[useThread] Found ${sortedAncestors.length} ancestors`);
         setAncestors(sortedAncestors);
