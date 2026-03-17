@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 
-export type WalletType = 'nwc' | 'none';
+export type WalletType = 'nwc' | 'nip-60' | 'webln' | 'none';
 
 interface WalletInfo {
   alias?: string;
@@ -12,12 +12,14 @@ interface WalletInfo {
 
 export interface EncryptedData {
   nwcPairingCode?: string | null;
+  cashuMints?: string[] | null;
 }
 
 interface WalletState {
   walletType: WalletType;
   // Raw data (Persisted in localStorage, but cleared when locked if PIN exists)
   nwcPairingCode: string | null;
+  cashuMints: string[];
   
   // Persisted fields
   isLocked: boolean;
@@ -27,11 +29,13 @@ interface WalletState {
   
   // Shared UI state
   balance: number | null;
+  balanceLastUpdated: number | null;
   info: WalletInfo | null;
   
   // Actions
   setWalletType: (type: WalletType) => void;
   setNwcPairingCode: (code: string | null) => void;
+  setCashuMints: (mints: string[]) => void;
   setBalance: (balance: number | null) => void;
   setInfo: (info: WalletInfo | null) => void;
   
@@ -47,7 +51,9 @@ export const useWalletStore = create<WalletState>()(
     (set) => ({
       walletType: 'none',
       nwcPairingCode: null,
+      cashuMints: ["https://8333.pw"],
       balance: null,
+      balanceLastUpdated: null,
       info: null,
       
       isLocked: false,
@@ -57,7 +63,8 @@ export const useWalletStore = create<WalletState>()(
 
       setWalletType: (walletType) => set({ walletType, balance: null, info: null }),
       setNwcPairingCode: (code) => set({ nwcPairingCode: code, walletType: code ? 'nwc' : 'none' }),
-      setBalance: (balance) => set({ balance }),
+      setCashuMints: (cashuMints) => set({ cashuMints }),
+      setBalance: (balance) => set({ balance, balanceLastUpdated: Date.now() }),
       setInfo: (info) => set({ info }),
 
       setPin: (pinHash, pinSalt, encryptedData) => set({ 
@@ -69,6 +76,7 @@ export const useWalletStore = create<WalletState>()(
       
       unlock: (data) => set({
         nwcPairingCode: data.nwcPairingCode || null,
+        cashuMints: data.cashuMints || ["https://8333.pw"],
         isLocked: false
       }),
 
@@ -80,7 +88,9 @@ export const useWalletStore = create<WalletState>()(
       resetWallet: () => set({ 
         walletType: 'none', 
         nwcPairingCode: null, 
+        cashuMints: ["https://8333.pw"],
         balance: null, 
+        balanceLastUpdated: null,
         info: null,
         isLocked: false,
         pinHash: null,
@@ -94,6 +104,7 @@ export const useWalletStore = create<WalletState>()(
       partialize: (state) => ({
         walletType: state.walletType,
         nwcPairingCode: state.nwcPairingCode,
+        cashuMints: state.cashuMints,
         pinHash: state.pinHash,
         pinSalt: state.pinSalt,
         encryptedData: state.encryptedData,

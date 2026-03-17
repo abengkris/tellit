@@ -5,7 +5,7 @@ import NDK, { NDKEvent, NDKCacheAdapter, NDKRelay, NDKRelayAuthPolicies, NDKNip4
 import NDKCacheAdapterDexie from "@nostr-dev-kit/ndk-cache-dexie";
 import { NDKMessenger, CacheModuleStorage, NDKMessage } from "@nostr-dev-kit/messages";
 import { NDKSessionManager, LocalStorage, NDKSession } from "@nostr-dev-kit/sessions";
-import { NDKNWCWallet } from "@nostr-dev-kit/wallet";
+import { NDKNWCWallet, NDKCashuWallet, NDKWebLNWallet, NDKNutzapMonitor, NDKWallet } from "@nostr-dev-kit/wallet";
 import { NDKSync } from "@nostr-dev-kit/sync";
 import { NDKStore } from "@nostrify/ndk";
 import { NStore } from "@nostrify/nostrify";
@@ -27,6 +27,7 @@ export interface NDKContextType {
   activeSession: NDKSession | null;
   sync: NDKSync | null;
   relay: NStore | null;
+  nutzapMonitor: NDKNutzapMonitor | null;
   isReady: boolean;
   isWalletReady: boolean;
   refreshBalance: () => Promise<void>;
@@ -39,6 +40,7 @@ export const NDKContext = createContext<NDKContextType>({
   activeSession: null,
   sync: null,
   relay: null,
+  nutzapMonitor: null,
   isReady: false,
   isWalletReady: false,
   refreshBalance: async () => {},
@@ -51,6 +53,7 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
   const [activeSession, setActiveSession] = useState<NDKSession | null>(null);
   const [sync, setSync] = useState<NDKSync | null>(null);
   const [relay, setRelay] = useState<NStore | null>(null);
+  const [nutzapMonitor, setNutzapMonitor] = useState<NDKNutzapMonitor | null>(null);
   const [isReady, setIsReady] = useState(false);
   const [isWalletReady, setIsWalletReady] = useState(false);
   
@@ -74,6 +77,7 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
   const { 
     walletType, 
     nwcPairingCode, 
+    cashuMints,
     setBalance, 
     setInfo,
     isLocked
@@ -81,68 +85,85 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
   
   const messengerRef = useRef<NDKMessenger | null>(null);
   const sessionsRef = useRef<NDKSessionManager | null>(null);
-  const walletRef = useRef<NDKNWCWallet | null>(null);
+  const walletRef = useRef<NDKWallet | null>(null);
+  const nutzapMonitorRef = useRef<NDKNutzapMonitor | null>(null);
   const initializingRef = useRef(false);
-  const lastPairingCodeRef = useRef<string | null>(null);
   const invalidSigCountByRelay = useRef(new Map<string, number>());
   const lastToastTime = useRef(0);
 
   const initWallet = useCallback(async (instance: NDK) => {
-    if (stableDepsRef.current.nwcPairingCode && !stableDepsRef.current.isLocked) {
-      if (lastPairingCodeRef.current === stableDepsRef.current.nwcPairingCode && walletRef.current) {
-        return;
-      }
+    if (stableDepsRef.current.isLocked) {
+      if (instance.wallet) instance.wallet = undefined;
+      setIsWalletReady(false);
+      walletRef.current = null;
+      return;
+    }
 
-      console.log("[NDKProvider] Initializing NWC wallet...");
-      try {
-        const nwc = new NDKNWCWallet(instance, { 
+    const type = stableDepsRef.current.walletType;
+    if (type === 'none') {
+      if (instance.wallet) instance.wallet = undefined;
+      setIsWalletReady(false);
+      walletRef.current = null;
+      return;
+    }
+
+    console.log(`[NDKProvider] Initializing ${type} wallet...`);
+    try {
+      let wallet: NDKWallet | null = null;
+
+      if (type === 'nwc' && stableDepsRef.current.nwcPairingCode) {
+        wallet = new NDKNWCWallet(instance, { 
           pairingCode: stableDepsRef.current.nwcPairingCode,
           timeout: 30000
         });
+      } else if (type === 'nip-60') {
+        const cashuWallet = new NDKCashuWallet(instance);
+        cashuWallet.mints = stableDepsRef.current.cashuMints;
+        wallet = cashuWallet;
+      } else if (type === 'webln') {
+        wallet = new NDKWebLNWallet(instance);
+      }
+
+      if (!wallet) return;
+
+      wallet.on("ready", () => {
+        console.log(`[NDKProvider] ${type} wallet ready`);
+        setIsWalletReady(true);
+        walletRef.current = wallet;
+        instance.wallet = wallet;
         
-        nwc.on("ready", () => {
-          console.log("[NDKProvider] NWC wallet ready");
-          setIsWalletReady(true);
-          walletRef.current = nwc;
-          lastPairingCodeRef.current = stableDepsRef.current.nwcPairingCode;
-          
-          if (stableDepsRef.current.walletType === 'nwc') {
-            instance.wallet = nwc;
-            stableDepsRef.current.addToast("NWC Wallet connected", "success");
-            nwc.getInfo().then((info) => { if (info) stableDepsRef.current.setInfo(info); }).catch(() => {});
-            nwc.updateBalance().catch(() => {});
-          }
-        });
-
-        nwc.on("balance_updated", (balance?: { amount: number }) => {
-          if (stableDepsRef.current.walletType === 'nwc') stableDepsRef.current.setBalance(balance?.amount || 0);
-        });
-
-        // Some versions of NDK might already be ready if created with pairing code
-        // and its internal async init finished quickly.
-        // NDK-wallet usually emits "ready" even if we attach listener late, 
-        // but let's check status if possible.
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        if ((nwc as any).status === "ready") {
-          setIsWalletReady(true);
-          walletRef.current = nwc;
-          if (stableDepsRef.current.walletType === 'nwc') {
-            instance.wallet = nwc;
-            nwc.getInfo().then((info) => { if (info) stableDepsRef.current.setInfo(info); }).catch(() => {});
-            nwc.updateBalance().catch(() => {});
-          }
+        if (nutzapMonitorRef.current) {
+          nutzapMonitorRef.current.wallet = wallet;
         }
-      } catch (err) {
-        console.error("[NDKProvider] Failed to initialize NWC wallet:", err);
+
+        stableDepsRef.current.addToast(`${type.toUpperCase()} Wallet connected`, "success");
+        
+        if (wallet instanceof NDKNWCWallet) {
+          wallet.getInfo().then((info) => { if (info) stableDepsRef.current.setInfo(info); }).catch(() => {});
+        }
+        
+        wallet.updateBalance?.().catch(() => {});
+      });
+
+      wallet.on("balance_updated", (balance?: { amount: number }) => {
+        stableDepsRef.current.setBalance(balance?.amount || 0);
+      });
+
+      // Status check for immediate ready
+      if (wallet.status === "ready") {
+        setIsWalletReady(true);
+        walletRef.current = wallet;
+        instance.wallet = wallet;
+        wallet.updateBalance?.().catch(() => {});
       }
-    } else {
-      // Clear wallet if pairing code is gone or locked
-      if (instance.wallet && instance.wallet instanceof NDKNWCWallet) {
-        instance.wallet = undefined;
-        setIsWalletReady(false);
-        walletRef.current = null;
-        lastPairingCodeRef.current = null;
+
+      // If NIP-60, we need to start it
+      if (wallet instanceof NDKCashuWallet) {
+        wallet.start();
       }
+
+    } catch (err) {
+      console.error(`[NDKProvider] Failed to initialize ${type} wallet:`, err);
     }
   }, []);
 
@@ -151,7 +172,7 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
     if (ndk) {
       initWallet(ndk);
     }
-  }, [ndk, nwcPairingCode, isLocked, initWallet]);
+  }, [ndk, nwcPairingCode, cashuMints, walletType, isLocked, initWallet]);
 
   // Memoize stable refs for dependencies that change but shouldn't re-trigger NDK init
   const stableDepsRef = useRef({
@@ -164,6 +185,7 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
     browserNotificationsEnabled,
     relayAuthStrategy,
     nwcPairingCode,
+    cashuMints,
     setBalance,
     setInfo,
     walletType,
@@ -185,6 +207,7 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
       browserNotificationsEnabled,
       relayAuthStrategy,
       nwcPairingCode,
+      cashuMints,
       setBalance,
       setInfo,
       walletType,
@@ -419,6 +442,35 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
       setRelay(new NDKStore(instance as any));
 
       const currentPubkey = sessionManager.activePubkey;
+
+      // Initialize Nutzap Monitor if logged in
+      if (currentPubkey) {
+        const user = instance.getUser({ pubkey: currentPubkey });
+        const monitor = new NDKNutzapMonitor(instance, user, {});
+        
+        if (walletRef.current) {
+          monitor.wallet = walletRef.current;
+        }
+
+        monitor.on("redeemed", (events, amount) => {
+          console.log(`[NutzapMonitor] Redeemed ${amount} sats from ${events.length} nutzaps`);
+          stableDepsRef.current.addToast(`Received ${amount} sats via Nutzap!`, "success");
+          walletRef.current?.updateBalance?.();
+        });
+
+        monitor.on("seen_in_unknown_mint", (event) => {
+          console.log("[NutzapMonitor] Nutzap seen in unknown mint", event.id);
+        });
+
+        monitor.on("failed", (event, error) => {
+          console.error("[NutzapMonitor] Nutzap redemption failed", event.id, error);
+        });
+
+        monitor.start({});
+        nutzapMonitorRef.current = monitor;
+        setNutzapMonitor(monitor);
+      }
+
       let msgInstance: NDKMessenger | null = null;
       if (currentPubkey) {
         try {
@@ -498,6 +550,7 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
     return () => {
       unsubscribeSessions();
       if (messengerRef.current) try { messengerRef.current.destroy(); } catch { /* ignore */ }
+      if (nutzapMonitorRef.current) try { nutzapMonitorRef.current.stop(); } catch { /* ignore */ }
       initializingRef.current = false;
     };
   }, [initWallet]);
@@ -519,10 +572,11 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
     activeSession, 
     sync,
     relay,
+    nutzapMonitor,
     isReady, 
     isWalletReady, 
     refreshBalance 
-  }), [ndk, messenger, sessions, activeSession, sync, relay, isReady, isWalletReady]);
+  }), [ndk, messenger, sessions, activeSession, sync, relay, nutzapMonitor, isReady, isWalletReady]);
 
   return (
     <NDKContext.Provider value={contextValue}>
