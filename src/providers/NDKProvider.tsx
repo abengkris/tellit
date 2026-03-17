@@ -440,6 +440,36 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
       const connectPromise = instance.connect();
       const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 10000));
 
+      const startMessenger = async () => {
+        if (sessionManager.activePubkey && msgInstance) {
+          try {
+            console.log("[NDKProvider] Starting NDKMessenger...", { hasSigner: !!instance.signer });
+            await msgInstance.start();
+            console.log("[NDKProvider] NDKMessenger started successfully");
+            // Publish preferred DM relays for NIP-17 discovery
+            syncDMRelays(msgInstance, DEFAULT_RELAYS).catch(() => {});
+            
+            msgInstance.on("message", (message: NDKMessage) => {
+              console.log("[NDKProvider] Received incoming message event", message.id);
+              const currentPubkey = sessionManager.activePubkey;
+              if (message.sender?.pubkey !== currentPubkey && message.recipient?.pubkey === currentPubkey) {
+                const isCurrentChat = stableDepsRef.current.activeChatPubkey === message.sender?.pubkey;
+                if (!isCurrentChat) {
+                  stableDepsRef.current.incrementUnreadMessagesCount();
+                  if (stableDepsRef.current.browserNotificationsEnabled && Notification.permission === "granted") {
+                    const sender = message.sender;
+                    sender.fetchProfile().then(() => {
+                      const title = String(sender.profile?.display_name || sender.profile?.name || "New Message");
+                      new Notification(title, { body: message.content.slice(0, 100), icon: sender.profile?.picture || "/favicon.ico" });
+                    });
+                  }
+                }
+              }
+            });
+          } catch (e) { console.error("[NDKProvider] Failed to start messenger:", e); }
+        }
+      };
+
       Promise.race([connectPromise, timeoutPromise])
         .then(async () => {
           console.log("[NDKProvider] Connected!");
@@ -456,33 +486,13 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
               }
             } catch { /* ignore */ }
           }
-          
-          if (sessionManager.activePubkey && msgInstance) {
-            try {
-              await msgInstance.start();
-              // Publish preferred DM relays for NIP-17 discovery
-              syncDMRelays(msgInstance, DEFAULT_RELAYS).catch(() => {});
-              
-              msgInstance.on("message", (message: NDKMessage) => {
-                const currentPubkey = sessionManager.activePubkey;
-                if (message.sender?.pubkey !== currentPubkey && message.recipient?.pubkey === currentPubkey) {
-                  const isCurrentChat = stableDepsRef.current.activeChatPubkey === message.sender?.pubkey;
-                  if (!isCurrentChat) {
-                    stableDepsRef.current.incrementUnreadMessagesCount();
-                    if (stableDepsRef.current.browserNotificationsEnabled && Notification.permission === "granted") {
-                      const sender = message.sender;
-                      sender.fetchProfile().then(() => {
-                        const title = String(sender.profile?.display_name || sender.profile?.name || "New Message");
-                        new Notification(title, { body: message.content.slice(0, 100), icon: sender.profile?.picture || "/favicon.ico" });
-                      });
-                    }
-                  }
-                }
-              });
-            } catch { /* ignore */ }
-          }
+          await startMessenger();
         })
-        .catch(() => { setIsReady(true); });
+        .catch(async (err) => { 
+          console.warn("[NDKProvider] Connection timeout or error, proceeding anyway:", err.message);
+          setIsReady(true); 
+          await startMessenger();
+        });
     });
 
     return () => {

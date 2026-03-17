@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useMessages, Conversation } from "@/hooks/useMessages";
 import { useProfile } from "@/hooks/useProfile";
 import { useUIStore } from "@/store/ui";
@@ -12,25 +12,42 @@ import { NewMessageModal } from "@/components/messages/NewMessageModal";
 import { Avatar } from "@/components/common/Avatar";
 
 export default function MessagesPage() {
-  const { conversations, loading } = useMessages();
+  const { conversations, loading, refresh } = useMessages();
   const { setUnreadMessagesCount } = useUIStore();
   const [showNewMessageModal, setShowNewMessageModal] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   useEffect(() => {
     setUnreadMessagesCount(0);
   }, [setUnreadMessagesCount]);
 
+  const handleRefresh = useCallback(async () => {
+    setIsRefreshing(true);
+    await refresh();
+    setTimeout(() => setIsRefreshing(false), 1000);
+  }, [refresh]);
+
   return (
     <>
       <div className="sticky top-0 z-10 bg-white/80 dark:bg-black/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 flex items-center justify-between px-4 py-3">
         <h1 className="text-xl font-black">Messages</h1>
-        <button 
-          onClick={() => setShowNewMessageModal(true)}
-          className="p-2 hover:bg-gray-100 dark:hover:bg-gray-900 rounded-full transition-colors"
-          title="New message"
-        >
-          <Plus size={22} />
-        </button>
+        <div className="flex items-center gap-1">
+          <button 
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-900 rounded-full transition-colors disabled:opacity-50"
+            title="Refresh"
+          >
+            <Loader2 size={20} className={isRefreshing ? "animate-spin" : ""} />
+          </button>
+          <button 
+            onClick={() => setShowNewMessageModal(true)}
+            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-900 rounded-full transition-colors"
+            title="New message"
+          >
+            <Plus size={22} />
+          </button>
+        </div>
       </div>
 
       <div className="flex flex-col h-full">

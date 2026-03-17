@@ -27,7 +27,10 @@ export function useMessages() {
     if (!messenger || !user) return;
 
     try {
+      console.log("[useMessages] Fetching conversations...");
       const ndkConversations = await messenger.getConversations();
+      console.log(`[useMessages] Found ${ndkConversations.length} NDK conversations`);
+      
       const next = new Map<string, Conversation>();
 
       for (const conv of ndkConversations) {
@@ -37,10 +40,16 @@ export function useMessages() {
           return pPubkey !== user.pubkey;
         });
 
-        if (!chatPartnerUser) continue;
+        if (!chatPartnerUser) {
+          console.log("[useMessages] No chat partner found in conversation", conv.id);
+          continue;
+        }
+        
         const chatPartnerPubkey = typeof chatPartnerUser === "string" ? chatPartnerUser : chatPartnerUser.pubkey;
 
         const events = await conv.getMessages();
+        console.log(`[useMessages] Conversation with ${chatPartnerPubkey} has ${events.length} messages`);
+        
         if (events.length === 0) continue;
 
         const messages = events
@@ -57,6 +66,7 @@ export function useMessages() {
         });
       }
 
+      console.log(`[useMessages] Final mapped conversations count: ${next.size}`);
       setConversations(next);
     } catch (err) {
       console.error("Failed to fetch conversations:", err);
@@ -71,18 +81,33 @@ export function useMessages() {
       fetchConversations().finally(() => {
         setLoading(false);
         isInitialLoad.current = false;
+        
+        // If still no conversations after first load, try once more after a short delay
+        // to allow relay subscription to return some events
+        setTimeout(() => {
+          if (conversations.size === 0) {
+            console.log("[useMessages] Retrying initial fetch...");
+            fetchConversations();
+          }
+        }, 3000);
       });
     }
 
     const handleMessage = async (message: NDKMessage) => {
+      console.log("[useMessages] Received message event in handleMessage", message.id);
+      
       // Find which conversation this message belongs to
       const otherPubkey = message.sender.pubkey === user.pubkey 
         ? message.recipient?.pubkey 
         : message.sender.pubkey;
       
-      if (!otherPubkey) return;
+      if (!otherPubkey) {
+        console.warn("[useMessages] Could not determine other pubkey for message", message.id);
+        return;
+      }
 
       const mapped = mapNDKMessage(message, ndk);
+      console.log(`[useMessages] Updating conversation map for ${otherPubkey}`);
 
       setConversations(prev => {
         const next = new Map(prev);
@@ -104,6 +129,7 @@ export function useMessages() {
           });
         } else {
           // New conversation
+          console.log(`[useMessages] Creating new conversation entry for ${otherPubkey}`);
           next.set(otherPubkey, {
             pubkey: otherPubkey,
             messages: [mapped],
