@@ -1,4 +1,4 @@
-import { NDKUser, NDKEvent } from "@nostr-dev-kit/ndk";
+import { NDKUser } from "@nostr-dev-kit/ndk";
 import { NDKMessenger } from "@nostr-dev-kit/messages";
 
 /**
@@ -7,12 +7,23 @@ import { NDKMessenger } from "@nostr-dev-kit/messages";
 export const sendMessage = async (
   messenger: NDKMessenger,
   recipient: NDKUser,
-  content: string,
-  replyTo?: string
+  content: string
 ): Promise<boolean> => {
   try {
+    console.log(`[Messages] Sending message to ${recipient.pubkey}...`);
+    console.log(`[Messages] Messenger state:`, { 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      started: (messenger as any).started, 
+      hasSigner: !!messenger.ndk.signer,
+      pubkey: messenger.ndk.activeUser?.pubkey 
+    });
+    
+    // Ensure recipient has NDK instance
+    if (!recipient.ndk) recipient.ndk = messenger.ndk;
+
     // messenger.sendMessage handles NIP-17 Gift Wraps and self-copies automatically
-    await messenger.sendMessage(recipient, content);
+    const result = await messenger.sendMessage(recipient, content);
+    console.log(`[Messages] Message sent result:`, result);
     return true;
   } catch (err) {
     console.error("Failed to send NIP-17 message:", err);

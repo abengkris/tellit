@@ -5,7 +5,6 @@ import { Message } from "@/hooks/useMessages";
 import { useNDK } from "@/hooks/useNDK";
 import { useAuthStore } from "@/store/auth";
 import { useUIStore } from "@/store/ui";
-import { NDKUser } from "@nostr-dev-kit/ndk";
 import { NDKMessage, NDKConversation } from "@nostr-dev-kit/messages";
 import { mapNDKMessage } from "@/lib/utils/messages";
 import { sendMessage as sendChatMessage } from "@/lib/actions/messages";
@@ -54,8 +53,18 @@ export function useChat(targetPubkey: string) {
   }, [messenger, ndk, targetPubkey]);
 
   const sendMessage = useCallback(async (content: string) => {
-    if (!messenger || !ndk || !targetPubkey || !content.trim()) return false;
+    if (!content.trim()) return false;
+    
     try {
+      if (convRef.current) {
+        console.log("[useChat] Sending via convRef.current");
+        await convRef.current.sendMessage(content);
+        return true;
+      }
+      
+      if (!messenger || !ndk || !targetPubkey) return false;
+      
+      console.log("[useChat] Sending via messenger action");
       const recipientUser = ndk.getUser({ pubkey: targetPubkey });
       const success = await sendChatMessage(messenger, recipientUser, content);
       if (success) fetchChatMessages();
