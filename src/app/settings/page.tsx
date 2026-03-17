@@ -5,7 +5,8 @@ import { useUIStore, RelayAuthStrategy } from "@/store/ui";
 import { useAuthStore } from "@/store/auth";
 import { useNDK } from "@/hooks/useNDK";
 import { useProfile } from "@/hooks/useProfile";
-import { Bell, Shield, User, Globe, Wallet, Clock, LogOut, Key, VolumeX, BadgeCheck } from "lucide-react";
+import { useAppSettings } from "@/hooks/useAppSettings";
+import { Bell, Shield, User, Globe, Wallet, Clock, LogOut, Key, VolumeX, BadgeCheck, RefreshCcw } from "lucide-react";
 import { Avatar } from "@/components/common/Avatar";
 import Link from "next/link";
 import { NDKEvent } from "@nostr-dev-kit/ndk";
@@ -39,6 +40,7 @@ export default function SettingsPage() {
   const { sessions, ndk, isReady } = useNDK();
   const { profile } = useProfile(user?.pubkey);
   const { mutedPubkeys, loading: loadingLists } = useLists();
+  const { loading: settingsLoading, lastSync, saveSettings, fetchSettings } = useAppSettings();
   const { 
     browserNotificationsEnabled, 
     setBrowserNotificationsEnabled,
@@ -259,6 +261,48 @@ export default function SettingsPage() {
             </CardContent>
           </Card>
         </section>
+
+        {/* Cloud Sync Section (NIP-78) */}
+        {isLoggedIn && (
+          <section className="space-y-4">
+            <h2 className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2 px-1">
+              <RefreshCcw size={14} /> Cloud Sync
+            </h2>
+            <Card className="rounded-3xl border-none bg-muted/30 shadow-none">
+              <CardHeader className="pb-4">
+                <CardDescription className="text-sm font-medium">
+                  Sync your app preferences (theme, filters, zap settings) to the Nostr network so they follow you across devices.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => fetchSettings()}
+                    disabled={settingsLoading}
+                    className="h-12 rounded-2xl font-black bg-background border-none shadow-sm gap-2"
+                  >
+                    <RefreshCcw size={16} className={cn(settingsLoading && "animate-spin")} />
+                    Pull from Cloud
+                  </Button>
+                  <Button
+                    onClick={() => saveSettings()}
+                    disabled={settingsLoading}
+                    className="h-12 rounded-2xl font-black bg-primary text-primary-foreground shadow-lg shadow-primary/20 gap-2"
+                  >
+                    <Globe size={16} />
+                    Sync to Relays
+                  </Button>
+                </div>
+                {lastSync > 0 && (
+                  <p className="text-[10px] text-center text-muted-foreground font-bold uppercase tracking-tight">
+                    Last synced: {new Date(lastSync).toLocaleString()}
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          </section>
+        )}
 
         {/* Privacy Section (Mutes) */}
         <section className="space-y-4">

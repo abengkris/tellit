@@ -80,34 +80,37 @@ export function useMessages() {
         ? message.recipient?.pubkey 
         : message.sender.pubkey;
       
-      if (!otherPubkey) {
-        // Fallback to full refresh if we can't determine the partner
-        await fetchConversations();
-        return;
-      }
+      if (!otherPubkey) return;
 
-      // Update that specific conversation in the map
-      const recipientUser = ndk?.getUser({ pubkey: otherPubkey });
-      if (!recipientUser) return;
-
-      const conv = await messenger.getConversation(recipientUser);
-      if (!conv) return;
-
-      const events = await conv.getMessages();
-      const messages = events
-        .map(msg => mapNDKMessage(msg, ndk))
-        .sort((a, b) => b.timestamp - a.timestamp);
-      
-      const unreadCount = conv.getUnreadCount ? conv.getUnreadCount() : 0;
+      const mapped = mapNDKMessage(message, ndk);
 
       setConversations(prev => {
         const next = new Map(prev);
-        next.set(otherPubkey, {
-          pubkey: otherPubkey,
-          messages,
-          lastMessage: messages[0],
-          unreadCount,
-        });
+        const existing = next.get(otherPubkey);
+        
+        if (existing) {
+          // Check if message already exists
+          if (existing.messages.find(m => m.id === mapped.id)) return prev;
+          
+          const updatedMessages = [mapped, ...existing.messages]
+            .sort((a, b) => b.timestamp - a.timestamp);
+            
+          next.set(otherPubkey, {
+            ...existing,
+            messages: updatedMessages,
+            lastMessage: updatedMessages[0],
+            // Increment unread count if message is from others
+            unreadCount: mapped.sender === otherPubkey ? existing.unreadCount + 1 : existing.unreadCount
+          });
+        } else {
+          // New conversation
+          next.set(otherPubkey, {
+            pubkey: otherPubkey,
+            messages: [mapped],
+            lastMessage: mapped,
+            unreadCount: mapped.sender === otherPubkey ? 1 : 0
+          });
+        }
         return next;
       });
     };
