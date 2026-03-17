@@ -29,7 +29,7 @@ import {
   Loader2,
   Globe
 } from "lucide-react";
-import { NDKEvent, NDKFilter } from "@nostr-dev-kit/ndk";
+import { NDKEvent, NDKFilter, NDKSubscriptionCacheUsage } from "@nostr-dev-kit/ndk";
 import { NDKWalletTransaction } from "@nostr-dev-kit/wallet";
 import { format } from "date-fns";
 import Link from "next/link";
@@ -169,7 +169,7 @@ export default function WalletPage() {
             // Use PARALLEL cache usage to ensure we get events from both local and remote
             const sub = ndk.subscribe(f, { 
               closeOnEose: true,
-              cacheUsage: 1 // NDKSubscriptionCacheUsage.PARALLEL
+              cacheUsage: NDKSubscriptionCacheUsage.PARALLEL
             });
             sub.on("event", (e) => events.add(e));
             sub.on("eose", () => resolve(events));

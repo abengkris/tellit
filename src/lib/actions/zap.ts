@@ -14,6 +14,25 @@ export const createZapInvoice = async (
   target: NDKEvent | NDKUser,
   comment: string = ""
 ): Promise<{ invoice: string | null; alreadyPaid: boolean; error?: string }> => {
+  // 0. Ensure we have profile data for the target user if zapping an event or a user
+  const targetUser = target instanceof NDKUser ? target : target.author;
+  
+  if (targetUser && (!targetUser.profile || (!targetUser.profile.lud16 && !targetUser.profile.lud06))) {
+    console.log(`[Zap] Profile missing or incomplete for ${targetUser.pubkey}, fetching...`);
+    await targetUser.fetchProfile();
+  }
+
+  const lud16 = targetUser?.profile?.lud16;
+  const lud06 = targetUser?.profile?.lud06;
+
+  if (!lud16 && !lud06) {
+    return { 
+      invoice: null, 
+      alreadyPaid: false, 
+      error: "Recipient has no Lightning Address (lud16) or LNURL (lud06). They cannot receive zaps." 
+    };
+  }
+
   const tryZap = (wallet?: unknown, timeout = 20000): Promise<{ invoice: string | null; alreadyPaid: boolean; error?: string }> => {
     return new Promise((resolve) => {
       const zapper = new NDKZapper(target, amount, "msat", { comment, ndk });
