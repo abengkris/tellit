@@ -159,15 +159,15 @@ export function PostContentRenderer({
     const url: Token[] = [];
 
     for (const token of tokens) {
-      if (token.type === "image" || token.type === "video") {
+      if ((token.type === "image" || token.type === "video") && token.value) {
         media.push(token);
-      } else if (token.type === "audio") {
+      } else if (token.type === "audio" && token.value) {
         audio.push(token);
       } else if (token.type === "note_ref" && renderQuotes) {
         quote.push(token);
-      } else if (token.type === "lightning") {
+      } else if (token.type === "lightning" && token.value) {
         card.push(token);
-      } else if (token.type === "url") {
+      } else if (token.type === "url" && token.value) {
         const cleanUrl = token.value.replace(/[.,;]$/, "");
         if (isMediaUrl(cleanUrl) || imetaMap.has(cleanUrl)) {
           const isVideo = cleanUrl.match(/\.(mp4|mov|webm|ogg)$/i) || imetaMap.get(cleanUrl)?.mimeType?.startsWith('video/');
@@ -198,23 +198,30 @@ export function PostContentRenderer({
   }, [tokens, renderQuotes, imetaMap]);
 
   const allMediaForLightbox = useMemo(() => {
-    const media = mediaTokens.map(t => ({
-      url: t.value.replace(/[.,;]$/, ""),
-      type: t.type as "image" | "video",
-      alt: imetaMap.get(t.value.replace(/[.,;]$/, ""))?.alt
-    }));
+    try {
+      const media = mediaTokens
+        .filter(t => t && t.value)
+        .map(t => ({
+          url: t.value.replace(/[.,;]$/, ""),
+          type: t.type as "image" | "video",
+          alt: imetaMap.get(t.value.replace(/[.,;]$/, ""))?.alt
+        }));
 
-    const articleImage = event.tags.find(t => t[0] === 'image')?.[1];
-    if (isArticle && articleImage && !media.some(m => m.url === articleImage)) {
-      media.unshift({
-        url: articleImage,
-        type: "image",
-        alt: event.tags.find(t => t[0] === 'title')?.[1] || "Article hero"
-      });
+      const articleImage = event.tags.find(t => t[0] === 'image')?.[1];
+      if (isArticle && articleImage && !media.some(m => m.url === articleImage)) {
+        media.unshift({
+          url: articleImage,
+          type: "image",
+          alt: event.tags.find(t => t[0] === 'title')?.[1] || "Article hero"
+        });
+      }
+
+      return media;
+    } catch (err) {
+      console.error("[PostContentRenderer] Failed to build lightbox media:", err, event.id);
+      return [];
     }
-
-    return media;
-  }, [mediaTokens, imetaMap, event.tags, isArticle]);
+  }, [mediaTokens, imetaMap, event.tags, isArticle, event.id]);
 
   // NIP-18: Collect quotes from 'q' tags that aren't already in the text
   const extraQuotes = useMemo(() => {
@@ -372,6 +379,7 @@ export function PostContentRenderer({
             <div className="w-full mt-3">
               {mediaTokens.length === 1 ? (
                 mediaTokens.map((token, i) => {
+                  if (!token.value) return null;
                   const cleanUrl = token.value.replace(/[.,;]$/, "");
                   const imeta = imetaMap.get(cleanUrl);
                   return token.type === "image" ? (
@@ -397,6 +405,7 @@ export function PostContentRenderer({
                   "grid-cols-2 grid-rows-2 aspect-square"
                 }`}>
                   {mediaTokens.slice(0, 4).map((token, i) => {
+                    if (!token.value) return null;
                     const cleanUrl = token.value.replace(/[.,;]$/, "");
                     const imeta = imetaMap.get(cleanUrl);
                     const isLarge = mediaTokens.length === 3 && i === 0;
@@ -489,12 +498,14 @@ export function PostContentRenderer({
         </>
       ))}
 
-      <Lightbox 
-        media={allMediaForLightbox} 
-        initialIndex={lightboxIndex || 0}
-        isOpen={lightboxIndex !== null} 
-        onClose={() => setLightboxIndex(null)} 
-      />
+      {lightboxIndex !== null && allMediaForLightbox.length > 0 && (
+        <Lightbox 
+          media={allMediaForLightbox} 
+          initialIndex={lightboxIndex}
+          isOpen={lightboxIndex !== null} 
+          onClose={() => setLightboxIndex(null)} 
+        />
+      )}
     </div>
   );
 }
