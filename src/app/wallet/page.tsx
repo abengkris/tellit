@@ -166,10 +166,15 @@ export default function WalletPage() {
         const fetchZaps = async (f: NDKFilter) => {
           return new Promise<Set<NDKEvent>>((resolve) => {
             const events = new Set<NDKEvent>();
-            const sub = ndk.subscribe(f, { closeOnEose: true });
+            // Use PARALLEL cache usage to ensure we get events from both local and remote
+            const sub = ndk.subscribe(f, { 
+              closeOnEose: true,
+              cacheUsage: 1 // NDKSubscriptionCacheUsage.PARALLEL
+            });
             sub.on("event", (e) => events.add(e));
             sub.on("eose", () => resolve(events));
-            setTimeout(() => { sub.stop(); resolve(events); }, 5000);
+            // Ensure we resolve after some time even if EOSE is slow
+            setTimeout(() => { sub.stop(); resolve(events); }, 8000);
           });
         };
 

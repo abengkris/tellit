@@ -72,25 +72,30 @@ export const ZapModal: React.FC<ZapModalProps> = ({ event, user, onClose, onSucc
 
     setLoading(true);
     try {
-      // Pre-fetch profile with cacheUsage: ONLY_RELAY to ensure we have the latest lud16/lud06
       const targetUser = event ? event.author : user;
+      
       if (targetUser) {
-        console.log(`[ZapModal] Fetching profile for ${targetUser.pubkey}...`);
-        await targetUser.fetchProfile({ cacheUsage: NDKSubscriptionCacheUsage.ONLY_RELAY });
+        console.log(`[ZapModal] Force-fetching profile for ${targetUser.pubkey}...`);
+        // Use parallel fetching from multiple relays to ensure we get the lud16
+        await targetUser.fetchProfile({ 
+          cacheUsage: NDKSubscriptionCacheUsage.PARALLEL,
+        });
       }
 
       const zapTarget = event || user;
       if (!zapTarget) throw new Error("No target for zap");
 
-      // Check for LN address presence after fetching profile
-      if (targetUser && !targetUser.profile?.lud16 && !targetUser.profile?.lud06) {
-        addToast("Recipient does not have a Lightning Address set in their profile. They need an address like name@domain.com to receive zaps.", "error");
+      // Robust check for Lightning Address
+      const lud16 = targetUser?.profile?.lud16;
+      const lud06 = targetUser?.profile?.lud06;
+
+      if (!lud16 && !lud06) {
+        addToast("Recipient has no Lightning Address. They need one (e.g. name@getalby.com) to receive zaps.", "error");
         setLoading(false);
         return;
       }
 
-      console.log(`[ZapModal] Creating zap invoice for ${targetUser?.profile?.lud16 || targetUser?.pubkey}...`);
-      // Amount in millisats (1 sat = 1000 millisats)
+      console.log(`[ZapModal] Creating zap invoice for ${lud16 || targetUser?.pubkey}...`);
       const { invoice: bolt11, alreadyPaid, error } = await createZapInvoice(ndk, amount * 1000, zapTarget, comment);
       
       if (alreadyPaid) {
