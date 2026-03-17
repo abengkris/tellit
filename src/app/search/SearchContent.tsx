@@ -224,11 +224,11 @@ export function SearchContent() {
     // Optionally trigger search for npub here if direct user lookup is implemented
   };
 
-  // Sync URL with search input (reflects typing immediately)
+  // Sync URL with search input (debounced to avoid history spam)
   useEffect(() => {
     const params = new URLSearchParams(searchParams.toString());
-    if (searchInput) {
-      params.set("q", searchInput);
+    if (debouncedQuery) {
+      params.set("q", debouncedQuery);
     } else {
       params.delete("q");
     }
@@ -236,12 +236,10 @@ export function SearchContent() {
     const queryStr = params.toString();
     const newUrl = queryStr ? `/search?${queryStr}` : "/search";
     
-    // Only push if the query actually changed to avoid history spam
-    // Compare against current window.location.search to prevent infinite loops
     if (window.location.search !== `?${queryStr}` && (window.location.search !== "" || queryStr !== "")) {
-      router.replace(newUrl);
+      router.replace(newUrl, { scroll: false });
     }
-  }, [searchInput, router, searchParams]);
+  }, [debouncedQuery, router, searchParams]);
 
   const displayTrending = useMemo(() => {
     if (trending.length > 0) return trending.map(t => t.tag);

@@ -16,10 +16,14 @@ export default function manifest(): MetadataRoute.Manifest {
         type: 'image/x-icon',
       },
       {
-        src: '/next.svg',
+        src: '/favicon.ico',
+        sizes: '192x192',
+        type: 'image/x-icon',
+      },
+      {
+        src: '/favicon.ico',
         sizes: '512x512',
-        type: 'image/svg+xml',
-        purpose: 'maskable'
+        type: 'image/x-icon',
       }
     ],
     orientation: 'portrait',
@@ -29,12 +33,12 @@ export default function manifest(): MetadataRoute.Manifest {
       {
         name: 'New Post',
         url: '/',
-        icons: [{ src: '/next.svg', sizes: '192x192' }]
+        icons: [{ src: '/favicon.ico', sizes: '192x192' }]
       },
       {
         name: 'Messages',
         url: '/messages',
-        icons: [{ src: '/next.svg', sizes: '192x192' }]
+        icons: [{ src: '/favicon.ico', sizes: '192x192' }]
       }
     ]
   }
