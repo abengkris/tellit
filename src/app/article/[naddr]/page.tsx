@@ -157,7 +157,7 @@ export default function ArticleDetailPage({ params }: { params: Promise<{ naddr:
   return (
     <ArticleView 
       article={article} 
-      authorPubkey={article.pubkey || authorPubkey}
+      authorPubkey={article.pubkey || authorPubkey || ""}
     />
   );
 }
