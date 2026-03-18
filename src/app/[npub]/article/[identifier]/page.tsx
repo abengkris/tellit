@@ -11,22 +11,22 @@ interface Props {
 }
 
 async function resolveSlug(slug: string): Promise<string> {
-  if (slug.startsWith("npub1")) {
-    try {
+  try {
+    if (slug.startsWith("npub1")) {
       const { id } = decodeNip19(slug);
       return id;
-    } catch {
-      return "";
     }
-  }
 
-  if (isVanitySlug(slug)) {
-    const pubkey = await resolveVanitySlug(slug);
-    if (pubkey) return pubkey;
-  }
+    if (isVanitySlug(slug)) {
+      const pubkey = await resolveVanitySlug(slug);
+      if (pubkey) return pubkey;
+    }
 
-  if (/^[0-9a-fA-F]{64}$/.test(slug)) {
-    return slug;
+    if (/^[0-9a-fA-F]{64}$/.test(slug)) {
+      return slug;
+    }
+  } catch (err) {
+    console.error(`[PremiumArticlePage] Failed to resolve slug: ${slug}`, err);
   }
 
   return "";
