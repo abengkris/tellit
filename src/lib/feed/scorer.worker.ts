@@ -24,6 +24,8 @@ self.onmessage = (e: MessageEvent<{
     interestsSet: context.interestsSet ? new Set(context.interestsSet) : undefined,
   };
 
+  const networkActivityMap = networkActivity ? new Map(Object.entries(networkActivity)) : undefined;
+
   const scoredEvents = events.map(rawEvent => {
     // Wrap in a minimal mock NDKEvent for the scorer
     const event = {
@@ -31,7 +33,7 @@ self.onmessage = (e: MessageEvent<{
       tag: (name: string) => (rawEvent.tags as string[][]).find((t: string[]) => t[0] === name)
     } as unknown as NDKEvent;
 
-    return scoreEvent(event, scoringContext, networkActivity);
+    return scoreEvent(event, scoringContext, networkActivityMap);
   });
 
   // Sort by score and then by time
