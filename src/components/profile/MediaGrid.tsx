@@ -2,11 +2,13 @@
 
 import React, { useState } from "react";
 import { NDKEvent } from "@nostr-dev-kit/ndk";
+import { useProfile } from "@/hooks/useProfile";
 import Image from "next/image";
 import Link from "next/link";
 import { Play, FileText, Image as ImageIcon } from "lucide-react";
 import { tokenize, parseImeta } from "@/lib/content/tokenizer";
 import { getEventNip19 } from "@/lib/utils/nip19";
+import { getPostUrl, getArticleUrl } from "@/lib/utils/identity";
 import { Blurhash } from "react-blurhash";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
@@ -53,6 +55,7 @@ export function MediaGrid({ posts, isLoading }: MediaGridProps) {
 
 function MediaItem({ post, onOpenLightbox }: { post: NDKEvent; onOpenLightbox: (src: string, type: "image" | "video", href: string) => void }) {
   const [loaded, setLoaded] = useState(false);
+  const { profile } = useProfile(post.pubkey);
   const media = React.useMemo(() => {
     // 1. Check imeta tags
     for (const tag of post.tags) {
@@ -104,8 +107,8 @@ function MediaItem({ post, onOpenLightbox }: { post: NDKEvent; onOpenLightbox: (
   };
 
   const href = post.kind === 30023 
-    ? `/article/${post.encode()}`
-    : `/post/${getEventNip19(post)}`;
+    ? getArticleUrl(post, profile)
+    : getPostUrl(post, profile);
 
   return (
     <Link 

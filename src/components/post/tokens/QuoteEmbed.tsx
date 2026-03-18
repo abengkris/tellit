@@ -10,6 +10,7 @@ import { nip19 } from "@nostr-dev-kit/ndk";
 import Image from "next/image";
 import { PostContentRenderer } from "../parts/PostContent";
 import { shortenPubkey, getEventNip19 } from "@/lib/utils/nip19";
+import { getPostUrl } from "@/lib/utils/identity";
 
 interface QuoteEmbedProps {
   eventId: string;
@@ -62,11 +63,11 @@ export function QuoteEmbed({ eventId, hintRelays, className = "" }: QuoteEmbedPr
 function QuoteEmbedContent({ event, className }: { event: NDKEvent; className: string }) {
   const { profile } = useProfile(event.pubkey);
   const npub = nip19.npubEncode(event.pubkey);
-  const noteId = getEventNip19(event);
+  const postUrl = getPostUrl(event, profile);
 
   return (
     <Link
-      href={`/post/${noteId}`}
+      href={postUrl}
       onClick={e => e.stopPropagation()}
       className={`block border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-900/50 rounded-2xl p-4 transition-colors mt-3 overflow-hidden w-full ${className}`}
     >

@@ -1,6 +1,7 @@
 import { ProfileMetadata } from "@/hooks/useProfile";
-import { toNpub } from "@/lib/utils/nip19";
+import { toNpub, getEventNip19 } from "@/lib/utils/nip19";
 import { getSupabaseAdmin } from "@/lib/supabase";
+import { NDKEvent } from "@nostr-dev-kit/ndk";
 
 /**
  * List of reserved slugs that cannot be used as vanity usernames.
@@ -51,6 +52,43 @@ export function getProfileUrl(profile: ProfileMetadata | null | undefined): stri
   } catch {
     return `/${profile.pubkey}`;
   }
+}
+
+/**
+ * Determines the "best" post URL for an event.
+ * Premium users get /username/status/id
+ */
+export function getPostUrl(event: NDKEvent, profile: ProfileMetadata | null | undefined): string {
+  const noteId = getEventNip19(event);
+  
+  if (profile?.nip05?.endsWith("@tellit.id")) {
+    const [username] = profile.nip05.split("@");
+    if (username && !RESERVED_SLUGS.has(username.toLowerCase())) {
+      return `/${username.toLowerCase()}/status/${noteId}`;
+    }
+  }
+
+  return `/post/${noteId}`;
+}
+
+/**
+ * Determines the "best" article URL for an event.
+ * Premium users get /username/article/d-tag
+ */
+export function getArticleUrl(event: NDKEvent, profile: ProfileMetadata | null | undefined): string {
+  const naddr = event.encode();
+  const dTag = event.tags.find(t => t[0] === 'd')?.[1];
+  
+  if (profile?.nip05?.endsWith("@tellit.id")) {
+    const [username] = profile.nip05.split("@");
+    if (username && !RESERVED_SLUGS.has(username.toLowerCase())) {
+      // Use d-tag for cleaner URLs if it's a safe slug
+      const slug = dTag && !RESERVED_SLUGS.has(dTag.toLowerCase()) ? dTag : naddr;
+      return `/${username.toLowerCase()}/article/${slug}`;
+    }
+  }
+
+  return `/article/${naddr}`;
 }
 
 /**

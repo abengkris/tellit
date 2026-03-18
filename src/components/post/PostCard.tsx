@@ -20,6 +20,7 @@ import { ReplyModal } from "./parts/ReplyModal";
 import { QuoteModal } from "./parts/QuoteModal";
 import { PollRenderer } from "./PollRenderer";
 import { shortenPubkey, getEventNip19 } from "@/lib/utils/nip19";
+import { getPostUrl, getArticleUrl } from "@/lib/utils/identity";
 import { formatFullTimestamp } from "@/lib/utils/date";
 import { useLists } from "@/hooks/useLists";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -148,10 +149,10 @@ export const PostCard = memo(({
   }, [displayEvent]);
 
   const navigationHref = useMemo(() => {
-    if (!eventNoteId) return "#";
-    if (isArticle) return `/article/${eventNoteId}`;
-    return `/post/${eventNoteId}`;
-  }, [isArticle, eventNoteId]);
+    if (!displayEvent) return "#";
+    if (isArticle) return getArticleUrl(displayEvent, profile);
+    return getPostUrl(displayEvent, profile);
+  }, [isArticle, displayEvent, profile]);
 
   const replyingToPubkey = useMemo(() => {
     if (!displayEvent?.tags) return null;
