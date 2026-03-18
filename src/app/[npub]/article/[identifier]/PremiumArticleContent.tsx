@@ -6,7 +6,7 @@ import { Loader2, ArrowLeft, Calendar } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useNDK } from "@/hooks/useNDK";
 import { decodeNip19 } from "@/lib/utils/nip19";
-import { NDKEvent } from "@nostr-dev-kit/ndk";
+import { NDKEvent, NDKSubscriptionCacheUsage } from "@nostr-dev-kit/ndk";
 import { useProfile } from "@/hooks/useProfile";
 import Image from "next/image";
 import Link from "next/link";
@@ -86,7 +86,7 @@ export function PremiumArticleContent({ hexPubkey, identifier, slug }: PremiumAr
           console.log("[PremiumArticle] Fetching with filter:", filter);
           
           // Try to get from cache first for speed
-          event = await ndk.fetchEvent(filter, { cacheUsage: 1 }); // CACHE_FIRST
+          event = await ndk.fetchEvent(filter, { cacheUsage: NDKSubscriptionCacheUsage.CACHE_FIRST });
           
           if (!event) {
             console.log("[PremiumArticle] Not in cache, fetching from relays...");
