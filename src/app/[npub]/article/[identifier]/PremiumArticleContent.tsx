@@ -63,16 +63,13 @@ export function PremiumArticleContent({ hexPubkey, identifier, slug }: PremiumAr
     }
 
     const fetchArticle = async () => {
-      // Ensure we don't start fetch if anything critical is missing
-      if (!hexPubkey || !identifier) return;
-
       console.log("[PremiumArticle] Starting fetch cycle for:", { slug, identifier, hexPubkey });
       setLoading(true);
       
       const safetyTimeout = setTimeout(() => {
-        console.warn("[PremiumArticle] Fetch timed out after 15s");
+        console.warn("[PremiumArticle] Fetch timed out after 20s");
         setLoading(false);
-      }, 15000);
+      }, 20000);
 
       try {
         let event: NDKEvent | null = null;
@@ -83,25 +80,35 @@ export function PremiumArticleContent({ hexPubkey, identifier, slug }: PremiumAr
           const { id: hexId } = decodeNip19(identifier);
           event = await ndk.fetchEvent(hexId);
         } else {
-          // 2. Fetch by d-tag + author
-          const filter = {
-            kinds: [30023],
-            authors: [hexPubkey],
-            "#d": [identifier]
-          };
+          // 2. Parallel Fetch: Try d-tag AND hex ID simultaneously
+          console.log("[PremiumArticle] Attempting parallel d-tag and hex ID fetch...");
           
-          console.log("[PremiumArticle] Fetching with filter:", filter);
-          event = await ndk.fetchEvent(filter, { cacheUsage: NDKSubscriptionCacheUsage.CACHE_FIRST, closeOnEose: true });
+          const dTagFilter = { kinds: [30023], authors: [hexPubkey], "#d": [identifier] };
+          const isHexId = /^[0-9a-fA-F]{64}$/.test(identifier);
+
+          const fetchPromises = [
+            ndk.fetchEvent(dTagFilter, { cacheUsage: NDKSubscriptionCacheUsage.CACHE_FIRST, closeOnEose: true })
+          ];
+
+          if (isHexId) {
+            fetchPromises.push(ndk.fetchEvent({ ids: [identifier] }, { closeOnEose: true }));
+          }
+
+          const results = await Promise.all(fetchPromises);
+          event = results.find(r => !!r) || null;
           
-          // 3. Fallback: Outbox discovery (Search author's specific relays)
+          // 3. Fallback: Outbox discovery with broad relay search
           if (!event && hexPubkey) {
-            console.log("[PremiumArticle] Not in cache/default relays, discovering author relays...");
+            console.log("[PremiumArticle] Not found in initial pass, searching author relays...");
             
-            // fetch author's relay list (kind 10002) manually
+            // Try to find kind 10002 on a dedicated profile relay if not found on defaults
+            const profileRelayUrls = ["wss://purplepag.es", "wss://relay.damus.io", "wss://nos.lol"];
+            const profileRelays = NDKRelaySet.fromRelayUrls(profileRelayUrls, ndk);
+            
             const relayListEvents = await ndk.fetchEvents({
               kinds: [10002],
               authors: [hexPubkey]
-            }, { closeOnEose: true });
+            }, { closeOnEose: true }, profileRelays);
             
             const relayListEvent = Array.from(relayListEvents)[0];
             
@@ -111,17 +118,17 @@ export function PremiumArticleContent({ hexPubkey, identifier, slug }: PremiumAr
                 .map(t => t[1]);
 
               if (writeRelayUrls.length > 0) {
-                console.log("[PremiumArticle] Author write relays found:", writeRelayUrls);
-                const relaySet = NDKRelaySet.fromRelayUrls(writeRelayUrls, ndk);
-                event = await ndk.fetchEvent(filter, { closeOnEose: true }, relaySet);
+                console.log("[PremiumArticle] Author write relays discovered:", writeRelayUrls);
+                const authorRelaySet = NDKRelaySet.fromRelayUrls(writeRelayUrls, ndk);
+                event = await ndk.fetchEvent(dTagFilter, { closeOnEose: true }, authorRelaySet);
               }
             }
           }
-
-          // 4. Ultimate Fallback: Check if identifier is actually a hex event ID
-          if (!event && /^[0-9a-fA-F]{64}$/.test(identifier)) {
-            console.log("[PremiumArticle] d-tag failed, trying as hex event ID...");
-            event = await ndk.fetchEvent(identifier);
+          
+          // 4. Final attempt: broad d-tag search on all relays
+          if (!event) {
+            console.log("[PremiumArticle] Final attempt: broad d-tag search...");
+            event = await ndk.fetchEvent(dTagFilter, { closeOnEose: true });
           }
         }
 
@@ -129,7 +136,7 @@ export function PremiumArticleContent({ hexPubkey, identifier, slug }: PremiumAr
           console.log("[PremiumArticle] Found article successfully:", event.id);
           setArticle(event);
         } else {
-          console.warn("[PremiumArticle] No article event found for criteria");
+          console.warn("[PremiumArticle] No article found after all attempts");
         }
       } catch (err) {
         console.error("[PremiumArticle] Fetch error:", err);
@@ -144,11 +151,44 @@ export function PremiumArticleContent({ hexPubkey, identifier, slug }: PremiumAr
 
   if (loading && !article) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
-        <Loader2 className="animate-spin text-primary" size={40} />
-        <div className="text-center">
-          <p className="text-muted-foreground font-medium">Memuat artikel...</p>
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6 px-4">
+        <div className="relative">
+          <Loader2 className="animate-spin text-primary" size={48} />
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="size-2 bg-primary rounded-full animate-pulse" />
+          </div>
         </div>
+        
+        <div className="text-center space-y-2">
+          <p className="text-lg font-black tracking-tight">Memuat Artikel</p>
+          <p className="text-muted-foreground text-sm font-medium">Sedang mencari di jaringan Nostr...</p>
+        </div>
+
+        {/* Diagnostic Debug Info */}
+        <div className="w-full max-w-xs bg-muted/50 rounded-2xl p-4 border border-border mt-4">
+          <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-3 border-b border-border pb-2">Debug Info</p>
+          <div className="space-y-2 font-mono text-[9px] break-all uppercase">
+            <div className="flex justify-between gap-4">
+              <span className="text-muted-foreground">Author:</span>
+              <span className="font-bold text-right">{hexPubkey?.slice(0, 16)}...</span>
+            </div>
+            <div className="flex justify-between gap-4">
+              <span className="text-muted-foreground">ID/D-Tag:</span>
+              <span className="font-bold text-right">{identifier?.slice(0, 16)}...</span>
+            </div>
+            <div className="flex justify-between gap-4">
+              <span className="text-muted-foreground">Status:</span>
+              <span className="font-bold text-primary text-right">{isReady ? "NDK Ready" : "NDK Connecting"}</span>
+            </div>
+          </div>
+        </div>
+        
+        <button 
+          onClick={() => window.location.reload()}
+          className="mt-4 px-6 py-2 rounded-full border border-border text-xs font-black uppercase tracking-widest hover:bg-accent transition-colors"
+        >
+          Muat Ulang Paksa
+        </button>
       </div>
     );
   }
