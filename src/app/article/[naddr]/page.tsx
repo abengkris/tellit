@@ -1,8 +1,7 @@
-// src/app/article/[naddr]/page.tsx
 "use client";
 
-import React, { use, useEffect, useState, useCallback } from "react";
-import { Loader2, ArrowLeft, Calendar, RefreshCw, ExternalLink } from "lucide-react";
+import React, { use, useEffect, useState, useCallback, useRef } from "react";
+import { Loader2, ArrowLeft, Calendar, RefreshCw, ExternalLink, Share, MessageSquare } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useNDK } from "@/hooks/useNDK";
 import { decodeNip19, toNpub } from "@/lib/utils/nip19";
@@ -17,15 +16,23 @@ import { PostCard } from "@/components/post/PostCard";
 import { useThread } from "@/hooks/useThread";
 import { shortenPubkey } from "@/lib/utils/nip19";
 import { ArticleRenderer } from "@/components/article/ArticleRenderer";
+import { getReadingTime, cn } from "@/lib/utils";
+import { useUIStore } from "@/store/ui";
 
 export default function ArticleDetailPage({ params }: { params: Promise<{ naddr: string }> }) {
   const { naddr } = use(params);
   const { id: hexId, relays: hintRelays, pubkey: authorPubkey, identifier } = decodeNip19(naddr);
   const { ndk, isReady } = useNDK();
+  const { addToast } = useUIStore();
   const [article, setArticle] = useState<NDKEvent | null>(null);
   const [loading, setLoading] = useState(true);
   const [attempts, setAttempts] = useState(0);
+  const [scrollProgress, setScrollProgress] = useState(0);
+  const [showTitleInHeader, setShowTitleInHeader] = useState(false);
   const router = useRouter();
+  
+  const commentsRef = useRef<HTMLDivElement>(null);
+  const articleRef = useRef<HTMLElement>(null);
 
   const { profile } = useProfile(article?.pubkey || authorPubkey);
   const { 
@@ -45,8 +52,28 @@ export default function ArticleDetailPage({ params }: { params: Promise<{ naddr:
     loadingReplies, 
     hasMoreReplies, 
     loadMoreReplies,
-    fetchRepliesFor
   } = useThread(article?.id, hintRelays);
+
+  const handleScroll = useCallback(() => {
+    if (!articleRef.current) return;
+    
+    const element = articleRef.current;
+    const totalHeight = element.clientHeight;
+    const windowHeight = window.innerHeight;
+    const scrollPosition = window.scrollY;
+    
+    // Progress calculation
+    const progress = (scrollPosition / (totalHeight - windowHeight + 400)) * 100;
+    setScrollProgress(Math.min(100, Math.max(0, progress)));
+    
+    // Header title visibility
+    setShowTitleInHeader(scrollPosition > 400);
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [handleScroll]);
 
   const fetchArticle = useCallback(async (force = false) => {
     if (!ndk || !isReady) return;
@@ -119,6 +146,30 @@ export default function ArticleDetailPage({ params }: { params: Promise<{ naddr:
       fetchArticle();
     }
   }, [isReady, ndk, fetchArticle]);
+
+  const handleShare = async () => {
+    if (!article) return;
+    const title = article.tags.find(t => t[0] === "title")?.[1] || "Untitled Article";
+    
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title,
+          text: `Read "${title}" on Tell it!`,
+          url: window.location.href,
+        });
+      } else {
+        await navigator.clipboard.writeText(window.location.href);
+        addToast("Link copied to clipboard!", "success");
+      }
+    } catch (err) {
+      console.error("Error sharing:", err);
+    }
+  };
+
+  const jumpToComments = () => {
+    commentsRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
 
   if (loading && !article) {
     return (
@@ -219,22 +270,47 @@ export default function ArticleDetailPage({ params }: { params: Promise<{ naddr:
   const summary = article.tags.find(t => t[0] === 'summary')?.[1];
   const tags = article.tags.filter(t => t[0] === 't').map(t => t[1]);
   const publishedAt = article.created_at;
-  const readingTime = Math.ceil(article.content.split(/\s+/).length / 200);
+  const readingTime = getReadingTime(article.content);
 
   return (
     <>
-      <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-md border-b border-border flex items-center px-4 py-3 space-x-6">
+      <div className="sticky top-0 z-20 bg-background/80 backdrop-blur-md border-b border-border flex items-center px-4 py-3 gap-4">
         <button 
           onClick={() => router.back()} 
-          className="p-2 hover:bg-accent rounded-full transition-colors"
+          className="p-2 hover:bg-accent rounded-full transition-colors shrink-0"
           aria-label="Back"
         >
           <ArrowLeft size={20} />
         </button>
-        <h1 className="text-xl font-[900] truncate tracking-tight">Article</h1>
+        
+        <div className="flex-1 min-w-0 transition-all duration-300">
+          <h1 className={cn(
+            "text-sm font-black truncate tracking-tight uppercase text-muted-foreground transition-all duration-500",
+            showTitleInHeader ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2 pointer-events-none"
+          )}>
+            {title}
+          </h1>
+          <h1 className={cn(
+            "text-xl font-[900] truncate tracking-tight transition-all duration-500 absolute top-3",
+            showTitleInHeader ? "opacity-0 translate-y-2 pointer-events-none" : "opacity-100 translate-y-0"
+          )}>
+            Article
+          </h1>
+        </div>
+
+        <button 
+          onClick={handleShare}
+          className="p-2 hover:bg-accent rounded-full transition-colors shrink-0"
+          aria-label="Share"
+        >
+          <Share size={20} />
+        </button>
+
+        {/* Progress Bar */}
+        <div className="absolute bottom-0 left-0 h-[3px] bg-primary transition-all duration-150 z-30" style={{ width: `${scrollProgress}%` }} />
       </div>
 
-      <article className="pb-20">
+      <article ref={articleRef} className="pb-20">
         {/* Hero Image */}
         {image && (
           <div className="w-full aspect-[21/9] relative overflow-hidden bg-muted border-b border-border">
@@ -275,6 +351,14 @@ export default function ArticleDetailPage({ params }: { params: Promise<{ naddr:
               <span className="w-1 h-1 bg-muted-foreground/30 rounded-full" />
               <span>{readingTime} min read</span>
             </div>
+            
+            <button 
+              onClick={jumpToComments}
+              className="flex items-center gap-1.5 font-bold text-primary hover:underline ml-auto"
+            >
+              <MessageSquare size={14} />
+              <span>{replies.length} comments</span>
+            </button>
           </div>
 
           <h1 className="text-4xl sm:text-5xl font-[900] mb-6 leading-[1.1] tracking-tight text-foreground">
@@ -323,7 +407,7 @@ export default function ArticleDetailPage({ params }: { params: Promise<{ naddr:
         </div>
 
         {/* Replies Section */}
-        <div className="border-t-8 border-muted/30">
+        <div ref={commentsRef} className="border-t-8 border-muted/30 scroll-mt-20">
           <div className="p-4 border-b border-border bg-background sticky top-[57px] z-10 flex items-center justify-between">
             <h3 className="font-black text-sm uppercase tracking-widest text-muted-foreground">Comments</h3>
             <span className="bg-muted px-2 py-0.5 rounded text-[10px] font-black">{replies.length}</span>
