@@ -49,19 +49,32 @@ export default function PremiumArticlePage({ params }: { params: Promise<{ npub:
   } = useThread(article?.id);
 
   useEffect(() => {
-    if (!ndk || !isReady || !hexPubkey) return;
+    if (!ndk || !isReady || !hexPubkey) {
+      console.log("[PremiumArticle] Waiting for ready:", { hasNdk: !!ndk, isReady, hasPubkey: !!hexPubkey });
+      return;
+    }
 
     const fetchArticle = async () => {
+      console.log("[PremiumArticle] Starting fetch for", slug, identifier, "pubkey:", hexPubkey);
+      setLoading(true);
+      
+      const safetyTimeout = setTimeout(() => {
+        console.warn("[PremiumArticle] Fetch timed out after 15s");
+        setLoading(false);
+      }, 15000);
+
       try {
         let event: NDKEvent | null = null;
         
         // Premium URL typically uses identifier (d-tag)
         // Check if identifier is actually a NIP-19 naddr
         if (identifier.startsWith('naddr1')) {
+          console.log("[PremiumArticle] identifier is naddr, decoding...");
           const { id: hexId } = decodeNip19(identifier);
           event = await ndk.fetchEvent(hexId);
         } else {
           // Fetch by identifier + pubkey
+          console.log("[PremiumArticle] fetching by d-tag filter...");
           event = await ndk.fetchEvent({
             kinds: [30023],
             authors: [hexPubkey],
@@ -70,22 +83,43 @@ export default function PremiumArticlePage({ params }: { params: Promise<{ npub:
         }
 
         if (event) {
+          console.log("[PremiumArticle] Found article:", event.id);
           setArticle(event);
+        } else {
+          console.warn("[PremiumArticle] No event found for", identifier);
         }
       } catch (err) {
-        console.error("Failed to fetch article:", err);
+        console.error("[PremiumArticle] Failed to fetch article:", err);
       } finally {
+        clearTimeout(safetyTimeout);
         setLoading(false);
       }
     };
 
     fetchArticle();
-  }, [ndk, isReady, hexPubkey, identifier]);
+  }, [ndk, isReady, hexPubkey, identifier, slug]);
 
   if (resolving || (loading && !article)) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
         <Loader2 className="animate-spin text-primary" size={40} />
+        <div className="text-center">
+          <p className="text-muted-foreground font-medium">Memuat artikel...</p>
+          {!resolving && loading && (
+            <p className="text-[10px] text-muted-foreground/50 mt-2 font-mono uppercase tracking-widest">
+              Author: {hexPubkey?.slice(0, 8)}... ID: {identifier.slice(0, 8)}...
+            </p>
+          )}
+        </div>
+        
+        {!resolving && (
+          <button 
+            onClick={() => window.location.reload()}
+            className="mt-4 text-xs text-primary hover:underline font-bold"
+          >
+            Masih macet? Klik untuk memuat ulang
+          </button>
+        )}
       </div>
     );
   }
