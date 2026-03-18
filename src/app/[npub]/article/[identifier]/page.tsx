@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { PremiumArticleContent } from "./PremiumArticleContent";
 import { decodeNip19 } from "@/lib/utils/nip19";
 import { resolveVanitySlug, isVanitySlug } from "@/lib/utils/identity";
+import { getNDK } from "@/lib/ndk";
 import { Loader2 } from "lucide-react";
 
 interface Props {
@@ -20,6 +21,16 @@ async function resolveSlug(slug: string): Promise<string> {
     if (isVanitySlug(slug)) {
       const pubkey = await resolveVanitySlug(slug);
       if (pubkey) return pubkey;
+
+      // 2.5. Try NIP-05 resolution via NDK as a robust fallback
+      try {
+        const ndk = getNDK();
+        const nip05 = slug.includes('@') ? slug : `${slug}@tellit.id`;
+        const user = await ndk.fetchUser(nip05);
+        if (user?.pubkey) return user.pubkey;
+      } catch (e) {
+        console.warn(`[resolveSlug] NDK NIP-05 fallback failed for ${slug}`, e);
+      }
     }
 
     if (/^[0-9a-fA-F]{64}$/.test(slug)) {

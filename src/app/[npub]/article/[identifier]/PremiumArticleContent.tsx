@@ -39,7 +39,14 @@ export function PremiumArticleContent({ hexPubkey, identifier, slug }: PremiumAr
   const commentsRef = useRef<HTMLDivElement>(null);
   const articleRef = useRef<HTMLElement>(null);
 
-  const { profile } = useProfile(article?.pubkey || hexPubkey);
+  // Debug logging
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      console.log("[PremiumArticle] Render state:", { hexPubkey, identifier, slug, isReady, hasNdk: !!ndk });
+    }
+  }, [hexPubkey, identifier, slug, isReady, ndk]);
+
+  const { profile } = useProfile(article?.pubkey || (hexPubkey !== "" ? hexPubkey : undefined));
   const { 
     likes, 
     reposts, 

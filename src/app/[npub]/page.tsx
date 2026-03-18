@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { ProfileContent } from "./ProfileContent";
 import { decodeNip19, shortenPubkey, toNpub } from "@/lib/utils/nip19";
 import { resolveVanitySlug, isVanitySlug } from "@/lib/utils/identity";
-import { connectNDK } from "@/lib/ndk";
+import { connectNDK, getNDK } from "@/lib/ndk";
 import { FeedSkeleton } from "@/components/feed/FeedSkeleton";
 
 interface Props {
@@ -14,14 +14,29 @@ interface Props {
 async function resolveSlug(slug: string): Promise<string> {
   // 1. Check if it's an npub
   if (slug.startsWith("npub1")) {
-    const { id } = decodeNip19(slug);
-    return id;
+    try {
+      const { id } = decodeNip19(slug);
+      return id;
+    } catch {
+      return "";
+    }
   }
 
-  // 2. Check if it's a vanity slug and resolve it
+  // 2. Check if it's a vanity slug and resolve it via internal DB
   if (isVanitySlug(slug)) {
     const pubkey = await resolveVanitySlug(slug);
     if (pubkey) return pubkey;
+    
+    // 2.5. Try NIP-05 resolution via NDK as a robust fallback
+    try {
+      const ndk = getNDK();
+      // Try both raw slug (for domain-only) and slug@tellit.id
+      const nip05 = slug.includes('@') ? slug : `${slug}@tellit.id`;
+      const user = await ndk.fetchUser(nip05);
+      if (user?.pubkey) return user.pubkey;
+    } catch (e) {
+      console.warn(`[resolveSlug] NDK NIP-05 fallback failed for ${slug}`, e);
+    }
   }
 
   // 3. Fallback to hex decoding if it's a 64 char hex string
