@@ -6,18 +6,23 @@ import { decodeNip19, shortenPubkey, toNpub } from "@/lib/utils/nip19";
 import { resolveVanitySlug, isVanitySlug } from "@/lib/utils/identity";
 import { connectNDK, getNDK } from "@/lib/ndk";
 import { FeedSkeleton } from "@/components/feed/FeedSkeleton";
+import { idLog } from "@/lib/utils/id-logger";
 
 interface Props {
   params: Promise<{ npub: string }>;
 }
 
 async function resolveSlug(slug: string): Promise<string> {
+  const tracker = idLog.trackResolution(slug);
+
   // 1. Check if it's an npub
   if (slug.startsWith("npub1")) {
     try {
       const { id } = decodeNip19(slug);
+      tracker.success("nip19-npub", id);
       return id;
-    } catch {
+    } catch (err) {
+      tracker.fail("nip19-npub", err);
       return "";
     }
   }
@@ -25,25 +30,35 @@ async function resolveSlug(slug: string): Promise<string> {
   // 2. Check if it's a vanity slug and resolve it via internal DB
   if (isVanitySlug(slug)) {
     const pubkey = await resolveVanitySlug(slug);
-    if (pubkey) return pubkey;
+    if (pubkey) {
+      tracker.success("internal-db", pubkey);
+      return pubkey;
+    }
+    tracker.fail("internal-db", "Not found in handles table");
     
     // 2.5. Try NIP-05 resolution via NDK as a robust fallback
     try {
       const ndk = getNDK();
-      // Try both raw slug (for domain-only) and slug@tellit.id
       const nip05 = slug.includes('@') ? slug : `${slug}@tellit.id`;
+      idLog.debug(`Attempting NIP-05 fallback: ${nip05}`);
       const user = await ndk.fetchUser(nip05);
-      if (user?.pubkey) return user.pubkey;
+      if (user?.pubkey) {
+        tracker.success("ndk-nip05", user.pubkey);
+        return user.pubkey;
+      }
+      tracker.fail("ndk-nip05", "NDK fetchUser returned no pubkey");
     } catch (e) {
-      console.warn(`[resolveSlug] NDK NIP-05 fallback failed for ${slug}`, e);
+      tracker.fail("ndk-nip05-fatal", e);
     }
   }
 
   // 3. Fallback to hex decoding if it's a 64 char hex string
   if (/^[0-9a-fA-F]{64}$/.test(slug)) {
+    tracker.success("hex-direct", slug);
     return slug;
   }
 
+  tracker.fatal("Resolution exhausted, no pubkey found");
   return "";
 }
 
@@ -79,7 +94,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         images: [image],
       },
     };
-  } catch (err) {
+  } catch {
     return {
       title: "Profile",
     };
