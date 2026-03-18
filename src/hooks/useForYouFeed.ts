@@ -5,8 +5,9 @@ import { NDKEvent, NDKKind, NDKSubscription, NDKFilter } from "@nostr-dev-kit/nd
 import { useNDK } from "@/hooks/useNDK";
 import { useWoT } from "./useWoT";
 import { useUIStore } from "@/store/ui";
-import { rankEvents, ScoringContext } from "@/lib/feed/scorer";
+import { ScoredEvent } from "@/lib/feed/scorer";
 import { validateEvent } from "@/lib/policies";
+
 
 interface UseForYouFeedOptions {
   viewerPubkey: string;
@@ -36,6 +37,7 @@ export function useForYouFeed({
   const { wotStrictMode } = useUIStore();
 
   const [rawEvents, setRawEvents] = useState<NDKEvent[]>([]);
+  const [rankedPosts, setRankedPosts] = useState<NDKEvent[]>([]);
   const [newCount, setNewCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [hasMore, setHasMore] = useState(true);
@@ -51,6 +53,28 @@ export function useForYouFeed({
   const isInitialLoadDone = useRef(false);
   const prevFollowingListRef = useRef<string>("");
 
+  // Worker for background scoring
+  const workerRef = useRef<Worker | null>(null);
+  const scoringTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    workerRef.current = new Worker(new URL("@/lib/feed/scorer.worker.ts", import.meta.url));
+    
+    workerRef.current.onmessage = (e: MessageEvent<ScoredEvent[]>) => {
+      if (!ndk) return;
+      const scoredEvents = e.data;
+      const events = scoredEvents.map(se => {
+        const event = new NDKEvent(ndk, se.event);
+        return event;
+      });
+      setRankedPosts(events);
+    };
+
+    return () => {
+      workerRef.current?.terminate();
+    };
+  }, [ndk]);
+
   // Memoized mutuals map to avoid re-calculating on every event
   const mutualsMap = useMemo(() => {
     if (!wot) return new Map<string, number>();
@@ -65,32 +89,55 @@ export function useForYouFeed({
     return map;
   }, [wot]);
 
-  // Memoized ranked posts using advanced scorer
-  const posts = useMemo(() => {
-    let baseEvents = rawEvents;
-    
-    // Strict Mode: Filter out anyone with 0 score (unknown/spam)
-    if (wot && wotStrictMode) {
-      baseEvents = rawEvents.filter(e => wot.getScore(e.pubkey) > 0);
-    }
+  // Trigger worker-based scoring when inputs change
+  useEffect(() => {
+    if (!workerRef.current || !isReady || !ndk) return;
 
-    if (!wot) return sortByTime(baseEvents);
+    if (scoringTimeoutRef.current) clearTimeout(scoringTimeoutRef.current);
 
-    // Prepare context for the scorer
-    const context: ScoringContext = {
-      viewerPubkey,
-      followingSet: new Set(followingList),
-      followsOfFollowsSet: new Set(wot.getAllPubkeys()),
-      interactionHistory: new Map(), // To be implemented if we start tracking this
-      trustScores,
-      mutualsMap,
-      interestsSet: new Set(interests),
+    scoringTimeoutRef.current = setTimeout(() => {
+      let baseEvents = rawEvents;
+      
+      // Strict Mode: Filter out anyone with 0 score (unknown/spam)
+      if (wot && wotStrictMode) {
+        baseEvents = rawEvents.filter(e => wot.getScore(e.pubkey) > 0);
+      }
+
+      if (baseEvents.length === 0) {
+        setRankedPosts([]);
+        return;
+      }
+
+      if (!wot) {
+        setRankedPosts(sortByTime(baseEvents));
+        return;
+      }
+
+      // Prepare context for the worker (plain objects only)
+      const context = {
+        viewerPubkey,
+        followingSet: Array.from(followingList),
+        followsOfFollowsSet: Array.from(wot.getAllPubkeys()),
+        interactionHistory: Array.from(new Map().entries()), // To be implemented
+        trustScores: Object.fromEntries(trustScores.entries()),
+        mutualsMap: Object.fromEntries(mutualsMap.entries()),
+        interestsSet: Array.from(interests),
+      };
+
+      const plainEvents = baseEvents.map(e => e.rawEvent());
+
+      workerRef.current?.postMessage({
+        events: plainEvents,
+        context,
+      });
+    }, 100); // 100ms debounce for scoring
+
+    return () => {
+      if (scoringTimeoutRef.current) clearTimeout(scoringTimeoutRef.current);
     };
+  }, [rawEvents, wot, wotStrictMode, followingList, viewerPubkey, trustScores, mutualsMap, interests, isReady, ndk]);
 
-    return rankEvents(baseEvents, context)
-      .filter(se => se && se.event && se.event.id)
-      .map(se => se.event);
-  }, [rawEvents, wot, wotStrictMode, followingList, viewerPubkey, trustScores, mutualsMap, interests]);
+  const posts = rankedPosts;
 
   // Batch process new events into rawEvents state
   const processUpdateBuffer = useCallback(() => {

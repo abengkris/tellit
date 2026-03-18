@@ -1,19 +1,18 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
-import { useWalletStore, WalletType, EncryptedData } from "@/store/wallet";
+import React, { useState } from "react";
+import { useWalletStore } from "@/store/wallet";
 import { useNDK } from "@/hooks/useNDK";
 import { useWallet } from "@/hooks/useWallet";
 import { useAuthStore } from "@/store/auth";
 import { useUIStore } from "@/store/ui";
+import { useWalletHistory } from "@/hooks/useWalletHistory";
 import { 
   Wallet, 
   RefreshCw,
   ArrowUpRight, 
   ArrowDownLeft, 
-  Zap, 
   Trash2, 
-  ExternalLink, 
   Settings,
   History,
   CreditCard,
@@ -22,91 +21,19 @@ import {
   EyeOff,
   ShieldCheck,
   Lock,
-  Mic,
   Plus,
   Coins,
   X,
   Loader2,
   Globe
 } from "lucide-react";
-import { NDKEvent, NDKFilter, NDKSubscriptionCacheUsage } from "@nostr-dev-kit/ndk";
-import { NDKWalletTransaction } from "@nostr-dev-kit/wallet";
 import { format } from "date-fns";
-import Link from "next/link";
-import { shortenPubkey, toNpub } from "@/lib/utils/nip19";
 import { WalletPinModal } from "@/components/common/WalletPinModal";
-import { useProfile } from "@/hooks/useProfile";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-
-const ZapUser = ({ pubkey }: { pubkey: string }) => {
-  const { profile } = useProfile(pubkey);
-  const name = profile?.display_name || profile?.name || shortenPubkey(pubkey);
-  return (
-    <Link href={`/${toNpub(pubkey)}`} className="text-blue-500 hover:underline font-bold">
-      {name}
-    </Link>
-  );
-};
-
-interface ParsedZap {
-  otherPartyPubkey: string | null;
-  amount: number;
-  isSent: boolean;
-  timestamp: number;
-  id: string;
-  podcast?: {
-    itemGuid?: string;
-    itemUrl?: string;
-    podcastGuid?: string;
-    podcastUrl?: string;
-  };
-}
-
-function parseZapReceipt(zap: NDKEvent, currentUserPubkey?: string): ParsedZap {
-  let senderPubkey: string | null = null;
-  const recipientPubkey: string | null = zap.tags.find(t => t[0] === 'p')?.[1] || null;
-  let amount = 0;
-
-  // Extract podcast metadata from root tags (Kind 9735)
-  const itemTag = zap.tags.find(t => t[0] === 'i' && t[1]?.startsWith('podcast:item:guid:'));
-  const podcastTag = zap.tags.find(t => t[0] === 'i' && t[1]?.startsWith('podcast:guid:'));
-
-  try {
-    const descriptionTag = zap.tags.find(t => t[0] === 'description');
-    if (descriptionTag?.[1]) {
-      const zapRequest = JSON.parse(descriptionTag[1]);
-      senderPubkey = zapRequest.pubkey;
-      
-      const amountTag = zapRequest.tags.find((t: string[]) => t[0] === 'amount');
-      if (amountTag?.[1]) {
-        amount = Math.floor(Number(amountTag[1]) / 1000);
-      }
-    }
-  } catch (e) {
-    console.error("Failed to parse zap description", e);
-  }
-
-  const isSent = senderPubkey === currentUserPubkey;
-  const otherPartyPubkey = isSent ? recipientPubkey : senderPubkey;
-
-  return {
-    otherPartyPubkey,
-    amount,
-    isSent,
-    timestamp: zap.created_at || 0,
-    id: zap.id,
-    podcast: (itemTag || podcastTag) ? {
-      itemGuid: itemTag?.[1],
-      itemUrl: itemTag?.[2],
-      podcastGuid: podcastTag?.[1],
-      podcastUrl: podcastTag?.[2],
-    } : undefined
-  };
-}
 
 export default function WalletPage() {
   const { 
@@ -123,119 +50,16 @@ export default function WalletPage() {
     lock
   } = useWalletStore();
   
-  const { ndk, isReady, isWalletReady } = useNDK();
-  const { wallet, refreshBalance, fetchTransactions } = useWallet();
-  const { isLoggedIn, user } = useAuthStore();
+  const { refreshBalance } = useWallet();
+  const { transactions, isLoading: isLoadingTx, refresh: refreshHistory } = useWalletHistory();
+  const { isLoggedIn } = useAuthStore();
   const { addToast, defaultZapAmount, setDefaultZapAmount, hideBalance, setHideBalance } = useUIStore();
 
   const [pairingInput, setPairingInput] = useState("");
   const [showPairing, setShowPairing] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [transactions, setTransactions] = useState<NDKWalletTransaction[]>([]);
-  const [isLoadingTx, setIsLoadingTx] = useState(false);
   const [showPinModal, setShowPinModal] = useState(false);
   const [newMintUrl, setNewMintUrl] = useState("");
-
-  // Load transactions
-  useEffect(() => {
-    if (!ndk || !user?.pubkey || isLocked) return;
-
-    const isMounted = { current: true };
-
-    const loadData = async () => {
-      setIsLoadingTx(true);
-      try {
-        // 1. Fetch from wallet provider (NWC/Cashu)
-        let walletTxs: NDKWalletTransaction[] = [];
-        if (wallet) {
-          console.log(`[WalletPage] Fetching transactions from ${walletType} wallet...`);
-          walletTxs = await fetchTransactions();
-          console.log(`[WalletPage] Received ${walletTxs.length} transactions from wallet`);
-        }
-
-        // 2. Fetch Zap Receipts (Kind 9735) as fallback/supplement
-        console.log(`[WalletPage] Fetching Zap receipts for ${user.pubkey}...`);
-        const filter: NDKFilter = {
-          kinds: [9735],
-          authors: [user.pubkey], 
-          limit: 30
-        };
-        const receivedFilter: NDKFilter = {
-          kinds: [9735],
-          "#p": [user.pubkey], 
-          limit: 30
-        };
-
-        const fetchZaps = async (f: NDKFilter) => {
-          return new Promise<Set<NDKEvent>>((resolve) => {
-            const events = new Set<NDKEvent>();
-            // Use PARALLEL cache usage to ensure we get events from both local and remote
-            const sub = ndk.subscribe(f, { 
-              closeOnEose: true,
-              cacheUsage: NDKSubscriptionCacheUsage.PARALLEL
-            });
-            sub.on("event", (e) => events.add(e));
-            sub.on("eose", () => resolve(events));
-            // Ensure we resolve after some time even if EOSE is slow
-            setTimeout(() => { sub.stop(); resolve(events); }, 8000);
-          });
-        };
-
-        const [sent, received] = await Promise.all([
-          fetchZaps(filter),
-          fetchZaps(receivedFilter)
-        ]);
-
-        if (!isMounted.current) return;
-
-        const allZaps = Array.from(new Set([...Array.from(sent), ...Array.from(received)]));
-        const mappedZaps: NDKWalletTransaction[] = allZaps.map(zap => {
-          const parsed = parseZapReceipt(zap, user.pubkey);
-          return {
-            id: `zap-${zap.id}`, // Prefix to avoid collisions
-            direction: parsed.isSent ? 'out' : 'in',
-            amount: parsed.amount,
-            timestamp: parsed.timestamp,
-            description: parsed.isSent ? 'Sent Zap' : 'Received Zap',
-          };
-        });
-
-        // 3. Merge and Deduplicate
-        const deduplicated = new Map<string, NDKWalletTransaction>();
-        
-        // Add wallet transactions first (preferred IDs)
-        walletTxs.forEach(tx => deduplicated.set(tx.id, tx));
-
-        // Add Zap receipts with fuzzy matching to avoid duplicates if they represent the same event
-        mappedZaps.forEach(zapTx => {
-          // Check if we already have a similar wallet transaction
-          const isDuplicate = walletTxs.some(wTx => 
-            wTx.amount === zapTx.amount && 
-            Math.abs(wTx.timestamp - zapTx.timestamp) < 5 &&
-            wTx.direction === zapTx.direction
-          );
-
-          if (!isDuplicate) {
-            deduplicated.set(zapTx.id, zapTx);
-          }
-        });
-
-        const combined = Array.from(deduplicated.values())
-          .sort((a, b) => b.timestamp - a.timestamp)
-          .slice(0, 50);
-
-        setTransactions(combined);
-      } catch (err) {
-        console.error("Failed to load history:", err);
-      } finally {
-        if (isMounted.current) setIsLoadingTx(false);
-      }
-    };
-
-    loadData();
-    if (wallet) refreshBalance();
-    return () => { isMounted.current = false; };
-  }, [ndk, user?.pubkey, wallet, isLocked, fetchTransactions, refreshBalance]);
 
   const handleRefresh = async () => {
     if (isLocked) {
@@ -243,9 +67,10 @@ export default function WalletPage() {
       return;
     }
     setIsRefreshing(true);
-    await refreshBalance();
-    const txs = await fetchTransactions();
-    setTransactions(txs);
+    await Promise.all([
+      refreshBalance(),
+      refreshHistory()
+    ]);
     setTimeout(() => setIsRefreshing(false), 1000);
   };
 

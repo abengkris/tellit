@@ -53,7 +53,7 @@ export class CachedWoT {
   /**
    * Returns all pubkeys present in the cached graph.
    */
-  getAllPubkeys(_options?: { maxDepth?: number }): string[] {
+  getAllPubkeys(): string[] {
     return Array.from(this.scores.keys());
   }
 }
@@ -109,6 +109,21 @@ export function useWoT(viewerPubkey: string | undefined): UseWoTReturn {
     let isMounted = true;
 
     const checkCacheAndLoad = async () => {
+      // 1.5. Pre-populate with direct follows for instant "Following" priority
+      try {
+        const user = ndk.getUser({ pubkey: viewerPubkey });
+        const follows = await user.follows();
+        if (isMounted && trustScores.size === 0) {
+          const initialScores = new Map<string, number>();
+          follows.forEach(f => initialScores.set(f.pubkey, 1.0));
+          setTrustScores(initialScores);
+          setPubkeyCount(follows.size);
+          console.log(`[WoT] Pre-populated ${follows.size} direct follows.`);
+        }
+      } catch {
+        console.warn("[WoT] Failed to pre-populate follows");
+      }
+
       // 2. Check Dexie Cache
       let isCacheValid = false;
       try {
@@ -224,7 +239,7 @@ export function useWoT(viewerPubkey: string | undefined): UseWoTReturn {
     return () => {
       isMounted = false;
     };
-  }, [ndk, isReady, viewerPubkey, wot, status, retries]);
+  }, [ndk, isReady, viewerPubkey, wot, status, retries, trustScores.size]);
 
   return { wot, trustScores, status, pubkeyCount };
 }
