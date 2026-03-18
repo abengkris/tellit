@@ -21,18 +21,26 @@ export async function generateMetadata({
   params: Promise<{ npub: string }> 
 }): Promise<Metadata> {
   const { npub: slug } = await params;
-  const hexPubkey = await resolveSlug(slug);
-  const displayId = hexPubkey ? shortenPubkey(toNpub(hexPubkey)) : slug;
-  const title = `Profile (${displayId})`;
   
-  return {
-    title,
-    description: `View ${displayId}'s profile on Tell it!, a decentralized microblogging platform.`,
-    openGraph: {
-      title: `${title} | Tell it!`,
-      description: `View ${displayId}'s profile on Tell it!.`,
-    },
-  };
+  try {
+    const hexPubkey = await resolveSlug(slug);
+    const displayId = hexPubkey ? shortenPubkey(toNpub(hexPubkey)) : slug;
+    const title = `Profile (${displayId})`;
+    
+    return {
+      title,
+      description: `View ${displayId}'s profile on Tell it!, a decentralized microblogging platform.`,
+      openGraph: {
+        title: `${title} | Tell it!`,
+        description: `View ${displayId}'s profile on Tell it!.`,
+      },
+    };
+  } catch (err) {
+    console.warn("[ProfileMetadata] Error resolving slug:", err);
+    return {
+      title: `Profile (${slug})`,
+    };
+  }
 }
 
 export default function ProfileLayout({
