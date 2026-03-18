@@ -270,7 +270,7 @@ export default function ArticleDetailPage({ params }: { params: Promise<{ naddr:
   const summary = article.tags.find(t => t[0] === 'summary')?.[1];
   const tags = article.tags.filter(t => t[0] === 't').map(t => t[1]);
   const publishedAt = article.created_at;
-  const readingTime = getReadingTime(article.content);
+  const readingTime = getReadingTime(article.content || "");
 
   return (
     <>

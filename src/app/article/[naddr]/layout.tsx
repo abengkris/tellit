@@ -14,8 +14,12 @@ export async function generateMetadata({
     const { id: hexId, relays: hintRelays, pubkey: authorPubkey, identifier } = decodeNip19(naddr);
     const ndk = getNDK();
     
-    // Connect briefly to fetch metadata
-    await ndk.connect(5000);
+    // Connect with a strict timeout for the server-side metadata fetch
+    try {
+      await ndk.connect(2000);
+    } catch (e) {
+      console.warn("[ArticleMetadata] NDK connection timeout/error", e);
+    }
 
     const relayUrls = Array.from(new Set([
       ...(hintRelays || []),
