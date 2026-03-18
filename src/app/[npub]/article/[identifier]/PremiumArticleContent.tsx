@@ -52,12 +52,20 @@ export function PremiumArticleContent({ hexPubkey, identifier, slug }: PremiumAr
   } = useThread(article?.id);
 
   useEffect(() => {
-    if (!ndk || !isReady || !hexPubkey) {
-      console.log("[PremiumArticle] Waiting for ready...", { hasNdk: !!ndk, isReady, hasPubkey: !!hexPubkey });
+    if (!ndk || !isReady || !hexPubkey || !identifier) {
+      console.log("[PremiumArticle] Requirements not yet met:", { 
+        hasNdk: !!ndk, 
+        isReady, 
+        hasPubkey: !!hexPubkey, 
+        hasIdentifier: !!identifier 
+      });
       return;
     }
 
     const fetchArticle = async () => {
+      // Ensure we don't start fetch if anything critical is missing
+      if (!hexPubkey || !identifier) return;
+
       console.log("[PremiumArticle] Starting fetch cycle for:", { slug, identifier, hexPubkey });
       setLoading(true);
       
@@ -86,7 +94,7 @@ export function PremiumArticleContent({ hexPubkey, identifier, slug }: PremiumAr
           event = await ndk.fetchEvent(filter, { cacheUsage: NDKSubscriptionCacheUsage.CACHE_FIRST, closeOnEose: true });
           
           // 3. Fallback: Outbox discovery (Search author's specific relays)
-          if (!event) {
+          if (!event && hexPubkey) {
             console.log("[PremiumArticle] Not in cache/default relays, discovering author relays...");
             
             // fetch author's relay list (kind 10002) manually
