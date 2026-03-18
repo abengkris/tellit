@@ -59,11 +59,15 @@ export function getProfileUrl(profile: ProfileMetadata | null | undefined): stri
 export function isVanitySlug(slug: string): boolean {
   if (!slug) return false;
   
+  // Strip leading @ if present
+  const cleanSlug = slug.startsWith('@') ? slug.slice(1) : slug;
+  if (!cleanSlug) return false;
+  
   // If it's a reserved word, it's not a vanity username
-  if (RESERVED_SLUGS.has(slug.toLowerCase())) return false;
+  if (RESERVED_SLUGS.has(cleanSlug.toLowerCase())) return false;
   
   // If it's a standard Nostr identifier, it's not a vanity username
-  if (slug.startsWith("npub1") || slug.startsWith("nprofile1")) return false;
+  if (cleanSlug.startsWith("npub1") || cleanSlug.startsWith("nprofile1")) return false;
   
   // Otherwise, treat as a potential vanity username
   return true;
@@ -75,12 +79,15 @@ export function isVanitySlug(slug: string): boolean {
 export async function resolveVanitySlug(slug: string): Promise<string | null> {
   if (!slug || !isVanitySlug(slug)) return null;
 
+  // Strip leading @ if present
+  const name = (slug.startsWith('@') ? slug.slice(1) : slug).toLowerCase();
+
   try {
     const supabase = getSupabaseAdmin();
     const { data, error } = await supabase
       .from("handles")
       .select("pubkey")
-      .eq("name", slug.toLowerCase())
+      .eq("name", name)
       .single();
 
     if (error || !data) return null;

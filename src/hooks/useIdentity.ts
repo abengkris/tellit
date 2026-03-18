@@ -37,10 +37,12 @@ export function useResolveIdentity(slug: string | undefined) {
             throw new Error("Supabase client not initialized");
           }
 
+          const name = (slug!.startsWith('@') ? slug!.slice(1) : slug!).toLowerCase();
+
           const { data, error: dbError } = await supabase
             .from("handles")
             .select("pubkey")
-            .eq("name", slug!.toLowerCase())
+            .eq("name", name)
             .single();
 
           if (dbError || !data) {
