@@ -88,13 +88,20 @@ export function PremiumArticleContent({ hexPubkey, identifier, slug }: PremiumAr
           // 3. Fallback: Outbox discovery (Search author's specific relays)
           if (!event) {
             console.log("[PremiumArticle] Not in cache/default relays, discovering author relays...");
-            const author = ndk.getUser({ pubkey: hexPubkey });
             
-            // fetch author's relay list (kind 10002)
-            const relayList = await author.relayList();
+            // fetch author's relay list (kind 10002) manually
+            const relayListEvents = await ndk.fetchEvents({
+              kinds: [10002],
+              authors: [hexPubkey]
+            }, { closeOnEose: true });
             
-            if (relayList && relayList.length > 0) {
-              const writeRelayUrls = relayList.filter(r => r.tag === 'write').map(r => r.url);
+            const relayListEvent = Array.from(relayListEvents)[0];
+            
+            if (relayListEvent) {
+              const writeRelayUrls = relayListEvent.tags
+                .filter(t => t[0] === 'r' && (!t[2] || t[2] === 'write'))
+                .map(t => t[1]);
+
               if (writeRelayUrls.length > 0) {
                 console.log("[PremiumArticle] Author write relays found:", writeRelayUrls);
                 const relaySet = NDKRelaySet.fromRelayUrls(writeRelayUrls, ndk);
