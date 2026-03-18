@@ -53,13 +53,16 @@ export function PremiumArticleContent({ hexPubkey, identifier, slug }: PremiumAr
 
   useEffect(() => {
     if (!ndk || !isReady || !hexPubkey) {
+      console.log("[PremiumArticle] Waiting for ready...", { hasNdk: !!ndk, isReady, hasPubkey: !!hexPubkey });
       return;
     }
 
     const fetchArticle = async () => {
+      console.log("[PremiumArticle] Starting fetch cycle for:", { slug, identifier, hexPubkey });
       setLoading(true);
       
       const safetyTimeout = setTimeout(() => {
+        console.warn("[PremiumArticle] Fetch timed out after 15s");
         setLoading(false);
       }, 15000);
 
@@ -69,22 +72,36 @@ export function PremiumArticleContent({ hexPubkey, identifier, slug }: PremiumAr
         // Premium URL typically uses identifier (d-tag)
         // Check if identifier is actually a NIP-19 naddr
         if (identifier.startsWith('naddr1')) {
+          console.log("[PremiumArticle] Identifier is naddr, decoding...");
           const { id: hexId } = decodeNip19(identifier);
           event = await ndk.fetchEvent(hexId);
         } else {
           // Fetch by identifier + pubkey
-          event = await ndk.fetchEvent({
+          // We broaden the filter by removing explicit 'kinds' if needed, but 30023 is standard.
+          const filter = {
             kinds: [30023],
             authors: [hexPubkey],
             "#d": [identifier]
-          });
+          };
+          console.log("[PremiumArticle] Fetching with filter:", filter);
+          
+          // Try to get from cache first for speed
+          event = await ndk.fetchEvent(filter, { cacheUsage: 1 }); // CACHE_FIRST
+          
+          if (!event) {
+            console.log("[PremiumArticle] Not in cache, fetching from relays...");
+            event = await ndk.fetchEvent(filter);
+          }
         }
 
         if (event) {
+          console.log("[PremiumArticle] Found article successfully:", event.id);
           setArticle(event);
+        } else {
+          console.warn("[PremiumArticle] No article event found for criteria");
         }
       } catch (err) {
-        console.error("[PremiumArticle] Failed to fetch article:", err);
+        console.error("[PremiumArticle] Fetch error:", err);
       } finally {
         clearTimeout(safetyTimeout);
         setLoading(false);
@@ -92,7 +109,7 @@ export function PremiumArticleContent({ hexPubkey, identifier, slug }: PremiumAr
     };
 
     fetchArticle();
-  }, [ndk, isReady, hexPubkey, identifier]);
+  }, [ndk, isReady, hexPubkey, identifier, slug]);
 
   if (loading && !article) {
     return (
