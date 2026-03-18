@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
@@ -17,9 +17,17 @@ interface ArticleRendererProps {
   event: NDKEvent;
 }
 
-export function ArticleRenderer({ content }: ArticleRendererProps) {
+export function ArticleRenderer({ content: rawContent }: ArticleRendererProps) {
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
   const [lightboxAlt, setLightboxAlt] = useState<string | undefined>(undefined);
+
+  // Pre-parse content for inline NIP-27 mentions (nostr:npub1...)
+  // This turns raw nostr: URIs into markdown links so they are handled by our 'a' component
+  const content = useMemo(() => {
+    // Matches nostr: URIs not already in markdown link syntax [text](nostr:...)
+    const nostrRegex = /(?<!\(|\[)nostr:([a-zA-Z0-9]+)/g;
+    return rawContent.replace(nostrRegex, (match, nip19) => `[${nip19}](${match})`);
+  }, [rawContent]);
 
   return (
     <div className="prose prose-lg dark:prose-invert prose-blue max-w-none 
@@ -107,30 +115,53 @@ export function ArticleRenderer({ content }: ArticleRendererProps) {
               </a>
             );
           },
-          // Responsive Images
-          img: ({ src, alt, ...props }) => (
-            <div className="my-8 flex flex-col items-center">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img 
-                src={src} 
-                alt={alt || ""} 
-                className="rounded-3xl shadow-xl border border-border max-h-[70vh] object-contain transition-transform hover:scale-[1.01] cursor-zoom-in" 
-                loading="lazy"
-                onClick={() => {
-                  if (typeof src === 'string') {
-                    setLightboxSrc(src);
-                    setLightboxAlt(alt);
-                  }
-                }}
-                {...props} 
-              />
-              {alt && (
-                <span className="text-sm text-muted-foreground mt-4 font-black uppercase tracking-tight opacity-70 italic">
-                  {alt}
-                </span>
-              )}
-            </div>
-          ),
+          // Responsive Images & Videos
+          img: ({ src, alt, ...props }) => {
+            if (!src) return null;
+            
+            const isVideo = /\.(mp4|webm|ogg|mov)$/i.test(src);
+
+            if (isVideo) {
+              return (
+                <div className="my-10 flex flex-col items-center">
+                  <video 
+                    src={src} 
+                    controls 
+                    className="rounded-3xl shadow-2xl border border-border max-h-[70vh] w-full bg-black/5"
+                  />
+                  {alt && (
+                    <span className="text-sm text-muted-foreground mt-4 font-black uppercase tracking-tight opacity-70 italic text-center">
+                      {alt}
+                    </span>
+                  )}
+                </div>
+              );
+            }
+
+            return (
+              <div className="my-8 flex flex-col items-center">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img 
+                  src={src} 
+                  alt={alt || ""} 
+                  className="rounded-3xl shadow-xl border border-border max-h-[70vh] object-contain transition-transform hover:scale-[1.01] cursor-zoom-in" 
+                  loading="lazy"
+                  onClick={() => {
+                    if (typeof src === 'string') {
+                      setLightboxSrc(src);
+                      setLightboxAlt(alt);
+                    }
+                  }}
+                  {...props} 
+                />
+                {alt && (
+                  <span className="text-sm text-muted-foreground mt-4 font-black uppercase tracking-tight opacity-70 italic">
+                    {alt}
+                  </span>
+                )}
+              </div>
+            );
+          },
           // Better Headings
           h1: ({ children }) => <h1 className="text-4xl mt-16 mb-8">{children}</h1>,
           h2: ({ children }) => (

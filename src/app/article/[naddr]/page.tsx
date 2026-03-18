@@ -131,18 +131,18 @@ export default function ArticleDetailPage({ params }: { params: Promise<{ naddr:
         </div>
         
         <div className="text-center space-y-3">
-          <h2 className="text-2xl font-[900] tracking-tight text-foreground">Menemukan Artikel</h2>
+          <h2 className="text-2xl font-[900] tracking-tight text-foreground">Finding Article</h2>
           <p className="text-muted-foreground text-sm font-medium max-w-xs mx-auto leading-relaxed text-center">
-            Sedang mencari di jaringan Nostr menggunakan naddr hints dan relay populer...
+            Searching the Nostr network using naddr hints and popular relays...
           </p>
         </div>
 
         {/* Diagnostic Debug Info */}
         <div className="w-full max-w-sm bg-muted/40 rounded-3xl p-6 border border-border/50 backdrop-blur-sm">
           <div className="flex items-center justify-between mb-4 border-b border-border pb-2">
-            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Status Jaringan</span>
+            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Network Status</span>
             <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full ${isReady ? "bg-green-500/10 text-green-500" : "bg-yellow-500/10 text-yellow-500"}`}>
-              {isReady ? "Terhubung" : "Menghubungkan"}
+              {isReady ? "Connected" : "Connecting"}
             </span>
           </div>
           
@@ -156,7 +156,7 @@ export default function ArticleDetailPage({ params }: { params: Promise<{ naddr:
               <span className="col-span-2 font-bold text-right text-foreground/80">{(hintRelays?.length || 0)} Relays</span>
             </div>
             <div className="grid grid-cols-3 gap-2">
-              <span className="text-muted-foreground">Upaya</span>
+              <span className="text-muted-foreground">Attempts</span>
               <span className="col-span-2 font-black text-right text-primary">{attempts}</span>
             </div>
           </div>
@@ -168,7 +168,7 @@ export default function ArticleDetailPage({ params }: { params: Promise<{ naddr:
             className="group w-full py-4 bg-primary text-primary-foreground rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2"
           >
             <RefreshCw size={14} className="group-active:animate-spin" />
-            Paksa Sinkronisasi
+            Force Sync
           </button>
           <a 
             href={`https://njump.me/${naddr}`}
@@ -176,7 +176,7 @@ export default function ArticleDetailPage({ params }: { params: Promise<{ naddr:
             rel="noopener noreferrer"
             className="text-[10px] font-black text-muted-foreground uppercase tracking-widest hover:text-primary transition-colors flex items-center justify-center gap-2"
           >
-            Cek di njump.me <ExternalLink size={12} />
+            Check on njump.me <ExternalLink size={12} />
           </a>
         </div>
       </div>
@@ -190,9 +190,9 @@ export default function ArticleDetailPage({ params }: { params: Promise<{ naddr:
           <RefreshCw size={40} />
         </div>
         <div className="space-y-2">
-          <h1 className="text-2xl font-[900] tracking-tight">Artikel Tidak Ditemukan</h1>
+          <h1 className="text-2xl font-[900] tracking-tight">Article Not Found</h1>
           <p className="text-muted-foreground text-sm max-w-xs mx-auto font-medium">
-            Konten ini mungkin telah dihapus atau berada di relay yang tidak terjangkau saat ini.
+            This content may have been deleted or is currently on unreachable relays.
           </p>
         </div>
         
@@ -201,13 +201,13 @@ export default function ArticleDetailPage({ params }: { params: Promise<{ naddr:
             onClick={() => fetchArticle(true)}
             className="w-full py-4 bg-primary text-primary-foreground rounded-2xl font-black uppercase tracking-widest text-xs shadow-lg"
           >
-            Coba Lagi
+            Try Again
           </button>
           <button 
             onClick={() => router.back()}
             className="w-full py-4 bg-muted rounded-2xl font-black uppercase tracking-widest text-[10px]"
           >
-            Kembali
+            Back
           </button>
         </div>
       </div>
