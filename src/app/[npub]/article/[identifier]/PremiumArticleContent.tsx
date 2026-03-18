@@ -1,8 +1,8 @@
 // src/app/[npub]/article/[identifier]/PremiumArticleContent.tsx
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { Loader2, ArrowLeft, Calendar } from "lucide-react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
+import { Loader2, ArrowLeft, Calendar, RefreshCw, ExternalLink } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useNDK } from "@/hooks/useNDK";
 import { decodeNip19 } from "@/lib/utils/nip19";
@@ -28,7 +28,9 @@ export function PremiumArticleContent({ hexPubkey, identifier, slug }: PremiumAr
   const { ndk, isReady } = useNDK();
   const [article, setArticle] = useState<NDKEvent | null>(null);
   const [loading, setLoading] = useState(true);
+  const [attempts, setAttempts] = useState(0);
   const router = useRouter();
+  const fetchInitiated = useRef(false);
 
   const { profile } = useProfile(article?.pubkey || hexPubkey);
   const { 
@@ -51,144 +53,150 @@ export function PremiumArticleContent({ hexPubkey, identifier, slug }: PremiumAr
     fetchRepliesFor
   } = useThread(article?.id);
 
-  useEffect(() => {
-    if (!ndk || !isReady || !hexPubkey || !identifier) {
-      console.log("[PremiumArticle] Requirements not yet met:", { 
-        hasNdk: !!ndk, 
-        isReady, 
-        hasPubkey: !!hexPubkey, 
-        hasIdentifier: !!identifier 
-      });
-      return;
-    }
+  const fetchArticle = useCallback(async (force = false) => {
+    if (!ndk || !hexPubkey || !identifier) return;
+    
+    console.log(`[PremiumArticle] Starting ${force ? "FORCE " : ""}fetch cycle for:`, { slug, identifier, hexPubkey });
+    setLoading(true);
+    setAttempts(prev => prev + 1);
+    
+    const safetyTimeout = setTimeout(() => {
+      console.warn("[PremiumArticle] Fetch timed out after 30s");
+      setLoading(false);
+    }, 30000);
 
-    const fetchArticle = async (force = false) => {
-      console.log(`[PremiumArticle] Starting ${force ? "FORCE " : ""}fetch cycle for:`, { slug, identifier, hexPubkey });
-      setLoading(true);
+    try {
+      let event: NDKEvent | null = null;
+      const cacheUsage = force ? NDKSubscriptionCacheUsage.ONLY_RELAY : NDKSubscriptionCacheUsage.CACHE_FIRST;
       
-      const safetyTimeout = setTimeout(() => {
-        console.warn("[PremiumArticle] Fetch timed out after 25s");
-        setLoading(false);
-      }, 25000);
+      // Article-specialized relays
+      const articleRelayUrls = [
+        "wss://relay.damus.io",
+        "wss://relay.snort.social",
+        "wss://nostr.wine",
+        "wss://relay.nostr.band",
+        "wss://nos.lol",
+        "wss://relay.primal.net",
+        "wss://purplepag.es"
+      ];
+      const articleRelaySet = NDKRelaySet.fromRelayUrls(articleRelayUrls, ndk);
 
-      try {
-        let event: NDKEvent | null = null;
-        const cacheUsage = force ? NDKSubscriptionCacheUsage.ONLY_RELAY : NDKSubscriptionCacheUsage.CACHE_FIRST;
+      // A. If it's a NIP-19 naddr, decode and fetch directly
+      if (identifier.startsWith('naddr1')) {
+        const { id: hexId } = decodeNip19(identifier);
+        event = await ndk.fetchEvent(hexId, { cacheUsage, closeOnEose: true }, articleRelaySet);
+      } else {
+        // B. Standard Filter: Kind + Author + D-Tag
+        const filter = { kinds: [30023], authors: [hexPubkey], "#d": [identifier] };
+        console.log("[PremiumArticle] Attempting filter fetch...");
         
-        // 1. If it's a NIP-19 naddr, decode and fetch directly
-        if (identifier.startsWith('naddr1')) {
-          const { id: hexId } = decodeNip19(identifier);
-          event = await ndk.fetchEvent(hexId, { cacheUsage, closeOnEose: true });
-        } else {
-          // 2. Standard Fetch: Kind + Author + D-Tag
-          const filter = { kinds: [30023], authors: [hexPubkey], "#d": [identifier] };
-          console.log("[PremiumArticle] Attempting standard fetch:", filter);
+        event = await ndk.fetchEvent(filter, { cacheUsage, closeOnEose: true }, articleRelaySet);
+        
+        // C. Broad Fallback (JS Filter): Relays sometimes fail on #d indexing
+        if (!event) {
+          console.log("[PremiumArticle] Filter fetch failed, trying broad author fetch...");
+          const broadFilter = { kinds: [30023], authors: [hexPubkey], limit: 50 };
+          const allArticles = await ndk.fetchEvents(broadFilter, { cacheUsage, closeOnEose: true }, articleRelaySet);
           
-          event = await ndk.fetchEvent(filter, { cacheUsage, closeOnEose: true });
-          
-          // 3. Robust Fallback: Fetch all author's articles and find match in JS
-          // (Workaround for relays with broken #d tag indexing)
-          if (!event) {
-            console.log("[PremiumArticle] Standard fetch failed, trying broad author fetch...");
-            const broadFilter = { kinds: [30023], authors: [hexPubkey], limit: 50 };
-            const allArticles = await ndk.fetchEvents(broadFilter, { cacheUsage, closeOnEose: true });
-            
-            event = Array.from(allArticles).find(ev => 
-              ev.tags.find(t => t[0] === 'd' && t[1] === identifier)
-            ) || null;
-            
-            if (event) console.log("[PremiumArticle] Found article via broad author fetch!");
-          }
+          event = Array.from(allArticles).find(ev => 
+            ev.tags.find(t => t[0] === 'd' && t[1] === identifier) || ev.id === identifier
+          ) || null;
+        }
 
-          // 4. Outbox discovery (Search author's specific relays)
-          if (!event && !force) {
-            console.log("[PremiumArticle] Not found yet, discovering author relays...");
-            const author = ndk.getUser({ pubkey: hexPubkey });
-            const relayListEvents = await ndk.fetchEvents({
-              kinds: [10002],
-              authors: [hexPubkey]
-            }, { closeOnEose: true });
-            
-            const relayListEvent = Array.from(relayListEvents)[0];
-            if (relayListEvent) {
-              const writeRelayUrls = relayListEvent.tags
-                .filter(t => t[0] === 'r' && (!t[2] || t[2] === 'write'))
-                .map(t => t[1]);
-
-              if (writeRelayUrls.length > 0) {
-                console.log("[PremiumArticle] Author relays discovered:", writeRelayUrls);
-                const authorRelaySet = NDKRelaySet.fromRelayUrls(writeRelayUrls, ndk);
-                event = await ndk.fetchEvent(filter, { closeOnEose: true }, authorRelaySet);
-              }
+        // D. Outbox discovery (Search author's specific relays)
+        if (!event && !force) {
+          console.log("[PremiumArticle] Still not found, performing full outbox discovery...");
+          const relayListEvents = await ndk.fetchEvents({ kinds: [10002], authors: [hexPubkey] }, { closeOnEose: true }, articleRelaySet);
+          const relayListEvent = Array.from(relayListEvents)[0];
+          if (relayListEvent) {
+            const writeUrls = relayListEvent.tags.filter(t => t[0] === 'r' && (!t[2] || t[2] === 'write')).map(t => t[1]);
+            if (writeUrls.length > 0) {
+              const discoveredSet = NDKRelaySet.fromRelayUrls(writeUrls, ndk);
+              event = await ndk.fetchEvent(filter, { closeOnEose: true }, discoveredSet);
             }
           }
         }
-
-        if (event) {
-          console.log("[PremiumArticle] Success:", event.id);
-          setArticle(event);
-        } else {
-          console.warn("[PremiumArticle] No article found after exhaustive search");
-        }
-      } catch (err) {
-        console.error("[PremiumArticle] Fetch error:", err);
-      } finally {
-        clearTimeout(safetyTimeout);
-        setLoading(false);
       }
-    };
 
-    fetchArticle();
-  }, [ndk, isReady, hexPubkey, identifier, slug]);
+      if (event) {
+        console.log("[PremiumArticle] Success:", event.id);
+        setArticle(event);
+      } else {
+        console.warn("[PremiumArticle] Exhausted all options. Event not found.");
+      }
+    } catch (err) {
+      console.error("[PremiumArticle] Fetch fatal error:", err);
+    } finally {
+      clearTimeout(safetyTimeout);
+      setLoading(false);
+    }
+  }, [ndk, hexPubkey, identifier, slug]);
+
+  useEffect(() => {
+    if (isReady && ndk && !fetchInitiated.current) {
+      fetchInitiated.current = true;
+      fetchArticle();
+    }
+  }, [isReady, ndk, fetchArticle]);
 
   if (loading && !article) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6 px-4">
+      <div className="flex flex-col items-center justify-center min-h-[70vh] gap-8 px-6">
         <div className="relative">
-          <Loader2 className="animate-spin text-primary" size={48} />
+          <Loader2 className="animate-spin text-primary" size={56} strokeWidth={3} />
           <div className="absolute inset-0 flex items-center justify-center">
-            <div className="size-2 bg-primary rounded-full animate-pulse" />
+            <div className="size-2.5 bg-primary rounded-full animate-pulse shadow-[0_0_15px_rgba(var(--primary),0.5)]" />
           </div>
         </div>
         
-        <div className="text-center space-y-2">
-          <p className="text-lg font-black tracking-tight">Memuat Artikel</p>
-          <p className="text-muted-foreground text-sm font-medium">Mencari di seluruh jaringan Nostr...</p>
+        <div className="text-center space-y-3">
+          <h2 className="text-2xl font-[900] tracking-tight text-foreground">Menemukan Artikel</h2>
+          <p className="text-muted-foreground text-sm font-medium max-w-xs mx-auto leading-relaxed">
+            Menghubungkan ke jaringan Nostr untuk mengambil konten terbaru dari @{slug}...
+          </p>
         </div>
 
-        {/* Diagnostic Debug Info */}
-        <div className="w-full max-w-xs bg-muted/50 rounded-2xl p-4 border border-border mt-4">
-          <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-3 border-b border-border pb-2">Debug Info</p>
-          <div className="space-y-2 font-mono text-[9px] break-all uppercase">
-            <div className="flex justify-between gap-4">
-              <span className="text-muted-foreground">Author:</span>
-              <span className="font-bold text-right">{hexPubkey?.slice(0, 16)}...</span>
+        {/* Debug UI */}
+        <div className="w-full max-w-sm bg-muted/40 rounded-3xl p-6 border border-border/50 backdrop-blur-sm">
+          <div className="flex items-center justify-between mb-4 border-b border-border pb-2">
+            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Status Jaringan</span>
+            <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full ${isReady ? "bg-green-500/10 text-green-500" : "bg-yellow-500/10 text-yellow-500"}`}>
+              {isReady ? "Terhubung" : "Menghubungkan"}
+            </span>
+          </div>
+          
+          <div className="space-y-3 font-mono text-[10px] break-all uppercase leading-tight">
+            <div className="grid grid-cols-3 gap-2">
+              <span className="text-muted-foreground">Penulis</span>
+              <span className="col-span-2 font-bold text-right text-foreground/80">{hexPubkey?.slice(0, 24)}...</span>
             </div>
-            <div className="flex justify-between gap-4">
-              <span className="text-muted-foreground">Identifier:</span>
-              <span className="font-bold text-right">{identifier?.slice(0, 16)}...</span>
+            <div className="grid grid-cols-3 gap-2">
+              <span className="text-muted-foreground">ID Unik</span>
+              <span className="col-span-2 font-bold text-right text-foreground/80">{identifier?.slice(0, 24)}...</span>
             </div>
-            <div className="flex justify-between gap-4">
-              <span className="text-muted-foreground">Status:</span>
-              <span className="font-bold text-primary text-right">{isReady ? "Connected" : "Connecting"}</span>
+            <div className="grid grid-cols-3 gap-2">
+              <span className="text-muted-foreground">Upaya</span>
+              <span className="col-span-2 font-black text-right text-primary">{attempts}</span>
             </div>
           </div>
         </div>
         
-        <div className="flex flex-col gap-2 w-full max-w-xs">
+        <div className="flex flex-col gap-3 w-full max-w-sm">
           <button 
-            onClick={() => window.location.reload()}
-            className="w-full py-3 bg-primary text-primary-foreground rounded-2xl font-black uppercase tracking-widest text-xs shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all"
+            onClick={() => fetchArticle(true)}
+            className="group w-full py-4 bg-primary text-primary-foreground rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2"
           >
-            Refresh Halaman
+            <RefreshCw size={14} className="group-active:animate-spin" />
+            Paksa Sinkronisasi
           </button>
+          
           <a 
             href={`https://njump.me/${hexPubkey}:${identifier}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="w-full py-3 bg-muted rounded-2xl text-center font-black uppercase tracking-widest text-[10px] hover:bg-accent transition-colors"
+            className="w-full py-4 bg-muted/50 rounded-2xl text-center font-black uppercase tracking-widest text-[10px] hover:bg-accent transition-colors flex items-center justify-center gap-2"
           >
-            Cek di Njump.me
+            Verifikasi di Njump.me <ExternalLink size={12} />
           </a>
         </div>
       </div>
@@ -197,17 +205,31 @@ export function PremiumArticleContent({ hexPubkey, identifier, slug }: PremiumAr
 
   if (!article) {
     return (
-      <div className="p-8 text-center flex flex-col items-center gap-4">
-        <h1 className="text-2xl font-black">Article not found</h1>
-        <p className="text-muted-foreground text-sm max-w-xs">
-          This article could not be located for this user.
-        </p>
-        <button 
-          onClick={() => router.back()}
-          className="mt-4 px-8 py-3 bg-primary text-primary-foreground rounded-full font-black shadow-lg shadow-primary/20 hover:scale-105 transition-transform flex items-center gap-2"
-        >
-          <ArrowLeft size={20} /> Go Back
-        </button>
+      <div className="p-12 text-center flex flex-col items-center gap-6">
+        <div className="size-20 rounded-3xl bg-muted flex items-center justify-center text-muted-foreground/30">
+          <RefreshCw size={40} />
+        </div>
+        <div className="space-y-2">
+          <h1 className="text-2xl font-[900] tracking-tight">Artikel Tidak Ditemukan</h1>
+          <p className="text-muted-foreground text-sm max-w-xs mx-auto font-medium">
+            Konten ini mungkin telah dihapus atau berada di relay yang tidak terjangkau saat ini.
+          </p>
+        </div>
+        
+        <div className="flex flex-col gap-2 w-full max-w-xs">
+          <button 
+            onClick={() => fetchArticle(true)}
+            className="w-full py-4 bg-primary text-primary-foreground rounded-2xl font-black uppercase tracking-widest text-xs shadow-lg"
+          >
+            Coba Lagi
+          </button>
+          <button 
+            onClick={() => router.back()}
+            className="w-full py-4 bg-muted rounded-2xl font-black uppercase tracking-widest text-[10px]"
+          >
+            Kembali
+          </button>
+        </div>
       </div>
     );
   }
@@ -229,7 +251,7 @@ export function PremiumArticleContent({ hexPubkey, identifier, slug }: PremiumAr
         >
           <ArrowLeft size={20} />
         </button>
-        <h1 className="text-xl font-black truncate">Article</h1>
+        <h1 className="text-xl font-[900] truncate tracking-tight">Article</h1>
       </div>
 
       <article className="pb-20">
