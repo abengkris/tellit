@@ -6,7 +6,7 @@ import { Loader2, ArrowLeft, Calendar } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useNDK } from "@/hooks/useNDK";
 import { decodeNip19 } from "@/lib/utils/nip19";
-import { NDKEvent, NDKSubscriptionCacheUsage } from "@nostr-dev-kit/ndk";
+import { NDKEvent, NDKSubscriptionCacheUsage, NDKRelaySet } from "@nostr-dev-kit/ndk";
 import { useProfile } from "@/hooks/useProfile";
 import Image from "next/image";
 import Link from "next/link";
@@ -69,32 +69,44 @@ export function PremiumArticleContent({ hexPubkey, identifier, slug }: PremiumAr
       try {
         let event: NDKEvent | null = null;
         
-        // Premium URL typically uses identifier (d-tag)
-        // Check if identifier is actually a NIP-19 naddr
+        // 1. If it's a NIP-19 naddr, decode and fetch directly
         if (identifier.startsWith('naddr1')) {
           console.log("[PremiumArticle] Identifier is naddr, decoding...");
           const { id: hexId } = decodeNip19(identifier);
           event = await ndk.fetchEvent(hexId);
         } else {
-          // Fetch by identifier + pubkey
-          // We broaden the filter by removing explicit 'kinds' if needed, but 30023 is standard.
+          // 2. Fetch by d-tag + author
           const filter = {
             kinds: [30023],
             authors: [hexPubkey],
             "#d": [identifier]
           };
+          
           console.log("[PremiumArticle] Fetching with filter:", filter);
+          event = await ndk.fetchEvent(filter, { cacheUsage: NDKSubscriptionCacheUsage.CACHE_FIRST, closeOnEose: true });
           
-          const options = { 
-            cacheUsage: NDKSubscriptionCacheUsage.CACHE_FIRST,
-            closeOnEose: true 
-          };
-          
-          event = await ndk.fetchEvent(filter, options);
-          
+          // 3. Fallback: Outbox discovery (Search author's specific relays)
           if (!event) {
-            console.log("[PremiumArticle] Not in cache/relays, trying without CACHE_FIRST...");
-            event = await ndk.fetchEvent(filter, { closeOnEose: true });
+            console.log("[PremiumArticle] Not in cache/default relays, discovering author relays...");
+            const author = ndk.getUser({ pubkey: hexPubkey });
+            
+            // fetch author's relay list (kind 10002)
+            const relayList = await author.relayList();
+            
+            if (relayList && relayList.length > 0) {
+              const writeRelayUrls = relayList.filter(r => r.tag === 'write').map(r => r.url);
+              if (writeRelayUrls.length > 0) {
+                console.log("[PremiumArticle] Author write relays found:", writeRelayUrls);
+                const relaySet = NDKRelaySet.fromRelayUrls(writeRelayUrls, ndk);
+                event = await ndk.fetchEvent(filter, { closeOnEose: true }, relaySet);
+              }
+            }
+          }
+
+          // 4. Ultimate Fallback: Check if identifier is actually a hex event ID
+          if (!event && /^[0-9a-fA-F]{64}$/.test(identifier)) {
+            console.log("[PremiumArticle] d-tag failed, trying as hex event ID...");
+            event = await ndk.fetchEvent(identifier);
           }
         }
 
