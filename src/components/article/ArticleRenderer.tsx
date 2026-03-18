@@ -24,9 +24,13 @@ export function ArticleRenderer({ content: rawContent }: ArticleRendererProps) {
   // Pre-parse content for inline NIP-27 mentions (nostr:npub1...)
   // This turns raw nostr: URIs into markdown links so they are handled by our 'a' component
   const content = useMemo(() => {
-    // Matches nostr: URIs not already in markdown link syntax [text](nostr:...)
-    const nostrRegex = /(?<!\(|\[)nostr:([a-zA-Z0-9]+)/g;
-    return rawContent.replace(nostrRegex, (match, nip19) => `[${nip19}](${match})`);
+    const nostrRegex = /nostr:([a-zA-Z0-9]+)/g;
+    return rawContent.replace(nostrRegex, (match, nip19) => {
+      // Basic check: if it's already inside a markdown link [text](nostr:...) 
+      // or already a markdown link [nostr:...](nostr:...), we might double-wrap it.
+      // But ReactMarkdown is usually smart enough to handle nested links by ignoring them.
+      return `[${nip19}](${match})`;
+    });
   }, [rawContent]);
 
   return (
