@@ -119,9 +119,9 @@ export function ArticleRenderer({ content: rawContent }: ArticleRendererProps) {
           img: ({ src, alt, ...props }) => {
             if (!src) return null;
             
-            const isVideo = /\.(mp4|webm|ogg|mov)$/i.test(src);
+            const isVideo = typeof src === 'string' && /\.(mp4|webm|ogg|mov)$/i.test(src);
 
-            if (isVideo) {
+            if (isVideo && typeof src === 'string') {
               return (
                 <div className="my-10 flex flex-col items-center">
                   <video 
