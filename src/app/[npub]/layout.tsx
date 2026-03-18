@@ -2,27 +2,49 @@ import { Metadata } from "next";
 import { shortenPubkey, toNpub, decodeNip19 } from "@/lib/utils/nip19";
 import { resolveVanitySlug, isVanitySlug } from "@/lib/utils/identity";
 import { getNDK } from "@/lib/ndk";
+import { idLog } from "@/lib/utils/id-logger";
 
 async function resolveSlug(slug: string): Promise<string> {
+  const tracker = idLog.trackResolution(slug);
+  
   if (slug.startsWith("npub1")) {
-    const { id } = decodeNip19(slug);
-    return id;
+    try {
+      const { id } = decodeNip19(slug);
+      tracker.success("nip19-npub", id);
+      return id;
+    } catch (err) {
+      tracker.fail("nip19-npub", err);
+      return "";
+    }
   }
   if (isVanitySlug(slug)) {
     const pubkey = await resolveVanitySlug(slug);
-    if (pubkey) return pubkey;
+    if (pubkey) {
+      tracker.success("internal-db", pubkey);
+      return pubkey;
+    }
+    tracker.fail("internal-db", "Not found");
 
     // 2.5. Try NIP-05 resolution via NDK as a robust fallback
     try {
       const ndk = getNDK();
       const nip05 = slug.includes('@') ? slug : `${slug}@tellit.id`;
       const user = await ndk.fetchUser(nip05);
-      if (user?.pubkey) return user.pubkey;
+      if (user?.pubkey) {
+        tracker.success("ndk-nip05", user.pubkey);
+        return user.pubkey;
+      }
+      tracker.fail("ndk-nip05", "Not found");
     } catch (e) {
-      console.warn(`[resolveSlug] NDK NIP-05 fallback failed for ${slug}`, e);
+      tracker.fail("ndk-nip05-fatal", e);
     }
   }
-  if (/^[0-9a-fA-F]{64}$/.test(slug)) return slug;
+  if (/^[0-9a-fA-F]{64}$/.test(slug)) {
+    tracker.success("hex-direct", slug);
+    return slug;
+  }
+  
+  tracker.fatal("Resolution exhausted");
   return "";
 }
 

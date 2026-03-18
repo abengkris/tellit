@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { useAuthStore } from "@/store/auth";
+import { idLog } from "@/lib/utils/id-logger";
 
 export interface HandleStatus {
   name: string;
@@ -59,6 +60,7 @@ export function useHandleStatus() {
 
     setLoading(true);
     try {
+      idLog.debug(`Checking handle status for: ${user.pubkey}`);
       const res = await fetch(`/api/nip05/register?pubkey=${user.pubkey}`);
       const data = await res.json();
 
@@ -89,6 +91,7 @@ export function useHandleStatus() {
         });
         
         setHandles(statuses);
+        idLog.debug(`Found ${statuses.length} registered handles for ${user.pubkey}`);
       }
 
       if (data.pendingRegistrations) {
@@ -111,7 +114,7 @@ export function useHandleStatus() {
         setPendingHandles([]);
       }
     } catch (err) {
-      console.error("Failed to check handle status:", err);
+      idLog.error(`Failed to check handle status for ${user.pubkey}`, err);
     } finally {
       setLoading(false);
     }

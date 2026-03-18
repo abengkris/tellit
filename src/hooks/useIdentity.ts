@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { decodeNip19 } from "@/lib/utils/nip19";
 import { isVanitySlug } from "@/lib/utils/identity";
 import { supabase } from "@/lib/supabase";
+import { idLog } from "@/lib/utils/id-logger";
 
 /**
  * Hook to resolve a slug (vanity name, npub, or hex) to a hex pubkey.
@@ -19,6 +20,7 @@ export function useResolveIdentity(slug: string | undefined) {
     }
 
     async function resolve() {
+      const tracker = idLog.trackResolution(slug!);
       setLoading(true);
       setError(null);
 
@@ -26,6 +28,7 @@ export function useResolveIdentity(slug: string | undefined) {
         // 1. Check if it's an npub
         if (slug!.startsWith("npub1")) {
           const { id } = decodeNip19(slug!);
+          tracker.success("nip19-npub", id);
           setHexPubkey(id);
           setLoading(false);
           return;
@@ -34,6 +37,7 @@ export function useResolveIdentity(slug: string | undefined) {
         // 2. Check if it's a vanity slug
         if (isVanitySlug(slug!)) {
           if (!supabase) {
+            tracker.fail("supabase", "Client not initialized");
             throw new Error("Supabase client not initialized");
           }
 
@@ -46,13 +50,16 @@ export function useResolveIdentity(slug: string | undefined) {
             .single();
 
           if (dbError || !data) {
+            tracker.fail("internal-db", dbError);
             // If not found in handles, it might still be a hex pubkey
             if (/^[0-9a-fA-F]{64}$/.test(slug!)) {
+              tracker.success("hex-fallback", slug!);
               setHexPubkey(slug!);
             } else {
               setHexPubkey(null);
             }
           } else {
+            tracker.success("internal-db", data.pubkey);
             setHexPubkey(data.pubkey);
           }
           setLoading(false);
@@ -61,12 +68,14 @@ export function useResolveIdentity(slug: string | undefined) {
 
         // 3. Fallback to hex decoding if it's a 64 char hex string
         if (/^[0-9a-fA-F]{64}$/.test(slug!)) {
+          tracker.success("hex-direct", slug!);
           setHexPubkey(slug!);
         } else {
+          tracker.fatal("Resolution exhausted");
           setHexPubkey(null);
         }
       } catch (err) {
-        console.error(`[useResolveIdentity] Failed to resolve: ${slug}`, err);
+        tracker.fatal(err);
         setError(err instanceof Error ? err : new Error(String(err)));
         setHexPubkey(null);
       } finally {

@@ -2,6 +2,7 @@ import { ProfileMetadata } from "@/hooks/useProfile";
 import { toNpub, getEventNip19 } from "@/lib/utils/nip19";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { NDKEvent } from "@nostr-dev-kit/ndk";
+import { idLog } from "./id-logger";
 
 /**
  * List of reserved slugs that cannot be used as vanity usernames.
@@ -41,7 +42,9 @@ export function getProfileUrl(profile: ProfileMetadata | null | undefined): stri
   if (profile.nip05 && profile.nip05.endsWith("@tellit.id")) {
     const [username] = profile.nip05.split("@");
     if (username && !RESERVED_SLUGS.has(username.toLowerCase())) {
-      return `/${username.toLowerCase()}`;
+      const url = `/${username.toLowerCase()}`;
+      idLog.debug(`Generated vanity profile URL: ${url}`, { pubkey: profile.pubkey });
+      return url;
     }
   }
 
@@ -128,10 +131,15 @@ export async function resolveVanitySlug(slug: string): Promise<string | null> {
       .eq("name", name)
       .single();
 
-    if (error || !data) return null;
+    if (error || !data) {
+      idLog.debug(`Vanity slug resolution failed for: ${name}`, error);
+      return null;
+    }
+    
+    idLog.debug(`Resolved vanity slug ${name} to ${data.pubkey}`);
     return data.pubkey;
   } catch (err) {
-    console.error(`[Identity] Failed to resolve vanity slug: ${slug}`, err);
+    idLog.error(`Failed to resolve vanity slug: ${slug}`, err);
     return null;
   }
 }

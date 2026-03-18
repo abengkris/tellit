@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { useNDK } from "@/hooks/useNDK";
 import { getProfileUrl } from "@/lib/utils/identity";
+import { idLog } from "@/lib/utils/id-logger";
 
 export interface ProfileMetadata {
   pubkey?: string;
@@ -37,6 +38,7 @@ export function useProfile(pubkey?: string) {
 
     try {
       const user = ndk.getUser({ pubkey });
+      idLog.debug(`Fetching profile for: ${pubkey}`, { forceRelay });
       
       let userProfile = null;
 
@@ -68,6 +70,12 @@ export function useProfile(pubkey?: string) {
       if (!userProfile) {
         userProfile = await user.fetchProfile();
       }
+
+      if (userProfile) {
+        idLog.debug(`Successfully fetched profile for: ${pubkey}`);
+      } else {
+        idLog.warn(`No profile found for: ${pubkey}`);
+      }
       
       // Construct metadata object
       const metadata: ProfileMetadata = { 
@@ -92,7 +100,7 @@ export function useProfile(pubkey?: string) {
       
       setProfile(metadata);
     } catch (error) {
-      console.warn("Failed to fetch profile for", pubkey, error);
+      idLog.error(`Failed to fetch profile for ${pubkey}`, error);
       // On error, provide a basic fallback profile
       setProfile({ pubkey });
     } finally {

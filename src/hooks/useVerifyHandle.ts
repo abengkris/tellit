@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNDK } from "@/hooks/useNDK";
 import { HandleStatus } from "@/hooks/useHandleStatus";
+import { idLog } from "@/lib/utils/id-logger";
 
 export interface VerificationResult {
   isValid: boolean;
@@ -25,6 +26,7 @@ export function useVerifyHandle(handle: HandleStatus | null) {
     setLoading(true);
     try {
       const pubkey = handle.pubkey;
+      idLog.debug(`Verifying handle ${handle.fullHandle} for ${pubkey}`, { force });
       let profile = null;
 
       if (force) {
@@ -56,8 +58,10 @@ export function useVerifyHandle(handle: HandleStatus | null) {
       const isLud16Valid = profile?.lud16 === handle.fullHandle;
 
       if (!profile) {
+        idLog.warn(`Verification failed: Profile not found for ${pubkey}`);
         setResult({ isValid: false, isNip05Valid: false, isLud16Valid: false, error: "Profile not found" });
       } else {
+        idLog.debug(`Verification stats for ${pubkey}:`, { nip05: profile.nip05, lud16: profile.lud16, expected: handle.fullHandle });
         setResult({ 
           isValid: isNip05Valid && isLud16Valid, 
           isNip05Valid,
@@ -68,7 +72,7 @@ export function useVerifyHandle(handle: HandleStatus | null) {
         });
       }
     } catch (err) {
-      console.error("Verification error:", err);
+      idLog.error(`Handle verification error for ${handle?.fullHandle}`, err);
       setResult({ isValid: false, isNip05Valid: false, isLud16Valid: false, error: "Failed to fetch Nostr profile" });
     } finally {
       setLoading(false);
