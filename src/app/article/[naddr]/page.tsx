@@ -5,7 +5,7 @@ import React, { use, useEffect, useState, useCallback } from "react";
 import { Loader2, ArrowLeft, Calendar, RefreshCw, ExternalLink } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useNDK } from "@/hooks/useNDK";
-import { decodeNip19 } from "@/lib/utils/nip19";
+import { decodeNip19, toNpub } from "@/lib/utils/nip19";
 import { NDKEvent, NDKSubscriptionCacheUsage, NDKRelaySet } from "@nostr-dev-kit/ndk";
 import { useProfile } from "@/hooks/useProfile";
 import Image from "next/image";
