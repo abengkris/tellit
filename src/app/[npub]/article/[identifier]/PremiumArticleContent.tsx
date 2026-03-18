@@ -62,81 +62,73 @@ export function PremiumArticleContent({ hexPubkey, identifier, slug }: PremiumAr
       return;
     }
 
-    const fetchArticle = async () => {
-      console.log("[PremiumArticle] Starting fetch cycle for:", { slug, identifier, hexPubkey });
+    const fetchArticle = async (force = false) => {
+      console.log(`[PremiumArticle] Starting ${force ? "FORCE " : ""}fetch cycle for:`, { slug, identifier, hexPubkey });
       setLoading(true);
       
       const safetyTimeout = setTimeout(() => {
-        console.warn("[PremiumArticle] Fetch timed out after 20s");
+        console.warn("[PremiumArticle] Fetch timed out after 25s");
         setLoading(false);
-      }, 20000);
+      }, 25000);
 
       try {
         let event: NDKEvent | null = null;
+        const cacheUsage = force ? NDKSubscriptionCacheUsage.ONLY_RELAY : NDKSubscriptionCacheUsage.CACHE_FIRST;
         
         // 1. If it's a NIP-19 naddr, decode and fetch directly
         if (identifier.startsWith('naddr1')) {
-          console.log("[PremiumArticle] Identifier is naddr, decoding...");
           const { id: hexId } = decodeNip19(identifier);
-          event = await ndk.fetchEvent(hexId);
+          event = await ndk.fetchEvent(hexId, { cacheUsage, closeOnEose: true });
         } else {
-          // 2. Parallel Fetch: Try d-tag AND hex ID simultaneously
-          console.log("[PremiumArticle] Attempting parallel d-tag and hex ID fetch...");
+          // 2. Standard Fetch: Kind + Author + D-Tag
+          const filter = { kinds: [30023], authors: [hexPubkey], "#d": [identifier] };
+          console.log("[PremiumArticle] Attempting standard fetch:", filter);
           
-          const dTagFilter = { kinds: [30023], authors: [hexPubkey], "#d": [identifier] };
-          const isHexId = /^[0-9a-fA-F]{64}$/.test(identifier);
-
-          const fetchPromises = [
-            ndk.fetchEvent(dTagFilter, { cacheUsage: NDKSubscriptionCacheUsage.CACHE_FIRST, closeOnEose: true })
-          ];
-
-          if (isHexId) {
-            fetchPromises.push(ndk.fetchEvent({ ids: [identifier] }, { closeOnEose: true }));
+          event = await ndk.fetchEvent(filter, { cacheUsage, closeOnEose: true });
+          
+          // 3. Robust Fallback: Fetch all author's articles and find match in JS
+          // (Workaround for relays with broken #d tag indexing)
+          if (!event) {
+            console.log("[PremiumArticle] Standard fetch failed, trying broad author fetch...");
+            const broadFilter = { kinds: [30023], authors: [hexPubkey], limit: 50 };
+            const allArticles = await ndk.fetchEvents(broadFilter, { cacheUsage, closeOnEose: true });
+            
+            event = Array.from(allArticles).find(ev => 
+              ev.tags.find(t => t[0] === 'd' && t[1] === identifier)
+            ) || null;
+            
+            if (event) console.log("[PremiumArticle] Found article via broad author fetch!");
           }
 
-          const results = await Promise.all(fetchPromises);
-          event = results.find(r => !!r) || null;
-          
-          // 3. Fallback: Outbox discovery with broad relay search
-          if (!event && hexPubkey) {
-            console.log("[PremiumArticle] Not found in initial pass, searching author relays...");
-            
-            // Try to find kind 10002 on a dedicated profile relay if not found on defaults
-            const profileRelayUrls = ["wss://purplepag.es", "wss://relay.damus.io", "wss://nos.lol"];
-            const profileRelays = NDKRelaySet.fromRelayUrls(profileRelayUrls, ndk);
-            
+          // 4. Outbox discovery (Search author's specific relays)
+          if (!event && !force) {
+            console.log("[PremiumArticle] Not found yet, discovering author relays...");
+            const author = ndk.getUser({ pubkey: hexPubkey });
             const relayListEvents = await ndk.fetchEvents({
               kinds: [10002],
               authors: [hexPubkey]
-            }, { closeOnEose: true }, profileRelays);
+            }, { closeOnEose: true });
             
             const relayListEvent = Array.from(relayListEvents)[0];
-            
             if (relayListEvent) {
               const writeRelayUrls = relayListEvent.tags
                 .filter(t => t[0] === 'r' && (!t[2] || t[2] === 'write'))
                 .map(t => t[1]);
 
               if (writeRelayUrls.length > 0) {
-                console.log("[PremiumArticle] Author write relays discovered:", writeRelayUrls);
+                console.log("[PremiumArticle] Author relays discovered:", writeRelayUrls);
                 const authorRelaySet = NDKRelaySet.fromRelayUrls(writeRelayUrls, ndk);
-                event = await ndk.fetchEvent(dTagFilter, { closeOnEose: true }, authorRelaySet);
+                event = await ndk.fetchEvent(filter, { closeOnEose: true }, authorRelaySet);
               }
             }
-          }
-          
-          // 4. Final attempt: broad d-tag search on all relays
-          if (!event) {
-            console.log("[PremiumArticle] Final attempt: broad d-tag search...");
-            event = await ndk.fetchEvent(dTagFilter, { closeOnEose: true });
           }
         }
 
         if (event) {
-          console.log("[PremiumArticle] Found article successfully:", event.id);
+          console.log("[PremiumArticle] Success:", event.id);
           setArticle(event);
         } else {
-          console.warn("[PremiumArticle] No article found after all attempts");
+          console.warn("[PremiumArticle] No article found after exhaustive search");
         }
       } catch (err) {
         console.error("[PremiumArticle] Fetch error:", err);
@@ -161,7 +153,7 @@ export function PremiumArticleContent({ hexPubkey, identifier, slug }: PremiumAr
         
         <div className="text-center space-y-2">
           <p className="text-lg font-black tracking-tight">Memuat Artikel</p>
-          <p className="text-muted-foreground text-sm font-medium">Sedang mencari di jaringan Nostr...</p>
+          <p className="text-muted-foreground text-sm font-medium">Mencari di seluruh jaringan Nostr...</p>
         </div>
 
         {/* Diagnostic Debug Info */}
@@ -173,22 +165,32 @@ export function PremiumArticleContent({ hexPubkey, identifier, slug }: PremiumAr
               <span className="font-bold text-right">{hexPubkey?.slice(0, 16)}...</span>
             </div>
             <div className="flex justify-between gap-4">
-              <span className="text-muted-foreground">ID/D-Tag:</span>
+              <span className="text-muted-foreground">Identifier:</span>
               <span className="font-bold text-right">{identifier?.slice(0, 16)}...</span>
             </div>
             <div className="flex justify-between gap-4">
               <span className="text-muted-foreground">Status:</span>
-              <span className="font-bold text-primary text-right">{isReady ? "NDK Ready" : "NDK Connecting"}</span>
+              <span className="font-bold text-primary text-right">{isReady ? "Connected" : "Connecting"}</span>
             </div>
           </div>
         </div>
         
-        <button 
-          onClick={() => window.location.reload()}
-          className="mt-4 px-6 py-2 rounded-full border border-border text-xs font-black uppercase tracking-widest hover:bg-accent transition-colors"
-        >
-          Muat Ulang Paksa
-        </button>
+        <div className="flex flex-col gap-2 w-full max-w-xs">
+          <button 
+            onClick={() => window.location.reload()}
+            className="w-full py-3 bg-primary text-primary-foreground rounded-2xl font-black uppercase tracking-widest text-xs shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all"
+          >
+            Refresh Halaman
+          </button>
+          <a 
+            href={`https://njump.me/${hexPubkey}:${identifier}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full py-3 bg-muted rounded-2xl text-center font-black uppercase tracking-widest text-[10px] hover:bg-accent transition-colors"
+          >
+            Cek di Njump.me
+          </a>
+        </div>
       </div>
     );
   }
