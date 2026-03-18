@@ -85,12 +85,16 @@ export function PremiumArticleContent({ hexPubkey, identifier, slug }: PremiumAr
           };
           console.log("[PremiumArticle] Fetching with filter:", filter);
           
-          // Try to get from cache first for speed
-          event = await ndk.fetchEvent(filter, { cacheUsage: NDKSubscriptionCacheUsage.CACHE_FIRST });
+          const options = { 
+            cacheUsage: NDKSubscriptionCacheUsage.CACHE_FIRST,
+            closeOnEose: true 
+          };
+          
+          event = await ndk.fetchEvent(filter, options);
           
           if (!event) {
-            console.log("[PremiumArticle] Not in cache, fetching from relays...");
-            event = await ndk.fetchEvent(filter);
+            console.log("[PremiumArticle] Not in cache/relays, trying without CACHE_FIRST...");
+            event = await ndk.fetchEvent(filter, { closeOnEose: true });
           }
         }
 
