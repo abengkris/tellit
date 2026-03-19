@@ -269,7 +269,7 @@ export const PostHeader: React.FC<PostHeaderProps> = ({
 
       <div className="flex items-center justify-between mb-0.5 min-w-0">
         <div className="flex items-center space-x-1 truncate min-w-0" onClick={(e) => e.stopPropagation()}>
-          <div className="mr-3 shrink-0 z-10">
+          <div className="mr-4 shrink-0 z-10">
             <Link href={finalProfileUrl} aria-label={`View ${display_name}'s profile`}>
               <Avatar 
                 pubkey={pubkey} 
