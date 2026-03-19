@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
         .from('registrations')
         .select('name, amount, payment_request, payment_hash, created_at, status')
         .eq('pubkey', pubkey)
-        .in('status', ['pending', 'expired', 'conflict']);
+        .in('status', ['pending', 'expired', 'conflict', 'paid']);
 
       // Check if any pending names are now taken in the 'handles' table
       let pendingWithAvailability = pending || [];

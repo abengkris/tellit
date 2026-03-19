@@ -94,11 +94,36 @@ export function useHandleStatus() {
         idLog.debug(`Found ${statuses.length} registered handles for ${user.pubkey}`);
       }
 
-      if (data.pendingRegistrations) {
-        setPendingHandles(data.pendingRegistrations.map((ph: PendingHandleDetail) => {
+      if (data.pendingRegistrations && data.pendingRegistrations.length > 0) {
+        const processedPending = await Promise.all(data.pendingRegistrations.map(async (ph: PendingHandleDetail) => {
           const createdAt = new Date(ph.created_at);
           const now = new Date();
           const isExpired = ph.status === 'expired' || (now.getTime() - createdAt.getTime() > 24 * 60 * 60 * 1000);
+          
+          // If it's pending and not obviously expired, check the actual payment status
+          if (ph.status === 'pending' && !isExpired) {
+            try {
+              const checkRes = await fetch(`/api/nip05/check-payment?hash=${ph.payment_hash}`);
+              const checkData = await checkRes.json();
+              if (checkData.status === 'PAID') {
+                // If it was just paid, we should probably refresh the whole thing 
+                // but for now just return the updated status
+                return {
+                  name: ph.name,
+                  amount: ph.amount,
+                  payment_request: ph.payment_request,
+                  payment_hash: ph.payment_hash,
+                  created_at: ph.created_at,
+                  isExpired: false,
+                  isTaken: false,
+                  status: 'paid'
+                };
+              }
+            } catch (err) {
+              console.error(`Failed to auto-check payment for ${ph.name}:`, err);
+            }
+          }
+
           return {
             name: ph.name,
             amount: ph.amount,
@@ -110,6 +135,43 @@ export function useHandleStatus() {
             status: ph.status
           };
         }));
+
+        // If any were marked as paid, we should refresh to get them in the active list
+        if (processedPending.some(p => p.status === 'paid')) {
+          const now = new Date();
+          // Re-fetch to get the newly activated handles in data.allHandleDetails
+          const finalRes = await fetch(`/api/nip05/register?pubkey=${user.pubkey}`);
+          const finalData = await finalRes.json();
+          
+          if (finalData.allHandleDetails) {
+            const finalStatuses: HandleStatus[] = finalData.allHandleDetails.map((h: HandleDetail) => {
+              const registeredAt = new Date(h.created_at);
+              const expiresAt = new Date(registeredAt);
+              expiresAt.setFullYear(expiresAt.getFullYear() + 1);
+              const diffTime = expiresAt.getTime() - now.getTime();
+              const daysRemaining = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+              
+              return {
+                name: h.name,
+                fullHandle: `${h.name}@tellit.id`,
+                registeredAt,
+                expiresAt,
+                daysRemaining,
+                isExpiringSoon: daysRemaining <= 30 && daysRemaining > 0,
+                created_at: h.created_at,
+                relays: h.relays,
+                is_primary: !!h.is_primary,
+                lightning_address: h.lightning_address,
+                pubkey: h.pubkey
+              };
+            });
+            setHandles(finalStatuses);
+          }
+          
+          setPendingHandles(processedPending.filter(p => p.status !== 'paid'));
+        } else {
+          setPendingHandles(processedPending);
+        }
       } else {
         setPendingHandles([]);
       }
