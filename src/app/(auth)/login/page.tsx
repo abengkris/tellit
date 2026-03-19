@@ -161,36 +161,43 @@ export default function LoginPage() {
           <h1 className="text-3xl font-bold mb-2 text-gray-900 dark:text-white">Tell it!</h1>
           <p className="text-gray-500 dark:text-gray-400 mb-8">Whatever it is, just Tell It.</p>
 
-          <div className="space-y-4">
-            {isLoggedIn && (
+          <div className="space-y-6">
+            <div className="space-y-3">
+              <h2 className="text-xs font-black uppercase tracking-widest text-muted-foreground">New to Tell it?</h2>
               <button
-                onClick={() => router.back()}
-                className="w-full text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 font-medium py-2 transition-colors mb-2"
+                onClick={handleGenerateKey}
+                disabled={isLoading || !isReady}
+                className="w-full flex items-center justify-center space-x-3 bg-primary hover:bg-primary/90 text-primary-foreground font-black py-5 px-6 rounded-2xl transition-all shadow-xl shadow-primary/20 disabled:opacity-50 group"
               >
-                ← Back
+                <div aria-live="polite" className="flex items-center gap-2 text-lg">
+                  {isLoading ? <Loader2 className="animate-spin" /> : <PlusCircle size={22} className="transition-transform group-hover:rotate-90 duration-500" />}
+                  <span>{!isReady ? "Please wait…" : "Get Started (Free)"}</span>
+                </div>
               </button>
-            )}
-            <button
-              onClick={handleNip07Login}
-              disabled={isLoading || !isReady}
-              className="w-full flex items-center justify-center space-x-3 bg-white dark:bg-gray-800 border-2 border-gray-100 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-500 text-gray-900 dark:text-white font-bold py-4 px-6 rounded-2xl transition-all group disabled:opacity-50"
-            >
-              <LogIn size={20} className="group-hover:text-blue-500" />
-              <span aria-live="polite">
-                {!isReady ? "Initializing…" : (isLoading ? "Connecting…" : "Use browser extension")}
-              </span>
-            </button>
+              <p className="text-[10px] text-muted-foreground font-medium">Create a new decentralized identity in seconds.</p>
+            </div>
 
-            <button
-              onClick={handleGenerateKey}
-              disabled={isLoading || !isReady}
-              className="w-full flex items-center justify-center space-x-3 bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-6 rounded-2xl transition-all shadow-lg shadow-blue-500/20 disabled:opacity-50"
-            >
-              <div aria-live="polite" className="flex items-center gap-2">
-                {isLoading ? <Loader2 className="animate-spin" /> : <PlusCircle size={20} />}
-                <span>{!isReady ? "Please wait…" : "Create new identity"}</span>
+            <div className="relative pt-2">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-100 dark:border-gray-800"></div>
               </div>
-            </button>
+              <div className="relative flex justify-center text-xs font-black uppercase tracking-widest">
+                <span className="px-4 bg-white dark:bg-gray-900 text-muted-foreground">Or sign in</span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-3">
+              <button
+                onClick={handleNip07Login}
+                disabled={isLoading || !isReady}
+                className="w-full flex items-center justify-center space-x-3 bg-white dark:bg-gray-800 border-2 border-gray-100 dark:border-gray-700 hover:border-primary dark:hover:border-primary text-gray-900 dark:text-white font-bold py-4 px-6 rounded-2xl transition-all group disabled:opacity-50"
+              >
+                <LogIn size={20} className="group-hover:text-primary transition-colors" />
+                <span aria-live="polite">
+                  {!isReady ? "Initializing…" : (isLoading ? "Connecting…" : "Use Browser Extension")}
+                </span>
+              </button>
+            </div>
           </div>
 
           <div className="relative my-8">
@@ -205,7 +212,7 @@ export default function LoginPage() {
           <div className="flex p-1 bg-gray-100 dark:bg-black rounded-xl mb-6">
             <button
               onClick={() => setLoginMethod('nsec')}
-              className={`flex-1 flex items-center justify-center space-x-2 py-2 rounded-lg text-xs font-bold transition-all ${loginMethod === 'nsec' ? 'bg-white dark:bg-gray-800 shadow-sm text-blue-500' : 'text-gray-500'}`}
+              className={`flex-1 flex items-center justify-center space-x-2 py-2.5 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${loginMethod === 'nsec' ? 'bg-white dark:bg-gray-800 shadow-sm text-primary' : 'text-muted-foreground'}`}
               aria-pressed={loginMethod === 'nsec'}
             >
               <Key size={14} />
@@ -213,7 +220,7 @@ export default function LoginPage() {
             </button>
             <button
               onClick={() => setLoginMethod('ncryptsec')}
-              className={`flex-1 flex items-center justify-center space-x-2 py-2 rounded-lg text-xs font-bold transition-all ${loginMethod === 'ncryptsec' ? 'bg-white dark:bg-gray-800 shadow-sm text-blue-500' : 'text-gray-500'}`}
+              className={`flex-1 flex items-center justify-center space-x-2 py-2.5 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${loginMethod === 'ncryptsec' ? 'bg-white dark:bg-gray-800 shadow-sm text-primary' : 'text-muted-foreground'}`}
               aria-pressed={loginMethod === 'ncryptsec'}
             >
               <Lock size={14} />
@@ -221,7 +228,7 @@ export default function LoginPage() {
             </button>
             <button
               onClick={() => setLoginMethod('bunker')}
-              className={`flex-1 flex items-center justify-center space-x-2 py-2 rounded-lg text-xs font-bold transition-all ${loginMethod === 'bunker' ? 'bg-white dark:bg-gray-800 shadow-sm text-blue-500' : 'text-gray-500'}`}
+              className={`flex-1 flex items-center justify-center space-x-2 py-2.5 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${loginMethod === 'bunker' ? 'bg-white dark:bg-gray-800 shadow-sm text-primary' : 'text-muted-foreground'}`}
               aria-pressed={loginMethod === 'bunker'}
             >
               <Database size={14} />
@@ -231,10 +238,10 @@ export default function LoginPage() {
 
           <form onSubmit={handleKeyLogin} className="space-y-4">
             {loginMethod !== 'bunker' && (
-              <div className="bg-red-50 dark:bg-red-900/10 p-3 rounded-xl border border-red-100 dark:border-red-900/30 flex items-start space-x-3 mb-2">
-                <AlertTriangle size={16} className="text-red-500 shrink-0 mt-0.5" />
-                <p className="text-[11px] text-red-600 dark:text-red-400 text-left">
-                  Security warning: Pasting your private key is risky. Use a browser extension like Alby for better security.
+              <div className="bg-destructive/5 p-3 rounded-xl border border-destructive/10 flex items-start space-x-3 mb-2">
+                <AlertTriangle size={16} className="text-destructive shrink-0 mt-0.5" />
+                <p className="text-[11px] text-destructive/80 font-bold text-left uppercase tracking-tight">
+                  Security warning: Pasting your private key is risky. Use a browser extension for better security.
                 </p>
               </div>
             )}
@@ -242,7 +249,7 @@ export default function LoginPage() {
             {loginMethod === 'bunker' ? (
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <Database className="h-5 w-5 text-gray-400" />
+                  <Database className="h-5 w-5 text-muted-foreground" />
                 </div>
                 <input
                   type="text"
@@ -250,14 +257,14 @@ export default function LoginPage() {
                   aria-label="Bunker URI or handle"
                   value={bunkerUri}
                   onChange={(e) => setBunkerUri(e.target.value)}
-                  className="block w-full pl-12 pr-4 py-4 border border-gray-200 dark:border-gray-800 rounded-2xl bg-gray-50 dark:bg-black focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all font-mono text-sm"
+                  className="block w-full pl-12 pr-4 py-4 border-2 border-muted rounded-2xl bg-muted/30 focus:outline-none focus:border-primary transition-all font-mono text-sm"
                 />
               </div>
             ) : (
               <div className="space-y-4">
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                    <Key className="h-5 w-5 text-gray-400" />
+                    <Key className="h-5 w-5 text-muted-foreground" />
                   </div>
                   <input
                     type={showPassword ? "text" : "password"}
@@ -265,13 +272,13 @@ export default function LoginPage() {
                     aria-label={loginMethod === 'ncryptsec' ? "Encrypted private key" : "Private key"}
                     value={privateKey}
                     onChange={(e) => setPrivateKey(e.target.value)}
-                    className="block w-full pl-12 pr-12 py-4 border border-gray-200 dark:border-gray-800 rounded-2xl bg-gray-50 dark:bg-black focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all font-mono text-sm"
+                    className="block w-full pl-12 pr-12 py-4 border-2 border-muted rounded-2xl bg-muted/30 focus:outline-none focus:border-primary transition-all font-mono text-sm"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     aria-label={showPassword ? "Hide private key" : "Show private key"}
-                    className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-gray-600"
+                    className="absolute inset-y-0 right-0 pr-4 flex items-center text-muted-foreground hover:text-foreground"
                   >
                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
@@ -280,7 +287,7 @@ export default function LoginPage() {
                 {loginMethod === 'ncryptsec' && (
                   <div className="relative animate-in slide-in-from-top-2 duration-200">
                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                      <Lock className="h-5 w-5 text-gray-400" />
+                      <Lock className="h-5 w-5 text-muted-foreground" />
                     </div>
                     <input
                       type={showNcryptPassword ? "text" : "password"}
@@ -288,13 +295,13 @@ export default function LoginPage() {
                       aria-label="Decryption password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="block w-full pl-12 pr-12 py-4 border border-gray-200 dark:border-gray-800 rounded-2xl bg-gray-50 dark:bg-black focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm"
+                      className="block w-full pl-12 pr-12 py-4 border-2 border-muted rounded-2xl bg-muted/30 focus:outline-none focus:border-primary transition-all text-sm"
                     />
                     <button
                       type="button"
                       onClick={() => setShowNcryptPassword(!showNcryptPassword)}
                       aria-label={showNcryptPassword ? "Hide password" : "Show password"}
-                      className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-gray-600"
+                      className="absolute inset-y-0 right-0 pr-4 flex items-center text-muted-foreground hover:text-foreground"
                     >
                       {showNcryptPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>
@@ -306,10 +313,10 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={isLoading || !isReady || (loginMethod === 'nsec' && !privateKey) || (loginMethod === 'ncryptsec' && (!privateKey || !password)) || (loginMethod === 'bunker' && !bunkerUri)}
-              className="w-full bg-gray-900 dark:bg-white text-white dark:text-black font-bold py-4 px-6 rounded-2xl hover:opacity-90 transition-all disabled:opacity-50 shadow-lg"
+              className="w-full bg-foreground text-background font-black py-4 px-6 rounded-2xl hover:opacity-90 transition-all disabled:opacity-50 shadow-lg text-lg"
             >
               <span aria-live="polite">
-                {!isReady ? "Initializing…" : (isLoading ? "Please wait…" : "Login")}
+                {!isReady ? "Initializing…" : (isLoading ? "Please wait…" : "Sign In")}
               </span>
             </button>
           </form>

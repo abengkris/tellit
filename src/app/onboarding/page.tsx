@@ -41,6 +41,7 @@ import { InterestsStep } from "./steps/InterestsStep";
 import { RecommendationsStep } from "./steps/RecommendationsStep";
 import { MutingStep } from "./steps/MutingStep";
 import { SecurityStep } from "./steps/SecurityStep";
+import { LNPaymentModal } from "@/components/common/LNPaymentModal";
 
 export default function OnboardingPage() {
   const { currentStep, setStep, data, reset } = useOnboardingStore();
@@ -49,6 +50,10 @@ export default function OnboardingPage() {
   const { addToast } = useUIStore();
   const router = useRouter();
   const [isFinalizing, setIsFinalizing] = useState(false);
+  
+  // Payment state
+  const [showPayment, setShowPayment] = useState(false);
+  const [invoice, setInvoice] = useState<{ pr: string, hash: string, amount: number } | null>(null);
 
   useEffect(() => {
     if (!isLoggedIn) {
@@ -67,6 +72,7 @@ export default function OnboardingPage() {
         display_name: data.display_name,
         picture: data.picture,
         about: data.interests.length > 0 ? `Interested in ${data.interests.join(", ")}.` : "",
+        nip05: data.name ? `${data.name}@tellit.id` : undefined,
       };
       
       await updateProfile(ndk, metadata);
@@ -87,15 +93,48 @@ export default function OnboardingPage() {
         await muteEvent.publish();
       }
 
-      addToast("Profile setup complete!", "success");
-      reset();
-      router.push("/");
+      // 4. Register Handle if provided
+      if (data.name && user?.pubkey) {
+        try {
+          const res = await fetch('/api/nip05/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              name: data.name,
+              pubkey: user.pubkey,
+              relays: ["wss://relay.damus.io", "wss://nos.lol"]
+            })
+          });
+          
+          const result = await res.json();
+          if (result.paymentRequest) {
+            setInvoice({
+              pr: result.paymentRequest,
+              hash: result.paymentHash,
+              amount: result.amount
+            });
+            setShowPayment(true);
+            setIsFinalizing(false);
+            return; // Stay on page to show payment modal
+          }
+        } catch (err) {
+          console.error("Handle registration failed:", err);
+          addToast("Failed to initiate handle registration. You can try later in settings.", "error");
+        }
+      }
+
+      completeOnboarding();
     } catch (err) {
       console.error(err);
       addToast("Failed to finalize setup.", "error");
-    } finally {
       setIsFinalizing(false);
     }
+  };
+
+  const completeOnboarding = () => {
+    addToast("Profile setup complete!", "success");
+    reset();
+    router.push("/");
   };
 
   const renderStep = () => {
@@ -147,6 +186,24 @@ export default function OnboardingPage() {
 
         {renderStep()}
       </div>
+
+      {invoice && (
+        <LNPaymentModal 
+          isOpen={showPayment}
+          onClose={() => {
+            setShowPayment(false);
+            completeOnboarding();
+          }}
+          paymentRequest={invoice.pr}
+          paymentHash={invoice.hash}
+          amount={invoice.amount}
+          onPaid={() => {
+            setShowPayment(false);
+            addToast("Handle registered and paid!", "success");
+            completeOnboarding();
+          }}
+        />
+      )}
     </div>
   );
 }

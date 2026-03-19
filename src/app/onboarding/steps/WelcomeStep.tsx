@@ -31,7 +31,7 @@ export function WelcomeStep({ onNext }: { onNext: () => void }) {
       </div>
       
       <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest">
-        Step 1 of 6 · Quick & Easy
+        Step 1 of 7 · Quick & Easy
       </p>
     </div>
   );
