@@ -315,7 +315,7 @@ export const PostCard = memo(({
           variant === "detail" && "hover:bg-transparent px-4 py-0 border-b-0",
           isFocal && "bg-transparent border-l-0"
         )}
-        style={{ paddingLeft: `${indent * 1.5}rem` }}
+        style={{ paddingLeft: `${1 + indent * 1.5}rem` }}
       >
         {variant === "feed" && (
           <Link 
