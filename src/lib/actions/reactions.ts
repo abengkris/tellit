@@ -1,4 +1,5 @@
 import NDK, { NDKEvent } from "@nostr-dev-kit/ndk";
+import { addClientTag } from "@/lib/utils/nostr";
 
 /**
  * Send a NIP-25 reaction to a specific Nostr event.
@@ -21,6 +22,7 @@ export const reactToEvent = async (
     ["p", targetEvent.pubkey]
   ];
 
+  addClientTag(reaction);
   await reaction.sign();
   // Fire and forget (optimistic)
   reaction.publish();

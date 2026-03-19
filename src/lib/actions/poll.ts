@@ -1,4 +1,5 @@
 import NDK, { NDKEvent, NDKKind } from "@nostr-dev-kit/ndk";
+import { addClientTag } from "@/lib/utils/nostr";
 
 export interface PollOption {
   id: string;
@@ -70,6 +71,7 @@ export const createPoll = async (
     event.created_at = Math.floor(Date.now() / 1000);
 
     console.log("[Poll] Signing and publishing...");
+    addClientTag(event);
     await event.sign();
     // Fire and forget (optimistic)
     event.publish();
@@ -106,6 +108,7 @@ export const respondToPoll = async (
       });
     }
 
+    addClientTag(event);
     await event.sign();
     // Fire and forget (optimistic)
     event.publish();

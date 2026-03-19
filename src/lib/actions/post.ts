@@ -1,6 +1,7 @@
 import NDK, { NDKEvent, NDKTag, NDKArticle, NDKDVMRequest, NDKKind } from "@nostr-dev-kit/ndk";
 
 import { createPoll, CreatePollOptions } from "./poll";
+import { addClientTag } from "@/lib/utils/nostr";
 
 export interface ZapSplit {
   pubkey: string;
@@ -78,6 +79,7 @@ export const publishPost = async (
 
   // Automatically parse and generate tags for profiles and other entities in content
   await event.generateTags();
+  addClientTag(event);
 
   // 3. Handle Reply (NIP-10 or NIP-22)
   if (options?.replyTo) {
@@ -178,6 +180,7 @@ export const publishArticle = async (
   });
 
   await article.generateTags();
+  addClientTag(article);
 
   await article.sign();
   // Fire and forget (optimistic)
@@ -222,6 +225,7 @@ export const repostEvent = async (
   // Recommended unless NIP-70 protected (which we don't track specifically yet)
   repost.content = JSON.stringify(targetEvent.rawEvent());
 
+  addClientTag(repost);
   await repost.sign();
   // Fire and forget (optimistic)
   repost.publish();
@@ -241,6 +245,7 @@ export const deletePost = async (ndk: NDK, eventId: string): Promise<boolean> =>
     event.tags = [["e", eventId]];
     event.content = "Deletion request from Tell it!";
     
+    addClientTag(event);
     await event.sign();
     // Fire and forget (optimistic)
     event.publish();
@@ -261,6 +266,7 @@ export const requestSummarization = async (ndk: NDK, eventToSummarize: NDKEvent)
   req.kind = NDKKind.DVMReqTextSummarization;
   req.tags.push(["i", eventToSummarize.id, "event"]);
   
+  addClientTag(req);
   await req.sign();
   req.publish();
   

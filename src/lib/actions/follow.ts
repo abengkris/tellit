@@ -1,6 +1,7 @@
 // src/lib/actions/follow.ts
 
 import NDK, { NDKEvent, NDKSubscriptionCacheUsage } from "@nostr-dev-kit/ndk";
+import { addClientTag } from "@/lib/utils/nostr";
 
 /**
  * ATURAN WAJIB:
@@ -66,6 +67,7 @@ export async function followUser(
     newContactList.tags = newTags;
     newContactList.content = currentContactList?.content ?? "";
 
+    addClientTag(newContactList);
     await newContactList.sign();
     // Fire and forget (optimistic)
     newContactList.publishReplaceable();
@@ -119,6 +121,7 @@ export async function unfollowUser(
     newContactList.tags = newTags;
     newContactList.content = currentContactList.content;
 
+    addClientTag(newContactList);
     await newContactList.sign();
     // Fire and forget (optimistic)
     newContactList.publishReplaceable();

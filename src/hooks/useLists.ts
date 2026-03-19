@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { useNDK } from "@/hooks/useNDK";
 import { NDKEvent, NDKSubscriptionCacheUsage, NDKInterestList } from "@nostr-dev-kit/ndk";
 import { useAuthStore } from "@/store/auth";
+import { addClientTag } from "@/lib/utils/nostr";
 
 /**
  * Supported NIP-51 and NIP-39 list kinds.
@@ -174,6 +175,7 @@ export function useLists(targetPubkey?: string) {
         }
       }
 
+      addClientTag(newEvent);
       await newEvent.sign();
       await newEvent.publishReplaceable();
       
@@ -197,25 +199,41 @@ export function useLists(targetPubkey?: string) {
       if (kind === ListKind.Mute) {
         setMutedPubkeys(prev => {
           const next = new Set(prev);
-          action === 'add' ? next.add(value) : next.delete(value);
+          if (action === 'add') {
+            next.add(value);
+          } else {
+            next.delete(value);
+          }
           return next;
         });
       } else if (kind === ListKind.Bookmarks) {
         setBookmarkedEventIds(prev => {
           const next = new Set(prev);
-          action === 'add' ? next.add(value) : next.delete(value);
+          if (action === 'add') {
+            next.add(value);
+          } else {
+            next.delete(value);
+          }
           return next;
         });
       } else if (kind === ListKind.Pinned) {
         setPinnedEventIds(prev => {
           const next = new Set(prev);
-          action === 'add' ? next.add(value) : next.delete(value);
+          if (action === 'add') {
+            next.add(value);
+          } else {
+            next.delete(value);
+          }
           return next;
         });
       } else if (kind === ListKind.Interests) {
         setInterests(prev => {
           const next = new Set(prev);
-          action === 'add' ? next.add(value) : next.delete(value);
+          if (action === 'add') {
+            next.add(value);
+          } else {
+            next.delete(value);
+          }
           return next;
         });
       } else if (kind === ListKind.ExternalIdentities) {

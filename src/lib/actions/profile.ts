@@ -1,5 +1,6 @@
 import NDK, { NDKEvent } from "@nostr-dev-kit/ndk";
 import { ProfileMetadata } from "@/hooks/useProfile";
+import { addClientTag } from "@/lib/utils/nostr";
 
 /**
  * Update user profile metadata (kind 0).
@@ -13,11 +14,11 @@ export async function updateProfile(
   }
 
   try {
-    const user = await ndk.signer.user();
     const event = new NDKEvent(ndk);
     event.kind = 0;
     event.content = JSON.stringify(metadata);
     
+    addClientTag(event);
     // sign and publish optimistically (fire and forget)
     await event.sign();
     event.publishReplaceable();
@@ -83,6 +84,7 @@ export async function updateStatus(
       event.tags.push(["r", link]);
     }
 
+    addClientTag(event);
     await event.sign();
     event.publishReplaceable();
     return true;

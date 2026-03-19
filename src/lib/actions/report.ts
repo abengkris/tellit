@@ -1,4 +1,5 @@
 import NDK, { NDKEvent, NDKTag } from "@nostr-dev-kit/ndk";
+import { addClientTag } from "@/lib/utils/nostr";
 
 export type ReportType = "nudity" | "malware" | "profanity" | "illegal" | "spam" | "impersonation" | "other";
 
@@ -30,6 +31,7 @@ export const reportContent = async (
     event.tags = tags;
     event.content = reason;
     
+    addClientTag(event);
     await event.sign();
     await event.publish();
     return true;
