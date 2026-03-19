@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase';
 import { validateUsername, calculateHandlePrice } from '@/lib/nip05';
-import { createBlinkInvoice } from '@/lib/blink';
+import { createBlinkInvoice, checkBlinkInvoiceStatus } from '@/lib/blink';
 import { verifyEvent } from 'nostr-tools';
 
 export async function GET(req: NextRequest) {
@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
   try {
     const supabase = getSupabaseAdmin();
 
-    // If pubkey is provided, check handles and pending registrations
+    // ... (pubkey check logic remains the same until line 55)
     if (pubkey) {
       // Fetch active handles
       const { data: handles } = await supabase
@@ -65,30 +65,71 @@ export async function GET(req: NextRequest) {
     if (!validation.valid) {
       return NextResponse.json({ available: false, error: validation.error });
     }
-    const { data, error } = await supabase
+
+    // 1. Check active handles
+    const { data: handleData, error: handleErr } = await supabase
       .from('handles')
-      .select('name, created_at')
+      .select('name, created_at, pubkey')
       .eq('name', name.toLowerCase())
       .single();
 
-    if (error && error.code !== 'PGRST116') { // PGRST116 is "JSON object requested, but no rows returned"
-      console.error('[NIP-05 Register Availability] DB Error:', error);
-      return NextResponse.json({ available: false, error: 'Database error occurred' });
+    if (handleErr && handleErr.code !== 'PGRST116') {
+      throw new Error(`Database error (handles): ${handleErr.message}`);
     }
 
-    let available = !data;
-    
-    // If handle exists, check if it's past grace period
-    if (data) {
-      const expiresAt = new Date(new Date(data.created_at).setFullYear(new Date(data.created_at).getFullYear() + 1));
+    if (handleData) {
+      const expiresAt = new Date(new Date(handleData.created_at).setFullYear(new Date(handleData.created_at).getFullYear() + 1));
       const gracePeriodEnd = new Date(expiresAt.getTime() + (30 * 24 * 60 * 60 * 1000));
-      if (new Date() > gracePeriodEnd) {
-        available = true;
+      if (new Date() < gracePeriodEnd) {
+        return NextResponse.json({ available: false, error: 'Handle already taken' });
+      }
+    }
+
+    // 2. Check pending registrations (reservation logic)
+    const { data: regData, error: regErr } = await supabase
+      .from('registrations')
+      .select('status, created_at, payment_hash, pubkey')
+      .eq('name', name.toLowerCase())
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false });
+
+    if (regErr) {
+      throw new Error(`Database error (registrations): ${regErr.message}`);
+    }
+
+    if (regData && regData.length > 0) {
+      for (const reg of regData) {
+        // If it's less than 24 hours old, check status with Blink
+        const createdAt = new Date(reg.created_at);
+        const now = new Date();
+        const isExpiredLocally = (now.getTime() - createdAt.getTime() > 24 * 60 * 60 * 1000);
+
+        if (!isExpiredLocally) {
+          try {
+            const blinkStatus = await checkBlinkInvoiceStatus(reg.payment_hash);
+            if (blinkStatus === 'PAID') {
+              return NextResponse.json({ available: false, error: 'Handle already taken (payment processing)' });
+            }
+            if (blinkStatus === 'PENDING') {
+              return NextResponse.json({ 
+                available: false, 
+                error: 'Handle is currently reserved by another user (pending payment)' 
+              });
+            }
+          } catch (err) {
+            console.error('[NIP-05 Register Availability] Blink check failed:', err);
+            // Fallback to locally "reserved" if Blink check fails
+            return NextResponse.json({ 
+              available: false, 
+              error: 'Handle is currently reserved' 
+            });
+          }
+        }
       }
     }
 
     return NextResponse.json({ 
-      available,
+      available: true,
       price: calculateHandlePrice(name)
     });
   } catch (err) {
@@ -114,7 +155,7 @@ export async function POST(req: NextRequest) {
 
     const supabase = getSupabaseAdmin();
 
-    // 2. Check if name is already taken in active handles
+    // 1. Check active handles
     const { data: existingHandle, error: checkError } = await supabase
       .from('handles')
       .select('name, pubkey, created_at')
@@ -126,21 +167,43 @@ export async function POST(req: NextRequest) {
       const gracePeriodEnd = new Date(expiresAt.getTime() + (30 * 24 * 60 * 60 * 1000));
       const now = new Date();
 
-      // Block only if:
-      // 1. It's not owned by the requester AND
-      // 2. It's not past the grace period
       if (existingHandle.pubkey !== pubkey && now < gracePeriodEnd) {
-        return NextResponse.json({ 
-          error: 'Username already taken and within grace period.' 
-        }, { status: 409 });
+        return NextResponse.json({ error: 'Username already taken.' }, { status: 409 });
       }
     }
 
-    if (checkError && checkError.code !== 'PGRST116') {
-      throw new Error(`Database check failed: ${checkError.message}`);
+    // 2. Check pending registrations (reservation logic)
+    const { data: regData } = await supabase
+      .from('registrations')
+      .select('status, created_at, payment_hash, pubkey')
+      .eq('name', name.toLowerCase())
+      .eq('status', 'pending');
+
+    if (regData && regData.length > 0) {
+      for (const reg of regData) {
+        // If it's another user's pending unexpired registration
+        if (reg.pubkey !== pubkey) {
+          const createdAt = new Date(reg.created_at);
+          const now = new Date();
+          const isExpiredLocally = (now.getTime() - createdAt.getTime() > 24 * 60 * 60 * 1000);
+
+          if (!isExpiredLocally) {
+            try {
+              const blinkStatus = await checkBlinkInvoiceStatus(reg.payment_hash);
+              if (blinkStatus === 'PAID' || blinkStatus === 'PENDING') {
+                return NextResponse.json({ 
+                  error: 'Handle is currently reserved by another user. Please try again in 24 hours.' 
+                }, { status: 409 });
+              }
+            } catch (err) {
+              return NextResponse.json({ error: 'Handle is currently reserved.' }, { status: 409 });
+            }
+          }
+        }
+      }
     }
 
-    // 2. Generate Lightning Invoice via Blink
+    // 3. Generate Lightning Invoice via Blink
     const price = calculateHandlePrice(name);
     const memo = `NIP-05: ${name}@tellit.id`;
     const invoice = await createBlinkInvoice(price, memo);
@@ -149,7 +212,7 @@ export async function POST(req: NextRequest) {
       throw new Error("Failed to generate Lightning invoice via Blink");
     }
 
-    // 3. Save pending registration to Supabase
+    // 4. Save pending registration to Supabase
     const defaultRelays = ["wss://relay.damus.io", "wss://nos.lol"];
     const { error: regError } = await supabase
       .from('registrations')
