@@ -101,6 +101,7 @@ export const respondToPoll = async (
     event.content = "";
     
     event.tags.push(["e", pollEvent.id]);
+    event.tags.push(["p", pollEvent.pubkey]);
     
     if (Array.isArray(optionIds)) {
       optionIds.forEach(id => {

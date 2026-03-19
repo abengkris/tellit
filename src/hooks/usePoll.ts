@@ -57,7 +57,7 @@ export function usePoll(pollEvent: NDKEvent) {
       setLoading(true);
       
       const newSub = ndk.subscribe(
-        { kinds: [1018 as NDKKind], "#e": [pollEvent.id] },
+        { kinds: [1018 as NDKKind, 691 as NDKKind], "#e": [pollEvent.id] },
         { closeOnEose: false },
         {
           onEvent: (event: NDKEvent) => {
