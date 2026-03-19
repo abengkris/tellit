@@ -368,8 +368,8 @@ export const PostCard = memo(({
             />
 
             <div className={cn(
-              "mt-1",
-              variant === "detail" ? "text-xl sm:text-2xl leading-normal mb-4 font-normal tracking-tight" : "text-base ml-14"
+              "mt-2",
+              variant === "detail" ? "text-xl sm:text-2xl leading-normal mb-6 font-normal tracking-tight" : "text-[15px] sm:text-[16px] ml-14 leading-relaxed"
             )}>
               <PostContentRenderer
                 content={displayEvent.content || ""}
@@ -383,19 +383,19 @@ export const PostCard = memo(({
               />            </div>
 
             {isPoll && (
-              <div className={cn(variant !== "detail" && "ml-14")}>
+              <div className={cn(variant !== "detail" && "ml-14 mt-3")}>
                 <PollRenderer event={displayEvent} />
               </div>
             )}
 
             {variant === "detail" && (
-              <div className="flex flex-col mt-4">
+              <div className="flex flex-col mt-6">
                 <div className="py-4 text-muted-foreground text-[15px] border-t border-border/50">
                   {formatFullTimestamp(displayEvent.created_at)}
                 </div>
                 
                 {(combinedReposts > 0 || likes > 0 || totalSats > 0 || comments > 0) && (
-                  <div className="py-4 border-t border-border/50 flex items-center gap-5 text-[15px]">
+                  <div className="py-4 border-t border-border/50 flex items-center gap-6 text-[15px]">
                     {comments > 0 && (
                       <div className="flex items-center gap-1 hover:underline cursor-pointer" onClick={() => {}}>
                         <span className="font-bold text-foreground">{comments.toLocaleString()}</span>
@@ -424,7 +424,7 @@ export const PostCard = memo(({
                 )}
               </div>
             )}
-            <div className={cn(variant !== "detail" && "ml-14")}>
+            <div className={cn(variant !== "detail" && "ml-14 mt-1")}>
               <PostActions
                 eventId={displayEvent.id}
                 authorPubkey={displayEvent.pubkey}
