@@ -62,7 +62,8 @@ export const PostCard = memo(({
 
   const isRepost = event?.kind === 6 || event?.kind === 16;
   const isHighlight = event?.kind === 9802;
-  const isReply = event ? !isEventOriginalPost(event) : false;
+  const isQuote = event?.tags.some(t => t[0] === 'q');
+  const isReply = event ? (!isEventOriginalPost(event) && !isQuote) : false;
   
   // Call hooks unconditionally
   const { profile: repostAuthorProfile } = useProfile(isRepost ? event?.pubkey : undefined);
@@ -377,10 +378,12 @@ export const PostCard = memo(({
                 isRepost={isRepost}
                 isHighlight={isHighlight}
                 isArticle={isArticle}
+                isQuote={isQuote}
                 event={displayEvent}
                 className={variant === "detail" ? "prose-2xl" : ""}
                 variant={variant}
-              />            </div>
+              />
+            </div>
 
             {isPoll && (
               <div className={cn(variant !== "detail" && "ml-14 mt-3")}>
