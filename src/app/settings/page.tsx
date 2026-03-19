@@ -6,7 +6,8 @@ import { useAuthStore } from "@/store/auth";
 import { useNDK } from "@/hooks/useNDK";
 import { useProfile } from "@/hooks/useProfile";
 import { useAppSettings } from "@/hooks/useAppSettings";
-import { Bell, Shield, User, Globe, Wallet, Clock, LogOut, Key, VolumeX, BadgeCheck, RefreshCcw } from "lucide-react";
+import { Bell, Shield, User, Globe, Wallet, Clock, LogOut, Key, VolumeX, BadgeCheck, RefreshCcw, Sun, Moon, Monitor } from "lucide-react";
+import { useTheme } from "next-themes";
 import { Avatar } from "@/components/common/Avatar";
 import Link from "next/link";
 import { NDKEvent } from "@nostr-dev-kit/ndk";
@@ -51,6 +52,7 @@ export default function SettingsPage() {
     addToast
   } = useUIStore();
 
+  const { theme, setTheme } = useTheme();
   const [permissionStatus, setPermissionStatus] = useState<NotificationPermission>("default");
   const [unpublishedCount, setUnpublishedCount] = useState(0);
   const [isMuteListModalOpen, setIsMuteListModalOpen] = useState(false);
@@ -334,6 +336,42 @@ export default function SettingsPage() {
           </h2>
           
           <div className="flex flex-col gap-2">
+            {/* App Theme */}
+            <Card className="rounded-3xl border-none bg-muted/30 shadow-none overflow-hidden">
+              <CardHeader className="pb-4">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-orange-500/10 text-orange-500 rounded-2xl shrink-0">
+                    <Sun size={20} className="dark:hidden" />
+                    <Moon size={20} className="hidden dark:block" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="font-black">App Theme</div>
+                    <div className="text-xs text-muted-foreground font-medium">Choose how Tell it! looks on your device</div>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="grid grid-cols-3 gap-2">
+                {[
+                  { value: "light", icon: Sun, label: "Light" },
+                  { value: "dark", icon: Moon, label: "Dark" },
+                  { value: "system", icon: Monitor, label: "System" }
+                ].map((item) => (
+                  <Button
+                    key={item.value}
+                    variant={theme === item.value ? "default" : "outline"}
+                    onClick={() => setTheme(item.value)}
+                    className={cn(
+                      "flex flex-col items-center justify-center h-auto py-3 rounded-2xl border-none shadow-sm gap-1.5 transition-all",
+                      theme === item.value ? "bg-primary text-primary-foreground scale-[1.02]" : "bg-background hover:bg-accent"
+                    )}
+                  >
+                    <item.icon size={16} />
+                    <span className="font-black text-[10px] uppercase tracking-wider">{item.label}</span>
+                  </Button>
+                ))}
+              </CardContent>
+            </Card>
+
             {/* Browser Notifications */}
             <Card className={cn(
               "rounded-3xl border-none bg-muted/30 shadow-none",
