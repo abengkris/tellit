@@ -158,7 +158,7 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({
     <div className="flex flex-col w-full max-w-2xl mx-auto bg-background">
       <div className="flex flex-col">
         {/* Banner Preview */}
-        <div className="relative h-40 bg-muted group rounded-t-3xl overflow-hidden">
+        <div className="relative h-32 sm:h-40 bg-muted group rounded-t-3xl overflow-hidden">
           {formData.banner ? (
             <Image src={formData.banner} alt="Banner preview" fill className="object-cover" unoptimized />
           ) : (
@@ -193,8 +193,8 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({
 
         <div className="px-6 pb-8 relative">
           {/* Avatar Preview */}
-          <div className="relative -mt-12 mb-6 inline-block group">
-            <div className="size-24 rounded-full border-4 border-background overflow-hidden bg-muted shadow-lg relative">
+          <div className="relative -mt-10 sm:-mt-12 mb-6 inline-block group">
+            <div className="size-20 sm:size-24 rounded-full border-4 border-background overflow-hidden bg-muted shadow-lg relative">
               <Image 
                 src={formData.picture || `https://robohash.org/placeholder?set=set1`} 
                 alt="Avatar preview" 

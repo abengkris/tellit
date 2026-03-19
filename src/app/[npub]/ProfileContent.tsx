@@ -183,10 +183,10 @@ export function ProfileContent({ npubParam }: { npubParam: string }) {
   if (profileLoading) {
     return (
       <>
-        <div className="h-48 bg-muted animate-pulse" />
+        <div className="h-32 sm:h-48 bg-muted animate-pulse" />
         <div className="px-4 pb-4 animate-pulse">
-          <div className="relative flex justify-between items-end -mt-16 mb-4">
-            <div className="size-32 rounded-full bg-muted ring-4 ring-background" />
+          <div className="relative flex justify-between items-end -mt-10 sm:-mt-16 mb-4">
+            <div className="size-20 sm:size-32 rounded-full bg-muted ring-4 ring-background" />
             <div className="w-32 h-10 rounded-full bg-muted" />
           </div>
           <div className="space-y-3">
@@ -203,7 +203,7 @@ export function ProfileContent({ npubParam }: { npubParam: string }) {
   return (
     <>
       {/* Header */}
-      <div className="h-48 bg-muted relative overflow-hidden">
+      <div className="h-32 sm:h-48 bg-muted relative overflow-hidden">
         {profile?.banner ? (
           <Image src={profile.banner} alt="Banner" fill className="object-cover" unoptimized />
         ) : (
@@ -212,13 +212,13 @@ export function ProfileContent({ npubParam }: { npubParam: string }) {
       </div>
 
       <div className="px-4 pb-4 border-b border-border">
-        <div className="relative flex justify-between items-end -mt-16 mb-4">
-          <div className="p-1 bg-background rounded-full ring-4 ring-background shrink-0">
+        <div className="relative flex justify-between items-end -mt-10 sm:-mt-16 mb-4">
+          <div className="p-1 bg-background rounded-full ring-4 ring-background shrink-0 overflow-hidden">
             <Avatar 
               pubkey={hexPubkey} 
               src={profile?.picture || (profile as { image?: string })?.image} 
               size={128} 
-              className="border-none shadow-none" 
+              className="!size-20 sm:!size-32 border-none shadow-none" 
               aria-hidden="true"
             />
           </div>
