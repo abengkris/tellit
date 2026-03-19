@@ -1,15 +1,18 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { ShieldCheck, Copy, CheckCircle2, AlertTriangle, ChevronLeft, ArrowRight, Eye, EyeOff, Lock } from "lucide-react";
 import { useUIStore } from "@/store/ui";
+import { toNsec } from "@/lib/utils/nip19";
 
 export function SecurityStep({ onNext, onBack, privateKey }: { onNext: () => void; onBack: () => void; privateKey: string }) {
   const [isCopied, setIsCopied] = useState(false);
   const [showKey, setShowKey] = useState(false);
   const { addToast } = useUIStore();
 
+  const nsec = useMemo(() => toNsec(privateKey), [privateKey]);
+
   const copyToClipboard = () => {
-    navigator.clipboard.writeText(privateKey);
+    navigator.clipboard.writeText(nsec);
     setIsCopied(true);
     addToast("Key copied to clipboard!", "success");
     setTimeout(() => setIsCopied(false), 2000);
@@ -38,7 +41,7 @@ export function SecurityStep({ onNext, onBack, privateKey }: { onNext: () => voi
           <div className="relative group">
             <div className="bg-background border-2 border-muted rounded-2xl p-4 pr-12 min-h-[80px] flex items-center shadow-inner overflow-hidden">
               <p className={`font-mono text-xs break-all leading-relaxed ${!showKey ? 'blur-sm select-none' : ''}`}>
-                {privateKey || "npub1..."}
+                {nsec || "nsec1..."}
               </p>
             </div>
             <div className="absolute top-2 right-2 flex flex-col gap-1">

@@ -19,6 +19,7 @@ import {
   Database,
   Lock
 } from "lucide-react";
+import { toNsec } from "@/lib/utils/nip19";
 
 export default function LoginPage() {
   const [privateKey, setPrivateKey] = useState("");
@@ -102,7 +103,7 @@ export default function LoginPage() {
   };
 
   const copyToClipboard = () => {
-    navigator.clipboard.writeText(newKey);
+    navigator.clipboard.writeText(toNsec(newKey));
     setIsCopied(true);
     addToast("Key copied to clipboard!", "success");
     setTimeout(() => setIsCopied(false), 2000);
@@ -123,7 +124,7 @@ export default function LoginPage() {
 
             <div className="bg-gray-100 dark:bg-black p-4 rounded-2xl mb-6 relative group">
               <p className="font-mono text-xs break-all pr-10 text-left">
-                {newKey}
+                {toNsec(newKey)}
               </p>
               <button 
                 onClick={copyToClipboard}

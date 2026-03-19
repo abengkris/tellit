@@ -79,6 +79,18 @@ export function decodeToHex(nip19String: string): string {
 }
 
 /**
+ * Encodes a hex private key to nsec.
+ */
+export function toNsec(privateKey: string): string {
+  try {
+    if (!privateKey || privateKey.startsWith("nsec")) return privateKey;
+    return nip19.nsecEncode(privateKey);
+  } catch {
+    return privateKey;
+  }
+}
+
+/**
  * Encodes a hex pubkey to npub.
  * Better: use user.npub if you have an NDKUser instance.
  */
