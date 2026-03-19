@@ -139,15 +139,6 @@ export const PostCard = memo(({
     }
   }, [displayEvent]);
 
-  const eventNoteId = useMemo(() => {
-    if (!displayEvent) return "";
-    try {
-      return getEventNip19(displayEvent);
-    } catch {
-      return displayEvent.id || "";
-    }
-  }, [displayEvent]);
-
   const navigationHref = useMemo(() => {
     if (!displayEvent) return "#";
     if (isArticle) return getArticleUrl(displayEvent, profile);
@@ -320,11 +311,11 @@ export const PostCard = memo(({
     return (
       <article 
         className={cn(
-          "group relative flex flex-col p-4 border-b border-border hover:bg-accent/10 transition-colors overflow-visible",
-          variant === "detail" && "hover:bg-transparent pb-2",
-          isFocal && "bg-primary/5 border-l-4 border-l-primary"
+          "group relative flex flex-col px-4 pt-3 pb-2 border-b border-border hover:bg-accent/5 transition-colors overflow-visible",
+          variant === "detail" && "hover:bg-transparent px-4 py-0 border-b-0",
+          isFocal && "bg-transparent border-l-0"
         )}
-        style={{ paddingLeft: `${1 + indent * 1.5}rem` }}
+        style={{ paddingLeft: `${indent * 1.5}rem` }}
       >
         {variant === "feed" && (
           <Link 
@@ -335,12 +326,12 @@ export const PostCard = memo(({
         )}
 
         <div className="flex relative min-w-0 z-10 pointer-events-none">
-          {/* Refined Thread Lines */}
+          {/* Refined Thread Lines - Centered at 1.5rem (center of w-12 avatar) */}
           {(threadLine === "top" || threadLine === "both") && (
-            <div className="absolute top-[-1.5rem] left-[1.45rem] w-0.5 h-[2.5rem] bg-border/60" />
+            <div className="absolute top-[-1.5rem] left-[1.5rem] w-0.5 h-[2.5rem] bg-border/60 -translate-x-1/2" />
           )}
           {(threadLine === "bottom" || threadLine === "both") && (
-            <div className="absolute top-[3.5rem] bottom-[-1.5rem] left-[1.45rem] w-0.5 bg-border/60" />
+            <div className="absolute top-[3.5rem] bottom-[-1.5rem] left-[1.5rem] w-0.5 bg-border/60 -translate-x-1/2" />
           )}
 
           {/* Content Area */}
@@ -378,7 +369,7 @@ export const PostCard = memo(({
 
             <div className={cn(
               "mt-1",
-              variant === "detail" ? "text-lg sm:text-xl leading-normal mb-4" : "text-base"
+              variant === "detail" ? "text-xl sm:text-2xl leading-normal mb-4 font-normal tracking-tight" : "text-base ml-14"
             )}>
               <PostContentRenderer
                 content={displayEvent.content || ""}
@@ -387,69 +378,74 @@ export const PostCard = memo(({
                 isHighlight={isHighlight}
                 isArticle={isArticle}
                 event={displayEvent}
-                className={variant === "detail" ? "prose-xl" : ""}
+                className={variant === "detail" ? "prose-2xl" : ""}
                 variant={variant}
               />            </div>
 
             {isPoll && (
-              <PollRenderer event={displayEvent} />
+              <div className={cn(variant !== "detail" && "ml-14")}>
+                <PollRenderer event={displayEvent} />
+              </div>
             )}
 
             {variant === "detail" && (
               <div className="flex flex-col mt-4">
-                <div className="py-3 text-muted-foreground text-sm font-medium border-t border-border/50">
+                <div className="py-4 text-muted-foreground text-[15px] border-t border-border/50">
                   {formatFullTimestamp(displayEvent.created_at)}
                 </div>
                 
                 {(combinedReposts > 0 || likes > 0 || totalSats > 0 || comments > 0) && (
-                  <div className="py-4 border-t border-border/50 flex items-center gap-6 text-sm">
+                  <div className="py-4 border-t border-border/50 flex items-center gap-5 text-[15px]">
                     {comments > 0 && (
-                      <div className="flex items-center gap-1.5 hover:underline cursor-pointer" onClick={() => {}}>
-                        <span className="font-black text-foreground">{comments.toLocaleString()}</span>
-                        <span className="text-muted-foreground font-bold">Comments</span>
+                      <div className="flex items-center gap-1 hover:underline cursor-pointer" onClick={() => {}}>
+                        <span className="font-bold text-foreground">{comments.toLocaleString()}</span>
+                        <span className="text-muted-foreground">Comments</span>
                       </div>
                     )}
                     {combinedReposts > 0 && (
-                      <div className="flex items-center gap-1.5 hover:underline cursor-pointer" onClick={() => {}}>
-                        <span className="font-black text-foreground">{combinedReposts.toLocaleString()}</span>
-                        <span className="text-muted-foreground font-bold">Reposts</span>
+                      <div className="flex items-center gap-1 hover:underline cursor-pointer" onClick={() => {}}>
+                        <span className="font-bold text-foreground">{combinedReposts.toLocaleString()}</span>
+                        <span className="text-muted-foreground">Reposts</span>
                       </div>
                     )}
                     {likes > 0 && (
-                      <div className="flex items-center gap-1.5 hover:underline cursor-pointer" onClick={() => {}}>
-                        <span className="font-black text-foreground">{likes.toLocaleString()}</span>
-                        <span className="text-muted-foreground font-bold">Likes</span>
+                      <div className="flex items-center gap-1 hover:underline cursor-pointer" onClick={() => {}}>
+                        <span className="font-bold text-foreground">{likes.toLocaleString()}</span>
+                        <span className="text-muted-foreground">Likes</span>
                       </div>
                     )}
                     {totalSats > 0 && (
-                      <div className="flex items-center gap-1.5 hover:underline cursor-pointer" onClick={() => {}}>
-                        <span className="font-black text-foreground">{totalSats.toLocaleString()}</span>
-                        <span className="text-muted-foreground font-bold">Sats</span>
+                      <div className="flex items-center gap-1 hover:underline cursor-pointer" onClick={() => {}}>
+                        <span className="font-bold text-foreground">{totalSats.toLocaleString()}</span>
+                        <span className="text-muted-foreground">Sats</span>
                       </div>
                     )}
                   </div>
                 )}
               </div>
             )}
-            <PostActions
-              eventId={displayEvent.id}
-              authorPubkey={displayEvent.pubkey}
-              likes={likes}
-              reposts={reposts}
-              comments={comments}
-              quotes={quotes}
-              combinedReposts={combinedReposts}
-              bookmarks={bookmarks}
-              zaps={totalSats}
-              userReacted={userLiked ? '+' : null}
-              userReposted={userReposted}
-              onZapClick={() => setShowZapModal(true)}
-              onReplyClick={() => setShowReplyModal(true)}
-              onLikeClick={handleLike}
-              onRepostClick={handleRepost}
-              onQuoteClick={handleQuote}
-              onShareClick={handleShare}
-            />
+            <div className={cn(variant !== "detail" && "ml-14")}>
+              <PostActions
+                eventId={displayEvent.id}
+                authorPubkey={displayEvent.pubkey}
+                likes={likes}
+                reposts={reposts}
+                comments={comments}
+                quotes={quotes}
+                combinedReposts={combinedReposts}
+                bookmarks={bookmarks}
+                zaps={totalSats}
+                userReacted={userLiked ? '+' : null}
+                userReposted={userReposted}
+                onZapClick={() => setShowZapModal(true)}
+                onReplyClick={() => setShowReplyModal(true)}
+                onLikeClick={handleLike}
+                onRepostClick={handleRepost}
+                onQuoteClick={handleQuote}
+                onShareClick={handleShare}
+                variant={variant}
+              />
+            </div>
           </div>
         </div>
         {showReplyModal && (

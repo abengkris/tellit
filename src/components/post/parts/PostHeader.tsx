@@ -12,8 +12,7 @@ import {
   VolumeX, 
   Volume2, 
   Bookmark,
-  BarChart2,
-  MessageSquareReply
+  BarChart2
 } from "lucide-react";
 import Link from "next/link";
 
@@ -108,45 +107,36 @@ export const PostHeader: React.FC<PostHeaderProps> = ({
 
   if (variant === "detail") {
     return (
-      <>
+      <div className="flex flex-col min-w-0 z-10">
         {/* Repost Header */}
         {isRepost && (
-          <div className="flex items-center space-x-2 text-muted-foreground text-xs font-bold mb-4 ml-0 truncate min-w-0">
-            <Repeat2 size={14} className="shrink-0" aria-hidden="true" />
+          <div className="flex items-center space-x-2 text-muted-foreground text-[13px] font-bold mb-3 ml-0 truncate min-w-0">
+            <Repeat2 size={16} className="shrink-0" aria-hidden="true" />
             <span className="truncate">{repostAuthorName} reposted</span>
           </div>
         )}
 
-        <div className="flex items-start justify-between mb-4 min-w-0">
+        <div className="flex items-center justify-between mb-3 min-w-0">
           <div className="flex items-center space-x-3 truncate min-w-0" onClick={(e) => e.stopPropagation()}>
             <Link href={finalProfileUrl} aria-label={`View ${display_name}'s profile`} className="shrink-0">
               <Avatar 
                 pubkey={pubkey} 
                 src={avatar} 
                 isLoading={isLoading} 
-                size={56} 
-                className="w-14 h-14 ring-4 ring-background shadow-sm" 
+                size={52} 
+                className="w-[52px] h-[52px] ring-1 ring-border/10" 
                 aria-hidden="true"
               />
             </Link>
             <div className="flex flex-col truncate min-w-0">
               <Link href={finalProfileUrl} className="flex flex-col truncate min-w-0 hover:underline">
-                <span className="font-black text-lg text-foreground leading-tight truncate">{display_name}</span>
-                <span className="text-muted-foreground text-sm truncate">@{name || userNpub.slice(0, 12) + "..."}</span>
+                <span className="font-bold text-[17px] text-foreground leading-tight truncate">{display_name}</span>
+                <span className="text-muted-foreground text-[15px] truncate">@{name || userNpub.slice(0, 12)}</span>
               </Link>
             </div>
           </div>
 
           <div className="flex items-center gap-1">
-            {/* Badges in detail mode could be stacked or shown differently, for now keep it simple */}
-            <div className="hidden sm:flex items-center gap-1 mr-2">
-              {isArticle && (
-                <Badge variant="secondary" className="h-5 px-2 rounded-full font-bold uppercase tracking-tighter text-[10px] bg-purple-500/10 text-purple-500 border-purple-500/20">
-                  Article
-                </Badge>
-              )}
-            </div>
-
             <DropdownMenu modal={false}>
               <DropdownMenuTrigger asChild>
                 <Button 
@@ -216,6 +206,12 @@ export const PostHeader: React.FC<PostHeaderProps> = ({
           </div>
         </div>
 
+        {isReply && (
+          <div className="text-[15px] text-muted-foreground mb-3">
+            Replying to <Link href={`/${userNpub}`} className="text-primary hover:underline">@{name || userNpub.slice(0, 12)}</Link>
+          </div>
+        )}
+
         <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
           <AlertDialogContent className="rounded-3xl border-none shadow-2xl overflow-hidden max-w-[340px] sm:max-w-md p-0">
             <AlertDialogHeader className="p-8 pb-4">
@@ -244,7 +240,7 @@ export const PostHeader: React.FC<PostHeaderProps> = ({
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
-      </>
+      </div>
     );
   }
 
