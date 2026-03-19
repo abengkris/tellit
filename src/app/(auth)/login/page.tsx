@@ -17,9 +17,11 @@ import {
   CheckCircle2, 
   Loader2,
   Database,
-  Lock
+  Lock,
+  Shield
 } from "lucide-react";
 import { toNsec } from "@/lib/utils/nip19";
+import { RestoreBackupModal } from "@/components/settings/RestoreBackupModal";
 
 export default function LoginPage() {
   const [privateKey, setPrivateKey] = useState("");
@@ -31,6 +33,23 @@ export default function LoginPage() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [newKey, setNewKey] = useState("");
   const [isCopied, setIsCopied] = useState(false);
+  const [isRestoreModalOpen, setIsRestoreModalOpen] = useState(false);
+  const [hasBackups, setHasBackups] = useState(false);
+
+  useEffect(() => {
+    // Check for local backups
+    const checkBackups = () => {
+      if (typeof window === 'undefined') return;
+      for (let i = 0; i < localStorage.length; i++) {
+        if (localStorage.key(i)?.startsWith('tellit-backup-')) {
+          setHasBackups(true);
+          return;
+        }
+      }
+      setHasBackups(false);
+    };
+    checkBackups();
+  }, []);
 
   const { 
     login, 
@@ -61,7 +80,7 @@ export default function LoginPage() {
       await login(ndk, sessions);
       addToast("Account added successfully!", "success");
       router.push("/");
-    } catch (err) {
+    } catch {
       addToast("NIP-07 Login failed. Check extension.", "error");
     }
   };
@@ -97,7 +116,7 @@ export default function LoginPage() {
       setNewKey(k);
       setShowOnboarding(true);
       addToast("New identity generated!", "success");
-    } catch (err) {
+    } catch {
       addToast("Failed to generate key.", "error");
     }
   };
@@ -320,6 +339,17 @@ export default function LoginPage() {
                 {!isReady ? "Initializing…" : (isLoading ? "Please wait…" : "Sign In")}
               </span>
             </button>
+
+            {hasBackups && (
+              <button
+                type="button"
+                onClick={() => setIsRestoreModalOpen(true)}
+                className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl border-2 border-primary/20 bg-primary/5 text-primary font-black text-sm hover:bg-primary/10 transition-all"
+              >
+                <Shield size={16} />
+                Restore from local backup
+              </button>
+            )}
           </form>
 
           <p className="mt-8 text-[10px] text-gray-400 leading-relaxed uppercase tracking-tighter">
@@ -327,6 +357,12 @@ export default function LoginPage() {
           </p>
         </div>
       </div>
+
+      <RestoreBackupModal 
+        isOpen={isRestoreModalOpen} 
+        onClose={() => setIsRestoreModalOpen(false)} 
+        onSuccess={() => router.push("/")}
+      />
     </div>
   );
 }

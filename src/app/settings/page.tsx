@@ -13,6 +13,7 @@ import Link from "next/link";
 import { NDKEvent } from "@nostr-dev-kit/ndk";
 import { useLists } from "@/hooks/useLists";
 import { MuteList } from "@/components/profile/MuteList";
+import { KeyBackupModal } from "@/components/settings/KeyBackupModal";
 import { 
   Card, 
   CardContent, 
@@ -56,6 +57,7 @@ export default function SettingsPage() {
   const [permissionStatus, setPermissionStatus] = useState<NotificationPermission>("default");
   const [unpublishedCount, setUnpublishedCount] = useState(0);
   const [isMuteListModalOpen, setIsMuteListModalOpen] = useState(false);
+  const [isKeyBackupModalOpen, setIsKeyBackupModalOpen] = useState(false);
 
   useEffect(() => {
     if (isReady && ndk?.cacheAdapter) {
@@ -110,6 +112,8 @@ export default function SettingsPage() {
     logoutAll(sessions);
     addToast("Logged out of all accounts", "info");
   };
+
+  const hasLocalBackup = typeof window !== 'undefined' && user?.pubkey && localStorage.getItem(`tellit-backup-${user.pubkey}`);
 
   return (
     <>
@@ -194,6 +198,45 @@ export default function SettingsPage() {
                     )}
                   </div>
                 </div>
+              </CardContent>
+            </Card>
+          </section>
+        )}
+
+        {/* Security Section */}
+        {isLoggedIn && user && (
+          <section className="space-y-4">
+            <h2 className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2 px-1">
+              <Shield size={14} /> Security
+            </h2>
+            <Card className="rounded-3xl border-none bg-muted/30 shadow-none">
+              <CardContent className="p-4 flex items-center justify-between">
+                <div className="flex items-center gap-4 min-w-0">
+                  <div className="p-3 bg-primary/10 text-primary rounded-2xl shrink-0">
+                    <Key size={20} />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="font-black truncate">Local Key Backup</div>
+                    <div className="text-xs text-muted-foreground font-medium truncate flex items-center gap-2">
+                      {hasLocalBackup ? (
+                        <>
+                          <Badge variant="outline" className="h-4 px-1 bg-green-500/10 text-green-600 border-green-500/20 text-[8px] font-black uppercase">Active</Badge>
+                          <span>Key encrypted in this browser</span>
+                        </>
+                      ) : (
+                        <span>Save encrypted key for easier login</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsKeyBackupModalOpen(true)}
+                  className="rounded-full font-black bg-background border-none shadow-sm"
+                >
+                  {hasLocalBackup ? "Manage" : "Setup"}
+                </Button>
               </CardContent>
             </Card>
           </section>
@@ -450,6 +493,11 @@ export default function SettingsPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <KeyBackupModal 
+        isOpen={isKeyBackupModalOpen} 
+        onClose={() => setIsKeyBackupModalOpen(false)} 
+      />
     </>
   );
 }
