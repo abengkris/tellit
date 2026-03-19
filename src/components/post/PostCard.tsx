@@ -390,8 +390,19 @@ export const PostCard = memo(({
 
             {variant === "detail" && (
               <div className="flex flex-col mt-6">
-                <div className="py-4 text-muted-foreground text-[15px] border-t border-border/50">
-                  {formatFullTimestamp(displayEvent.created_at)}
+                <div className="py-4 text-muted-foreground text-[15px] border-t border-border/50 flex items-center justify-between">
+                  <span>{formatFullTimestamp(displayEvent.created_at)}</span>
+                  {(() => {
+                    const clientTag = displayEvent.tags.find(t => t[0] === 'client');
+                    const clientName = clientTag?.[1];
+                    if (!clientName) return null;
+                    return (
+                      <span className="flex items-center gap-1.5 shrink-0">
+                        <span className="opacity-50">·</span>
+                        <span className="text-primary font-bold">via {clientName}</span>
+                      </span>
+                    );
+                  })()}
                 </div>
                 
                 {(combinedReposts > 0 || likes > 0 || totalSats > 0 || comments > 0) && (

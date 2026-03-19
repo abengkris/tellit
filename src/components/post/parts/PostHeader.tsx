@@ -215,16 +215,6 @@ export const PostHeader: React.FC<PostHeaderProps> = ({
           </div>
         )}
 
-        <div className="py-4 text-muted-foreground text-[15px] border-t border-border/50 flex items-center justify-between">
-          <span>{formatFullTimestamp(createdAt)}</span>
-          {clientName && (
-            <span className="flex items-center gap-1.5 shrink-0">
-              <span className="opacity-50">·</span>
-              <span className="text-primary font-bold">via {clientName}</span>
-            </span>
-          )}
-        </div>
-
         <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
           <AlertDialogContent className="rounded-3xl border-none shadow-2xl overflow-hidden max-w-[340px] sm:max-w-md p-0">
             <AlertDialogHeader className="p-8 pb-4">
