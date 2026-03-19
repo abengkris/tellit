@@ -34,7 +34,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { formatCompactDate } from "@/lib/utils/date";
+import { formatCompactDate, formatFullTimestamp } from "@/lib/utils/date";
 import { Avatar } from "@/components/common/Avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -104,6 +104,9 @@ export const PostHeader: React.FC<PostHeaderProps> = ({
   const formattedTime = formatCompactDate(createdAt);
   const [showDeleteDialog, setShowDeleteDialog] = React.useState(false);
   const finalProfileUrl = profileUrl || `/${userNpub}`;
+
+  const clientTag = tags?.find(t => t[0] === 'client');
+  const clientName = clientTag?.[1];
 
   if (variant === "detail") {
     return (
@@ -212,6 +215,16 @@ export const PostHeader: React.FC<PostHeaderProps> = ({
           </div>
         )}
 
+        <div className="py-4 text-muted-foreground text-[15px] border-t border-border/50 flex items-center justify-between">
+          <span>{formatFullTimestamp(createdAt)}</span>
+          {clientName && (
+            <span className="flex items-center gap-1.5 shrink-0">
+              <span className="opacity-50">·</span>
+              <span className="text-primary font-bold">via {clientName}</span>
+            </span>
+          )}
+        </div>
+
         <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
           <AlertDialogContent className="rounded-3xl border-none shadow-2xl overflow-hidden max-w-[340px] sm:max-w-md p-0">
             <AlertDialogHeader className="p-8 pb-4">
@@ -316,6 +329,11 @@ export const PostHeader: React.FC<PostHeaderProps> = ({
           ) : (
             <span className="text-muted-foreground text-xs whitespace-nowrap shrink-0 mt-1">
               {formattedTime}
+            </span>
+          )}
+          {clientName && (
+            <span className="text-muted-foreground text-[10px] uppercase font-black tracking-tighter mt-1.5 opacity-40 ml-1 shrink-0">
+              via {clientName}
             </span>
           )}
         </div>
