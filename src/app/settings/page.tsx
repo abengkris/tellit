@@ -176,6 +176,17 @@ export default function SettingsPage() {
                         )}
                       </Link>
                     </Button>
+
+                    <Button 
+                      asChild
+                      variant="outline"
+                      className="rounded-2xl font-black h-12 bg-background border-none shadow-sm"
+                    >
+                      <Link href="/settings/relays">
+                        <Globe className="size-4 text-primary" />
+                        <span>Manage Relays</span>
+                      </Link>
+                    </Button>
                     
                     <Button
                       variant="ghost"
