@@ -56,6 +56,7 @@ export function useSuggestedFollows(limit: number = 3) {
 
         // 3. Filter out people we already follow
         // We can get following list from NDK cache if available or just wait for the scoring
+        if (!ndk) return;
         const contactList = await ndk.fetchEvent({ kinds: [3], authors: [user!.pubkey] });
         const followingSet = new Set(contactList?.tags.filter(t => t[0] === 'p').map(t => t[1]) || []);
 

@@ -2,15 +2,15 @@
 
 import React from "react";
 import { SuggestionCard } from "@/components/profile/WhoToFollow";
-import { useFollowSuggestions } from "@/hooks/useFollowSuggestions";
+import { useSuggestedFollows } from "@/hooks/useSuggestedFollows";
 import { Loader2, ArrowLeft, Users } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 export default function SuggestedPage() {
   const router = useRouter();
-  // Requesting 100 suggestions from Redis
-  const { suggestions, loading } = useFollowSuggestions(100);
+  // Requesting 100 suggestions from smart discovery hook
+  const { suggestions, loading } = useSuggestedFollows(100);
 
   return (
     <>
@@ -46,7 +46,7 @@ export default function SuggestedPage() {
                 <div key={suggestion.pubkey} className="p-6 hover:bg-gray-50 dark:hover:bg-gray-900/50 transition-colors">
                   <SuggestionCard 
                     pubkey={suggestion.pubkey} 
-                    followedByCount={suggestion.followedByCount}
+                    reason={suggestion.reason}
                     showAbout={true}
                   />
                 </div>
