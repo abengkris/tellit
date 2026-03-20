@@ -185,6 +185,39 @@ export const PostComposer: React.FC<PostComposerProps> = ({
           }
         }
 
+        // Automatic Quote tags from NIP-21 entities in content (nostr:nevent, nostr:note, nostr:naddr)
+        const nip21Regex = /nostr:((?:nevent1|note1|naddr1)[0-9a-z]+)/gi;
+        const nip21Matches = [...finalContent.matchAll(nip21Regex)];
+        
+        for (const match of nip21Matches) {
+          const bech32 = match[1];
+          try {
+            const decoded = nip19.decode(bech32);
+            let targetId = "";
+            let pubkey = "";
+            let relay = "";
+
+            if (decoded.type === 'nevent') {
+              targetId = decoded.data.id;
+              pubkey = decoded.data.author || "";
+              relay = decoded.data.relays?.[0] || "";
+            } else if (decoded.type === 'note') {
+              targetId = decoded.data as string;
+            } else if (decoded.type === 'naddr') {
+              const d = decoded.data;
+              targetId = `${d.kind}:${d.pubkey}:${d.identifier}`;
+              pubkey = d.pubkey;
+              relay = d.relays?.[0] || "";
+            }
+
+            if (targetId && !tags.some(t => t[0] === 'q' && t[1] === targetId)) {
+              tags.push(["q", targetId, relay, pubkey]);
+            }
+          } catch {
+            // Ignore invalid bech32
+          }
+        }
+
         // Add reply tags (NIP-10)
         if (replyTo) {
           const rootTag = replyTo.tags.find((t) => t[0] === "e" && t[3] === "root");

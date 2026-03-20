@@ -1,4 +1,4 @@
-import NDK, { NDKEvent, NDKTag, NDKArticle, NDKDVMRequest, NDKKind } from "@nostr-dev-kit/ndk";
+import NDK, { NDKEvent, NDKTag, NDKArticle, NDKDVMRequest, NDKKind, nip19 } from "@nostr-dev-kit/ndk";
 
 import { createPoll, CreatePollOptions } from "./poll";
 import { addClientTag } from "@/lib/utils/nostr";
@@ -85,6 +85,39 @@ export const publishPost = async (
     const nostrUri = q.encode();
     if (!content.includes(nostrUri)) {
       event.content += `\n\nnostr:${nostrUri}`;
+    }
+  }
+
+  // Automatic Quote tags from NIP-21 entities in content (nostr:nevent, nostr:note, nostr:naddr)
+  const nip21Regex = /nostr:((?:nevent1|note1|naddr1)[0-9a-z]+)/gi;
+  const nip21Matches = [...content.matchAll(nip21Regex)];
+  
+  for (const match of nip21Matches) {
+    const bech32 = match[1];
+    try {
+      const decoded = nip19.decode(bech32);
+      let targetId = "";
+      let pubkey = "";
+      let relay = "";
+
+      if (decoded.type === 'nevent') {
+        targetId = decoded.data.id;
+        pubkey = decoded.data.author || "";
+        relay = decoded.data.relays?.[0] || "";
+      } else if (decoded.type === 'note') {
+        targetId = decoded.data as string;
+      } else if (decoded.type === 'naddr') {
+        const d = decoded.data;
+        targetId = `${d.kind}:${d.pubkey}:${d.identifier}`;
+        pubkey = d.pubkey;
+        relay = d.relays?.[0] || "";
+      }
+
+      if (targetId && !event.tags.some(t => t[0] === 'q' && t[1] === targetId)) {
+        event.tags.push(["q", targetId, relay, pubkey]);
+      }
+    } catch (err) {
+      // Ignore invalid bech32
     }
   }
 
@@ -240,8 +273,9 @@ export const repostEvent = async (
   }
 
   // NIP-18: content should be stringified JSON of the target event
-  // Recommended unless NIP-70 protected (which we don't track specifically yet)
-  repost.content = JSON.stringify(targetEvent.rawEvent());
+  // NIP-70: Reposts of protected events SHOULD always have an empty content
+  const isProtected = targetEvent.tags.some(t => t[0] === "protected");
+  repost.content = isProtected ? "" : JSON.stringify(targetEvent.rawEvent());
 
   addClientTag(repost);
   await repost.sign();
