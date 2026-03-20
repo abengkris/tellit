@@ -252,12 +252,16 @@ export const PostCard = memo(({
   const handleShare = async (e: React.MouseEvent) => {
     e.stopPropagation();
     const shareUrl = `${window.location.origin}${navigationHref}`;
+    const nostrUri = `nostr:${getEventNip19(displayEvent)}`;
+    const shareText = (displayEvent.content || "").slice(0, 100) + 
+                    ((displayEvent.content || "").length > 100 ? '…' : '') + 
+                    `\n\n${nostrUri}`;
     
     if (navigator.share) {
       try {
         await navigator.share({
           title: `Post by ${display_name} on Tell it!`,
-          text: (displayEvent.content || "").slice(0, 100) + ((displayEvent.content || "").length > 100 ? '…' : ''),
+          text: shareText,
           url: shareUrl,
         });
       } catch (err) {
@@ -267,6 +271,9 @@ export const PostCard = memo(({
       }
     } else {
       try {
+        // We'll copy both or just URL? Usually URL is preferred for clipboard,
+        // but we can offer a better dropdown if needed. 
+        // For now, let's keep clipboard to just the URL but add the URI to share.
         await navigator.clipboard.writeText(shareUrl);
         addToast("Link copied to clipboard!", "success");
       } catch (err) {

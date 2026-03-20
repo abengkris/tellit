@@ -109,8 +109,12 @@ export default async function ProfilePage({ params }: Props) {
     notFound();
   }
 
+  const npub = toNpub(hexPubkey);
+
   return (
-    <Suspense fallback={
+    <>
+      <link rel="me" href={`nostr:${npub}`} />
+      <Suspense fallback={
       <div className="max-w-2xl mx-auto" aria-busy="true" aria-label="Loading profile…">
         <div className="h-48 w-full bg-muted animate-pulse" />
         <div className="px-4 pb-4 animate-pulse">
@@ -131,5 +135,6 @@ export default async function ProfilePage({ params }: Props) {
     }>
       <ProfileContent npubParam={toNpub(hexPubkey)} />
     </Suspense>
+    </>
   );
 }

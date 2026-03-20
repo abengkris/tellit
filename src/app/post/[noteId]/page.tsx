@@ -49,7 +49,9 @@ export default async function PostPage({ params }: Props) {
   const { noteId } = await params;
 
   return (
-    <Suspense fallback={
+    <>
+      <link rel="alternate" href={`nostr:${noteId}`} />
+      <Suspense fallback={
       <>
         <div className="sticky top-0 z-10 bg-white/80 dark:bg-black/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 flex items-center px-4 py-3 space-x-6">
           <div className="p-2 rounded-full">
@@ -71,5 +73,6 @@ export default async function PostPage({ params }: Props) {
     }>
       <PostDetailContent noteId={noteId} />
     </Suspense>
+    </>
   );
 }
