@@ -87,6 +87,7 @@ export function ImageEmbed({
         onLoad={() => setLoaded(true)}
         onError={() => setError(true)}
         loading="lazy"
+        decoding="async"
         onClick={e => {
           e.stopPropagation();
           onClick?.();

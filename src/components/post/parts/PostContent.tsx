@@ -273,6 +273,8 @@ export function PostContentRenderer({
                 src={event.tags.find(t => t[0] === 'image')?.[1]} 
                 alt={event.tags.find(t => t[0] === 'title')?.[1] || "Article hero"}
                 className="w-full h-full object-cover cursor-zoom-in"
+                loading="lazy"
+                decoding="async"
                 onClick={(e) => {
                   e.stopPropagation();
                   setLightboxIndex(0);
@@ -450,7 +452,11 @@ export function PostContentRenderer({
                               setLightboxIndex(i);
                             }}
                           >
-                            <video src={cleanUrl} className="w-full h-full object-cover" />
+                            <video 
+                              src={cleanUrl} 
+                              className="w-full h-full object-cover" 
+                              preload="metadata"
+                            />
                             <div className="absolute inset-0 flex items-center justify-center bg-black/20">
                               <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white">
                                 <Play fill="currentColor" size={20} />

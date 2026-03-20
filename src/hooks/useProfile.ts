@@ -2,6 +2,7 @@ import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { useNDK } from "@/hooks/useNDK";
 import { getProfileUrl } from "@/lib/utils/identity";
 import { idLog } from "@/lib/utils/id-logger";
+import { NDKSubscriptionCacheUsage } from "@nostr-dev-kit/ndk";
 
 export interface ProfileMetadata {
   pubkey?: string;
@@ -26,13 +27,16 @@ export interface ProfileMetadata {
   tags?: string[][];
 }
 
+// Global session cache to avoid any re-fetching (even from IndexedDB) within the same session
+const globalProfileCache = new Map<string, ProfileMetadata>();
+
 /**
  * Hook to fetch and manage user profile metadata.
  * Uses NDK cache and outbox model for reliable results.
  */
 export function useProfile(pubkey?: string) {
   const { ndk, isReady } = useNDK();
-  const [profile, setProfile] = useState<ProfileMetadata | null>(null);
+  const [profile, setProfile] = useState<ProfileMetadata | null>(pubkey ? (globalProfileCache.get(pubkey) || null) : null);
   const [loading, setLoading] = useState(false);
   const lastFetchedPubkey = useRef<string | undefined>(undefined);
 
@@ -44,26 +48,43 @@ export function useProfile(pubkey?: string) {
 
     try {
       const user = ndk.getUser({ pubkey });
-      idLog.debug(`Fetching profile for: ${pubkey}`, { forceRelay });
       
+      // 1. Try Cache-Only first for maximum speed
+      if (!profile && !forceRelay) {
+        const cachedEvent = await ndk.fetchEvent({
+          kinds: [0],
+          authors: [pubkey]
+        }, { cacheUsage: NDKSubscriptionCacheUsage.CACHE_ONLY });
+
+        if (cachedEvent) {
+          try {
+            const content = JSON.parse(cachedEvent.content);
+            const metadata = { ...content, pubkey, created_at: cachedEvent.created_at, tags: cachedEvent.tags };
+            globalProfileCache.set(pubkey, metadata);
+            setProfile(metadata);
+            setLoading(false); // Can stop loading early if found in cache
+          } catch (e) {
+            // Ignore parse errors
+          }
+        }
+      }
+
+      // 2. Revalidate from Relays if needed
       let userProfile = null;
 
       if (forceRelay) {
-        // Force a fresh fetch from relays by bypassing the user.fetchProfile cache logic
         const event = await ndk.fetchEvent({
           kinds: [0],
           authors: [pubkey]
         }, { 
-          cacheUsage: 2, // 2 is ONLY_RELAY (strictly bypasses Dexie and internal object cache)
+          cacheUsage: NDKSubscriptionCacheUsage.ONLY_RELAY,
           closeOnEose: true 
-        } as unknown as Record<string, unknown>);
+        });
 
         if (event) {
           try {
-            const content = JSON.parse(event.content);
-            userProfile = content;
-            // Update the user object's profile so NDK's internal state is also fresh
-            user.profile = content;
+            userProfile = JSON.parse(event.content);
+            user.profile = userProfile;
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             (user as any).kind0 = event;
           } catch (e) {
@@ -72,47 +93,35 @@ export function useProfile(pubkey?: string) {
         }
       }
 
-      // Fallback to standard fetch if forceRelay failed or wasn't requested
       if (!userProfile) {
         userProfile = await user.fetchProfile();
       }
 
       if (userProfile) {
-        idLog.debug(`Successfully fetched profile for: ${pubkey}`);
-      } else {
-        idLog.warn(`No profile found for: ${pubkey}`);
+        const metadata: ProfileMetadata = { 
+          ...(userProfile || {}), 
+          name: userProfile?.name ? String(userProfile.name) : undefined,
+          display_name: (userProfile?.display_name || userProfile?.displayName) ? String(userProfile.display_name || userProfile.displayName) : undefined,
+          pubkey 
+        };
+        
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const kind0 = (user as any).kind0;
+        if (kind0) {
+          metadata.tags = kind0.tags;
+          metadata.created_at = kind0.created_at;
+        }
+        
+        globalProfileCache.set(pubkey, metadata);
+        setProfile(metadata);
       }
-      
-      // Construct metadata object
-      const metadata: ProfileMetadata = { 
-        ...(userProfile || {}), 
-        name: userProfile?.name ? String(userProfile.name) : undefined,
-        // Map both display_name (raw) and displayName (NDK camelCase) to snake_case used in project
-        display_name: (userProfile?.display_name || userProfile?.displayName) ? String(userProfile.display_name || userProfile.displayName) : undefined,
-        pubkey 
-      };
-      
-      // Optimization: NDK caches the kind 0 event internally
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const kind0 = (user as any).kind0;
-      if (kind0) {
-        metadata.tags = kind0.tags;
-        metadata.created_at = kind0.created_at;
-        const publishedAtTag = kind0.tags.find((t: string[]) => t[0] === 'published_at');
-        metadata.published_at = publishedAtTag && publishedAtTag[1] 
-          ? parseInt(publishedAtTag[1]) 
-          : kind0.created_at;
-      }
-      
-      setProfile(metadata);
     } catch (error) {
       idLog.error(`Failed to fetch profile for ${pubkey}`, error);
-      // On error, provide a basic fallback profile
-      setProfile({ pubkey });
+      if (!profile) setProfile({ pubkey });
     } finally {
       setLoading(false);
     }
-  }, [ndk, isReady, pubkey]);
+  }, [ndk, isReady, pubkey, profile]);
 
   useEffect(() => {
     if (!ndk || !isReady || !pubkey) {
@@ -121,13 +130,22 @@ export function useProfile(pubkey?: string) {
       return;
     }
 
-    // Skip if we already have this profile loaded and it hasn't changed
-    if (lastFetchedPubkey.current === pubkey && profile) {
+    // Check memory cache instantly
+    const cached = globalProfileCache.get(pubkey);
+    if (cached && lastFetchedPubkey.current === pubkey) {
+      return;
+    }
+
+    if (cached) {
+      setProfile(cached);
+      // Even if cached, we might want to background-refresh if it's "old"
+      // But for session performance, we just return
+      lastFetchedPubkey.current = pubkey;
       return;
     }
 
     fetchMetadata();
-  }, [ndk, isReady, pubkey, profile, fetchMetadata]);
+  }, [ndk, isReady, pubkey, fetchMetadata]);
 
   const profileUrl = useMemo(() => {
     return getProfileUrl(profile ? { ...profile, pubkey } : { pubkey });
