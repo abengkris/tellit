@@ -105,6 +105,7 @@ const ConversationItem = ({ conversation }: { conversation: Conversation }) => {
           pubkey={conversation.pubkey} 
           src={profile?.picture || (profile as { image?: string })?.image} 
           size={56} 
+          nip05={profile?.nip05}
           className="bg-gray-200 border border-gray-100 dark:border-gray-800"
         />
         {conversation.unreadCount > 0 && (

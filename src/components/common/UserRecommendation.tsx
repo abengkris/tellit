@@ -9,6 +9,8 @@ import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
+import { getHandleTier } from "@/lib/utils/identity";
+import { cn } from "@/lib/utils";
 
 interface UserRecommendationProps {
   users: NDKUser[];
@@ -44,50 +46,61 @@ export const UserRecommendation: React.FC<UserRecommendationProps> = ({
           </div>
         ) : (
           <div className="flex flex-col">
-            {users.map((user, index) => (
-              <Fragment key={user.pubkey}>
-                <Button
-                  variant="ghost"
-                  className="w-full justify-start h-auto gap-3 p-3 rounded-none hover:bg-accent transition-colors text-left group"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    onSelect(user);
-                  }}
-                >
-                  <div className="relative shrink-0">
-                    <Avatar 
-                      pubkey={user.pubkey} 
-                      src={user.profile?.picture || (user.profile as { image?: string })?.image} 
-                      size={40} 
-                      nip05={user.profile?.nip05}
-                      className="rounded-xl group-hover:scale-105 transition-transform" 
-                    />
-                    {user.profile?.nip05 && (
-                      <div className="absolute -bottom-1 -right-1 size-4 bg-blue-500 text-white rounded-full flex items-center justify-center border-2 border-background shadow-sm">
-                        <CheckCircle2 size={8} fill="currentColor" />
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1">
-                      <span className="font-bold text-sm truncate">
-                        {user.profile?.display_name || user.profile?.name || shortenPubkey(user.pubkey)}
-                      </span>
+            {users.map((user, index) => {
+              const tier = getHandleTier(user.profile?.nip05);
+              const badgeColor = tier === 'ultra' ? "bg-amber-500" : (tier === 'premium' ? "bg-cyan-500" : "bg-blue-500");
+
+              return (
+                <Fragment key={user.pubkey}>
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-start h-auto gap-3 p-3 rounded-none hover:bg-accent transition-colors text-left group"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onSelect(user);
+                    }}
+                  >
+                    <div className="relative shrink-0">
+                      <Avatar 
+                        pubkey={user.pubkey} 
+                        src={user.profile?.picture || (user.profile as { image?: string })?.image} 
+                        size={40} 
+                        nip05={user.profile?.nip05}
+                        className="rounded-xl group-hover:scale-105 transition-transform" 
+                      />
                       {user.profile?.nip05 && (
-                        <span className="text-[10px] text-blue-500 font-medium truncate opacity-70">
-                          {user.profile.nip05.replace(/^_@/, '')}
-                        </span>
+                        <div className={cn(
+                          "absolute -bottom-1 -right-1 size-4 text-white rounded-full flex items-center justify-center border-2 border-background shadow-sm",
+                          badgeColor
+                        )}>
+                          <CheckCircle2 size={8} fill="currentColor" />
+                        </div>
                       )}
                     </div>
-                    <p className="text-[10px] text-muted-foreground font-mono truncate">
-                      {shortenPubkey(user.npub, 16)}
-                    </p>
-                  </div>
-                </Button>
-                {index < users.length - 1 && <Separator />}
-              </Fragment>
-            ))}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1">
+                        <span className="font-bold text-sm truncate">
+                          {user.profile?.display_name || user.profile?.name || shortenPubkey(user.pubkey)}
+                        </span>
+                        {user.profile?.nip05 && (
+                          <span className={cn(
+                            "text-[10px] font-medium truncate opacity-70",
+                            tier === 'ultra' ? "text-amber-500" : (tier === 'premium' ? "text-cyan-500" : "text-blue-500")
+                          )}>
+                            {user.profile.nip05.replace(/^_@/, '')}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[10px] text-muted-foreground font-mono truncate">
+                        {shortenPubkey(user.npub, 16)}
+                      </p>
+                    </div>
+                  </Button>
+                  {index < users.length - 1 && <Separator />}
+                </Fragment>
+              );
+            })}
           </div>
         )}
         

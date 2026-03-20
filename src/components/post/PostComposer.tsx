@@ -404,6 +404,7 @@ export const PostComposer: React.FC<PostComposerProps> = ({
           pubkey={user?.pubkey || ""} 
           src={profile?.picture || (profile as { image?: string })?.image} 
           size={48} 
+          nip05={profile?.nip05}
           aria-hidden="true"
         />
         
@@ -458,7 +459,7 @@ export const PostComposer: React.FC<PostComposerProps> = ({
                       onClick={() => insertMention(u.npub)}
                       className="w-full justify-start h-auto px-4 py-3 rounded-none gap-3 hover:bg-accent"
                     >
-                      <Avatar pubkey={u.pubkey} size={32} aria-hidden="true" />
+                      <Avatar pubkey={u.pubkey} size={32} nip05={u.profile?.nip05} aria-hidden="true" />
                       <div className="min-w-0 text-left">
                         <div className="font-bold text-sm truncate">{u.profile?.display_name || u.profile?.name}</div>
                         <div className="text-xs text-muted-foreground truncate">@{u.profile?.name}</div>

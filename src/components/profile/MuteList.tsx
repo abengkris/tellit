@@ -25,6 +25,7 @@ interface UserWithProfile {
   name?: string;
   about?: string;
   picture?: string;
+  nip05?: string;
   profileUrl: string;
 }
 
@@ -65,6 +66,7 @@ export function MuteList({
                 name: profile.name ?? profile.display_name,
                 about: profile.about,
                 picture: profile.picture,
+                nip05: profile.nip05,
                 profileUrl: getProfileUrl({ ...profile, pubkey: event.pubkey })
               });
               return next;
@@ -138,6 +140,7 @@ export function MuteList({
                   pubkey={pubkey}
                   src={user?.picture}
                   size={44}
+                  nip05={user?.nip05}
                   className="rounded-full"
                 />
               </Link>

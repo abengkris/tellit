@@ -118,7 +118,7 @@ export default function ChatPage({ params }: { params: Promise<{ pubkey: string 
             <ArrowLeft size={24} />
           </Link>
           <Link href={`/${pubkey}`} className="flex items-center flex-1 min-w-0">
-            <Avatar pubkey={hexPubkey} src={profile?.picture} size={40} className="mr-3" />
+            <Avatar pubkey={hexPubkey} src={profile?.picture} size={40} nip05={profile?.nip05} className="mr-3" />
             <div className="min-w-0">
               <h2 className="font-bold truncate">
                 {profile?.display_name || profile?.name || "Unknown"}

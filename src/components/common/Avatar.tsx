@@ -59,14 +59,14 @@ export const Avatar: React.FC<AvatarProps> = ({
   // Tiered glow styles
   let tierStyle = "";
   if (activeTier === 'ultra') {
-    // Ultra (Gold/Amber)
-    tierStyle = "ring-2 ring-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.5)] dark:ring-amber-500/80 dark:shadow-[0_0_20px_rgba(245,158,11,0.3)] border-none";
+    // Ultra (Gold/Amber) - Refined
+    tierStyle = "ring-[1.5px] ring-amber-400/80 shadow-[0_0_10px_rgba(251,191,36,0.4)] dark:ring-amber-500/60 dark:shadow-[0_0_12px_rgba(245,158,11,0.25)] border-none";
   } else if (activeTier === 'premium') {
-    // Premium (Diamond/Cyan)
-    tierStyle = "ring-2 ring-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.5)] dark:ring-cyan-500/80 dark:shadow-[0_0_20px_rgba(6,182,212,0.3)] border-none";
+    // Premium (Diamond/Cyan) - Refined
+    tierStyle = "ring-[1.5px] ring-cyan-400/80 shadow-[0_0_10px_rgba(34,211,238,0.4)] dark:ring-cyan-500/60 dark:shadow-[0_0_12px_rgba(6,182,212,0.25)] border-none";
   } else if (activeTier === 'standard') {
-    // Standard (Blue)
-    tierStyle = "ring-2 ring-blue-500/50 dark:ring-blue-400/30 border-none shadow-none";
+    // Standard (Blue) - Subtle Glow Added
+    tierStyle = "ring-[1.5px] ring-blue-500/40 shadow-[0_0_8px_rgba(59,130,246,0.2)] dark:ring-blue-400/30 dark:shadow-[0_0_10px_rgba(37,99,235,0.15)] border-none";
   }
 
   return (
