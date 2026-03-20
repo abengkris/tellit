@@ -9,8 +9,8 @@ import { useRouter } from "next/navigation";
 
 export default function SuggestedPage() {
   const router = useRouter();
-  // Requesting 100 suggestions, searching across 250 follows for better depth
-  const { suggestions, loading } = useFollowSuggestions(100, 250);
+  // Requesting 100 suggestions from Redis
+  const { suggestions, loading } = useFollowSuggestions(100);
 
   return (
     <>
