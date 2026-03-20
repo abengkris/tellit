@@ -143,3 +143,15 @@ export async function resolveVanitySlug(slug: string): Promise<string | null> {
     return null;
   }
 }
+
+/**
+ * Checks if a NIP-05 identifier represents a premium Tell it! handle.
+ * Premium handles are 1-3 characters on the tellit.id domain.
+ */
+export function isPremiumHandle(nip05: string | null | undefined): boolean {
+  if (!nip05 || !nip05.endsWith("@tellit.id")) return false;
+  
+  const [name] = nip05.split("@");
+  return !!name && name.length >= 1 && name.length <= 3;
+}
+

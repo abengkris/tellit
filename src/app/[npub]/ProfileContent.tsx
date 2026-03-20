@@ -219,6 +219,7 @@ export function ProfileContent({ npubParam }: { npubParam: string }) {
               pubkey={hexPubkey} 
               src={profile?.picture || (profile as { image?: string })?.image} 
               size={128} 
+              nip05={profile?.nip05}
               className="!size-20 sm:!size-32 border-none shadow-none" 
               aria-hidden="true"
             />

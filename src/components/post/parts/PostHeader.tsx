@@ -136,6 +136,7 @@ export const PostHeader: React.FC<PostHeaderProps> = ({
                 src={avatar} 
                 isLoading={isLoading} 
                 size={52} 
+                nip05={nip05}
                 className="w-[52px] h-[52px] ring-1 ring-border/10" 
                 aria-hidden="true"
               />
@@ -291,6 +292,7 @@ export const PostHeader: React.FC<PostHeaderProps> = ({
                 src={avatar} 
                 isLoading={isLoading} 
                 size={48} 
+                nip05={nip05}
                 className="w-12 h-12 ring-4 ring-background" 
                 aria-hidden="true"
               />

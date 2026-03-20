@@ -60,6 +60,7 @@ export const UserRecommendation: React.FC<UserRecommendationProps> = ({
                       pubkey={user.pubkey} 
                       src={user.profile?.picture || (user.profile as { image?: string })?.image} 
                       size={40} 
+                      nip05={user.profile?.nip05}
                       className="rounded-xl group-hover:scale-105 transition-transform" 
                     />
                     {user.profile?.nip05 && (

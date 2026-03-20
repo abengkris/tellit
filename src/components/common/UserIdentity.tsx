@@ -150,6 +150,7 @@ export const UserIdentity: React.FC<UserIdentityProps> = ({
                   pubkey={affiliationPubkey || ""} 
                   src={orgProfile?.picture} 
                   size={56}
+                  nip05={orgProfile?.nip05}
                   isLoading={orgLoading}
                   className="rounded-2xl shrink-0 shadow-sm"
                   aria-hidden="true"

@@ -43,7 +43,7 @@ const AccountItem = ({
       onClick={() => onSelect(pubkey)}
     >
       <div className="flex items-center gap-2 min-w-0">
-        <Avatar pubkey={pubkey} size={24} isLoading={loading} className="shrink-0" />
+        <Avatar pubkey={pubkey} size={24} isLoading={loading} nip05={profile?.nip05} className="shrink-0" />
         <span className="truncate text-sm">{name}</span>
       </div>
       <div className="flex items-center gap-1">
@@ -99,7 +99,7 @@ export const AccountSwitcher = () => {
           className="flex items-center justify-start gap-4 p-3 h-auto rounded-full hover:bg-accent transition-colors w-fit lg:w-full group"
         >
           <div className="relative flex items-center justify-center shrink-0 size-7">
-            <Avatar pubkey={user.pubkey} size={28} isLoading={loading} />
+            <Avatar pubkey={user.pubkey} size={28} isLoading={loading} nip05={profile?.nip05} />
           </div>
           <div className="hidden lg:flex flex-col items-start min-w-0 text-left">
             <span className="text-sm font-black truncate w-full">{name}</span>

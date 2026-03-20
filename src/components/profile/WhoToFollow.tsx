@@ -33,6 +33,7 @@ export const SuggestionCard: React.FC<SuggestionCardProps> = ({
           pubkey={pubkey} 
           src={profile?.picture} 
           size={48} 
+          nip05={profile?.nip05}
           className="rounded-full ring-2 ring-transparent group-hover:ring-primary/20 transition-all"
         />
       </Link>

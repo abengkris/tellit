@@ -29,7 +29,8 @@ const SidebarItem = ({
   label, 
   badge,
   isLoading = false,
-  pubkey
+  pubkey,
+  nip05
 }: { 
   href: string; 
   icon?: React.ElementType; 
@@ -37,6 +38,7 @@ const SidebarItem = ({
   badge?: number;
   isLoading?: boolean;
   pubkey?: string;
+  nip05?: string;
 }) => {
   const pathname = usePathname();
   const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
@@ -62,7 +64,7 @@ const SidebarItem = ({
           <Link href={href} aria-label={label} onClick={handleClick}>
             <div className="relative flex items-center justify-center shrink-0 size-7">
               {pubkey ? (
-                <Avatar pubkey={pubkey} size={28} isLoading={isLoading} />
+                <Avatar pubkey={pubkey} size={28} isLoading={isLoading} nip05={nip05} />
               ) : Icon ? (
                 <Icon className={cn("size-7", active ? "text-primary" : "")} strokeWidth={active ? 3 : 2} />
               ) : null}
@@ -90,7 +92,7 @@ const SidebarItem = ({
 export const Sidebar = () => {
   const { user, isLoggedIn, login } = useAuthStore();
   const { ndk, sessions } = useNDK();
-  const { loading: profileLoading, profileUrl } = useProfile(user?.pubkey);
+  const { profile, loading: profileLoading, profileUrl } = useProfile(user?.pubkey);
   const { unreadCount } = useNotifications();
   const { unreadMessagesCount, hideBalance } = useUIStore();
   const { connectedCount, totalCount } = useRelayStatus();
@@ -120,6 +122,7 @@ export const Sidebar = () => {
               label="Profile" 
               pubkey={user?.pubkey} 
               isLoading={profileLoading} 
+              nip05={profile?.nip05}
             />
           </>
         )}

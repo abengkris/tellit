@@ -79,6 +79,7 @@ const NotificationItem = ({ event }: { event: TellItNotification }) => {
                 pubkey={event.pubkey} 
                 src={profile?.picture} 
                 size={32} 
+                nip05={profile?.nip05}
                 className="w-8 h-8 rounded-full bg-gray-200"
               />
             </Link>
