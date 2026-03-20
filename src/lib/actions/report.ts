@@ -1,11 +1,12 @@
 import NDK, { NDKEvent, NDKTag } from "@nostr-dev-kit/ndk";
 import { addClientTag } from "@/lib/utils/nostr";
+import { publishLabel } from "./labels";
 
 export type ReportType = "nudity" | "malware" | "profanity" | "illegal" | "spam" | "impersonation" | "other";
 
 /**
- * Report a user or an event (NIP-56).
- * Sends a kind 1984 report event to the relays.
+ * Report a user or an event (NIP-56 and NIP-32).
+ * Sends a kind 1984 report event and a kind 1985 label event to the relays.
  */
 export const reportContent = async (
   ndk: NDK,
@@ -17,26 +18,40 @@ export const reportContent = async (
   if (!ndk.signer) throw new Error("No signer available");
 
   try {
-    const event = new NDKEvent(ndk);
-    event.kind = 1984;
+    // 1. NIP-56 Report (Kind 1984)
+    const reportEvent = new NDKEvent(ndk);
+    reportEvent.kind = 1984;
     
-    const tags: NDKTag[] = [
+    const reportTags: NDKTag[] = [
       ["p", targetPubkey, reportType]
     ];
 
     if (targetEventId) {
-      tags.push(["e", targetEventId, reportType]);
+      reportTags.push(["e", targetEventId, reportType]);
     }
 
-    event.tags = tags;
-    event.content = reason;
+    reportEvent.tags = reportTags;
+    reportEvent.content = reason;
     
-    addClientTag(event);
-    await event.sign();
-    await event.publish();
+    addClientTag(reportEvent);
+    await reportEvent.sign();
+    await reportEvent.publish();
+
+    // 2. NIP-32 Label (Kind 1985)
+    // Using reverse domain for moderation labels as suggested by NIP-32
+    const labelNamespace = "id.tellit.moderation";
+    const labelTargets: NDKTag[] = [
+      ["p", targetPubkey]
+    ];
+    if (targetEventId) {
+      labelTargets.push(["e", targetEventId]);
+    }
+
+    await publishLabel(ndk, labelNamespace, reportType, labelTargets, reason);
+
     return true;
   } catch (err) {
-    console.error("Failed to send report:", err);
+    console.error("Failed to send report/label:", err);
     return false;
   }
 };

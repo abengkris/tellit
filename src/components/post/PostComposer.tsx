@@ -6,7 +6,6 @@ import { useNDK } from "@/hooks/useNDK";
 import { publishPost, ZapSplit } from "@/lib/actions/post";
 import { createPoll, PollOption } from "@/lib/actions/poll";
 import { useUIStore } from "@/store/ui";
-import { useBlossom } from "@/hooks/useBlossom";
 import { useEmojis } from "@/hooks/useEmojis";
 import { useDrafts } from "@/hooks/useDrafts";
 import { useProfile } from "@/hooks/useProfile";
@@ -18,13 +17,21 @@ import {
   Loader2, 
   BarChart2,
   Users,
-  Type
+  Type,
+  Languages
 } from "lucide-react";
 import { Avatar } from "../common/Avatar";
 import { PollEditor } from "./PollEditor";
 import { CollaboratorEditor } from "./CollaboratorEditor";
 import { useMentionSearch } from "@/hooks/useMentionSearch";
 import { uploadToBlossom, formatImeta, getTagValue } from "@/lib/upload";
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuTrigger,
+  DropdownMenuSeparator
+} from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -61,6 +68,7 @@ export const PostComposer: React.FC<PostComposerProps> = ({
   const [content, setContent] = useState("");
   const [subject, setSubject] = useState("");
   const [showSubject, setShowSubject] = useState(false);
+  const [language, setLanguage] = useState<string>("");
   const [isPosting, setIsPosting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -263,7 +271,8 @@ export const PostComposer: React.FC<PostComposerProps> = ({
           quoteEvent,
           tags,
           zapSplits,
-          subject: (showSubject && subject.trim()) ? subject.trim() : undefined
+          subject: (showSubject && subject.trim()) ? subject.trim() : undefined,
+          labels: language ? [{ namespace: "ISO-639-1", label: language }] : undefined
         };
 
         event = await publishPost(ndk, finalContent, options);
@@ -274,6 +283,7 @@ export const PostComposer: React.FC<PostComposerProps> = ({
         setContent("");
         setSubject("");
         setShowSubject(false);
+        setLanguage("");
         setMediaFiles([]);
         setShowPollEditor(false);
         setShowCollaboratorEditor(false);
@@ -515,6 +525,42 @@ export const PostComposer: React.FC<PostComposerProps> = ({
                 </TooltipTrigger>
                 <TooltipContent side="bottom">Add subject</TooltipContent>
               </Tooltip>
+
+              <DropdownMenu>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        type="button"
+                        variant={language ? "secondary" : "ghost"}
+                        size="icon"
+                        className={cn("text-primary hover:bg-primary/10 rounded-full", language && "bg-primary/10")}
+                        aria-label="Select language"
+                      >
+                        <Languages className="size-5" aria-hidden="true" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">
+                    {language ? `Language: ${language.toUpperCase()}` : "Select language"}
+                  </TooltipContent>
+                </Tooltip>
+                <DropdownMenuContent align="start" className="w-40 font-black uppercase tracking-widest text-[10px]">
+                  <DropdownMenuItem onClick={() => setLanguage("")}>
+                    Auto / None
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => setLanguage("id")}>
+                    Indonesian (ID)
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setLanguage("en")}>
+                    English (EN)
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setLanguage("ja")}>
+                    Japanese (JA)
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
 
               <Tooltip>
                 <TooltipTrigger asChild>

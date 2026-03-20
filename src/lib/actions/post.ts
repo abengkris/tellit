@@ -17,6 +17,7 @@ interface PostOptions {
   emojis?: Map<string, string>;
   zapSplits?: ZapSplit[];
   subject?: string;
+  labels?: { namespace: string; label: string }[];
 }
 
 export const publishPost = async (
@@ -47,6 +48,14 @@ export const publishPost = async (
 
   if (options?.tags) {
     event.tags = [...options.tags];
+  }
+
+  // Handle NIP-32 Labels
+  if (options?.labels) {
+    options.labels.forEach(({ namespace, label }) => {
+      event.tags.push(["L", namespace]);
+      event.tags.push(["l", label, namespace]);
+    });
   }
 
   // Handle NIP-14 Subject

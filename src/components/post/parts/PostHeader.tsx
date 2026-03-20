@@ -34,7 +34,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { formatCompactDate, formatFullTimestamp } from "@/lib/utils/date";
+import { formatCompactDate } from "@/lib/utils/date";
 import { Avatar } from "@/components/common/Avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -108,6 +108,9 @@ export const PostHeader: React.FC<PostHeaderProps> = ({
   const clientTag = tags?.find(t => t[0] === 'client');
   const clientName = clientTag?.[1];
 
+  // NIP-32 Language Label
+  const languageLabel = tags?.find(t => t[0] === 'l' && t[2] === 'ISO-639-1')?.[1];
+
   if (variant === "detail") {
     return (
       <div className="flex flex-col min-w-0 z-10">
@@ -140,6 +143,11 @@ export const PostHeader: React.FC<PostHeaderProps> = ({
           </div>
 
           <div className="flex items-center gap-1">
+            {languageLabel && (
+              <Badge variant="outline" className="h-5 px-1.5 text-[10px] font-black uppercase tracking-widest text-muted-foreground border-border/50">
+                {languageLabel}
+              </Badge>
+            )}
             <DropdownMenu modal={false}>
               <DropdownMenuTrigger asChild>
                 <Button 
@@ -308,6 +316,12 @@ export const PostHeader: React.FC<PostHeaderProps> = ({
             </div>
           </div>
           <span className="text-muted-foreground text-xs shrink-0 mt-1">·</span>
+          {languageLabel && (
+            <>
+              <span className="text-muted-foreground text-[10px] font-black uppercase tracking-tighter mt-1.5 ml-0.5">{languageLabel}</span>
+              <span className="text-muted-foreground text-xs shrink-0 mt-1 ml-0.5">·</span>
+            </>
+          )}
           {navigationHref ? (
             <Link 
               href={navigationHref} 
