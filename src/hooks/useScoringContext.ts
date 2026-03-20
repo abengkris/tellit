@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useNDK } from "@/hooks/useNDK";
-import { useWoT } from "@/hooks/useWoT";
 import { ScoringContext } from "@/lib/feed/scorer";
 
 export function useScoringContext(
@@ -10,7 +9,6 @@ export function useScoringContext(
   followingList: string[]
 ): ScoringContext | null {
   const { ndk, isReady } = useNDK();
-  const { trustScores } = useWoT(viewerPubkey);
   const [ctx, setCtx] = useState<ScoringContext | null>(null);
   const buildingRef = useRef(false);
 
@@ -57,17 +55,39 @@ export function useScoringContext(
         }
       }
 
+      // Fetch Redis-backed WoT network degrees for the following list
+      // This is helpful for prioritizing direct follows that are also verified in Redis
+      const networkDegreeMap = new Map<string, number>();
+      try {
+        const res = await fetch("/api/wot/check", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            viewerPubkey: viewerPubkey!,
+            pubkeys: followingList.slice(0, 500)
+          })
+        });
+        const data = await res.json();
+        if (data.network) {
+          Object.entries(data.network).forEach(([pk, degree]) => {
+            networkDegreeMap.set(pk, degree as number);
+          });
+        }
+      } catch (err) {
+        console.error("[useScoringContext] Failed to fetch WoT network:", err);
+      }
+
       setCtx({
         viewerPubkey: viewerPubkey!,
         followingSet: new Set(followingList),
         followsOfFollowsSet: followsOfFollows,
         interactionHistory,
-        trustScores: trustScores,
+        networkDegreeMap,
       });
     }
 
     build().catch(console.error);
-  }, [ndk, isReady, viewerPubkey, followingList, trustScores]);  
+  }, [ndk, isReady, viewerPubkey, followingList]);  
 
   return ctx;
 }

@@ -400,6 +400,13 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
             instance.activeUser = user; // Enable automatic mute list fetching
             stableDepsRef.current.setUser(user);
             stableDepsRef.current.setLoginState(true, session.pubkey);
+            
+            // Trigger WoT initialization
+            fetch("/api/wot/init", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ pubkey: session.pubkey })
+            }).catch(err => console.error("[NDKProvider] WoT init failed:", err));
           });
         }
       } else {

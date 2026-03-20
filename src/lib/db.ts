@@ -1,19 +1,12 @@
-import Dexie, { Table } from "dexie";
+import Dexie from "dexie";
 
-export interface WoTCacheEntry {
-  pubkey: string;
-  timestamp: number;
-  scores: Record<string, number>;
-  graph: Record<string, string[]>; // pubkey -> followedBy[]
-}
-
+// We keep the DB class for future use, but the wotCache is removed 
+// as we've migrated to a Redis-backed on-demand WoT engine.
 export class TellItDB extends Dexie {
-  wotCache!: Table<WoTCacheEntry>;
-
   constructor() {
     super("TellItDB");
     this.version(4).stores({
-      wotCache: "pubkey, timestamp",
+      // wotCache removed
     });
   }
 }

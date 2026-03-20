@@ -2,7 +2,6 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import NDK, { NDKUser, NDKNip07Signer, NDKPrivateKeySigner, NDKNip46Signer } from "@nostr-dev-kit/ndk";
 import { NDKSessionManager } from "@nostr-dev-kit/sessions";
-import { resetWoT } from "@/hooks/useWoT";
 import { useWalletStore } from "./wallet";
 
 interface AuthState {
@@ -232,7 +231,6 @@ export const useAuthStore = create<AuthState>()(
         if (get().publicKey === pubkey) {
           // If we're removing the active account, it's already handled by sessions.logout(pubkey)
           // but we still want to reset our local state
-          resetWoT();
           useWalletStore.getState().resetWallet();
           set({ 
             user: null, 
@@ -250,7 +248,6 @@ export const useAuthStore = create<AuthState>()(
       },
 
       logout: (sessions) => {
-        resetWoT();
         useWalletStore.getState().resetWallet();
         if (sessions) {
           sessions.logout();
@@ -268,7 +265,6 @@ export const useAuthStore = create<AuthState>()(
       },
 
       logoutAll: (sessions) => {
-        resetWoT();
         useWalletStore.getState().resetWallet();
         if (sessions) {
           const pubkeys = Array.from(sessions.getSessions().keys());

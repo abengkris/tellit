@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.7.13] - 2026-03-20
+
+### Added
+- **On-Demand Web of Trust (WoT) Engine:** Implemented a high-performance, Redis-backed WoT graph builder.
+- **Background D2 Fetching:** Degree 2 (D2) network is now fetched in the background to ensure instant frontend response times.
+- **Relay Rate Limiting:** Integrated intelligent chunking and throttling for relay requests to prevent IP bans and ensure polite network behavior.
+- **Redis Caching:** Added persistent D1/D2 caching with 7-day TTL to significantly reduce redundant relay fetches.
+
 ## [0.7.12] - 2026-03-16
 
 ### Added

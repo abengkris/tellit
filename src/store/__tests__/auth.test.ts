@@ -45,11 +45,6 @@ vi.mock("../wallet", () => ({
   }
 }));
 
-// Mock hooks/useWoT
-vi.mock("@/hooks/useWoT", () => ({
-  resetWoT: vi.fn()
-}));
-
 describe("Auth Store", () => {
   beforeEach(() => {
     useAuthStore.setState({

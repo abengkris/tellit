@@ -5,7 +5,7 @@ export interface ScoringContext {
   followingSet: Set<string>;        
   followsOfFollowsSet: Set<string>; 
   interactionHistory: Map<string, number>; 
-  trustScores?: Map<string, number>; // pubkey -> score (0-1)
+  networkDegreeMap?: Map<string, number>; // pubkey -> degree (1 or 2)
   mutualsMap?: Map<string, number>;  // pubkey -> count of mutual followers
   interestsSet?: Set<string>;        // list of hashtags user is interested in
 }
@@ -19,6 +19,8 @@ export interface ScoredEvent {
 const WEIGHTS = {
   isFollowing: 60,        
   isFollowOfFollow: 25,   
+  networkDegree1: 70,     // Server-side verified D1 (matches followingSet mostly)
+  networkDegree2: 35,     // Server-side verified D2
   frequentInteraction: 40, 
   hasMedia: 8,            
   hasLongContent: 5,      
@@ -26,7 +28,6 @@ const WEIGHTS = {
   isRepost: 10,           
   networkReaction: 15,    
   networkReply: 12,
-  trustFactor: 40,        // multiplier for trust score (assumed 0-1)
   mutualsFactor: 15,      // multiplier for log10(mutuals)
   interestMatch: 50,      // Boost for matching a topic user is interested in
 } as const;
@@ -63,13 +64,15 @@ export function scoreEvent(
     score += WEIGHTS.isFollowOfFollow;
   }
 
-  // Trust score boost (Web of Trust)
-  if (ctx.trustScores) {
-    const trust = ctx.trustScores.get(event.pubkey) ?? 0;
-    if (trust > 0) {
-      const trustBoost = trust * WEIGHTS.trustFactor;
-      signals.trust = Math.round(trustBoost * 10) / 10;
-      score += trustBoost;
+  // Redis-backed Network Degree boost
+  if (ctx.networkDegreeMap) {
+    const degree = ctx.networkDegreeMap.get(event.pubkey);
+    if (degree === 1) {
+      signals.networkDegree1 = WEIGHTS.networkDegree1;
+      score += WEIGHTS.networkDegree1;
+    } else if (degree === 2) {
+      signals.networkDegree2 = WEIGHTS.networkDegree2;
+      score += WEIGHTS.networkDegree2;
     }
   }
 

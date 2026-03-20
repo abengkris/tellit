@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { NDKEvent, NDKKind, NDKSubscription, NDKFilter } from "@nostr-dev-kit/ndk";
 import { useNDK } from "@/hooks/useNDK";
-import { useWoT } from "./useWoT";
+import { useWoTNetwork } from "./useWoTNetwork";
 import { useUIStore } from "@/store/ui";
 import { ScoredEvent } from "@/lib/feed/scorer";
 import { validateEvent } from "@/lib/policies";
@@ -33,8 +33,12 @@ export function useForYouFeed({
   interests,
 }: UseForYouFeedOptions): UseForYouFeedReturn {
   const { ndk, isReady, sync } = useNDK();
-  const { wot, trustScores, status: wotStatus, pubkeyCount: wotSize } = useWoT(viewerPubkey);
   const { wotStrictMode } = useUIStore();
+  
+  // Use the new on-demand WoT Network
+  // We'll pass the following list initially, and then extend it as we see more events
+  const [discoverPubkeys, setDiscoverPubkeys] = useState<string[]>(followingList);
+  const { network, loading: wotLoading } = useWoTNetwork(discoverPubkeys);
 
   const [rawEvents, setRawEvents] = useState<NDKEvent[]>([]);
   const [rankedPosts, setRankedPosts] = useState<NDKEvent[]>([]);
@@ -42,6 +46,9 @@ export function useForYouFeed({
   const [isLoading, setIsLoading] = useState(true);
   const [hasMore, setHasMore] = useState(true);
   const hasInterests = interests.length > 0;
+
+  const wotStatus = wotLoading ? "loading" : "ready";
+  const wotSize = Object.keys(network).length;
 
   // Buffer for batching updates to rawEvents to avoid excessive re-renders
   const updateBufferRef = useRef<NDKEvent[]>([]);
@@ -75,20 +82,6 @@ export function useForYouFeed({
     };
   }, [ndk]);
 
-  // Memoized mutuals map to avoid re-calculating on every event
-  const mutualsMap = useMemo(() => {
-    if (!wot) return new Map<string, number>();
-    const map = new Map<string, number>();
-    const allWoTPubkeys = wot.getAllPubkeys();
-    for (const pk of allWoTPubkeys) {
-      const node = wot.getNode(pk);
-      if (node && node.followedBy) {
-        map.set(pk, node.followedBy.size);
-      }
-    }
-    return map;
-  }, [wot]);
-
   // Trigger worker-based scoring when inputs change
   useEffect(() => {
     if (!workerRef.current || !isReady || !ndk) return;
@@ -98,9 +91,12 @@ export function useForYouFeed({
     scoringTimeoutRef.current = setTimeout(() => {
       let baseEvents = rawEvents;
       
-      // Strict Mode: Filter out anyone with 0 score (unknown/spam)
-      if (wot && wotStrictMode) {
-        baseEvents = rawEvents.filter(e => wot.getScore(e.pubkey) > 0);
+      // Strict Mode: Filter out anyone with 0 degree (unknown/spam)
+      if (wotStrictMode) {
+        baseEvents = rawEvents.filter(e => {
+          const degree = network[e.pubkey];
+          return followingList.includes(e.pubkey) || (degree && degree > 0);
+        });
       }
 
       if (baseEvents.length === 0) {
@@ -108,19 +104,13 @@ export function useForYouFeed({
         return;
       }
 
-      if (!wot) {
-        setRankedPosts(sortByTime(baseEvents));
-        return;
-      }
-
       // Prepare context for the worker (plain objects only)
       const context = {
         viewerPubkey,
         followingSet: Array.from(followingList),
-        followsOfFollowsSet: Array.from(wot.getAllPubkeys()),
+        followsOfFollowsSet: [], // Legacy, we use networkDegreeMap now
         interactionHistory: Array.from(new Map().entries()), // To be implemented
-        trustScores: Object.fromEntries(trustScores.entries()),
-        mutualsMap: Object.fromEntries(mutualsMap.entries()),
+        networkDegreeMap: network, // Use the new Redis-backed degree map
         interestsSet: Array.from(interests),
       };
 
@@ -135,7 +125,7 @@ export function useForYouFeed({
     return () => {
       if (scoringTimeoutRef.current) clearTimeout(scoringTimeoutRef.current);
     };
-  }, [rawEvents, wot, wotStrictMode, followingList, viewerPubkey, trustScores, mutualsMap, interests, isReady, ndk]);
+  }, [rawEvents, wotStrictMode, followingList, viewerPubkey, network, interests, isReady, ndk]);
 
   const posts = rankedPosts;
 
@@ -154,6 +144,13 @@ export function useForYouFeed({
       combined.filter(e => e && e.id).forEach(e => uniqueMap.set(e.id, e));
       return Array.from(uniqueMap.values());
     });
+    
+    // Auto-discover new pubkeys to check trust for
+    const newPubkeys = newEvents.map(e => e.pubkey);
+    setDiscoverPubkeys(prev => {
+      const next = Array.from(new Set([...prev, ...newPubkeys])).slice(0, 1000);
+      return next;
+    });
   }, []);
 
   const queueUpdate = useCallback((events: NDKEvent[]) => {
@@ -164,38 +161,28 @@ export function useForYouFeed({
   }, [processUpdateBuffer]);
 
   useEffect(() => {
-    if (!ndk || !isReady || wotStatus === "idle") return;
+    if (!ndk || !isReady) return;
 
     const followingStr = JSON.stringify(followingList);
     const listChanged = followingStr !== prevFollowingListRef.current;
 
     if (listChanged) {
-      setIsLoading(true);
+      Promise.resolve().then(() => {
+        setIsLoading(true);
+        setRawEvents([]);
+      });
       seenIds.current = new Set();
       isInitialLoadDone.current = false;
       bufferRef.current = [];
-      setRawEvents([]);
       prevFollowingListRef.current = followingStr;
+      setDiscoverPubkeys(followingList);
     } else if (rawEvents.length > 0) {
       setIsLoading(false);
       return;
     }
 
-    // Smart Author Selection:
-    // 1. All following list (direct trust)
-    // 2. High-trust FoF (score > 0) up to a reasonable limit for relay health
-    let authors = followingList;
-    if (wot) {
-      const allPubkeys = wot.getAllPubkeys({ maxDepth: 2 });
-      const fof = allPubkeys
-        .filter(pk => !followingList.includes(pk) && pk !== viewerPubkey)
-        .sort((a, b) => (wot.getScore(b) || 0) - (wot.getScore(a) || 0));
-      
-      authors = [...followingList, ...fof.slice(0, 400)];
-    }
-
-    // Clean authors array to prevent validation errors
-    const validAuthors = authors.filter(a => !!a && /^[0-9a-fA-F]{64}$/.test(a));
+    // Initial authors: Following list
+    const validAuthors = followingList.filter(a => !!a && /^[0-9a-fA-F]{64}$/.test(a));
 
     if (!validAuthors.length) {
       setIsLoading(false);
@@ -274,7 +261,7 @@ export function useForYouFeed({
       if (subscriptionRef.current) subscriptionRef.current.stop();
       if (updateTimeoutRef.current) clearTimeout(updateTimeoutRef.current);
     };
-  }, [ndk, isReady, sync, wotStatus, followingList, wot, queueUpdate, interests, viewerPubkey, rawEvents.length]); 
+  }, [ndk, isReady, sync, followingList, queueUpdate, interests, viewerPubkey, rawEvents.length]); 
 
   const flushNewPosts = useCallback(() => {
     if (!bufferRef.current.length) return;
@@ -293,18 +280,8 @@ export function useForYouFeed({
 
     const oldest = Math.min(...rawEvents.map(p => p.created_at ?? Infinity));
     
-    let authors = followingList;
-    if (wot) {
-      const allPubkeys = wot.getAllPubkeys({ maxDepth: 2 });
-      const fof = allPubkeys
-        .filter(pk => !followingList.includes(pk) && pk !== viewerPubkey)
-        .sort((a, b) => (wot.getScore(b) || 0) - (wot.getScore(a) || 0));
-      
-      authors = [...followingList, ...fof.slice(0, 400)];
-    }
-
     // Clean authors array to prevent validation errors
-    const validAuthors = authors.filter(a => !!a && /^[0-9a-fA-F]{64}$/.test(a));
+    const validAuthors = followingList.filter(a => !!a && /^[0-9a-fA-F]{64}$/.test(a));
 
     const olderFilter: NDKFilter = {
       kinds: [1, 6, 16, 1068, 30023] as NDKKind[],
@@ -327,7 +304,8 @@ export function useForYouFeed({
       const combined = [...prev, ...newEvents];
       return combined.filter((v, i, a) => v && v.id && a.findIndex(t => t && t.id === v.id) === i);
     });
-  }, [ndk, rawEvents, hasMore, followingList, wot, viewerPubkey, interests]); 
+  }, [ndk, rawEvents, hasMore, followingList, interests]); 
+  
   return {
     posts,
     newCount,
@@ -339,8 +317,4 @@ export function useForYouFeed({
     loadMore,
     hasMore,
   };
-}
-
-function sortByTime(events: NDKEvent[]): NDKEvent[] {
-  return [...events].sort((a, b) => (b.created_at ?? 0) - (a.created_at ?? 0));
 }
