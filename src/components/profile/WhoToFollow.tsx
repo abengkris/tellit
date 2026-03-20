@@ -11,57 +11,83 @@ import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/componen
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Sparkles } from "lucide-react";
+import { NDKEvent } from "@nostr-dev-kit/ndk";
+import { PostContentRenderer } from "../post/parts/PostContent";
 
 interface SuggestionCardProps {
   pubkey: string;
   reason: string;
   showAbout?: boolean;
+  topPost?: NDKEvent;
 }
 
 export const SuggestionCard: React.FC<SuggestionCardProps> = ({ 
   pubkey, 
   reason,
-  showAbout = false
+  showAbout = false,
+  topPost
 }) => {
   const { profile, profileUrl } = useProfile(pubkey);
 
   return (
-    <div className="flex items-start justify-between gap-3 group px-4 py-3 hover:bg-accent/30 transition-colors">
-      <Link href={profileUrl} className="shrink-0">
-        <Avatar 
-          pubkey={pubkey} 
-          src={profile?.picture} 
-          size={48} 
-          nip05={profile?.nip05}
-          className="rounded-full ring-2 ring-transparent group-hover:ring-primary/20 transition-all"
-        />
-      </Link>
-      
-      <div className="flex-1 min-w-0">
-        <Link href={profileUrl} className="block">
-          <UserIdentity 
-            pubkey={pubkey}
-            display_name={profile?.display_name}
-            name={profile?.name}
+    <div className="flex flex-col hover:bg-accent/30 transition-colors">
+      <div className="flex items-start justify-between gap-3 group px-4 py-3 pb-2">
+        <Link href={profileUrl} className="shrink-0">
+          <Avatar 
+            pubkey={pubkey} 
+            src={profile?.picture} 
+            size={48} 
             nip05={profile?.nip05}
-            variant="post"
-            tags={profile?.tags}
+            className="rounded-full ring-2 ring-transparent group-hover:ring-primary/20 transition-all"
           />
         </Link>
-        <p className="text-[10px] text-blue-500 mt-0.5 font-bold uppercase tracking-widest">
-          {reason}
-        </p>
-        {showAbout && profile?.about && (
-          <p className="text-xs text-muted-foreground mt-1 line-clamp-2 leading-relaxed">
-            {profile.about}
+        
+        <div className="flex-1 min-w-0">
+          <Link href={profileUrl} className="block">
+            <UserIdentity 
+              pubkey={pubkey}
+              display_name={profile?.display_name}
+              name={profile?.name}
+              nip05={profile?.nip05}
+              variant="post"
+              tags={profile?.tags}
+            />
+          </Link>
+          <p className="text-[10px] text-blue-500 mt-0.5 font-bold uppercase tracking-widest flex items-center gap-1">
+            <Sparkles size={10} fill="currentColor" />
+            {reason}
           </p>
-        )}
+          {showAbout && profile?.about && (
+            <p className="text-xs text-muted-foreground mt-1 line-clamp-2 leading-relaxed">
+              {profile.about}
+            </p>
+          )}
+        </div>
+
+        <div className="shrink-0 pt-1">
+          <FollowButton targetPubkey={pubkey} size="sm" />
+        </div>
       </div>
 
-      <div className="shrink-0 pt-1">
-        <FollowButton targetPubkey={pubkey} size="sm" />
-      </div>
+      {topPost && (
+        <div className="px-4 pb-3 pl-[76px]">
+          <Link 
+            href={profileUrl}
+            className="block p-3 rounded-2xl bg-muted/40 border border-border/50 hover:border-primary/30 transition-colors"
+          >
+             <div className="text-[11px] text-muted-foreground font-black uppercase tracking-tighter mb-1 opacity-60">Latest Post</div>
+             <div className="text-xs text-foreground/80 line-clamp-3 leading-relaxed">
+                <PostContentRenderer 
+                  content={topPost.content} 
+                  event={topPost} 
+                  renderMedia={false} 
+                  renderQuotes={false} 
+                />
+             </div>
+          </Link>
+        </div>
+      )}
     </div>
   );
 };
@@ -106,6 +132,7 @@ export const WhoToFollow = () => {
               <SuggestionCard 
                 pubkey={suggestion.pubkey} 
                 reason={suggestion.reason}
+                topPost={suggestion.topPost}
               />
               {index < suggestions.length - 1 && <Separator className="bg-muted-foreground/10" />}
             </Fragment>

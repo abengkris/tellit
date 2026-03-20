@@ -47,6 +47,7 @@ export default function SuggestedPage() {
                   <SuggestionCard 
                     pubkey={suggestion.pubkey} 
                     reason={suggestion.reason}
+                    topPost={suggestion.topPost}
                     showAbout={true}
                   />
                 </div>
