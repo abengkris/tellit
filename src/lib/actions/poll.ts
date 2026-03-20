@@ -31,6 +31,7 @@ export const createPoll = async (
     const event = new NDKEvent(ndk);
     event.kind = 1068 as NDKKind;
     event.content = content;
+    event.tags.push(["alt", `This is a poll: ${content.slice(0, 100)}`]);
 
     // Add NIP-14 Subject
     if (pollOptions.subject) {
@@ -110,6 +111,7 @@ export const respondToPoll = async (
     const event = new NDKEvent(ndk);
     event.kind = 1018 as NDKKind;
     event.content = "";
+    event.tags.push(["alt", "This is a response to a poll"]);
     
     event.tags.push(["e", pollEvent.id]);
     event.tags.push(["p", pollEvent.pubkey]);

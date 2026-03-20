@@ -48,7 +48,7 @@ const ReplyRecipient: React.FC<{ pubkey: string }> = ({ pubkey }) => {
 };
 
 export function PostContentRenderer({
-  content,
+  content: rawContent,
   event,
   renderMedia = true,
   renderQuotes = true,
@@ -65,6 +65,15 @@ export function PostContentRenderer({
   const [showFull, setShowFull] = useState(false);
   const [showSensitive, setShowSensitive] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+
+  const altFallback = useMemo(() => {
+    return event.tags.find(t => t[0] === 'alt')?.[1];
+  }, [event.tags]);
+
+  const content = useMemo(() => {
+    if (rawContent && rawContent.trim().length > 0) return rawContent;
+    return altFallback || "";
+  }, [rawContent, altFallback]);
 
   const highlight = useMemo(() => isHighlight ? NDKHighlight.from(event) : null, [event, isHighlight]);
   const comment = useMemo(() => highlight?.context || event.tags.find(t => t[0] === "comment")?.[1], [highlight, event.tags]);

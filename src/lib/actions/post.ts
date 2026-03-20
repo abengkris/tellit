@@ -270,7 +270,8 @@ export const repostEvent = async (
 
   repost.tags = [
     ["e", targetEvent.id, relayUrl, "root"],
-    ["p", targetEvent.pubkey]
+    ["p", targetEvent.pubkey],
+    ["alt", `This is a repost of a ${targetEvent.kind === 1 ? 'note' : 'post'}`]
   ];
 
   // For kind 16 generic reposts, add 'k' tag
@@ -306,7 +307,7 @@ export const deletePost = async (ndk: NDK, eventId: string): Promise<boolean> =>
   try {
     const event = new NDKEvent(ndk);
     event.kind = 5;
-    event.tags = [["e", eventId]];
+    event.tags = [["e", eventId], ["alt", "This is a request to delete a post"]];
     event.content = "Deletion request from Tell it!";
     
     addClientTag(event);

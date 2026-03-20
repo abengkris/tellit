@@ -25,7 +25,8 @@ export const reactToEvent = async (
   reaction.tags = [
     ["e", targetEvent.id, relayHint, targetEvent.pubkey],
     ["p", targetEvent.pubkey, relayHint],
-    ["k", String(targetEvent.kind)]
+    ["k", String(targetEvent.kind)],
+    ["alt", `This is a reaction to a post: ${content}`]
   ];
 
   // NIP-25: Add 'a' tag for addressable events (kind 30000-39999)
