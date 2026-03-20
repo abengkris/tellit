@@ -5,6 +5,7 @@ import { useAuthStore } from "@/store/auth";
 import { useNDK } from "@/hooks/useNDK";
 import { publishPost, ZapSplit } from "@/lib/actions/post";
 import { createPoll, PollOption } from "@/lib/actions/poll";
+import { saveDraftWrap } from "@/lib/actions/drafts";
 import { useUIStore } from "@/store/ui";
 import { useEmojis } from "@/hooks/useEmojis";
 import { useDrafts } from "@/hooks/useDrafts";
@@ -18,7 +19,8 @@ import {
   BarChart2,
   Users,
   Type,
-  Languages
+  Languages,
+  Cloud
 } from "lucide-react";
 import { Avatar } from "../common/Avatar";
 import { PollEditor } from "./PollEditor";
@@ -71,6 +73,7 @@ export const PostComposer: React.FC<PostComposerProps> = ({
   const [language, setLanguage] = useState<string>("");
   const [isPosting, setIsPosting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [isCloudSyncing, setIsCloudSyncing] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showPollEditor, setShowPollEditor] = useState(false);
   const [showCollaboratorEditor, setShowCollaboratorEditor] = useState(false);
@@ -122,6 +125,42 @@ export const PostComposer: React.FC<PostComposerProps> = ({
       }
     }
     setShowMentionPicker(false);
+  };
+
+  const handleCloudSync = async () => {
+    if (!ndk || !content.trim()) {
+      addToast("Content is required for sync", "error");
+      return;
+    }
+
+    setIsCloudSyncing(true);
+    try {
+      const identifier = draftKey;
+
+      // Draft event structure for kind 1
+      const draftEvent = {
+        kind: 1,
+        content,
+        tags: [] as NDKTag[]
+      };
+
+      if (replyTo) {
+        draftEvent.tags.push(["e", replyTo.id, "", "reply"]);
+      }
+
+      await saveDraftWrap(ndk, draftEvent, {
+        identifier,
+        kind: 1,
+        expiration: Math.floor(Date.now() / 1000) + (90 * 24 * 60 * 60) // 90 days
+      });
+
+      addToast("Encrypted draft synced to relays!", "success");
+    } catch (err) {
+      console.error(err);
+      addToast("Failed to sync to cloud", "error");
+    } finally {
+      setIsCloudSyncing(false);
+    }
   };
 
   const insertMention = (npub: string) => {
@@ -561,6 +600,23 @@ export const PostComposer: React.FC<PostComposerProps> = ({
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={handleCloudSync}
+                    disabled={isPosting || isUploading || isCloudSyncing}
+                    className="text-primary hover:bg-primary/10 rounded-full"
+                    aria-label="Sync draft to cloud"
+                  >
+                    {isCloudSyncing ? <Loader2 className="size-5 animate-spin" aria-hidden="true" /> : <Cloud className="size-5" aria-hidden="true" />}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">Sync encrypted draft to relays (NIP-37)</TooltipContent>
+              </Tooltip>
 
               <Tooltip>
                 <TooltipTrigger asChild>

@@ -6,7 +6,8 @@ import { useAuthStore } from "@/store/auth";
 import { useUIStore } from "@/store/ui";
 import { useRouter } from "next/navigation";
 import { publishArticle } from "@/lib/actions/post";
-import { ArrowLeft, Loader2, Image as ImageIcon, Send, Eye, PenLine, Save } from "lucide-react";
+import { saveDraftWrap } from "@/lib/actions/drafts";
+import { ArrowLeft, Loader2, Image as ImageIcon, Send, Eye, PenLine, Save, Cloud } from "lucide-react";
 import { ArticleRenderer } from "@/components/article/ArticleRenderer";
 import { NDKEvent } from "@nostr-dev-kit/ndk";
 import Image from "next/image";
@@ -24,7 +25,46 @@ export default function NewArticlePage() {
   const [tags, setTags] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSavingDraft, setIsSavingDraft] = useState(false);
+  const [isCloudSyncing, setIsCloudSyncing] = useState(false);
   const [previewMode, setPreviewMode] = useState(false);
+
+  const handleCloudSync = async () => {
+    if (!ndk || !title || !content) {
+      addToast("Title and content are required for sync", "error");
+      return;
+    }
+
+    setIsCloudSyncing(true);
+    try {
+      const slug = title.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+      const identifier = slug || `article-${Date.now()}`;
+      
+      // Draft event structure for kind 30023
+      const draftEvent = {
+        kind: 30023,
+        content,
+        tags: [
+          ["title", title],
+          ["summary", summary],
+          ["image", image],
+          ...tags.split(",").map(t => ["t", t.trim().toLowerCase()]).filter(t => t[1])
+        ]
+      };
+
+      await saveDraftWrap(ndk, draftEvent, {
+        identifier,
+        kind: 30023,
+        expiration: Math.floor(Date.now() / 1000) + (90 * 24 * 60 * 60) // 90 days
+      });
+
+      addToast("Encrypted draft synced to relays!", "success");
+    } catch (err) {
+      console.error(err);
+      addToast("Failed to sync to cloud. Relay or signer error.", "error");
+    } finally {
+      setIsCloudSyncing(false);
+    }
+  };
 
   const handlePublish = async (isDraft = false) => {
     if (!ndk || !title || !content) {
@@ -97,7 +137,7 @@ export default function NewArticlePage() {
 
           <button
             onClick={() => handlePublish(true)}
-            disabled={isSubmitting || isSavingDraft || !title || !content}
+            disabled={isSubmitting || isSavingDraft || isCloudSyncing || !title || !content}
             className="px-4 py-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-full font-black text-sm flex items-center gap-2 transition-all active:scale-95"
           >
             {isSavingDraft ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
@@ -105,8 +145,18 @@ export default function NewArticlePage() {
           </button>
 
           <button
+            onClick={handleCloudSync}
+            disabled={isSubmitting || isSavingDraft || isCloudSyncing || !title || !content}
+            className="px-4 py-2 bg-purple-100 dark:bg-purple-900/30 hover:bg-purple-200 dark:hover:bg-purple-900/50 text-purple-600 dark:text-purple-400 rounded-full font-black text-sm flex items-center gap-2 transition-all active:scale-95"
+            title="Sync encrypted draft to relays (NIP-37)"
+          >
+            {isCloudSyncing ? <Loader2 className="animate-spin" size={18} /> : <Cloud size={18} />}
+            <span>Cloud</span>
+          </button>
+
+          <button
             onClick={() => handlePublish(false)}
-            disabled={isSubmitting || isSavingDraft || !title || !content}
+            disabled={isSubmitting || isSavingDraft || isCloudSyncing || !title || !content}
             className="px-6 py-2 bg-blue-500 hover:bg-blue-600 disabled:opacity-50 text-white rounded-full font-black text-sm flex items-center gap-2 shadow-lg shadow-blue-500/20 transition-all active:scale-95"
           >
             {isSubmitting ? <Loader2 className="animate-spin" size={18} /> : <Send size={18} />}

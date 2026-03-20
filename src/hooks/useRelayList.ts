@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNDK } from "@/hooks/useNDK";
-import { NDKEvent, NDKSubscriptionCacheUsage } from "@nostr-dev-kit/ndk";
+import { NDKSubscriptionCacheUsage } from "@nostr-dev-kit/ndk";
 
 export interface RelayMetadata {
   url: string;
@@ -67,6 +67,73 @@ export function useRelayList(pubkey?: string) {
     };
 
     fetchRelayList();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [ndk, isReady, pubkey]);
+
+  return { relays, loading };
+}
+
+/**
+ * Hook to fetch NIP-37 Relay List for Private Content (Kind 10013).
+ */
+export function usePrivateRelayList(pubkey?: string) {
+  const { ndk, isReady } = useNDK();
+  const [relays, setRelays] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!ndk || !isReady || !pubkey || !ndk.signer) {
+      setLoading(false);
+      return;
+    }
+
+    let isMounted = true;
+    setLoading(true);
+
+    const fetchPrivateRelayList = async () => {
+      try {
+        const user = ndk.getUser({ pubkey });
+        const event = await ndk.fetchEvent(
+          { kinds: [10013], authors: [pubkey] },
+          { 
+            groupable: true, 
+            cacheUsage: NDKSubscriptionCacheUsage.CACHE_FIRST 
+          }
+        );
+
+        if (isMounted && event && event.content) {
+          try {
+            const decrypted = await ndk.signer?.decrypt(user, event.content, "nip44");
+            if (decrypted) {
+              const tags = JSON.parse(decrypted);
+              const privateRelays = tags
+                .filter((t: string[]) => t[0] === 'relay')
+                .map((t: string[]) => t[1]);
+              
+              setRelays(privateRelays);
+              
+              // Ensure we connect to these for private data
+              privateRelays.forEach((url: string) => {
+                ndk.addExplicitRelay(url, undefined, true);
+              });
+            }
+          } catch (e) {
+            console.warn("Failed to decrypt private relay list:", e);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching private relay list for", pubkey, error);
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchPrivateRelayList();
 
     return () => {
       isMounted = false;
