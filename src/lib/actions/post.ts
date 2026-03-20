@@ -19,6 +19,7 @@ interface PostOptions {
   subject?: string;
   labels?: { namespace: string; label: string }[];
   proxy?: { id: string; protocol: string };
+  contentWarning?: string;
 }
 
 export const publishPost = async (
@@ -49,6 +50,11 @@ export const publishPost = async (
 
   if (options?.tags) {
     event.tags = [...options.tags];
+  }
+
+  // Handle NIP-36 Sensitive Content
+  if (options?.contentWarning !== undefined) {
+    event.tags.push(["content-warning", options.contentWarning]);
   }
 
   // Handle NIP-32 Labels

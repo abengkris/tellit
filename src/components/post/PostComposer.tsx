@@ -20,7 +20,8 @@ import {
   Users,
   Type,
   Languages,
-  Cloud
+  Cloud,
+  ShieldAlert
 } from "lucide-react";
 import { Avatar } from "../common/Avatar";
 import { PollEditor } from "./PollEditor";
@@ -70,6 +71,8 @@ export const PostComposer: React.FC<PostComposerProps> = ({
   const [content, setContent] = useState("");
   const [subject, setSubject] = useState("");
   const [showSubject, setShowSubject] = useState(false);
+  const [contentWarning, setContentWarning] = useState("");
+  const [showContentWarning, setShowContentWarning] = useState(false);
   const [language, setLanguage] = useState<string>("");
   const [isPosting, setIsPosting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -311,7 +314,8 @@ export const PostComposer: React.FC<PostComposerProps> = ({
           tags,
           zapSplits,
           subject: (showSubject && subject.trim()) ? subject.trim() : undefined,
-          labels: language ? [{ namespace: "ISO-639-1", label: language }] : undefined
+          labels: language ? [{ namespace: "ISO-639-1", label: language }] : undefined,
+          contentWarning: showContentWarning ? contentWarning.trim() : undefined
         };
 
         event = await publishPost(ndk, finalContent, options);
@@ -322,6 +326,8 @@ export const PostComposer: React.FC<PostComposerProps> = ({
         setContent("");
         setSubject("");
         setShowSubject(false);
+        setContentWarning("");
+        setShowContentWarning(false);
         setLanguage("");
         setMediaFiles([]);
         setShowPollEditor(false);
@@ -423,6 +429,20 @@ export const PostComposer: React.FC<PostComposerProps> = ({
                 onChange={(e) => setSubject(e.target.value)}
                 placeholder="Subject (optional)"
                 className="w-full bg-muted/30 border border-border rounded-lg h-10 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                maxLength={80}
+              />
+            </div>
+          )}
+
+          {showContentWarning && (
+            <div className="mb-4 animate-in slide-in-from-top-2 duration-200 relative">
+              <ShieldAlert className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-amber-500" />
+              <Input
+                type="text"
+                value={contentWarning}
+                onChange={(e) => setContentWarning(e.target.value)}
+                placeholder="Content warning / NSFW reason (optional)"
+                className="w-full bg-amber-500/10 text-amber-600 dark:text-amber-500 text-sm font-bold border-none h-10 pl-9 rounded-lg focus-visible:ring-1 focus-visible:ring-amber-500/50 placeholder:text-amber-500/50"
                 maxLength={80}
               />
             </div>
@@ -563,6 +583,22 @@ export const PostComposer: React.FC<PostComposerProps> = ({
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent side="bottom">Add subject</TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    type="button"
+                    variant={showContentWarning ? "secondary" : "ghost"}
+                    size="icon"
+                    onClick={() => setShowContentWarning(!showContentWarning)}
+                    className={cn("text-amber-500 hover:bg-amber-500/10 rounded-full", showContentWarning && "bg-amber-500/10")}
+                    aria-label="Add content warning"
+                  >
+                    <ShieldAlert className="size-5" aria-hidden="true" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">Add content warning (NSFW)</TooltipContent>
               </Tooltip>
 
               <DropdownMenu>
