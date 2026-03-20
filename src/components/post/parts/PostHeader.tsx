@@ -12,7 +12,8 @@ import {
   VolumeX, 
   Volume2, 
   Bookmark,
-  BarChart2
+  BarChart2,
+  ExternalLink
 } from "lucide-react";
 import Link from "next/link";
 
@@ -111,6 +112,11 @@ export const PostHeader: React.FC<PostHeaderProps> = ({
   // NIP-32 Language Label
   const languageLabel = tags?.find(t => t[0] === 'l' && t[2] === 'ISO-639-1')?.[1];
 
+  // NIP-48 Proxy Tag
+  const proxyTag = tags?.find(t => t[0] === 'proxy');
+  const proxyId = proxyTag?.[1];
+  const proxyProtocol = proxyTag?.[2];
+
   if (variant === "detail") {
     return (
       <div className="flex flex-col min-w-0 z-10">
@@ -143,6 +149,17 @@ export const PostHeader: React.FC<PostHeaderProps> = ({
           </div>
 
           <div className="flex items-center gap-1">
+            {proxyProtocol && (
+              <Badge variant="outline" className="h-5 px-1.5 text-[10px] font-black uppercase tracking-widest text-muted-foreground border-border/50 bg-muted/5">
+                {proxyId?.startsWith('http') ? (
+                  <a href={proxyId} target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors flex items-center gap-1">
+                    {proxyProtocol} <ExternalLink size={10} />
+                  </a>
+                ) : (
+                  proxyProtocol
+                )}
+              </Badge>
+            )}
             {languageLabel && (
               <Badge variant="outline" className="h-5 px-1.5 text-[10px] font-black uppercase tracking-widest text-muted-foreground border-border/50">
                 {languageLabel}
@@ -311,6 +328,17 @@ export const PostHeader: React.FC<PostHeaderProps> = ({
               {bot && (
                 <Badge variant="secondary" className="h-4 px-1 rounded font-bold uppercase tracking-tighter text-[9px] bg-blue-500/10 text-blue-500 border-blue-500/20">
                   Bot
+                </Badge>
+              )}
+              {proxyProtocol && (
+                <Badge variant="outline" className="h-4 px-1 rounded font-bold uppercase tracking-tighter text-[8px] bg-muted/5 text-muted-foreground border-border/50">
+                  {proxyId?.startsWith('http') ? (
+                    <a href={proxyId} target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">
+                      {proxyProtocol}
+                    </a>
+                  ) : (
+                    proxyProtocol
+                  )}
                 </Badge>
               )}
             </div>

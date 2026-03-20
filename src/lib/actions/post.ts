@@ -18,6 +18,7 @@ interface PostOptions {
   zapSplits?: ZapSplit[];
   subject?: string;
   labels?: { namespace: string; label: string }[];
+  proxy?: { id: string; protocol: string };
 }
 
 export const publishPost = async (
@@ -56,6 +57,11 @@ export const publishPost = async (
       event.tags.push(["L", namespace]);
       event.tags.push(["l", label, namespace]);
     });
+  }
+
+  // Handle NIP-48 Proxy
+  if (options?.proxy) {
+    event.tags.push(["proxy", options.proxy.id, options.proxy.protocol]);
   }
 
   // Handle NIP-14 Subject
