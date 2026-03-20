@@ -192,4 +192,27 @@ export class WoTService {
 
     return results;
   }
+
+  /**
+   * Get follow suggestions based on D2 network
+   */
+  static async getSuggestions(viewerPubkey: string, limit: number = 10): Promise<{ pubkey: string; followedByCount: number }[]> {
+    const d2Key = `wot:${viewerPubkey}:d2`;
+    
+    // In Redis, we only store the set of D2 pubkeys.
+    // To get "followedByCount", we would need to store the graph or 
+    // perform multiple SINTER/SCARD operations.
+    // For now, let's just return a random sample of D2 to keep it fast,
+    // or we can stick to the current client-side logic if we want "mutuals" count.
+    
+    // Better: Return members of D2. Since it's a Set, SRANDMEMBER is perfect for variety.
+    const suggestions = await redis.srandmember(d2Key, limit);
+    
+    if (!suggestions || suggestions.length === 0) return [];
+
+    return suggestions.map(pk => ({
+      pubkey: pk,
+      followedByCount: 2 // Placeholder for degree 2
+    }));
+  }
 }
