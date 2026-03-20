@@ -6,7 +6,7 @@ import { useAuthStore } from "@/store/auth";
 import { useNDK } from "@/hooks/useNDK";
 import { useProfile } from "@/hooks/useProfile";
 import { useAppSettings } from "@/hooks/useAppSettings";
-import { Bell, Shield, User, Globe, Wallet, Clock, LogOut, Key, VolumeX, BadgeCheck, RefreshCcw, Sun, Moon, Monitor } from "lucide-react";
+import { Bell, Shield, User, Globe, Wallet, Clock, LogOut, Key, VolumeX, BadgeCheck, RefreshCcw, Sun, Moon, Monitor, Trash, AlertTriangle } from "lucide-react";
 import { useTheme } from "next-themes";
 import { Avatar } from "@/components/common/Avatar";
 import Link from "next/link";
@@ -14,6 +14,7 @@ import { NDKEvent } from "@nostr-dev-kit/ndk";
 import { useLists } from "@/hooks/useLists";
 import { MuteList } from "@/components/profile/MuteList";
 import { KeyBackupModal } from "@/components/settings/KeyBackupModal";
+import { requestVanish } from "@/lib/actions/vanish";
 import { 
   Card, 
   CardContent, 
@@ -58,6 +59,8 @@ export default function SettingsPage() {
   const [unpublishedCount, setUnpublishedCount] = useState(0);
   const [isMuteListModalOpen, setIsMuteListModalOpen] = useState(false);
   const [isKeyBackupModalOpen, setIsKeyBackupModalOpen] = useState(false);
+  const [isVanishDialogOpen, setIsVanishDialogOpen] = useState(false);
+  const [isVanishing, setIsVanishing] = useState(false);
 
   useEffect(() => {
     if (isReady && ndk?.cacheAdapter) {
@@ -111,6 +114,24 @@ export default function SettingsPage() {
   const handleLogoutAll = () => {
     logoutAll(sessions);
     addToast("Logged out of all accounts", "info");
+  };
+
+  const handleVanish = async () => {
+    if (!ndk || !isLoggedIn) return;
+    
+    setIsVanishing(true);
+    try {
+      await requestVanish(ndk, ["ALL_RELAYS"], "Global vanish request via Tell it!");
+      addToast("Vanish request sent to the network!", "success");
+      setIsVanishDialogOpen(false);
+      // It's recommended to logout after a vanish request
+      logout(sessions);
+    } catch (err) {
+      console.error(err);
+      addToast("Failed to send vanish request", "error");
+    } finally {
+      setIsVanishing(false);
+    }
   };
 
   const hasLocalBackup = typeof window !== 'undefined' && user?.pubkey && localStorage.getItem(`tellit-backup-${user.pubkey}`);
@@ -365,23 +386,91 @@ export default function SettingsPage() {
           <h2 className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2 px-1">
             <VolumeX size={14} /> Privacy
           </h2>
-          <Card className="rounded-3xl border-none bg-muted/30 shadow-none">
-            <CardContent className="p-4 flex items-center justify-between">
-              <div className="space-y-0.5">
-                <div className="font-black">Muted Users</div>
-                <div className="text-xs text-muted-foreground font-medium">{mutedPubkeys.size} users currently muted</div>
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsMuteListModalOpen(true)}
-                className="rounded-full font-black bg-background border-none shadow-sm"
-              >
-                Manage List
-              </Button>
-            </CardContent>
-          </Card>
+          <div className="flex flex-col gap-2">
+            <Card className="rounded-3xl border-none bg-muted/30 shadow-none">
+              <CardContent className="p-4 flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <div className="font-black">Muted Users</div>
+                  <div className="text-xs text-muted-foreground font-medium">{mutedPubkeys.size} users currently muted</div>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsMuteListModalOpen(true)}
+                  className="rounded-full font-black bg-background border-none shadow-sm"
+                >
+                  Manage List
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* NIP-62 Vanish */}
+            {isLoggedIn && (
+              <Card className="rounded-3xl border-none bg-destructive/5 hover:bg-destructive/10 transition-colors shadow-none border border-destructive/10">
+                <CardContent className="p-4 flex items-center justify-between">
+                  <div className="flex items-center gap-4 min-w-0">
+                    <div className="p-3 bg-destructive/10 text-destructive rounded-2xl shrink-0">
+                      <Trash size={20} />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="font-black text-destructive">Vanish from Network</div>
+                      <div className="text-xs text-destructive/70 font-medium truncate">Request all relays to delete your data (NIP-62)</div>
+                    </div>
+                  </div>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => setIsVanishDialogOpen(true)}
+                    className="rounded-full font-black shadow-lg shadow-destructive/20"
+                  >
+                    Vanish
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+          </div>
         </section>
+
+        <Dialog open={isVanishDialogOpen} onOpenChange={setIsVanishDialogOpen}>
+          <DialogContent className="sm:max-w-md p-6 rounded-[2rem] border-none shadow-2xl">
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-black text-destructive flex items-center gap-2">
+                <AlertTriangle className="size-6" />
+                DANGER ZONE
+              </DialogTitle>
+              <CardDescription className="text-base font-medium pt-2">
+                This will send a **Request to Vanish** (NIP-62) to all relays.
+              </CardDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4 py-4">
+              <div className="p-4 bg-destructive/5 rounded-2xl border border-destructive/10 text-sm font-medium leading-relaxed text-destructive/80">
+                <p>By proceeding, you request that relays delete **ALL** your events, including posts, profile metadata, and follows. This action is **permanent** and cannot be undone.</p>
+                <p className="mt-2 text-xs italic">Note: While NIP-62 is a standard, full deletion depends on relay implementation.</p>
+              </div>
+              
+              <div className="flex flex-col gap-2">
+                <Button
+                  variant="destructive"
+                  size="lg"
+                  onClick={handleVanish}
+                  disabled={isVanishing}
+                  className="h-14 rounded-2xl font-black text-lg gap-2"
+                >
+                  {isVanishing ? <RefreshCcw className="animate-spin size-5" /> : <Trash className="size-5" />}
+                  Confirm Global Vanish
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={() => setIsVanishDialogOpen(false)}
+                  className="h-12 rounded-2xl font-black"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
 
         {/* Preferences Section */}
         <section className="space-y-4">
