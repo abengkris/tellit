@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { WoTService } from "@/services/wot.service";
-import { waitUntil } from "next/server";
 
 /**
  * POST /api/wot/init
@@ -22,12 +21,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Pass waitUntil to ensure background task survives
-    const { d1, cached, backgroundPromise } = await WoTService.initializeWoT(pubkey);
-
-    if (backgroundPromise) {
-      waitUntil(backgroundPromise);
-    }
+    // Trigger WoT initialization
+    const { d1, cached } = await WoTService.initializeWoT(pubkey);
 
     return NextResponse.json({
       d1,

@@ -19,7 +19,7 @@ self.onmessage = (e: MessageEvent<{
     followingSet: new Set(context.followingSet),
     followsOfFollowsSet: new Set(context.followsOfFollowsSet),
     interactionHistory: new Map(context.interactionHistory),
-    trustScores: context.trustScores ? new Map(Object.entries(context.trustScores)) : undefined,
+    networkDegreeMap: context.networkDegreeMap ? new Map(Object.entries(context.networkDegreeMap)) : undefined,
     mutualsMap: context.mutualsMap ? new Map(Object.entries(context.mutualsMap)) : undefined,
     interestsSet: context.interestsSet ? new Set(context.interestsSet) : undefined,
   };
