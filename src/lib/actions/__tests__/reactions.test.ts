@@ -41,7 +41,8 @@ describe("reactToEvent with NDK Test Utils", () => {
 
     expect(sentEvents?.length).toBe(1);
     expect(sentEvents?.[0][1].content).toBe("+");
-    expect(sentEvents?.[0][1].tags).toContainEqual(["e", targetEvent.id]);
+    // Flexible check for e tag as it now contains hints
+    expect(sentEvents?.[0][1].tags.some((t: string[]) => t[0] === "e" && t[1] === targetEvent.id)).toBe(true);
   });
 
   it("should publish a dislike reaction", async () => {

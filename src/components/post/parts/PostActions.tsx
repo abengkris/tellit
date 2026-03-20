@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useState, useMemo, useEffect, memo } from "react";
-import { MessageCircle, Repeat2, Heart, Zap, Bookmark, Quote, Share, Loader2 } from "lucide-react";
+import { MessageCircle, Repeat2, Heart, Zap, Bookmark, Quote, Share, Loader2, Smile } from "lucide-react";
 import { useUIStore } from "@/store/ui";
 import { useLists } from "@/hooks/useLists";
+import { useEmojis } from "@/hooks/useEmojis";
 import { triggerConfetti, triggerZapConfetti } from "@/lib/utils/confetti";
 import { useNDK } from "@/hooks/useNDK";
 import { createZapInvoice } from "@/lib/actions/zap";
@@ -13,7 +14,8 @@ import {
   DropdownMenu, 
   DropdownMenuContent, 
   DropdownMenuItem, 
-  DropdownMenuTrigger 
+  DropdownMenuTrigger,
+  DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
@@ -36,6 +38,7 @@ interface PostActionsProps {
   onLikeClick?: (e: React.MouseEvent) => void;
   onZapClick?: (e: React.MouseEvent) => void;
   onQuoteClick?: (e: React.MouseEvent) => void;
+  onEmojiReaction?: (emoji: { shortcode: string, url: string }) => void;
   onShareClick?: (e: React.MouseEvent) => void;
   variant?: "feed" | "detail";
 }
@@ -57,6 +60,7 @@ export const PostActions = memo(({
   onLikeClick,
   onZapClick,
   onQuoteClick,
+  onEmojiReaction,
   onShareClick,
   variant = "feed"
 }: PostActionsProps) => {
@@ -75,6 +79,7 @@ export const PostActions = memo(({
 
   const { addToast, defaultZapAmount } = useUIStore();
   const { ndk, refreshBalance } = useNDK();
+  const { emojis } = useEmojis();
   const { bookmarkedEventIds, bookmarkPost, unbookmarkPost } = useLists();
   const { likes: reactorPubkeys, reposts: reposterPubkeys, zaps: zapperPubkeys, loading: loadingReactions } = useReactions(eventId);
 
@@ -114,6 +119,13 @@ export const PostActions = memo(({
       addToast("Liked!", "success");
       onLikeClick?.(e);
     }
+  };
+
+  const handleEmojiReaction = (emoji: { shortcode: string, url: string }) => {
+    setOptimisticReacted(`:${emoji.shortcode}:`);
+    triggerConfetti();
+    addToast(`Reacted with :${emoji.shortcode}:`, "success");
+    onEmojiReaction?.(emoji);
   };
 
   const handleRepostAction = () => {
@@ -285,28 +297,62 @@ export const PostActions = memo(({
           )}
         </div>
 
-        {/* Like */}
+        {/* Like & Custom Emoji */}
         <div className="flex items-center">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                onClick={handleLike}
-                className={cn(
-                  "hover:text-pink-500 hover:bg-pink-500/10 rounded-full",
-                  optimisticReacted === '+' && "text-pink-500"
-                )}
-                aria-label={optimisticReacted === '+' ? "Unlike" : "Like"}
-              >
-                <Heart 
-                  className={cn("size-5", optimisticReacted === '+' && "animate-in zoom-in-125 duration-300")} 
-                  fill={optimisticReacted === '+' ? 'currentColor' : 'none'} 
-                />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom">Like</TooltipContent>
-          </Tooltip>
+          <DropdownMenu modal={false}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <DropdownMenuTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className={cn(
+                      "hover:text-pink-500 hover:bg-pink-500/10 rounded-full",
+                      optimisticReacted && optimisticReacted !== "" && "text-pink-500"
+                    )}
+                    aria-label={optimisticReacted === '+' ? "Unlike" : "Like or React"}
+                  >
+                    <Heart 
+                      className={cn("size-5", optimisticReacted && optimisticReacted !== "" && "animate-in zoom-in-125 duration-300")} 
+                      fill={optimisticReacted && optimisticReacted !== "" ? 'currentColor' : 'none'} 
+                    />
+                  </Button>
+                </DropdownMenuTrigger>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">Like / React</TooltipContent>
+            </Tooltip>
+            
+            <DropdownMenuContent align="start" className="w-48 max-h-64 overflow-y-auto">
+              <DropdownMenuItem onClick={handleLike} className="gap-2 font-black uppercase tracking-widest text-[10px]">
+                <Heart className="size-4" fill={optimisticReacted === '+' ? 'currentColor' : 'none'} />
+                <span>{optimisticReacted === '+' ? "Unlike" : "Like"}</span>
+              </DropdownMenuItem>
+              
+              {emojis.length > 0 && (
+                <>
+                  <DropdownMenuSeparator />
+                  <div className="px-2 py-1.5 text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                    <Smile className="size-3" />
+                    Custom Emojis
+                  </div>
+                  <div className="grid grid-cols-4 gap-1 p-2">
+                    {emojis.map((emoji) => (
+                      <button
+                        key={emoji.shortcode}
+                        onClick={() => handleEmojiReaction(emoji)}
+                        className="p-1 hover:bg-accent rounded-md transition-colors aspect-square flex items-center justify-center"
+                        title={emoji.shortcode}
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={emoji.url} alt={emoji.shortcode} className="size-6 object-contain" />
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+          
           {variant === "feed" && (
             <button 
               className="text-xs cursor-pointer hover:underline ml-0.5 pr-2 py-2 outline-none focus-visible:underline focus-visible:text-pink-500"

@@ -216,6 +216,16 @@ export const PostCard = memo(({
     }
   };
 
+  const handleEmojiReaction = async (emoji: { shortcode: string, url: string }) => {
+    if (!ndk || !isReady) return;
+    try {
+      await reactToEvent(ndk, displayEvent, `:${emoji.shortcode}:`, emoji.url);
+    } catch (err) {
+      console.error(err);
+      addToast("Failed to send reaction", "error");
+    }
+  };
+
   const handlePin = async () => {
     if (!displayEvent.id) return;
     if (isPinned(displayEvent.id)) {
@@ -474,6 +484,7 @@ export const PostCard = memo(({
                 onZapClick={() => setShowZapModal(true)}
                 onReplyClick={() => setShowReplyModal(true)}
                 onLikeClick={handleLike}
+                onEmojiReaction={handleEmojiReaction}
                 onRepostClick={handleRepost}
                 onQuoteClick={handleQuote}
                 onShareClick={handleShare}

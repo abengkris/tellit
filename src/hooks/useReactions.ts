@@ -35,7 +35,7 @@ export function useReactions(eventId?: string) {
     seenEvents.current.clear();
 
     const filter: NDKFilter = {
-      kinds: [6, 7, 16, 9735],
+      kinds: [6, 7, 16, 17, 9735],
       "#e": [eventId],
     };
 
@@ -46,8 +46,8 @@ export function useReactions(eventId?: string) {
       setReactions((prev) => {
         const next = { ...prev };
 
-        // 1. Likes
-        if (event.kind === 7) {
+        // 1. Likes (Native NIP-25 and External NIP-73)
+        if (event.kind === 7 || event.kind === 17) {
           if ((event.content === "+" || event.content === "") && !next.likes.includes(event.pubkey)) {
             next.likes = [...next.likes, event.pubkey];
           }
@@ -73,7 +73,7 @@ export function useReactions(eventId?: string) {
                 next.zaps = [...next.zaps, { pubkey: zapperPubkey, amount }];
               }
             }
-          } catch (e) {
+          } catch {
             // Ignore malformed zaps
           }
         }
