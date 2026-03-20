@@ -201,6 +201,8 @@ export interface ArticleOptions {
   summary?: string;
   image?: string;
   tags?: string[];
+  isDraft?: boolean;
+  d?: string;
 }
 
 export const publishArticle = async (
@@ -209,9 +211,14 @@ export const publishArticle = async (
   options: ArticleOptions
 ): Promise<NDKEvent> => {
   const article = new NDKArticle(ndk);
+  article.kind = options.isDraft ? 30024 : 30023;
   article.content = content;
   article.title = options.title;
   
+  if (options.d) {
+    article.tags.push(["d", options.d]);
+  }
+
   if (options.summary) article.summary = options.summary;
   if (options.image) article.image = options.image;
 
@@ -219,6 +226,11 @@ export const publishArticle = async (
     options.tags.forEach(t => {
       article.tags.push(["t", t.toLowerCase()]);
     });
+  }
+
+  // Handle NIP-23 published_at
+  if (!options.isDraft) {
+    article.tags.push(["published_at", Math.floor(Date.now() / 1000).toString()]);
   }
 
   // Handle hashtags in content too

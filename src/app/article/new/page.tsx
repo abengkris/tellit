@@ -6,7 +6,7 @@ import { useAuthStore } from "@/store/auth";
 import { useUIStore } from "@/store/ui";
 import { useRouter } from "next/navigation";
 import { publishArticle } from "@/lib/actions/post";
-import { ArrowLeft, Loader2, Image as ImageIcon, Send, Eye, PenLine } from "lucide-react";
+import { ArrowLeft, Loader2, Image as ImageIcon, Send, Eye, PenLine, Save } from "lucide-react";
 import { ArticleRenderer } from "@/components/article/ArticleRenderer";
 import { NDKEvent } from "@nostr-dev-kit/ndk";
 import Image from "next/image";
@@ -23,30 +23,39 @@ export default function NewArticlePage() {
   const [content, setContent] = useState("");
   const [tags, setTags] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSavingDraft, setIsSavingDraft] = useState(false);
   const [previewMode, setPreviewMode] = useState(false);
 
-  const handlePublish = async () => {
+  const handlePublish = async (isDraft = false) => {
     if (!ndk || !title || !content) {
       addToast("Title and content are required", "error");
       return;
     }
 
-    setIsSubmitting(true);
+    if (isDraft) setIsSavingDraft(true);
+    else setIsSubmitting(true);
+
     try {
       const tagList = tags.split(",").map(t => t.trim()).filter(Boolean);
+      const slug = title.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+      
       await publishArticle(ndk, content, {
         title,
         summary,
         image,
-        tags: tagList
+        tags: tagList,
+        isDraft,
+        d: slug || Date.now().toString()
       });
-      addToast("Article published successfully!", "success");
-      router.push(`/${user?.npub}`);
+      
+      addToast(isDraft ? "Draft saved successfully!" : "Article published successfully!", "success");
+      if (!isDraft) router.push(`/${user?.npub}`);
     } catch (err) {
       console.error(err);
-      addToast("Failed to publish article", "error");
+      addToast(isDraft ? "Failed to save draft" : "Failed to publish article", "error");
     } finally {
       setIsSubmitting(false);
+      setIsSavingDraft(false);
     }
   };
 
@@ -85,9 +94,19 @@ export default function NewArticlePage() {
           >
             {previewMode ? <PenLine size={22} /> : <Eye size={22} />}
           </button>
+
           <button
-            onClick={handlePublish}
-            disabled={isSubmitting || !title || !content}
+            onClick={() => handlePublish(true)}
+            disabled={isSubmitting || isSavingDraft || !title || !content}
+            className="px-4 py-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-full font-black text-sm flex items-center gap-2 transition-all active:scale-95"
+          >
+            {isSavingDraft ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
+            <span>Draft</span>
+          </button>
+
+          <button
+            onClick={() => handlePublish(false)}
+            disabled={isSubmitting || isSavingDraft || !title || !content}
             className="px-6 py-2 bg-blue-500 hover:bg-blue-600 disabled:opacity-50 text-white rounded-full font-black text-sm flex items-center gap-2 shadow-lg shadow-blue-500/20 transition-all active:scale-95"
           >
             {isSubmitting ? <Loader2 className="animate-spin" size={18} /> : <Send size={18} />}
