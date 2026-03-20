@@ -3,7 +3,6 @@ import { NDKEvent } from "@nostr-dev-kit/ndk";
 export interface ScoringContext {
   viewerPubkey: string;
   followingSet: Set<string>;        
-  followsOfFollowsSet: Set<string>; 
   interactionHistory: Map<string, number>; 
   networkDegreeMap?: Map<string, number>; // pubkey -> degree (1 or 2)
   mutualsMap?: Map<string, number>;  // pubkey -> count of mutual followers
@@ -18,7 +17,6 @@ export interface ScoredEvent {
 
 const WEIGHTS = {
   isFollowing: 60,        
-  isFollowOfFollow: 25,   
   networkDegree1: 70,     // Server-side verified D1 (matches followingSet mostly)
   networkDegree2: 35,     // Server-side verified D2
   frequentInteraction: 40, 
@@ -59,10 +57,7 @@ export function scoreEvent(
   if (ctx.followingSet.has(event.pubkey)) {
     signals.isFollowing = WEIGHTS.isFollowing;
     score += WEIGHTS.isFollowing;
-  } else if (ctx.followsOfFollowsSet.has(event.pubkey)) {
-    signals.isFollowOfFollow = WEIGHTS.isFollowOfFollow;
-    score += WEIGHTS.isFollowOfFollow;
-  }
+  } 
 
   // Redis-backed Network Degree boost
   if (ctx.networkDegreeMap) {

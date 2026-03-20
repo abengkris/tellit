@@ -17,7 +17,6 @@ self.onmessage = (e: MessageEvent<{
   const scoringContext: ScoringContext = {
     ...context,
     followingSet: new Set(context.followingSet),
-    followsOfFollowsSet: new Set(context.followsOfFollowsSet),
     interactionHistory: new Map(context.interactionHistory),
     networkDegreeMap: context.networkDegreeMap ? new Map(Object.entries(context.networkDegreeMap)) : undefined,
     mutualsMap: context.mutualsMap ? new Map(Object.entries(context.mutualsMap)) : undefined,

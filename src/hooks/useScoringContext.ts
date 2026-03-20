@@ -19,23 +19,6 @@ export function useScoringContext(
     async function build() {
       if (!ndk) return;
 
-      const followsOfFollows = new Set<string>();
-      const contactListEvents = await ndk.fetchEvents({
-        kinds: [3],
-        authors: followingList.slice(0, 150), 
-      });
-
-      for (const ev of contactListEvents) {
-        for (const tag of ev.tags) {
-          if (tag[0] === "p" && tag[1]) {
-            followsOfFollows.add(tag[1]);
-          }
-        }
-      }
-      
-      followsOfFollows.delete(viewerPubkey!);
-      for (const pk of followingList) followsOfFollows.delete(pk);
-
       const interactionHistory = new Map<string, number>();
       const myRecentActivity = await ndk.fetchEvents({
         kinds: [1, 7], 
@@ -80,7 +63,6 @@ export function useScoringContext(
       setCtx({
         viewerPubkey: viewerPubkey!,
         followingSet: new Set(followingList),
-        followsOfFollowsSet: followsOfFollows,
         interactionHistory,
         networkDegreeMap,
       });
