@@ -403,6 +403,14 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
     const initApp = async () => {
       console.log("[NDKProvider] Initializing App...");
       
+      const handleSignerAuth = (url: string) => {
+        console.log("[NDKProvider] Signer requested authentication:", url);
+        stableDepsRef.current.addToast("Remote signer requires authentication.", "info", 10000, {
+          label: "Authorize",
+          onClick: () => window.open(url, '_blank')
+        });
+      };
+
       // 1. Try to restore signer from payload (Preferred method)
       if (stableDepsRef.current.signerPayload) {
         try {
@@ -410,6 +418,11 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
           if (restoredSigner) {
             console.log("[NDKProvider] Signer restored from payload");
             instance.signer = restoredSigner;
+            
+            if (restoredSigner instanceof NDKNip46Signer) {
+              restoredSigner.on("auth", handleSignerAuth);
+            }
+
             // Bunker signers might need to be "readied"
             if (stableDepsRef.current.loginType === 'bunker') {
               restoredSigner.blockUntilReady().catch(e => console.error("Bunker signer failed to ready:", e));
@@ -428,6 +441,7 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
             stableDepsRef.current.bunkerLocalNsec || undefined
           );
           instance.signer = signer;
+          signer.on("auth", handleSignerAuth);
           signer.blockUntilReady().catch(e => console.error("Bunker signer failed to ready:", e));
         } catch (e) {
           console.error("Failed to restore Bunker signer (legacy):", e);

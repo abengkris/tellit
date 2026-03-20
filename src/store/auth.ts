@@ -150,6 +150,12 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true });
         try {
           const signer = NDKNip46Signer.bunker(ndk, bunkerUri, localNsec);
+          
+          signer.on("auth", (url: string) => {
+            window.open(url, '_blank');
+            // We don't reset isLoading here because we're still waiting for blockUntilReady
+          });
+
           const user = await signer.blockUntilReady();
           const pubkey = user.pubkey;
 
