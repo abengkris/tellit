@@ -149,8 +149,8 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
         stableDepsRef.current.setBalance(balance?.amount || 0);
       });
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      wallet.on("transaction", (tx: any) => {
+      // @ts-expect-error - transaction event is emitted by NWC and Cashu wallets but might not be in base type
+      wallet.on("transaction", (tx) => {
         console.log(`[NDKProvider] Wallet transaction detected:`, tx);
         if (tx.direction === 'in') {
           stableDepsRef.current.addToast(`Received ${tx.amount / 1000} sats!`, "success");

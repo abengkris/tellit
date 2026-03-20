@@ -10,7 +10,7 @@ import { useUIStore } from "@/store/ui";
 import { useEmojis } from "@/hooks/useEmojis";
 import { useDrafts } from "@/hooks/useDrafts";
 import { useProfile } from "@/hooks/useProfile";
-import { NDKEvent, NDKTag } from "@nostr-dev-kit/ndk";
+import { NDKEvent, NDKTag, nip19 } from "@nostr-dev-kit/ndk";
 import { 
   ImageIcon, 
   Smile,

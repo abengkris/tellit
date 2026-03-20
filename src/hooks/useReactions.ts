@@ -35,7 +35,7 @@ export function useReactions(eventId?: string) {
     seenEvents.current.clear();
 
     const filter: NDKFilter = {
-      kinds: [6, 7, 16, 17, 9735],
+      kinds: [6, 7, 16, 17 as NDKKind, 9735],
       "#e": [eventId],
     };
 

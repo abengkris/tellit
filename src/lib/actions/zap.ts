@@ -39,6 +39,7 @@ export const createZapInvoice = async (
       
       // Explicitly add tags for addressable events (kind 30000+)
       if (target instanceof NDKEvent) {
+        if (!zapper.tags) zapper.tags = [];
         if (target.kind! >= 30000 && target.kind! < 40000) {
           const dTag = target.tags.find(t => t[0] === 'd')?.[1] || "";
           zapper.tags.push(["a", `${target.kind}:${target.pubkey}:${dTag}`]);

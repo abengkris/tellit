@@ -97,7 +97,7 @@ export function usePrivateRelayList(pubkey?: string) {
       try {
         const user = ndk.getUser({ pubkey });
         const event = await ndk.fetchEvent(
-          { kinds: [10013], authors: [pubkey] },
+          { kinds: [10013 as NDKKind], authors: [pubkey] },
           { 
             groupable: true, 
             cacheUsage: NDKSubscriptionCacheUsage.CACHE_FIRST 

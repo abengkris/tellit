@@ -1,4 +1,4 @@
-import NDK, { NDKEvent, NDKKind } from "@nostr-dev-kit/ndk";
+import NDK, { NDKEvent, NDKKind, NDKRelaySet } from "@nostr-dev-kit/ndk";
 import { addClientTag } from "@/lib/utils/nostr";
 
 /**
@@ -35,7 +35,9 @@ export const requestVanish = async (
     for (const url of relays) {
       try {
         const relay = ndk.pool.getRelay(url);
-        await event.publish(relay);
+        if (relay) {
+          await event.publish(NDKRelaySet.fromRelay(relay, ndk));
+        }
       } catch (e) {
         console.error(`Failed to publish vanish request to ${url}:`, e);
       }

@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import NDK, { NDKEvent } from "@nostr-dev-kit/ndk";
-import { RelayPoolMock, UserGenerator, EventGenerator, SignerGenerator } from "@nostr-dev-kit/ndk/test";
+import NDK from "@nostr-dev-kit/ndk";
+import { RelayPoolMock, EventGenerator, SignerGenerator } from "@nostr-dev-kit/ndk/test";
 import { reportContent } from "../report";
 
 describe("reportContent (NIP-56)", () => {
@@ -16,7 +16,8 @@ describe("reportContent (NIP-56)", () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     EventGenerator.setNDK(ndk as any);
      
-    ndk.signer = SignerGenerator.getSigner("alice");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ndk.signer = SignerGenerator.getSigner("alice") as any;
   });
 
   afterEach(() => {
