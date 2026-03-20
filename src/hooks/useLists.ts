@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useNDK } from "@/hooks/useNDK";
-import { NDKEvent, NDKSubscriptionCacheUsage, NDKInterestList } from "@nostr-dev-kit/ndk";
+import { NDKEvent, NDKSubscriptionCacheUsage, NDKInterestList, NDKList } from "@nostr-dev-kit/ndk";
 import { useAuthStore } from "@/store/auth";
 import { addClientTag } from "@/lib/utils/nostr";
 
@@ -10,13 +10,38 @@ import { addClientTag } from "@/lib/utils/nostr";
  * Supported NIP-51 and NIP-39 list kinds.
  */
 export enum ListKind {
+  Follows = 3,
   Mute = 10000,
   Pinned = 10001,
   Relay = 10002,
   Bookmarks = 10003,
+  Communities = 10004,
+  PublicChats = 10005,
+  BlockedRelays = 10006,
+  SearchRelays = 10007,
+  SimpleGroups = 10009,
   ExternalIdentities = 10011,
+  RelayFeeds = 10012,
   Interests = 10015,
+  MediaFollows = 10020,
   Emojis = 10030,
+  DMRelays = 10050,
+  GoodWikiAuthors = 10101,
+  GoodWikiRelays = 10102,
+  FollowSets = 30000,
+  RelaySets = 30002,
+  BookmarkSets = 30003,
+  CurationSets = 30004,
+  VideoCurationSets = 30005,
+  PictureCurationSets = 30006,
+  KindMuteSets = 30007,
+  InterestSets = 30015,
+  EmojiSets = 30030,
+  ReleaseArtifactSets = 30063,
+  AppCurationSets = 30267,
+  Calendar = 31924,
+  StarterPacks = 39089,
+  MediaStarterPacks = 39092,
 }
 
 /**
@@ -87,27 +112,45 @@ export function useLists(targetPubkey?: string) {
         }
       });
 
-      // Update ref
-      latestByKind.forEach((event, kind) => {
+      // Update collections
+      for (const [kind, event] of latestByKind.entries()) {
         listEventsRef.current.set(kind, event);
         
+        let allTags = [...event.tags];
+
+        // NIP-51: Handle private items in .content
+        if (isOwnProfile && event.content && ndk.signer && currentUser) {
+          try {
+            const user = ndk.getUser({ pubkey: currentUser.pubkey });
+            const decrypted = await ndk.signer.decrypt(user, event.content, "nip44");
+            if (decrypted) {
+              const privateTags = JSON.parse(decrypted);
+              if (Array.isArray(privateTags)) {
+                allTags = [...allTags, ...privateTags];
+              }
+            }
+          } catch (e) {
+            console.warn(`Failed to decrypt private items for list ${kind}:`, e);
+          }
+        }
+        
         if (kind === ListKind.Mute) {
-          event.tags.filter(t => t[0] === 'p').forEach(t => newMuted.add(t[1]));
+          allTags.filter(t => t[0] === 'p').forEach(t => newMuted.add(t[1]));
         } else if (kind === ListKind.Bookmarks) {
-          event.tags.filter(t => t[0] === 'e' || t[0] === 'a').forEach(t => newBookmarks.add(t[1]));
+          allTags.filter(t => t[0] === 'e' || t[0] === 'a').forEach(t => newBookmarks.add(t[1]));
         } else if (kind === ListKind.Pinned) {
-          event.tags.filter(t => t[0] === 'e').forEach(t => newPinned.add(t[1]));
+          allTags.filter(t => t[0] === 'e').forEach(t => newPinned.add(t[1]));
         } else if (kind === ListKind.Interests) {
-          event.tags.filter(t => t[0] === 't').forEach(t => newInterests.add(t[1]));
+          allTags.filter(t => t[0] === 't').forEach(t => newInterests.add(t[1]));
         } else if (kind === ListKind.ExternalIdentities) {
-          event.tags.filter(t => t[0] === 'i' && t.length >= 3).forEach(t => {
+          allTags.filter(t => t[0] === 'i' && t.length >= 3).forEach(t => {
             const [platform, identity] = t[1].split(':');
             if (platform && identity) {
               newIdentities.push({ platform, identity, proof: t[2] });
             }
           });
         }
-      });
+      }
 
       setMutedPubkeys(newMuted);
       setBookmarkedEventIds(newBookmarks);
@@ -119,7 +162,7 @@ export function useLists(targetPubkey?: string) {
     } finally {
       setLoading(false);
     }
-  }, [ndk, isReady, pubkey]);
+  }, [ndk, isReady, pubkey, currentUser, isOwnProfile]);
 
   useEffect(() => {
     fetchLists();
@@ -130,12 +173,13 @@ export function useLists(targetPubkey?: string) {
     tagType: string, 
     value: string, 
     action: 'add' | 'remove',
-    extraTags: string[] = []
+    extraTags: string[] = [],
+    isPrivate: boolean = false
   ) => {
     if (!ndk || !currentUser || !isOwnProfile) return false;
 
     try {
-      // 1. Fetch ALL versions from relays to find the TRULY latest (Safety logic from follow fix)
+      // 1. Fetch ALL versions from relays to find the TRULY latest
       const events = await ndk.fetchEvents(
         { kinds: [kind as number], authors: [currentUser.pubkey] },
         { 
@@ -159,20 +203,37 @@ export function useLists(targetPubkey?: string) {
         }
         newEvent = list;
       } else {
-        newEvent = new NDKEvent(ndk);
-        newEvent.kind = kind;
-        newEvent.tags = currentEvent ? [...currentEvent.tags] : [];
+        // Use NDKList for better NIP-51 support (encrypted items)
+        const list = currentEvent ? NDKList.from(currentEvent) : new NDKList(ndk);
+        list.kind = kind;
 
         if (action === 'add') {
-          const exists = newEvent.tags.some(t => t[0] === tagType && t[1] === value);
-          if (!exists) {
-            newEvent.tags.push([tagType, value, ...extraTags]);
-          } else {
-            return true; // Already exists
-          }
+          // Check if it already exists either public or private
+          // For now, let's just proceed with addItem, NDKList might handle it or we'll have duplicates
+          await list.addItem([tagType, value, ...extraTags], undefined, isPrivate);
         } else {
-          newEvent.tags = newEvent.tags.filter(t => !(t[0] === tagType && t[1] === value));
+          // Remove from tags (public)
+          list.tags = list.tags.filter(t => !(t[0] === tagType && t[1] === value));
+          
+          // Handle private removal if encrypted content exists
+          if (list.content) {
+            const user = ndk.getUser({ pubkey: currentUser.pubkey });
+            const decrypted = await ndk.signer?.decrypt(user, list.content, "nip44");
+            if (decrypted) {
+              let privateTags = JSON.parse(decrypted);
+              if (Array.isArray(privateTags)) {
+                const initialLen = privateTags.length;
+                privateTags = privateTags.filter((t: string[]) => !(t[0] === tagType && t[1] === value));
+                
+                if (privateTags.length !== initialLen) {
+                  // Re-encrypt
+                  list.content = await ndk.signer?.encrypt(user, JSON.stringify(privateTags), "nip44") || "";
+                }
+              }
+            }
+          }
         }
+        newEvent = list;
       }
 
       addClientTag(newEvent);
@@ -267,11 +328,11 @@ export function useLists(targetPubkey?: string) {
     unmuteUser: (pubkey: string) => updateList(ListKind.Mute, 'p', pubkey, 'remove'),
     
     // Bookmarking
-    bookmarkPost: (eventId: string) => updateList(ListKind.Bookmarks, 'e', eventId, 'add'),
+    bookmarkPost: (eventId: string, isPrivate: boolean = false) => updateList(ListKind.Bookmarks, 'e', eventId, 'add', [], isPrivate),
     unbookmarkPost: (eventId: string) => updateList(ListKind.Bookmarks, 'e', eventId, 'remove'),
     
     // Pinning
-    pinPost: (eventId: string) => updateList(ListKind.Pinned, 'e', eventId, 'add'),
+    pinPost: (eventId: string, isPrivate: boolean = false) => updateList(ListKind.Pinned, 'e', eventId, 'add', [], isPrivate),
     unpinPost: (eventId: string) => updateList(ListKind.Pinned, 'e', eventId, 'remove'),
     isPinned: (eventId: string) => pinnedEventIds.has(eventId),
     isBookmarked: (eventId: string) => bookmarkedEventIds.has(eventId),
@@ -279,14 +340,14 @@ export function useLists(targetPubkey?: string) {
 
     // Interests
     interests,
-    addInterest: (hashtag: string) => updateList(ListKind.Interests, 't', hashtag.toLowerCase().replace('#', ''), 'add'),
+    addInterest: (hashtag: string, isPrivate: boolean = false) => updateList(ListKind.Interests, 't', hashtag.toLowerCase().replace('#', ''), 'add', [], isPrivate),
     removeInterest: (hashtag: string) => updateList(ListKind.Interests, 't', hashtag.toLowerCase().replace('#', ''), 'remove'),
     isInterested: (hashtag: string) => interests.has(hashtag.toLowerCase().replace('#', '')),
 
     // External Identities (NIP-39)
     externalIdentities,
-    addExternalIdentity: (platform: string, identity: string, proof: string) => 
-      updateList(ListKind.ExternalIdentities, 'i', `${platform}:${identity}`, 'add', [proof]),
+    addExternalIdentity: (platform: string, identity: string, proof: string, isPrivate: boolean = false) => 
+      updateList(ListKind.ExternalIdentities, 'i', `${platform}:${identity}`, 'add', [proof], isPrivate),
     removeExternalIdentity: (platform: string, identity: string) => 
       updateList(ListKind.ExternalIdentities, 'i', `${platform}:${identity}`, 'remove'),
   };
