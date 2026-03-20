@@ -54,7 +54,7 @@ export function useProfile(pubkey?: string) {
         const cachedEvent = await ndk.fetchEvent({
           kinds: [0],
           authors: [pubkey]
-        }, { cacheUsage: NDKSubscriptionCacheUsage.CACHE_ONLY });
+        }, { cacheUsage: NDKSubscriptionCacheUsage.ONLY_CACHE });
 
         if (cachedEvent) {
           try {
