@@ -36,7 +36,7 @@ export const requestVanish = async (
       try {
         const relay = ndk.pool.getRelay(url);
         if (relay) {
-          await event.publish(NDKRelaySet.fromRelay(relay, ndk));
+          await event.publish(new NDKRelaySet(new Set([relay]), ndk));
         }
       } catch (e) {
         console.error(`Failed to publish vanish request to ${url}:`, e);

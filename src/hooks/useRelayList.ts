@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNDK } from "@/hooks/useNDK";
-import { NDKSubscriptionCacheUsage } from "@nostr-dev-kit/ndk";
+import { NDKSubscriptionCacheUsage, NDKKind } from "@nostr-dev-kit/ndk";
 
 export interface RelayMetadata {
   url: string;

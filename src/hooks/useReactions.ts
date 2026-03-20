@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { NDKEvent, NDKFilter } from "@nostr-dev-kit/ndk";
+import { NDKEvent, NDKFilter, NDKKind } from "@nostr-dev-kit/ndk";
 import { useNDK } from "@/hooks/useNDK";
 
 export interface EventReactions {
