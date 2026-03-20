@@ -7,6 +7,7 @@ import { useAffiliation } from '@/hooks/useAffiliation';
 import { useProfile } from '@/hooks/useProfile';
 import { useUserStatus } from '@/hooks/useUserStatus';
 import { shortenPubkey, toNpub } from '@/lib/utils/nip19';
+import { getHandleTier } from '@/lib/utils/identity';
 import { Emojify } from './Emojify';
 import { AffiliationBadge } from './AffiliationBadge';
 import Link from 'next/link';
@@ -44,6 +45,7 @@ export const UserIdentity: React.FC<UserIdentityProps> = ({
   const status = useNIP05(pubkey, nip05);
   const affiliationPubkey = useAffiliation(nip05);
   const { generalStatus } = useUserStatus(pubkey);
+  const handleTier = getHandleTier(nip05);
 
   const [nip05Name, domain] = nip05?.split('@') || [];
   const domainPart = domain?.split('.')[0];
@@ -87,8 +89,11 @@ export const UserIdentity: React.FC<UserIdentityProps> = ({
               size={isPost ? 14 : 22}
               className={cn(
                 "shrink-0",
-                isTellIt ? "text-blue-500 fill-blue-500/10" : 
-                (isOrg ? "text-amber-500 fill-amber-500/10" : "text-primary fill-primary/10")
+                isTellIt && handleTier === 'ultra' ? "text-amber-500 fill-amber-500/10" : 
+                isTellIt && handleTier === 'premium' ? "text-cyan-500 fill-cyan-500/10" :
+                isTellIt && handleTier === 'standard' ? "text-blue-500 fill-blue-500/10" :
+                isOrg ? "text-amber-500 fill-amber-500/10" : 
+                "text-primary fill-primary/10"
               )}
               aria-hidden="true"
             />

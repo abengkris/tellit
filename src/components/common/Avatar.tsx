@@ -9,7 +9,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import Image from "next/image";
 import { useNIP05 } from "@/hooks/useNIP05";
-import { isPremiumHandle } from "@/lib/utils/identity";
+import { getHandleTier, HandleTier } from "@/lib/utils/identity";
 
 interface AvatarProps {
   pubkey: string;
@@ -18,7 +18,7 @@ interface AvatarProps {
   className?: string;
   isLoading?: boolean;
   nip05?: string;
-  isPremium?: boolean; // Can be passed manually
+  tier?: HandleTier; // Manual override
   "aria-hidden"?: boolean | "true" | "false";
 }
 
@@ -27,7 +27,7 @@ interface AvatarProps {
  * 1. Immediate fallback to Robohash if src is missing
  * 2. Next.js Image optimization
  * 3. Consistent styling across the app
- * 4. Premium gold/orange glow for valid premium handles
+ * 4. Tiered glow for Tell it! handles (Ultra, Premium, Standard)
  */
 export const Avatar: React.FC<AvatarProps> = ({ 
   pubkey, 
@@ -36,15 +36,15 @@ export const Avatar: React.FC<AvatarProps> = ({
   className = "",
   isLoading = false,
   nip05,
-  isPremium: isPremiumProp,
+  tier: tierProp,
   "aria-hidden": ariaHidden
 }) => {
   const robohashUrl = `https://robohash.org/${pubkey}?set=set1`;
   const displayUrl = src || robohashUrl;
 
-  // Internal premium check if nip05 is provided
+  // Internal tier check if nip05 is provided
   const nip05Status = useNIP05(pubkey, nip05);
-  const isActuallyPremium = isPremiumProp ?? (nip05Status === 'valid' && isPremiumHandle(nip05));
+  const activeTier = tierProp ?? (nip05Status === 'valid' ? getHandleTier(nip05) : 'none');
 
   if (isLoading) {
     return (
@@ -56,10 +56,21 @@ export const Avatar: React.FC<AvatarProps> = ({
     );
   }
 
-  const premiumGlow = isActuallyPremium ? "ring-2 ring-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.5)] dark:ring-amber-500/80 dark:shadow-[0_0_20px_rgba(245,158,11,0.3)] border-none" : "";
+  // Tiered glow styles
+  let tierStyle = "";
+  if (activeTier === 'ultra') {
+    // Ultra (Gold/Amber)
+    tierStyle = "ring-2 ring-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.5)] dark:ring-amber-500/80 dark:shadow-[0_0_20px_rgba(245,158,11,0.3)] border-none";
+  } else if (activeTier === 'premium') {
+    // Premium (Diamond/Cyan)
+    tierStyle = "ring-2 ring-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.5)] dark:ring-cyan-500/80 dark:shadow-[0_0_20px_rgba(6,182,212,0.3)] border-none";
+  } else if (activeTier === 'standard') {
+    // Standard (Blue)
+    tierStyle = "ring-2 ring-blue-500/50 dark:ring-blue-400/30 border-none shadow-none";
+  }
 
   return (
-    <ShadcnAvatar size={size} className={`${premiumGlow} ${className}`} aria-hidden={ariaHidden}>
+    <ShadcnAvatar size={size} className={`${tierStyle} ${className}`} aria-hidden={ariaHidden}>
       <AvatarImage asChild src={displayUrl}>
         <Image
           src={displayUrl}

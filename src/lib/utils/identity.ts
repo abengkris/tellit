@@ -144,14 +144,27 @@ export async function resolveVanitySlug(slug: string): Promise<string | null> {
   }
 }
 
+export type HandleTier = 'ultra' | 'premium' | 'standard' | 'none';
+
 /**
- * Checks if a NIP-05 identifier represents a premium Tell it! handle.
- * Premium handles are 1-3 characters on the tellit.id domain.
+ * Checks the tier of a Tell it! handle based on its length.
+ * Ultra: 1 character
+ * Premium: 2-3 characters
+ * Standard: 4+ characters
  */
-export function isPremiumHandle(nip05: string | null | undefined): boolean {
-  if (!nip05 || !nip05.endsWith("@tellit.id")) return false;
+export function getHandleTier(nip05: string | null | undefined): HandleTier {
+  if (!nip05 || !nip05.endsWith("@tellit.id")) return 'none';
   
   const [name] = nip05.split("@");
-  return !!name && name.length >= 1 && name.length <= 3;
+  if (!name) return 'none';
+  
+  // 1 character is Ultra
+  if (name.length === 1) return 'ultra';
+  
+  // 2-3 characters is Premium
+  if (name.length >= 2 && name.length <= 3) return 'premium';
+  
+  // 4+ characters is Standard
+  return 'standard';
 }
 
