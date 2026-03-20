@@ -17,7 +17,8 @@ import {
   X, 
   Loader2, 
   BarChart2,
-  Users
+  Users,
+  Type
 } from "lucide-react";
 import { Avatar } from "../common/Avatar";
 import { PollEditor } from "./PollEditor";
@@ -26,6 +27,7 @@ import { useMentionSearch } from "@/hooks/useMentionSearch";
 import { uploadToBlossom, formatImeta, getTagValue } from "@/lib/upload";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -57,6 +59,8 @@ export const PostComposer: React.FC<PostComposerProps> = ({
   const { draft, updateDraft, clearDraft, isLoaded } = useDrafts(draftKey);
 
   const [content, setContent] = useState("");
+  const [subject, setSubject] = useState("");
+  const [showSubject, setShowSubject] = useState(false);
   const [isPosting, setIsPosting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -158,9 +162,20 @@ export const PostComposer: React.FC<PostComposerProps> = ({
 
       if (showPollEditor) {
         const validOptions = pollOptions.filter(o => o.label.trim().length > 0);
+        let pollSubject = (showSubject && subject.trim()) ? subject.trim() : undefined;
+        
+        // Inherit subject if it's a reply and no subject provided
+        if (!pollSubject && replyTo) {
+          const parentSubject = replyTo.tags.find(t => t[0] === 'subject')?.[1];
+          if (parentSubject) {
+            pollSubject = parentSubject.startsWith("Re: ") ? parentSubject : `Re: ${parentSubject}`;
+          }
+        }
+
         event = await createPoll(ndk, finalContent, {
           options: validOptions,
           endsAt: Math.floor(Date.now() / 1000) + 86400, // 24h default
+          subject: pollSubject
         });
       } else {
         const tags: NDKTag[] = [];
@@ -189,7 +204,8 @@ export const PostComposer: React.FC<PostComposerProps> = ({
           replyTo,
           quoteEvent,
           tags,
-          zapSplits
+          zapSplits,
+          subject: (showSubject && subject.trim()) ? subject.trim() : undefined
         };
 
         event = await publishPost(ndk, finalContent, options);
@@ -198,6 +214,8 @@ export const PostComposer: React.FC<PostComposerProps> = ({
       if (event) {
         addToast(showPollEditor ? "Poll published!" : "Posted successfully!", "success");
         setContent("");
+        setSubject("");
+        setShowSubject(false);
         setMediaFiles([]);
         setShowPollEditor(false);
         setShowCollaboratorEditor(false);
@@ -289,6 +307,19 @@ export const PostComposer: React.FC<PostComposerProps> = ({
             rows={3}
             className="w-full bg-transparent text-lg resize-none border-none focus-visible:ring-0 placeholder:text-muted-foreground py-2 shadow-none min-h-[100px]"
           />
+
+          {showSubject && (
+            <div className="mb-4 animate-in slide-in-from-top-2 duration-200">
+              <Input
+                type="text"
+                value={subject}
+                onChange={(e) => setSubject(e.target.value)}
+                placeholder="Subject (optional)"
+                className="w-full bg-muted/30 border border-border rounded-lg h-10 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                maxLength={80}
+              />
+            </div>
+          )}
 
           {showMentionPicker && mentionResults.length > 0 && (
             <Card className="absolute z-50 mt-1 w-64 shadow-2xl border-border overflow-hidden animate-in fade-in zoom-in-95 duration-200">
@@ -401,6 +432,30 @@ export const PostComposer: React.FC<PostComposerProps> = ({
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent side="bottom">Add emoji</TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    type="button"
+                    variant={showSubject ? "secondary" : "ghost"}
+                    size="icon"
+                    onClick={() => {
+                      setShowSubject(!showSubject);
+                      if (!showSubject && replyTo) {
+                        const parentSubject = replyTo.tags.find(t => t[0] === 'subject')?.[1];
+                        if (parentSubject) {
+                          setSubject(parentSubject.startsWith("Re: ") ? parentSubject : `Re: ${parentSubject}`);
+                        }
+                      }
+                    }}
+                    className={cn("text-primary hover:bg-primary/10 rounded-full", showSubject && "bg-primary/10")}
+                    aria-label="Add subject"
+                  >
+                    <Type className="size-5" aria-hidden="true" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">Add subject</TooltipContent>
               </Tooltip>
 
               <Tooltip>

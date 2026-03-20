@@ -16,6 +16,7 @@ interface PostOptions {
   tags?: NDKTag[];
   emojis?: Map<string, string>;
   zapSplits?: ZapSplit[];
+  subject?: string;
 }
 
 export const publishPost = async (
@@ -23,9 +24,21 @@ export const publishPost = async (
   content: string,
   options?: PostOptions
 ): Promise<NDKEvent> => {
+  // Determine subject if not provided but it's a reply
+  let effectiveSubject = options?.subject;
+  if (!effectiveSubject && options?.replyTo) {
+    const parentSubject = options.replyTo.tags.find(t => t[0] === 'subject')?.[1];
+    if (parentSubject) {
+      effectiveSubject = parentSubject.startsWith("Re: ") ? parentSubject : `Re: ${parentSubject}`;
+    }
+  }
+
   // If poll options provided, use kind 1068
   if (options?.pollOptions) {
-    return createPoll(ndk, content, options.pollOptions);
+    return createPoll(ndk, content, {
+      ...options.pollOptions,
+      subject: effectiveSubject
+    });
   }
 
   const event = new NDKEvent(ndk);
@@ -34,6 +47,11 @@ export const publishPost = async (
 
   if (options?.tags) {
     event.tags = [...options.tags];
+  }
+
+  // Handle NIP-14 Subject
+  if (effectiveSubject) {
+    event.tags.push(["subject", effectiveSubject]);
   }
 
   // Handle Zap Splits (NIP-57 / NIP-01 zap tags)

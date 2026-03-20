@@ -368,6 +368,19 @@ export const PostCard = memo(({
               variant={variant}
             />
 
+            {(() => {
+              const subject = displayEvent.tags.find(t => t[0] === 'subject')?.[1];
+              if (!subject) return null;
+              return (
+                <div className={cn(
+                  "font-bold text-foreground mb-1",
+                  variant === "detail" ? "text-2xl mt-4" : "ml-14 text-base"
+                )}>
+                  {subject}
+                </div>
+              );
+            })()}
+
             <div className={cn(
               "mt-2",
               variant === "detail" ? "text-xl sm:text-2xl leading-normal mb-6 font-normal tracking-tight" : "text-[15px] sm:text-[16px] ml-14 leading-relaxed"

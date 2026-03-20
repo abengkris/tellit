@@ -11,6 +11,7 @@ export interface CreatePollOptions {
   pollType?: "singlechoice" | "multiplechoice";
   endsAt?: number;
   relays?: string[];
+  subject?: string;
 }
 
 /**
@@ -29,6 +30,11 @@ export const createPoll = async (
     const event = new NDKEvent(ndk);
     event.kind = 1068 as NDKKind;
     event.content = content;
+
+    // Add NIP-14 Subject
+    if (pollOptions.subject) {
+      event.tags.push(["subject", pollOptions.subject]);
+    }
 
     // Add options
     pollOptions.options.forEach((opt) => {
