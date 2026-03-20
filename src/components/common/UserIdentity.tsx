@@ -1,10 +1,11 @@
 'use client';
 
 import React, { useState } from 'react';
-import { BadgeCheck, AlertCircle, ExternalLink } from 'lucide-react';
+import { BadgeCheck, AlertCircle, ExternalLink, Activity } from 'lucide-react';
 import { useNIP05 } from '@/hooks/useNIP05';
 import { useAffiliation } from '@/hooks/useAffiliation';
 import { useProfile } from '@/hooks/useProfile';
+import { useUserStatus } from '@/hooks/useUserStatus';
 import { shortenPubkey, toNpub } from '@/lib/utils/nip19';
 import { Emojify } from './Emojify';
 import { AffiliationBadge } from './AffiliationBadge';
@@ -42,6 +43,7 @@ export const UserIdentity: React.FC<UserIdentityProps> = ({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const status = useNIP05(pubkey, nip05);
   const affiliationPubkey = useAffiliation(nip05);
+  const { generalStatus } = useUserStatus(pubkey);
 
   const [nip05Name, domain] = nip05?.split('@') || [];
   const domainPart = domain?.split('.')[0];
@@ -105,6 +107,16 @@ export const UserIdentity: React.FC<UserIdentityProps> = ({
             className="text-destructive shrink-0"
             aria-hidden="true"
           />
+        )}
+
+        {/* NIP-38 User Status */}
+        {isPost && generalStatus?.content && (
+          <div className="flex items-center gap-1 ml-1 px-1.5 py-0.5 bg-primary/5 dark:bg-primary/10 border border-primary/10 dark:border-primary/20 text-primary rounded-full text-[9px] font-black uppercase tracking-tighter shrink-0 animate-in fade-in zoom-in-95">
+            <Activity size={10} aria-hidden="true" />
+            <span className="max-w-[80px] truncate">
+              <Emojify text={generalStatus.content} tags={tags} />
+            </span>
+          </div>
         )}
       </div>
 
