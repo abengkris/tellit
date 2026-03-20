@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo } from "react";
 import { useNDK } from "./useNDK";
-import { useWalletStore, WalletType } from "@/store/wallet";
+import { useWalletStore } from "@/store/wallet";
 import { 
   NDKNWCWallet, 
   NDKCashuWallet, 
@@ -77,6 +77,30 @@ export function useWallet() {
     }
   }, [wallet, addToast]);
 
+  const makeInvoice = useCallback(async (amountMsat: number, description?: string): Promise<string | null> => {
+    if (!wallet) {
+      addToast("No wallet connected", "error");
+      return null;
+    }
+
+    try {
+      // Check if wallet supports making invoices
+      // @ts-expect-error - makeInvoice might be missing from some NDK types
+      if (typeof wallet.makeInvoice !== 'function') {
+        addToast("Wallet does not support receiving payments", "error");
+        return null;
+      }
+
+      // @ts-expect-error - makeInvoice might be missing from some NDK types
+      const invoice = await wallet.makeInvoice(amountMsat, description);
+      return invoice;
+    } catch (err) {
+      console.error("[useWallet] Failed to make invoice:", err);
+      addToast("Failed to create invoice", "error");
+      return null;
+    }
+  }, [wallet, addToast]);
+
   const zap = useCallback(async (target: NDKEvent | NDKUser, amount: number, comment?: string): Promise<boolean> => {
     if (!ndk) return false;
 
@@ -103,6 +127,7 @@ export function useWallet() {
     balance,
     isLocked,
     payInvoice,
+    makeInvoice,
     zap,
     fetchTransactions,
     refreshBalance: () => wallet?.updateBalance?.()

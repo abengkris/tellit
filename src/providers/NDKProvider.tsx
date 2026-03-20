@@ -149,6 +149,18 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
         stableDepsRef.current.setBalance(balance?.amount || 0);
       });
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      wallet.on("transaction", (tx: any) => {
+        console.log(`[NDKProvider] Wallet transaction detected:`, tx);
+        if (tx.direction === 'in') {
+          stableDepsRef.current.addToast(`Received ${tx.amount / 1000} sats!`, "success");
+        } else if (tx.direction === 'out') {
+          stableDepsRef.current.addToast(`Sent ${tx.amount / 1000} sats`, "info");
+        }
+        // Refresh balance on any transaction
+        wallet.updateBalance?.().catch(() => {});
+      });
+
       // Status check for immediate ready
       if (wallet.status === "ready") {
         setIsWalletReady(true);

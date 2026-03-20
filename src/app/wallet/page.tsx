@@ -2,7 +2,6 @@
 
 import React, { useState } from "react";
 import { useWalletStore } from "@/store/wallet";
-import { useNDK } from "@/hooks/useNDK";
 import { useWallet } from "@/hooks/useWallet";
 import { useAuthStore } from "@/store/auth";
 import { useUIStore } from "@/store/ui";
@@ -25,12 +24,22 @@ import {
   Coins,
   X,
   Loader2,
-  Globe
+  Globe,
+  QrCode,
+  Copy,
+  CheckCircle2
 } from "lucide-react";
 import { format } from "date-fns";
 import { WalletPinModal } from "@/components/common/WalletPinModal";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle 
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -50,7 +59,10 @@ export default function WalletPage() {
     lock
   } = useWalletStore();
   
-  const { refreshBalance } = useWallet();
+  const { 
+    refreshBalance,
+    makeInvoice
+  } = useWallet();
   const { transactions, isLoading: isLoadingTx, refresh: refreshHistory } = useWalletHistory();
   const { isLoggedIn } = useAuthStore();
   const { addToast, defaultZapAmount, setDefaultZapAmount, hideBalance, setHideBalance } = useUIStore();
@@ -60,6 +72,14 @@ export default function WalletPage() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showPinModal, setShowPinModal] = useState(false);
   const [newMintUrl, setNewMintUrl] = useState("");
+  
+  // Receive state
+  const [showReceiveModal, setShowReceiveModal] = useState(false);
+  const [receiveAmount, setReceiveAmount] = useState("");
+  const [receiveDescription, setReceiveDescription] = useState("");
+  const [generatedInvoice, setGeneratedInvoice] = useState<string | null>(null);
+  const [isGeneratingInvoice, setIsGeneratedInvoice] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const handleRefresh = async () => {
     if (isLocked) {
@@ -112,6 +132,28 @@ export default function WalletPage() {
       setWalletType('none');
       setNwcPairingCode(null);
       addToast("Wallet disconnected", "info");
+    }
+  };
+
+  const handleGenerateInvoice = async () => {
+    if (!receiveAmount) return;
+    setIsGeneratedInvoice(true);
+    try {
+      const invoice = await makeInvoice(parseInt(receiveAmount) * 1000, receiveDescription);
+      if (invoice) {
+        setGeneratedInvoice(invoice);
+      }
+    } finally {
+      setIsGeneratedInvoice(false);
+    }
+  };
+
+  const copyInvoice = () => {
+    if (generatedInvoice) {
+      navigator.clipboard.writeText(generatedInvoice);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+      addToast("Invoice copied!", "success");
     }
   };
 
@@ -211,6 +253,16 @@ export default function WalletPage() {
                 {hideBalance ? <Eye size={18} className="mr-2" /> : <EyeOff size={18} className="mr-2" />}
                 {hideBalance ? "Show" : "Hide"}
               </Button>
+              {walletType === 'nwc' && walletInfo?.methods?.includes('make_invoice') && (
+                <Button 
+                  variant="secondary" 
+                  className="flex-1 bg-white/10 hover:bg-white/20 border-none text-white font-bold h-12 rounded-2xl"
+                  onClick={() => setShowReceiveModal(true)}
+                >
+                  <QrCode size={18} className="mr-2" />
+                  Receive
+                </Button>
+              )}
               <Button 
                 variant="destructive" 
                 className="flex-1 bg-red-500/20 hover:bg-red-500/40 border-none font-bold h-12 rounded-2xl"
@@ -367,6 +419,38 @@ export default function WalletPage() {
 
         {/* Settings & Security */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          {walletType === 'nwc' && walletInfo && (
+            <section className="sm:col-span-2">
+              <h2 className="text-sm font-black uppercase tracking-widest text-gray-500 mb-4 flex items-center gap-2">
+                <ShieldCheck size={16} /> Connection Details
+              </h2>
+              <Card className="rounded-3xl border-none bg-white dark:bg-black shadow-sm p-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Service Name</p>
+                    <p className="font-bold text-lg">{walletInfo.alias || "NWC Wallet"}</p>
+                  </div>
+                  {walletInfo.network && (
+                    <div className="space-y-1">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Network</p>
+                      <Badge className="bg-blue-500/10 text-blue-500 border-none font-black uppercase text-[10px]">{walletInfo.network}</Badge>
+                    </div>
+                  )}
+                  <div className="sm:col-span-2 space-y-3">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Supported Methods</p>
+                    <div className="flex flex-wrap gap-2">
+                      {walletInfo.methods?.map(m => (
+                        <Badge key={m} variant="secondary" className="rounded-lg font-bold text-[10px] bg-muted/50 border-none px-2 py-1">
+                          {m.replace('_', ' ')}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            </section>
+          )}
+
           <section>
             <h2 className="text-sm font-black uppercase tracking-widest text-gray-500 mb-4 flex items-center gap-2"><Shield size={16} /> Security</h2>
             <Card className="rounded-3xl border-none bg-white dark:bg-black shadow-sm p-5">
@@ -412,6 +496,95 @@ export default function WalletPage() {
       </div>
 
       <WalletPinModal isOpen={showPinModal} onClose={() => setShowPinModal(false)} />
+
+      {/* Receive Modal */}
+      <Dialog open={showReceiveModal} onOpenChange={(open) => {
+        if (!open) {
+          setShowReceiveModal(false);
+          setGeneratedInvoice(null);
+          setReceiveAmount("");
+          setReceiveDescription("");
+        }
+      }}>
+        <DialogContent className="sm:max-w-md p-6 rounded-[2rem] border-none shadow-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-black">Receive Sats</DialogTitle>
+            <CardDescription className="font-medium">Generate a Lightning invoice using NWC</CardDescription>
+          </DialogHeader>
+
+          {!generatedInvoice ? (
+            <div className="space-y-6 py-4">
+              <div className="space-y-2">
+                <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">Amount (Sats)</Label>
+                <Input 
+                  type="number" 
+                  placeholder="0" 
+                  value={receiveAmount}
+                  onChange={(e) => setReceiveAmount(e.target.value)}
+                  className="h-14 rounded-2xl bg-muted/30 border-none text-2xl font-black focus-visible:ring-primary/20"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">Description (Optional)</Label>
+                <Input 
+                  placeholder="Tell it! coffee" 
+                  value={receiveDescription}
+                  onChange={(e) => setReceiveDescription(e.target.value)}
+                  className="h-12 rounded-xl bg-muted/30 border-none font-medium focus-visible:ring-primary/20"
+                />
+              </div>
+              <Button 
+                onClick={handleGenerateInvoice}
+                disabled={!receiveAmount || isGeneratingInvoice}
+                className="w-full h-14 rounded-2xl font-black text-lg bg-blue-500 hover:bg-blue-600 shadow-lg shadow-blue-500/20 transition-all active:scale-95"
+              >
+                {isGeneratingInvoice ? <Loader2 className="animate-spin mr-2" /> : <Plus size={20} className="mr-2" />}
+                Create Invoice
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-6 py-4 flex flex-col items-center text-center">
+              <div className="p-4 bg-white rounded-3xl border-8 border-gray-100 dark:border-gray-900 shadow-inner">
+                {/* Normally we'd use a QRCode component here */}
+                <div className="size-48 bg-muted animate-pulse rounded-2xl flex items-center justify-center">
+                  <QrCode size={64} className="text-muted-foreground/30" />
+                </div>
+              </div>
+              
+              <div className="w-full space-y-2">
+                <p className="text-xs font-black uppercase tracking-widest text-muted-foreground">Lightning Invoice</p>
+                <div className="p-4 bg-muted/30 rounded-2xl break-all font-mono text-[10px] relative group cursor-pointer" onClick={copyInvoice}>
+                  {generatedInvoice}
+                  <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl flex items-center justify-center">
+                    <Copy size={24} className="text-primary" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-2 w-full">
+                <Button 
+                  variant="outline" 
+                  className="flex-1 h-12 rounded-2xl font-black border-none bg-muted/50 hover:bg-muted"
+                  onClick={() => setGeneratedInvoice(null)}
+                >
+                  Edit
+                </Button>
+                <Button 
+                  className="flex-1 h-12 rounded-2xl font-black bg-primary"
+                  onClick={copyInvoice}
+                >
+                  {copied ? <CheckCircle2 size={18} className="mr-2" /> : <Copy size={18} className="mr-2" />}
+                  {copied ? "Copied" : "Copy"}
+                </Button>
+              </div>
+              
+              <p className="text-[10px] text-muted-foreground font-medium italic">
+                Waiting for payment detection... (NWC Notifications)
+              </p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
