@@ -5,6 +5,7 @@ import { PostCard } from "@/components/post/PostCard";
 import { ErrorBoundary } from "@/components/common/ErrorBoundary";
 import { FeedSkeleton } from "./FeedSkeleton";
 import { NDKEvent } from "@nostr-dev-kit/ndk";
+import { ScoredEvent } from "@/lib/feed/scorer";
 import { WhoToFollow } from "@/components/profile/WhoToFollow";
 import { Search, Plus } from "lucide-react";
 import Link from "next/link";
@@ -13,6 +14,7 @@ import { Separator } from "@/components/ui/separator";
 
 interface FeedListProps {
   posts: NDKEvent[];
+  scoredEvents?: ScoredEvent[];
   isLoading: boolean;
   loadMore: () => void;
   hasMore: boolean;
@@ -22,6 +24,7 @@ interface FeedListProps {
 
 export function FeedList({ 
   posts, 
+  scoredEvents,
   isLoading, 
   loadMore, 
   hasMore, 
@@ -94,6 +97,8 @@ export function FeedList({
         {posts.map((event, index) => {
           if (!event || !event.id) return null;
           
+          const scoredEvent = scoredEvents?.find(se => se.event.id === event.id);
+          
           return (
             <div 
               key={event.id} 
@@ -105,7 +110,7 @@ export function FeedList({
                   Failed to render post {event.id ? event.id.slice(0, 8) : "unknown"}…
                 </div>
               }>
-                <PostCard event={event} />
+                <PostCard event={event} scoredEvent={scoredEvent} />
               </ErrorBoundary>
               {index < posts.length - 1 && <Separator />}
               {showSuggestions && index === 4 && (

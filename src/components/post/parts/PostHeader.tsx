@@ -13,7 +13,8 @@ import {
   Volume2, 
   Bookmark,
   BarChart2,
-  ExternalLink
+  ExternalLink,
+  Sparkles
 } from "lucide-react";
 import Link from "next/link";
 
@@ -39,7 +40,14 @@ import { formatCompactDate } from "@/lib/utils/date";
 import { Avatar } from "@/components/common/Avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ScoredEvent } from "@/lib/feed/scorer";
 import { cn } from "@/lib/utils";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface PostHeaderProps {
   display_name: string;
@@ -70,6 +78,7 @@ interface PostHeaderProps {
   navigationHref?: string;
   onSummarizeClick?: () => void;
   variant?: "feed" | "detail";
+  relevance?: ScoredEvent;
 }
 
 export const PostHeader: React.FC<PostHeaderProps> = ({
@@ -100,7 +109,8 @@ export const PostHeader: React.FC<PostHeaderProps> = ({
   name,
   navigationHref,
   onSummarizeClick,
-  variant = "feed"
+  variant = "feed",
+  relevance
 }) => {
   const formattedTime = formatCompactDate(createdAt);
   const [showDeleteDialog, setShowDeleteDialog] = React.useState(false);
@@ -365,6 +375,45 @@ export const PostHeader: React.FC<PostHeaderProps> = ({
               {formattedTime}
             </span>
           )}
+
+          {relevance && relevance.signals && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center shrink-0 mt-1 ml-1 cursor-help opacity-60 hover:opacity-100 transition-opacity">
+                    <Sparkles className="size-3 text-blue-500" fill="currentColor" />
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-[200px] text-[10px] font-bold uppercase tracking-widest p-2 bg-background border shadow-xl z-50">
+                  <div className="flex flex-col gap-1">
+                    <span className="text-blue-500 mb-1">Recommended for you:</span>
+                    {Object.entries(relevance.signals)
+                      .sort(([, a], [, b]) => (b as number) - (a as number))
+                      .slice(0, 3)
+                      .map(([signal, value]) => {
+                        let label = signal;
+                        if (signal === 'isFollowing') label = 'Following';
+                        if (signal === 'networkDegree2') label = 'In your network';
+                        if (signal === 'interestMatch') label = 'Matches your interests';
+                        if (signal === 'frequentInteraction') label = 'Someone you interact with';
+                        if (signal === 'networkReaction') label = 'Liked by your friends';
+                        if (signal === 'networkReply') label = 'Discussed by your friends';
+                        if (signal === 'mutuals') label = 'Common connections';
+                        if (signal === 'freshness') return null; // Skip freshness as a "reason"
+                        
+                        return (value as number) > 0 ? (
+                          <div key={signal} className="flex justify-between gap-2">
+                            <span>{label}</span>
+                          </div>
+                        ) : null;
+                      })
+                    }
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+
           {clientName && (
             <span className="text-muted-foreground text-[10px] uppercase font-black tracking-tighter mt-1.5 opacity-40 ml-1 shrink-0">
               via {clientName}

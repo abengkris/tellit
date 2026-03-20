@@ -8,6 +8,7 @@ import { createPoll, PollOption } from "@/lib/actions/poll";
 import { saveDraftWrap } from "@/lib/actions/drafts";
 import { useUIStore } from "@/store/ui";
 import { useEmojis } from "@/hooks/useEmojis";
+import { useInteractionHistory } from "@/hooks/useInteractionHistory";
 import { useDrafts } from "@/hooks/useDrafts";
 import { useProfile } from "@/hooks/useProfile";
 import { NDKEvent, NDKTag, nip19 } from "@nostr-dev-kit/ndk";
@@ -61,6 +62,7 @@ export const PostComposer: React.FC<PostComposerProps> = ({
   const { user, isLoggedIn } = useAuthStore();
   const { ndk, isReady } = useNDK();
   const { addToast } = useUIStore();
+  const { recordInteraction } = useInteractionHistory();
   const { emojis } = useEmojis();
   const { profile } = useProfile(user?.pubkey);
   
@@ -323,6 +325,11 @@ export const PostComposer: React.FC<PostComposerProps> = ({
 
       if (event) {
         addToast(showPollEditor ? "Poll published!" : "Posted successfully!", "success");
+        
+        // Record interaction for local feed scoring
+        if (replyTo) recordInteraction(replyTo.pubkey, 2);
+        if (quoteEvent) recordInteraction(quoteEvent.pubkey, 2);
+
         setContent("");
         setSubject("");
         setShowSubject(false);

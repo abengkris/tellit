@@ -1,7 +1,7 @@
 "use client";
 
 import React, { Fragment } from "react";
-import { useFollowSuggestions } from "@/hooks/useFollowSuggestions";
+import { useSuggestedFollows } from "@/hooks/useSuggestedFollows";
 import { Avatar } from "@/components/common/Avatar";
 import { FollowButton } from "@/components/profile/FollowButton";
 import Link from "next/link";
@@ -15,13 +15,13 @@ import { ArrowRight } from "lucide-react";
 
 interface SuggestionCardProps {
   pubkey: string;
-  followedByCount: number;
+  reason: string;
   showAbout?: boolean;
 }
 
 export const SuggestionCard: React.FC<SuggestionCardProps> = ({ 
   pubkey, 
-  followedByCount,
+  reason,
   showAbout = false
 }) => {
   const { profile, profileUrl } = useProfile(pubkey);
@@ -49,8 +49,8 @@ export const SuggestionCard: React.FC<SuggestionCardProps> = ({
             tags={profile?.tags}
           />
         </Link>
-        <p className="text-[11px] text-muted-foreground mt-0.5 font-medium">
-          Followed by {followedByCount} people you follow
+        <p className="text-[10px] text-blue-500 mt-0.5 font-bold uppercase tracking-widest">
+          {reason}
         </p>
         {showAbout && profile?.about && (
           <p className="text-xs text-muted-foreground mt-1 line-clamp-2 leading-relaxed">
@@ -67,7 +67,7 @@ export const SuggestionCard: React.FC<SuggestionCardProps> = ({
 };
 
 export const WhoToFollow = () => {
-  const { suggestions, loading } = useFollowSuggestions(3);
+  const { suggestions, loading } = useSuggestedFollows(3);
 
   if (loading) {
     return (
@@ -105,7 +105,7 @@ export const WhoToFollow = () => {
             <Fragment key={suggestion.pubkey}>
               <SuggestionCard 
                 pubkey={suggestion.pubkey} 
-                followedByCount={suggestion.followedByCount}
+                reason={suggestion.reason}
               />
               {index < suggestions.length - 1 && <Separator className="bg-muted-foreground/10" />}
             </Fragment>

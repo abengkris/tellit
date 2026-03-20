@@ -5,6 +5,7 @@ import { NDKEvent, NDKKind, NDKSubscription, NDKFilter } from "@nostr-dev-kit/nd
 import { useNDK } from "@/hooks/useNDK";
 import { useWoTNetwork } from "./useWoTNetwork";
 import { useUIStore } from "@/store/ui";
+import { useInteractionHistory } from "./useInteractionHistory";
 import { ScoredEvent } from "@/lib/feed/scorer";
 import { validateEvent } from "@/lib/policies";
 
@@ -17,6 +18,7 @@ interface UseForYouFeedOptions {
 
 interface UseForYouFeedReturn {
   posts: NDKEvent[];
+  scoredEvents: ScoredEvent[];
   newCount: number;
   isLoading: boolean;
   wotStatus: "idle" | "loading" | "ready" | "error";
@@ -34,6 +36,10 @@ export function useForYouFeed({
 }: UseForYouFeedOptions): UseForYouFeedReturn {
   const { ndk, isReady, sync } = useNDK();
   const { wotStrictMode } = useUIStore();
+  const { topInteracted, historyMap } = useInteractionHistory();
+  
+  // Discover authors (following + degree 2)
+  const [discoverAuthors, setDiscoverAuthors] = useState<string[]>(followingList);
   
   // Use the new on-demand WoT Network
   // We'll pass the following list initially, and then extend it as we see more events
@@ -42,6 +48,7 @@ export function useForYouFeed({
 
   const [rawEvents, setRawEvents] = useState<NDKEvent[]>([]);
   const [rankedPosts, setRankedPosts] = useState<NDKEvent[]>([]);
+  const [currentScoredEvents, setCurrentScoredEvents] = useState<ScoredEvent[]>([]);
   const [newCount, setNewCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [hasMore, setHasMore] = useState(true);
@@ -59,6 +66,7 @@ export function useForYouFeed({
   const seenIds = useRef(new Set<string>());
   const isInitialLoadDone = useRef(false);
   const prevFollowingListRef = useRef<string>("");
+  const discoveryInitializedRef = useRef(false);
 
   // Worker for background scoring
   const workerRef = useRef<Worker | null>(null);
@@ -70,6 +78,7 @@ export function useForYouFeed({
     workerRef.current.onmessage = (e: MessageEvent<ScoredEvent[]>) => {
       if (!ndk) return;
       const scoredEvents = e.data;
+      setCurrentScoredEvents(scoredEvents);
       const events = scoredEvents.map(se => {
         const event = new NDKEvent(ndk, se.event);
         return event;
@@ -81,6 +90,38 @@ export function useForYouFeed({
       workerRef.current?.terminate();
     };
   }, [ndk]);
+
+  // Expand discovery authors (D2) based on top interacted
+  useEffect(() => {
+    if (!ndk || !isReady || discoveryInitializedRef.current) return;
+    
+    const top = topInteracted(10);
+    if (top.length === 0) return;
+
+    discoveryInitializedRef.current = true;
+    
+    // Fetch contact lists of top interacted people to find potential D2 content
+    ndk.fetchEvents({
+      kinds: [3],
+      authors: top,
+    }).then(events => {
+      const d2Authors = new Set<string>();
+      events.forEach(ev => {
+        // Pick random 5 follows from each top contact list
+        const follows = ev.tags
+          .filter(t => t[0] === "p" && t[1])
+          .map(t => t[1]);
+        
+        const shuffled = follows.sort(() => 0.5 - Math.random());
+        shuffled.slice(0, 5).forEach(p => d2Authors.add(p));
+      });
+
+      if (d2Authors.size > 0) {
+        setDiscoverAuthors(prev => Array.from(new Set([...prev, ...d2Authors])));
+        setDiscoverPubkeys(prev => Array.from(new Set([...prev, ...d2Authors])));
+      }
+    }).catch(err => console.error("[useForYouFeed] D2 discovery failed:", err));
+  }, [ndk, isReady, topInteracted]);
 
   // Trigger worker-based scoring when inputs change
   useEffect(() => {
@@ -109,7 +150,7 @@ export function useForYouFeed({
         viewerPubkey,
         followingSet: Array.from(followingList),
         followsOfFollowsSet: [], // Legacy, we use networkDegreeMap now
-        interactionHistory: Array.from(new Map().entries()), // To be implemented
+        interactionHistory: Array.from(historyMap.entries()), 
         networkDegreeMap: network, // Use the new Redis-backed degree map
         interestsSet: Array.from(interests),
       };
@@ -125,7 +166,7 @@ export function useForYouFeed({
     return () => {
       if (scoringTimeoutRef.current) clearTimeout(scoringTimeoutRef.current);
     };
-  }, [rawEvents, wotStrictMode, followingList, viewerPubkey, network, interests, isReady, ndk]);
+  }, [rawEvents, wotStrictMode, followingList, viewerPubkey, network, interests, isReady, ndk, historyMap]);
 
   const posts = rankedPosts;
 
@@ -181,8 +222,8 @@ export function useForYouFeed({
       return;
     }
 
-    // Initial authors: Following list
-    const validAuthors = followingList.filter(a => !!a && /^[0-9a-fA-F]{64}$/.test(a));
+    // Use discoverAuthors (following + D2)
+    const validAuthors = discoverAuthors.filter(a => !!a && /^[0-9a-fA-F]{64}$/.test(a));
 
     if (!validAuthors.length) {
       setIsLoading(false);
@@ -192,7 +233,7 @@ export function useForYouFeed({
     const filter: NDKFilter = {
       kinds: [1, 6, 16, 1068, 30023] as NDKKind[],
       authors: validAuthors,
-      limit: 30,
+      limit: 50,
     };
 
     if (interests.length > 0) {
@@ -261,7 +302,7 @@ export function useForYouFeed({
       if (subscriptionRef.current) subscriptionRef.current.stop();
       if (updateTimeoutRef.current) clearTimeout(updateTimeoutRef.current);
     };
-  }, [ndk, isReady, sync, followingList, queueUpdate, interests, viewerPubkey, rawEvents.length]); 
+  }, [ndk, isReady, sync, followingList, discoverAuthors, queueUpdate, interests, viewerPubkey, rawEvents.length]); 
 
   const flushNewPosts = useCallback(() => {
     if (!bufferRef.current.length) return;
@@ -281,7 +322,7 @@ export function useForYouFeed({
     const oldest = Math.min(...rawEvents.map(p => p.created_at ?? Infinity));
     
     // Clean authors array to prevent validation errors
-    const validAuthors = followingList.filter(a => !!a && /^[0-9a-fA-F]{64}$/.test(a));
+    const validAuthors = discoverAuthors.filter(a => !!a && /^[0-9a-fA-F]{64}$/.test(a));
 
     const olderFilter: NDKFilter = {
       kinds: [1, 6, 16, 1068, 30023] as NDKKind[],
@@ -304,10 +345,11 @@ export function useForYouFeed({
       const combined = [...prev, ...newEvents];
       return combined.filter((v, i, a) => v && v.id && a.findIndex(t => t && t.id === v.id) === i);
     });
-  }, [ndk, rawEvents, hasMore, followingList, interests]); 
+  }, [ndk, rawEvents, hasMore, discoverAuthors, interests]); 
   
   return {
     posts,
+    scoredEvents: currentScoredEvents,
     newCount,
     isLoading,
     wotStatus,

@@ -23,6 +23,7 @@ import { shortenPubkey, getEventNip19 } from "@/lib/utils/nip19";
 import { getPostUrl, getArticleUrl } from "@/lib/utils/identity";
 import { formatFullTimestamp } from "@/lib/utils/date";
 import { useLists } from "@/hooks/useLists";
+import { ScoredEvent } from "@/lib/feed/scorer";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
@@ -30,6 +31,7 @@ type ThreadLine = "none" | "top" | "bottom" | "both";
 
 interface PostCardProps {
   event: NDKEvent;
+  scoredEvent?: ScoredEvent;
   threadLine?: ThreadLine;
   isFocal?: boolean;
   indent?: number;
@@ -38,6 +40,7 @@ interface PostCardProps {
 
 export const PostCard = memo(({ 
   event, 
+  scoredEvent,
   threadLine = "none",
   isFocal = false,
   indent = 0,
@@ -383,6 +386,7 @@ export const PostCard = memo(({
               tags={isRepost ? (repostAuthorProfile?.tags || displayEvent.tags) : displayEvent.tags}
               navigationHref={navigationHref}
               variant={variant}
+              relevance={scoredEvent}
             />
 
             {(() => {

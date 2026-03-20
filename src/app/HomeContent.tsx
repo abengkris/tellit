@@ -261,7 +261,7 @@ const ForYouFeedTab = memo(({
   followingList: string[];
   interests: string[];
 }) => {
-  const { posts, newCount, isLoading, wotStatus, wotSize, hasInterests, flushNewPosts, loadMore, hasMore } = 
+  const { posts, scoredEvents, newCount, isLoading, wotStatus, wotSize, hasInterests, flushNewPosts, loadMore, hasMore } = 
     useForYouFeed({ viewerPubkey, followingList, interests });
 
   const handleFlush = useCallback(() => {
@@ -279,6 +279,7 @@ const ForYouFeedTab = memo(({
 
       <FeedList 
         posts={posts}
+        scoredEvents={scoredEvents}
         isLoading={isLoading}
         loadMore={loadMore}
         hasMore={hasMore}

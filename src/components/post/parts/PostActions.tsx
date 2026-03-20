@@ -7,6 +7,7 @@ import { useLists } from "@/hooks/useLists";
 import { useEmojis } from "@/hooks/useEmojis";
 import { triggerConfetti, triggerZapConfetti } from "@/lib/utils/confetti";
 import { useNDK } from "@/hooks/useNDK";
+import { useInteractionHistory } from "@/hooks/useInteractionHistory";
 import { createZapInvoice } from "@/lib/actions/zap";
 import { useReactions } from "@/hooks/useReactions";
 import { UserListModal } from "@/components/common/UserListModal";
@@ -79,6 +80,7 @@ export const PostActions = memo(({
 
   const { addToast, defaultZapAmount } = useUIStore();
   const { ndk, refreshBalance } = useNDK();
+  const { recordInteraction } = useInteractionHistory();
   const { emojis } = useEmojis();
   const { bookmarkedEventIds, bookmarkPost, unbookmarkPost } = useLists();
   const { likes: reactorPubkeys, reposts: reposterPubkeys, zaps: zapperPubkeys, loading: loadingReactions } = useReactions(eventId);
@@ -117,6 +119,7 @@ export const PostActions = memo(({
       setOptimisticReacted('+');
       triggerConfetti();
       addToast("Liked!", "success");
+      if (authorPubkey) recordInteraction(authorPubkey, 1);
       onLikeClick?.(e);
     }
   };
@@ -125,6 +128,7 @@ export const PostActions = memo(({
     setOptimisticReacted(`:${emoji.shortcode}:`);
     triggerConfetti();
     addToast(`Reacted with :${emoji.shortcode}:`, "success");
+    if (authorPubkey) recordInteraction(authorPubkey, 1);
     onEmojiReaction?.(emoji);
   };
 
@@ -134,6 +138,7 @@ export const PostActions = memo(({
       setOptimisticReposts((prev: number) => prev + 1);
       setOptimisticCombined((prev: number) => prev + 1);
       addToast("Reposted!", "success");
+      if (authorPubkey) recordInteraction(authorPubkey, 2);
       // Create a dummy event for the callback if needed
       const e = { stopPropagation: () => {} } as React.MouseEvent;
       onRepostClick?.(e);
@@ -168,6 +173,7 @@ export const PostActions = memo(({
           triggerZapConfetti();
           setOptimisticZaps((prev: number) => prev + amount); // Add sats to counter
           addToast(`Zapped ${amount} sats via wallet!`, "success");
+          if (authorPubkey) recordInteraction(authorPubkey, 3);
           refreshBalance();
           return;
         }
@@ -178,6 +184,7 @@ export const PostActions = memo(({
             triggerZapConfetti();
             setOptimisticZaps((prev: number) => prev + amount); // Add sats to counter
             addToast(`Zapped ${amount} sats!`, "success");
+            if (authorPubkey) recordInteraction(authorPubkey, 3);
             return;
           }
         }
