@@ -32,6 +32,7 @@ import { ExternalIdentities } from "@/components/profile/ExternalIdentities";
 import { PostCard } from "@/components/post/PostCard";
 import { MediaGrid } from "@/components/profile/MediaGrid";
 import { FormattedAbout } from "@/components/profile/FormattedAbout";
+import { ProfileBadges } from "@/components/profile/ProfileBadges";
 import { Avatar } from "@/components/common/Avatar";
 
 import Image from "next/image";
@@ -372,6 +373,9 @@ export function ProfileContent({ npubParam }: { npubParam: string }) {
               </div>
             )}
           </div>
+
+          {/* NIP-58 Badges */}
+          <ProfileBadges pubkey={hexPubkey} />
 
           {/* Interests (NIP-51) */}
           {interests.size > 0 && (
