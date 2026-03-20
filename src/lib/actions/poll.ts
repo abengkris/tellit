@@ -1,4 +1,4 @@
-import NDK, { NDKEvent, NDKKind } from "@nostr-dev-kit/ndk";
+import NDK, { NDKEvent, NDKKind, NDKTag } from "@nostr-dev-kit/ndk";
 import { addClientTag } from "@/lib/utils/nostr";
 
 export interface PollOption {
@@ -12,6 +12,7 @@ export interface CreatePollOptions {
   endsAt?: number;
   relays?: string[];
   subject?: string;
+  tags?: NDKTag[];
 }
 
 /**
@@ -34,6 +35,10 @@ export const createPoll = async (
     // Add NIP-14 Subject
     if (pollOptions.subject) {
       event.tags.push(["subject", pollOptions.subject]);
+    }
+
+    if (pollOptions.tags) {
+      event.tags = [...event.tags, ...pollOptions.tags];
     }
 
     // Add options

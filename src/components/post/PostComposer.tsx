@@ -172,10 +172,35 @@ export const PostComposer: React.FC<PostComposerProps> = ({
           }
         }
 
+        const tags: NDKTag[] = [];
+        
+        // Add quote tag (NIP-18)
+        if (quoteEvent) {
+          const relayUrl = quoteEvent.onRelays?.[0]?.url || "";
+          tags.push(["q", quoteEvent.id, relayUrl, quoteEvent.pubkey]);
+          
+          const nostrUri = quoteEvent.encode();
+          if (!finalContent.includes(nostrUri)) {
+            finalContent += `\n\nnostr:${nostrUri}`;
+          }
+        }
+
+        // Add reply tags (NIP-10)
+        if (replyTo) {
+          const rootTag = replyTo.tags.find((t) => t[0] === "e" && t[3] === "root");
+          const rootId = rootTag ? rootTag[1] : replyTo.id;
+          tags.push(["e", rootId, "", "root"]);
+          if (rootId !== replyTo.id) {
+            tags.push(["e", replyTo.id, "", "reply"]);
+          }
+          tags.push(["p", replyTo.pubkey]);
+        }
+
         event = await createPoll(ndk, finalContent, {
           options: validOptions,
           endsAt: Math.floor(Date.now() / 1000) + 86400, // 24h default
-          subject: pollSubject
+          subject: pollSubject,
+          tags
         });
       } else {
         const tags: NDKTag[] = [];
