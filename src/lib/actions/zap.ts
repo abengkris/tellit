@@ -37,6 +37,15 @@ export const createZapInvoice = async (
     return new Promise((resolve) => {
       const zapper = new NDKZapper(target, amount, "msat", { comment, ndk });
       
+      // Explicitly add tags for addressable events (kind 30000+)
+      if (target instanceof NDKEvent) {
+        if (target.kind! >= 30000 && target.kind! < 40000) {
+          const dTag = target.tags.find(t => t[0] === 'd')?.[1] || "";
+          zapper.tags.push(["a", `${target.kind}:${target.pubkey}:${dTag}`]);
+        }
+        zapper.tags.push(["k", String(target.kind)]);
+      }
+
       if (wallet) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (zapper as any).wallet = wallet;
