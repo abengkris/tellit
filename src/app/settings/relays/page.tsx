@@ -8,32 +8,26 @@ import { useRelayList, RelayMetadata } from "@/hooks/useRelayList";
 import { useRelayStatus } from "@/hooks/useRelayStatus";
 import { updateRelayList } from "@/lib/actions/relays";
 import { 
-  Globe, 
   Plus, 
   Trash2, 
-  RefreshCcw, 
   ShieldCheck, 
   Activity, 
   Server,
   ChevronLeft,
   Loader2,
-  CheckCircle2,
-  Wifi,
-  WifiOff
+  Wifi
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { NDKRelayStatus } from "@nostr-dev-kit/ndk";
 import Link from "next/link";
-import { cn } from "@/lib/utils";
 
 export default function RelaysPage() {
   const { user, isLoggedIn } = useAuthStore();
-  const { ndk, isReady } = useNDK();
+  const { ndk } = useNDK();
   const { addToast } = useUIStore();
   
   const { relays: savedRelays, loading: loadingRelays } = useRelayList(user?.pubkey);

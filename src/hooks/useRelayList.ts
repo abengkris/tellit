@@ -40,6 +40,7 @@ export function useRelayList(pubkey?: string) {
               const url = tag[1];
               const marker = tag[2]; // undefined, "read", or "write"
               
+              // NIP-65: If marker is omitted, it's both read and write
               return {
                 url,
                 read: !marker || marker === "read",
@@ -49,11 +50,10 @@ export function useRelayList(pubkey?: string) {
           
           setRelays(relayData);
           
-          // Enforce Outbox Model (NIP-65)
-          // We must connect to the user's write relays to ensure our events reach their audience
+          // NIP-65: When downloading events FROM a user, clients SHOULD use the write relays
           relayData.forEach(r => {
             if (r.write) {
-              ndk.addExplicitRelay(r.url, undefined, true); // true = connect immediately
+              ndk.addExplicitRelay(r.url, undefined, true);
             }
           });
         }
