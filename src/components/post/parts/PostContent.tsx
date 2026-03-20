@@ -236,6 +236,16 @@ export function PostContentRenderer({
       .filter(q => !existingIds.has(q.id));
   }, [event.tags, quoteTokens, renderQuotes]);
 
+  // NIP-24: Collect 'r' tags that aren't already in the text
+  const extraRTags = useMemo(() => {
+    const rTags = event.tags.filter(t => t[0] === 'r' && t[1]);
+    const existingUrls = new Set(urlTokens.map(t => t.value.replace(/[.,;]$/, "")));
+    
+    return rTags
+      .map(t => t[1])
+      .filter(url => !existingUrls.has(url));
+  }, [event.tags, urlTokens]);
+
   return (
     <div className={`flex flex-col min-w-0 max-w-full overflow-hidden ${className}`}>
       {isHighlight && (
@@ -488,6 +498,11 @@ export function PostContentRenderer({
               <UrlPreview key={i} url={token.value} />
             ))
           }
+
+          {/* Render NIP-24 'r' tags that weren't in text */}
+          {extraRTags.map((url, i) => (
+            <UrlPreview key={`extra-r-${i}`} url={url} />
+          ))}
 
           {podcastMetadata && (
             <PodcastEmbed 

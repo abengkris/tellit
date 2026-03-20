@@ -12,9 +12,15 @@ export interface ProfileMetadata {
   lud16?: string;
   banner?: string;
   display_name?: string;
+  displayName?: string; // Deprecated NIP-24
   website?: string;
   pronouns?: string;
   bot?: boolean | string;
+  birthday?: {
+    year?: number;
+    month?: number;
+    day?: number;
+  };
   created_at?: number;
   published_at?: number;
   tags?: string[][];

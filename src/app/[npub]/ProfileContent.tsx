@@ -3,7 +3,7 @@
 import React from "react";
 import { useProfile } from "@/hooks/useProfile";
 import { useFeed } from "@/hooks/useFeed";
-import { Calendar, Link as LinkIcon, Zap, Activity, Mail, Share, Copy, MoreVertical, Edit2, X, Music, Tag, Clock, RefreshCw, VolumeX, Volume2, Flag } from "lucide-react";
+import { Calendar, Link as LinkIcon, Zap, Activity, Mail, Share, Copy, MoreVertical, Edit2, X, Music, Tag, Clock, RefreshCw, VolumeX, Volume2, Flag, Cake } from "lucide-react";
 import { useAuthStore } from "@/store/auth";
 import { useUIStore } from "@/store/ui";
 import { useNDK } from "@/hooks/useNDK";
@@ -402,6 +402,21 @@ export function ProfileContent({ npubParam }: { npubParam: string }) {
               <LinkIcon size={16} aria-hidden="true" />
               <span>{safeHostname(profile.website)}</span>
             </a>
+          )}
+          {profile?.birthday && (
+            <div className="flex items-center space-x-1 cursor-default" title="Birthday">
+              <Cake size={16} className="text-pink-500" aria-hidden="true" />
+              <span>
+                {profile.birthday.day && profile.birthday.month ? (
+                  <>
+                    {format(new Date(2000, profile.birthday.month - 1, profile.birthday.day), "MMMM d")}
+                    {profile.birthday.year ? `, ${profile.birthday.year}` : ""}
+                  </>
+                ) : profile.birthday.year ? (
+                  profile.birthday.year
+                ) : "-"}
+              </span>
+            </div>
           )}
           <button 
             onClick={() => setShowDatesModal(true)}
