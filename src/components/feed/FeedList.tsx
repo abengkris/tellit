@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState, useLayoutEffect } from "react";
+import { useWindowVirtualizer } from "@tanstack/react-virtual";
 import { PostCard } from "@/components/post/PostCard";
 import { ErrorBoundary } from "@/components/common/ErrorBoundary";
 import { FeedSkeleton } from "./FeedSkeleton";
@@ -31,7 +32,24 @@ export function FeedList({
   emptyMessage = "Nothing to see here yet.",
   showSuggestions = false
 }: FeedListProps) {
+  const parentRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const [scrollMargin, setScrollMargin] = useState(0);
+
+  useLayoutEffect(() => {
+    if (parentRef.current) {
+      setScrollMargin(parentRef.current.offsetTop);
+    }
+  }, []);
+
+  const virtualizer = useWindowVirtualizer({
+    count: posts.length,
+    estimateSize: () => 250,
+    overscan: 5,
+    scrollMargin,
+  });
+
+  const virtualItems = virtualizer.getVirtualItems();
   
   useEffect(() => {
     const el = bottomRef.current;
@@ -93,17 +111,25 @@ export function FeedList({
       )}
 
       {/* Feed */}
-      <div className="flex flex-col">
-        {posts.map((event, index) => {
+      <div 
+        ref={parentRef}
+        className="relative w-full" 
+        style={{ height: `${virtualizer.getTotalSize()}px` }}
+      >
+        {virtualItems.map((virtualItem) => {
+          const event = posts[virtualItem.index];
           if (!event || !event.id) return null;
           
           const scoredEvent = scoredEvents?.find(se => se.event.id === event.id);
+          const isLast = virtualItem.index === posts.length - 1;
           
           return (
             <div 
-              key={event.id} 
-              className="flex flex-col"
-              style={{ contentVisibility: "auto", containIntrinsicSize: "0 200px" }}
+              key={virtualItem.key} 
+              data-index={virtualItem.index}
+              ref={virtualizer.measureElement}
+              className="absolute top-0 left-0 w-full flex flex-col"
+              style={{ transform: `translateY(${virtualItem.start - virtualizer.options.scrollMargin}px)` }}
             >
               <ErrorBoundary fallback={
                 <div className="p-4 text-xs text-muted-foreground italic border-b">
@@ -112,9 +138,11 @@ export function FeedList({
               }>
                 <PostCard event={event} scoredEvent={scoredEvent} />
               </ErrorBoundary>
-              {index < posts.length - 1 && <Separator />}
-              {showSuggestions && index === 4 && (
-                <div style={{ contentVisibility: "auto", containIntrinsicSize: "0 400px" }}>
+              {!isLast && <Separator />}
+              
+              {/* Insert suggestions after 5th item */}
+              {showSuggestions && virtualItem.index === 4 && (
+                <div className="bg-background">
                   <WhoToFollow />
                   <Separator />
                 </div>

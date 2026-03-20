@@ -64,6 +64,7 @@ export function useForYouFeed({
   const subscriptionRef = useRef<NDKSubscription | null>(null);
   const bufferRef = useRef<NDKEvent[]>([]);
   const seenIds = useRef(new Set<string>());
+  const sentIds = useRef(new Set<string>());
   const isInitialLoadDone = useRef(false);
   const prevFollowingListRef = useRef<string>("");
   const discoveryInitializedRef = useRef(false);
@@ -129,39 +130,30 @@ export function useForYouFeed({
 
     if (scoringTimeoutRef.current) clearTimeout(scoringTimeoutRef.current);
 
+    // Increase debounce to 500ms to reduce main thread serialization pressure
     scoringTimeoutRef.current = setTimeout(() => {
-      let baseEvents = rawEvents;
+      // 1. Identify new events not yet sent to worker
+      const newEvents = rawEvents.filter(e => !sentIds.current.has(e.id));
       
-      // Strict Mode: Filter out anyone with 0 degree (unknown/spam)
-      if (wotStrictMode) {
-        baseEvents = rawEvents.filter(e => {
-          const degree = network[e.pubkey];
-          return followingList.includes(e.pubkey) || (degree && degree > 0);
-        });
-      }
-
-      if (baseEvents.length === 0) {
-        setRankedPosts([]);
-        return;
-      }
-
-      // Prepare context for the worker (plain objects only)
+      // 2. Prepare context for the worker (plain objects only)
       const context = {
         viewerPubkey,
         followingSet: Array.from(followingList),
-        followsOfFollowsSet: [], // Legacy, we use networkDegreeMap now
         interactionHistory: Array.from(historyMap.entries()), 
-        networkDegreeMap: network, // Use the new Redis-backed degree map
+        networkDegreeMap: network, 
         interestsSet: Array.from(interests),
       };
 
-      const plainEvents = baseEvents.map(e => e.rawEvent());
+      const plainEvents = newEvents.map(e => e.rawEvent());
+      
+      // Mark as sent
+      newEvents.forEach(e => sentIds.current.add(e.id));
 
       workerRef.current?.postMessage({
         events: plainEvents,
-        context,
+        context, // Always send context to ensure worker is up to date with settings
       });
-    }, 100); // 100ms debounce for scoring
+    }, 500); 
 
     return () => {
       if (scoringTimeoutRef.current) clearTimeout(scoringTimeoutRef.current);
@@ -216,7 +208,7 @@ export function useForYouFeed({
       isInitialLoadDone.current = false;
       bufferRef.current = [];
       prevFollowingListRef.current = followingStr;
-      setDiscoverPubkeys(followingList);
+      Promise.resolve().then(() => setDiscoverPubkeys(followingList));
     } else if (rawEvents.length > 0) {
       setIsLoading(false);
       return;
