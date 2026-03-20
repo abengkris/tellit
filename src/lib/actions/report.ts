@@ -7,13 +7,17 @@ export type ReportType = "nudity" | "malware" | "profanity" | "illegal" | "spam"
 /**
  * Report a user or an event (NIP-56 and NIP-32).
  * Sends a kind 1984 report event and a kind 1985 label event to the relays.
+ * @param blobHash Optional hash of a blob being reported (NIP-56 'x' tag)
+ * @param blobServer Optional URL of the server hosting the blob
  */
 export const reportContent = async (
   ndk: NDK,
   reportType: ReportType,
   targetPubkey: string,
   targetEventId?: string,
-  reason: string = ""
+  reason: string = "",
+  blobHash?: string,
+  blobServer?: string
 ): Promise<boolean> => {
   if (!ndk.signer) throw new Error("No signer available");
 
@@ -28,6 +32,13 @@ export const reportContent = async (
 
     if (targetEventId) {
       reportTags.push(["e", targetEventId, reportType]);
+    }
+
+    if (blobHash) {
+      reportTags.push(["x", blobHash, reportType]);
+      if (blobServer) {
+        reportTags.push(["server", blobServer]);
+      }
     }
 
     reportEvent.tags = reportTags;
@@ -45,6 +56,9 @@ export const reportContent = async (
     ];
     if (targetEventId) {
       labelTargets.push(["e", targetEventId]);
+    }
+    if (blobHash) {
+      labelTargets.push(["x", blobHash]);
     }
 
     await publishLabel(ndk, labelNamespace, reportType, labelTargets, reason);

@@ -19,6 +19,8 @@ import { cn } from "@/lib/utils";
 interface ReportModalProps {
   targetPubkey: string;
   targetEventId?: string;
+  blobHash?: string;
+  blobServer?: string;
   isOpen: boolean;
   onClose: () => void;
 }
@@ -36,6 +38,8 @@ const REPORT_TYPES: { type: ReportType; label: string; description: string }[] =
 export const ReportModal: React.FC<ReportModalProps> = ({ 
   targetPubkey, 
   targetEventId, 
+  blobHash,
+  blobServer,
   isOpen, 
   onClose 
 }) => {
@@ -70,7 +74,7 @@ export const ReportModal: React.FC<ReportModalProps> = ({
 
     setIsSubmitting(true);
     try {
-      const success = await reportContent(ndk, selectedType, targetPubkey, targetEventId, reason);
+      const success = await reportContent(ndk, selectedType, targetPubkey, targetEventId, reason, blobHash, blobServer);
       if (success) {
         addToast("Report sent successfully. Thank you for keeping Tell it! safe.", "success");
         onClose();
