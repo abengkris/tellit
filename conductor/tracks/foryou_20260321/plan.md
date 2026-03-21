@@ -28,12 +28,12 @@ Implement the logic to gather all inputs needed for the ranking algorithm.
 ## Phase 3: Scoring Engine Implementation
 Build the algorithm that combines all signals into a single ranking score.
 
-- [ ] Task: Implement core ranking algorithm in Web Worker
-    - [ ] Develop the scoring logic in `src/lib/feed/scoring.worker.ts`
-    - [ ] Implement additive weighting for combined signals
-- [ ] Task: Write integration tests for the scoring engine
-    - [ ] Create `src/lib/feed/__tests__/scoring.test.ts`
-    - [ ] Verify ranking order for various signal combinations
+- [x] Task: Implement core ranking algorithm in Web Worker (ab292a5)
+    - [x] Develop the scoring logic in `src/lib/feed/scoring.worker.ts` (ab292a5)
+    - [x] Implement additive weighting for combined signals (ab292a5)
+- [x] Task: Write integration tests for the scoring engine (ab292a5)
+    - [x] Create `src/lib/feed/__tests__/scoring.test.ts` (ab292a5)
+    - [x] Verify ranking order for various signal combinations (ab292a5)
 - [ ] Task: Conductor - User Manual Verification 'Phase 3: Scoring Engine Implementation' (Protocol in workflow.md)
 
 ## Phase 4: Feed Integration & UX Stability

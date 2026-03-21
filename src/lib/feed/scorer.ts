@@ -1,5 +1,6 @@
 import { NDKEvent } from "@nostr-dev-kit/ndk";
 import { ScoringContext, ScoredEvent, RANKING_WEIGHTS as WEIGHTS } from "./types";
+import { calculateInterestSignal } from "./signals/interests";
 
 export function scoreEvent(
   event: NDKEvent,
@@ -10,18 +11,10 @@ export function scoreEvent(
   let score = 0;
 
   // --- Interests signals ---
-  if (ctx.interestsSet && ctx.interestsSet.size > 0) {
-    const eventTags = new Set(event.tags.filter(t => t[0] === 't').map(t => t[1].toLowerCase()));
-    let matches = 0;
-    ctx.interestsSet.forEach(interest => {
-      if (eventTags.has(interest.toLowerCase())) matches++;
-    });
-
-    if (matches > 0) {
-      const interestBoost = Math.min(matches * WEIGHTS.interestMatch, WEIGHTS.interestMatch * 2);
-      signals.interestMatch = interestBoost;
-      score += interestBoost;
-    }
+  const interestBoost = calculateInterestSignal(event, ctx.interestsSet);
+  if (interestBoost > 0) {
+    signals.interestMatch = interestBoost;
+    score += interestBoost;
   }
 
   // --- Social graph signals ---
