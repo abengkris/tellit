@@ -39,12 +39,12 @@ Build the algorithm that combines all signals into a single ranking score.
 ## Phase 4: Feed Integration & UX Stability
 Integrate the optimized engine into the UI and ensure a smooth user experience.
 
-- [ ] Task: Integrate Scoring Engine into `useForYouFeed`
-    - [ ] Update `src/hooks/useForYouFeed.ts` to offload ranking to the Web Worker
-    - [ ] Implement optimistic rendering for the first set of items
-- [ ] Task: Implement Scroll Position Stability
-    - [ ] Add logic to `src/components/feed/FeedList.tsx` to handle background updates without jumping
-    - [ ] Write tests for scroll-stable insertion logic
+- [x] Task: Integrate Scoring Engine into `useForYouFeed` (a5b1e68)
+    - [x] Update `src/hooks/useForYouFeed.ts` to offload ranking to the Web Worker (a5b1e68)
+    - [x] Implement optimistic rendering for the first set of items (a5b1e68)
+- [x] Task: Implement Scroll Position Stability (a5b1e68)
+    - [x] Add logic to `src/hooks/useForYouFeed.ts` to handle background updates without jumping (a5b1e68)
+    - [x] Write tests for scroll-stable insertion logic (a5b1e68)
 - [ ] Task: Conductor - User Manual Verification 'Phase 4: Feed Integration & UX Stability' (Protocol in workflow.md)
 
 ## Phase 5: Final Optimization & UX Audit
