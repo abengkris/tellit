@@ -23,12 +23,10 @@ const nextConfig = {
       fullUrl: true,
     },
   },
-  eslint: {
-    ignoreDuringBuilds: true, // Speeds up build
-  },
   typescript: {
     ignoreBuildErrors: false, // We want to catch errors, but already fixed them
   },
+  turbopack: {}, // Required in Next.js 16 when webpack config is present
   experimental: {
     // reduce memory usage during build
     cpus: 1,
