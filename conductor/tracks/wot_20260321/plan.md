@@ -17,15 +17,15 @@ Implement the fundamental data structures and background processes for the Web o
 ## Phase 2: Integration & UI Components
 Expose the WoT data through hooks and update the UI with trust indicators.
 
-- [x] Task: Create `useWoT` custom hook (38b38c3)
-    - [x] Implement `src/hooks/useWoT.ts` to provide real-time trust scores for any pubkey (38b38c3)
-    - [x] Ensure hook utilizes Dexie for near-instant data retrieval (38b38c3)
-- [~] Task: Add trust indicators to post components
-    - [ ] Update `src/components/post/PostHeader.tsx` to display trust badges based on WoT score
-    - [ ] Implement subtle tooltips explaining the trust relationship
-- [ ] Task: Add WoT status to profile view
-    - [ ] Update `src/app/[npub]/page.tsx` to show a 'Trusted by [N] friends' indicator
-- [ ] Task: Conductor - User Manual Verification 'Phase 2: Integration & UI Components' (Protocol in workflow.md)
+- [x] Task: Create `useWoT` custom hook (f8ee6db)
+    - [x] Implement `src/hooks/useWoT.ts` to provide real-time trust scores for any pubkey (f8ee6db)
+    - [x] Ensure hook utilizes Dexie for near-instant data retrieval (f8ee6db)
+- [x] Task: Add trust indicators to post components (3d80094)
+    - [x] Update `src/components/post/PostHeader.tsx` to display trust badges based on WoT score (3d80094)
+    - [x] Implement subtle tooltips explaining the trust relationship (3d80094)
+- [x] Task: Add WoT status to profile view (3d80094)
+    - [x] Update `src/app/[npub]/page.tsx` to show a 'Trusted by [N] friends' indicator (3d80094)
+- [x] Task: Conductor - User Manual Verification 'Phase 2: Integration & UI Components' (Protocol in workflow.md) (3d80094)
 
 ## Phase 3: Performance Optimization & Testing
 Refine the system to ensure it meets our speed and UX standards.
