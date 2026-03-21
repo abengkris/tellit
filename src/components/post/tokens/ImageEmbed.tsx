@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ImetaMetadata } from "@/lib/content/tokenizer";
 import { Blurhash } from "react-blurhash";
+import Image from "next/image";
 
 export function ImageEmbed({ 
   url, 
@@ -74,23 +75,24 @@ export function ImageEmbed({
         </div>
       )}
 
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
+      {/* next/image for automatic optimization and better UX */}
+      <Image
         src={displayUrl}
         alt={imeta?.alt || "Post media"}
-        className={`w-full h-full max-h-[80vh] transition-opacity duration-500 block mx-auto cursor-pointer relative z-10 ${
+        fill
+        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+        className={`transition-opacity duration-500 block mx-auto cursor-pointer relative z-10 ${
           objectFit === "cover" ? "object-cover" : "object-contain"
         } ${
           loaded ? "opacity-100" : "opacity-0"
         }`}
         onLoad={() => setLoaded(true)}
         onError={() => setError(true)}
-        loading="lazy"
-        decoding="async"
         onClick={e => {
           e.stopPropagation();
           onClick?.();
         }}
+        unoptimized={url.includes('.gif')}
       />
     </div>
   );

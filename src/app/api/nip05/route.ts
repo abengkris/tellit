@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
-  const identifier = searchParams.get('identifier');
+  const identifier = request.nextUrl.searchParams.get('identifier');
 
   if (!identifier || !identifier.includes('@')) {
     return NextResponse.json({ error: 'Invalid identifier' }, { status: 400 });

@@ -5,9 +5,8 @@ import { createBlinkInvoice, checkBlinkInvoiceStatus } from '@/lib/blink';
 import { verifyEvent } from 'nostr-tools';
 
 export async function GET(req: NextRequest) {
-  const { searchParams } = new URL(req.url);
-  const name = searchParams.get('name');
-  const pubkey = searchParams.get('pubkey');
+  const name = req.nextUrl.searchParams.get('name');
+  const pubkey = req.nextUrl.searchParams.get('pubkey');
 
   if (!name && !pubkey) {
     return NextResponse.json({ error: 'Missing name or pubkey' }, { status: 400 });

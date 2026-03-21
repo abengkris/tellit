@@ -8,9 +8,8 @@ import { WoTService } from "@/services/wot.service";
  */
 export async function GET(req: NextRequest) {
   try {
-    const { searchParams } = new URL(req.url);
-    const pubkey = searchParams.get("pubkey");
-    const limit = parseInt(searchParams.get("limit") || "10");
+    const pubkey = req.nextUrl.searchParams.get("pubkey");
+    const limit = parseInt(req.nextUrl.searchParams.get("limit") || "10");
 
     if (!pubkey) {
       return NextResponse.json(
