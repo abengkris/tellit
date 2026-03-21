@@ -34,7 +34,7 @@ Refine the system to ensure it meets our speed and UX standards.
     - [x] Move the BFS and scoring logic to a dedicated Web Worker to keep the main thread responsive (2371541)
 - [x] Task: Implement background sync and reconciliation (5e56573)
     - [x] Ensure WoT data stays up-to-date with periodic relay syncs (5e56573)
-- [~] Task: Full integration testing
-    - [ ] Write Vitest tests for scoring logic and Dexie interactions
-    - [ ] Perform manual UX audit for UI responsiveness
-- [ ] Task: Conductor - User Manual Verification 'Phase 3: Performance Optimization & Testing' (Protocol in workflow.md)
+- [x] Task: Full integration testing (8f12224)
+    - [x] Write Vitest tests for scoring logic and Dexie interactions (8f12224)
+    - [x] Perform manual UX audit for UI responsiveness (8f12224)
+- [x] Task: Conductor - User Manual Verification 'Phase 3: Performance Optimization & Testing' (Protocol in workflow.md) (8f12224)
