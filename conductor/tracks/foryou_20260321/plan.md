@@ -34,7 +34,7 @@ Build the algorithm that combines all signals into a single ranking score.
 - [x] Task: Write integration tests for the scoring engine (ab292a5)
     - [x] Create `src/lib/feed/__tests__/scoring.test.ts` (ab292a5)
     - [x] Verify ranking order for various signal combinations (ab292a5)
-- [ ] Task: Conductor - User Manual Verification 'Phase 3: Scoring Engine Implementation' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Phase 3: Scoring Engine Implementation' (Protocol in workflow.md) (a5b1e68)
 
 ## Phase 4: Feed Integration & UX Stability
 Integrate the optimized engine into the UI and ensure a smooth user experience.
