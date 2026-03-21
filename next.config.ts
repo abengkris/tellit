@@ -7,7 +7,7 @@ const withPWA = withPWAInit({
 
 const nextConfig = {
   /* config options here */
-  cacheComponents: false, // Temporarily disabled to isolate build timeout
+  cacheComponents: true, // Re-enable Next.js 16 PPR and 'use cache'
   reactCompiler: false, // Temporarily disabled to speed up build
   output: "standalone",
   staticPageGenerationTimeout: 300, // Increase to 5 minutes
@@ -30,10 +30,10 @@ const nextConfig = {
   },
   turbopack: {
     resolveAlias: {
-      fs: { browser: false },
-      net: { browser: false },
-      tls: { browser: false },
-      crypto: { browser: false },
+      fs: { browser: "./src/lib/utils/empty.ts" },
+      net: { browser: "./src/lib/utils/empty.ts" },
+      tls: { browser: "./src/lib/utils/empty.ts" },
+      crypto: { browser: "./src/lib/utils/empty.ts" },
     },
   },
   experimental: {
