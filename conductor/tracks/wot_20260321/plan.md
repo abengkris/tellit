@@ -12,7 +12,7 @@ Implement the fundamental data structures and background processes for the Web o
 - [x] Task: Implement basic scoring algorithm (e3612d8)
     - [x] Create `src/lib/wot/scoring.ts` to calculate scores based on follow distances (e3612d8)
     - [x] Store results in the `wotScores` table in Dexie (e3612d8)
-- [ ] Task: Conductor - User Manual Verification 'Phase 1: Core WoT Infrastructure' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Phase 1: Core WoT Infrastructure' (Protocol in workflow.md) (38b38c3)
 
 ## Phase 2: Integration & UI Components
 Expose the WoT data through hooks and update the UI with trust indicators.

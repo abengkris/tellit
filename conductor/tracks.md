@@ -4,5 +4,5 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 ---
 
-- [ ] **Track: Build Web of Trust that respect performance speed and user experience**
+- [~] **Track: Build Web of Trust that respect performance speed and user experience**
   *Link: [./tracks/wot_20260321/](./tracks/wot_20260321/)*
