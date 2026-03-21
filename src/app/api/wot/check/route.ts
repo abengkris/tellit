@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { WoTService } from "@/services/wot.service";
+import { verifySession } from "@/lib/dal";
 
 /**
  * POST /api/wot/check
@@ -17,6 +18,12 @@ export async function POST(req: NextRequest) {
         { error: "viewerPubkey and an array of pubkeys are required" },
         { status: 400 }
       );
+    }
+
+    // Secure check: Ensure requester owns the viewerPubkey
+    const session = await verifySession();
+    if (!session || session.pubkey !== viewerPubkey) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
     // Cap the request size to prevent Redis abuse

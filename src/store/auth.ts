@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import NDK, { NDKUser, NDKNip07Signer, NDKPrivateKeySigner, NDKNip46Signer } from "@nostr-dev-kit/ndk";
 import { NDKSessionManager } from "@nostr-dev-kit/sessions";
+import { createSessionCookie, deleteSessionCookie } from "@/lib/actions/auth";
 import { useWalletStore } from "./wallet";
 
 interface AuthState {
@@ -26,9 +27,9 @@ interface AuthState {
   loginWithBunker: (ndk: NDK, sessions: NDKSessionManager, bunkerUri: string, localNsec?: string) => Promise<void>;
   generateNewKey: (ndk: NDK, sessions: NDKSessionManager) => Promise<string>;
   switchAccount: (pubkey: string, sessions: NDKSessionManager) => Promise<void>;
-  removeAccount: (pubkey: string, sessions: NDKSessionManager) => void;
-  logout: (sessions: NDKSessionManager | null) => void;
-  logoutAll: (sessions: NDKSessionManager | null) => void;
+  removeAccount: (pubkey: string, sessions: NDKSessionManager) => Promise<void>;
+  logout: (sessions: NDKSessionManager | null) => Promise<void>;
+  logoutAll: (sessions: NDKSessionManager | null) => Promise<void>;
   setUser: (user: NDKUser | null) => void;
 }
 
@@ -73,7 +74,9 @@ export const useAuthStore = create<AuthState>()(
               isLoading: false,
               loginType: 'nip07',
               signerPayload: signer.toPayload()
-            });          }
+            });
+            await createSessionCookie(pubkey);
+          }
         } catch (error) {
           console.error("NIP-07 login failed:", error);
           set({ isLoading: false });
@@ -104,6 +107,7 @@ export const useAuthStore = create<AuthState>()(
               loginType: 'privateKey',
               signerPayload: signer.toPayload()
             });
+            await createSessionCookie(pubkey);
           }
         } catch (error) {
           console.error("Private key login failed:", error);
@@ -137,6 +141,7 @@ export const useAuthStore = create<AuthState>()(
               loginType: 'privateKey',
               signerPayload: signer.toPayload()
             });
+            await createSessionCookie(pubkey);
           }
         } catch (error) {
           console.error("Ncryptsec login failed:", error);
@@ -152,7 +157,6 @@ export const useAuthStore = create<AuthState>()(
           
           signer.on("auth", (url: string) => {
             window.open(url, '_blank');
-            // We don't reset isLoading here because we're still waiting for blockUntilReady
           });
 
           const user = await signer.blockUntilReady();
@@ -178,6 +182,7 @@ export const useAuthStore = create<AuthState>()(
               loginType: 'bunker',
               signerPayload: signer.toPayload()
             });
+            await createSessionCookie(pubkey);
           }
         } catch (error) {
           console.error("Bunker login failed:", error);
@@ -187,9 +192,7 @@ export const useAuthStore = create<AuthState>()(
       },
 
       generateNewKey: async (ndk, sessions) => {
-        const { signer } = await sessions.createAccount({
-          // Automatic setup could be added here
-        });
+        const { signer } = await sessions.createAccount({});
         
         const user = await signer.user();
         const pubkey = user.pubkey;
@@ -207,6 +210,7 @@ export const useAuthStore = create<AuthState>()(
           loginType: 'privateKey',
           signerPayload: signer.toPayload()
         });
+        await createSessionCookie(pubkey);
         
         return privateKey;
       },
@@ -215,7 +219,6 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true });
         try {
           await sessions.switchTo(pubkey);
-          // The NDKProvider's session subscription will handle updating the user and login state
           set({ isLoading: false });
         } catch (error) {
           console.error("Failed to switch account:", error);
@@ -224,13 +227,11 @@ export const useAuthStore = create<AuthState>()(
         }
       },
 
-      removeAccount: (pubkey, sessions) => {
+      removeAccount: async (pubkey, sessions) => {
         sessions.logout(pubkey);
         const newAccounts = get().accounts.filter(a => a !== pubkey);
         
         if (get().publicKey === pubkey) {
-          // If we're removing the active account, it's already handled by sessions.logout(pubkey)
-          // but we still want to reset our local state
           useWalletStore.getState().resetWallet();
           set({ 
             user: null, 
@@ -242,12 +243,13 @@ export const useAuthStore = create<AuthState>()(
             isLoggedIn: false, 
             loginType: 'none' 
           });
+          await deleteSessionCookie();
         }
         
         set({ accounts: newAccounts });
       },
 
-      logout: (sessions) => {
+      logout: async (sessions) => {
         useWalletStore.getState().resetWallet();
         if (sessions) {
           sessions.logout();
@@ -262,9 +264,10 @@ export const useAuthStore = create<AuthState>()(
           isLoggedIn: false, 
           loginType: 'none' 
         });
+        await deleteSessionCookie();
       },
 
-      logoutAll: (sessions) => {
+      logoutAll: async (sessions) => {
         useWalletStore.getState().resetWallet();
         if (sessions) {
           const pubkeys = Array.from(sessions.getSessions().keys());
@@ -281,6 +284,7 @@ export const useAuthStore = create<AuthState>()(
           isLoggedIn: false, 
           loginType: 'none' 
         });
+        await deleteSessionCookie();
       },
     }),
     {

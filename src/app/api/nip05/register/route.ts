@@ -3,6 +3,7 @@ import { getSupabaseAdmin } from '@/lib/supabase';
 import { validateUsername, calculateHandlePrice } from '@/lib/nip05';
 import { createBlinkInvoice, checkBlinkInvoiceStatus } from '@/lib/blink';
 import { verifyEvent } from 'nostr-tools';
+import { verifySession } from '@/lib/dal';
 
 export async function GET(req: NextRequest) {
   const name = req.nextUrl.searchParams.get('name');
@@ -15,8 +16,13 @@ export async function GET(req: NextRequest) {
   try {
     const supabase = getSupabaseAdmin();
 
-    // ... (pubkey check logic remains the same until line 55)
     if (pubkey) {
+      // Secure check: Ensure requester owns the pubkey
+      const session = await verifySession();
+      if (!session || session.pubkey !== pubkey) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+      }
+
       // Fetch active handles
       const { data: handles } = await supabase
         .from('handles')
@@ -145,6 +151,12 @@ export async function POST(req: NextRequest) {
 
     if (!name || !pubkey) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    }
+
+    // Secure check: Ensure requester owns the pubkey
+    const session = await verifySession();
+    if (!session || session.pubkey !== pubkey) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
     const validation = validateUsername(name);

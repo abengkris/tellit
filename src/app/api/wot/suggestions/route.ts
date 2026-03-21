@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { WoTService } from "@/services/wot.service";
+import { verifySession } from "@/lib/dal";
 
 import { cacheLife } from 'next/cache';
 
@@ -21,6 +22,12 @@ export async function GET(req: NextRequest) {
         { error: "Pubkey is required" },
         { status: 400 }
       );
+    }
+
+    // Secure check: Ensure requester owns the pubkey
+    const session = await verifySession();
+    if (!session || session.pubkey !== pubkey) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
     const suggestions = await WoTService.getSuggestions(pubkey, limit);
