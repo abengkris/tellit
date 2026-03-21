@@ -17,9 +17,9 @@ Implement the logic to gather all inputs needed for the ranking algorithm.
 - [x] Task: Implement WoT signal extractor (373c802)
     - [x] Create `src/lib/feed/signals/wot.ts` to fetch local WoT scores (373c802)
     - [x] Write tests for WoT signal mapping (373c802)
-- [ ] Task: Implement Interest signal extractor (NIP-51)
-    - [ ] Create `src/lib/feed/signals/interests.ts` to map user interests to post tags
-    - [ ] Write tests for interest-based semantic matching
+- [x] Task: Implement Interest signal extractor (NIP-51) (30cdd53)
+    - [x] Create `src/lib/feed/signals/interests.ts` to map user interests to post tags (30cdd53)
+    - [x] Write tests for interest-based semantic matching (30cdd53)
 - [ ] Task: Implement Social Graph signal extractor
     - [ ] Create `src/lib/feed/signals/social.ts` to identify mutual follows and interaction depth
     - [ ] Write tests for mutual follow detection
