@@ -27,7 +27,7 @@ Expose the WoT data through hooks and update the UI with trust indicators.
     - [x] Update `src/app/[npub]/page.tsx` to show a 'Trusted by [N] friends' indicator (3d80094)
 - [x] Task: Conductor - User Manual Verification 'Phase 2: Integration & UI Components' (Protocol in workflow.md) (3d80094)
 
-## Phase 3: Performance Optimization & Testing
+## Phase 3: Performance Optimization & Testing [checkpoint: 3349efa]
 Refine the system to ensure it meets our speed and UX standards.
 
 - [x] Task: Offload scoring to a Web Worker (2371541)
