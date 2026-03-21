@@ -7,7 +7,7 @@ const withPWA = withPWAInit({
 
 const nextConfig = {
   /* config options here */
-  cacheComponents: true, // Enable Next.js 16 PPR and 'use cache'
+  cacheComponents: false, // Temporarily disabled to isolate build timeout
   reactCompiler: false, // Temporarily disabled to speed up build
   output: "standalone",
   staticPageGenerationTimeout: 300, // Increase to 5 minutes
@@ -28,13 +28,10 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: false, // We want to catch errors, but already fixed them
   },
-  turbopack: {}, // Required in Next.js 16 when webpack config is present
   experimental: {
-    // reduce memory usage during build
+    // optimize memory usage during build without sacrificing too much speed
     cpus: 1,
-    workerThreads: false,
     webpackMemoryOptimizations: true,
-    enablePrerenderSourceMaps: false,
     preloadEntriesOnStart: false,
   },
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
