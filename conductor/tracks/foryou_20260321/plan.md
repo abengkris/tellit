@@ -3,12 +3,12 @@
 ## Phase 1: Foundation & Scoring Interface
 Establish the core data structures and the background communication bridge for the scoring engine.
 
-- [ ] Task: Define scoring types and ranking signals
-    - [ ] Create `src/lib/feed/types.ts` for scoring interfaces
-    - [ ] Document weight constants for social, interaction, and interest signals
-- [ ] Task: Scaffold the scoring Web Worker
-    - [ ] Create `src/lib/feed/scoring.worker.ts`
-    - [ ] Implement request/response protocol for batch scoring
+- [x] Task: Define scoring types and ranking signals (964ff25)
+    - [x] Create `src/lib/feed/types.ts` for scoring interfaces (964ff25)
+    - [x] Document weight constants for social, interaction, and interest signals (964ff25)
+- [x] Task: Scaffold the scoring Web Worker (964ff25)
+    - [x] Create `src/lib/feed/scoring.worker.ts` (964ff25)
+    - [x] Implement request/response protocol for batch scoring (964ff25)
 - [ ] Task: Conductor - User Manual Verification 'Phase 1: Foundation & Scoring Interface' (Protocol in workflow.md)
 
 ## Phase 2: Signal Data Retrieval
