@@ -36,7 +36,7 @@ Build the algorithm that combines all signals into a single ranking score.
     - [x] Verify ranking order for various signal combinations (ab292a5)
 - [x] Task: Conductor - User Manual Verification 'Phase 3: Scoring Engine Implementation' (Protocol in workflow.md) (a5b1e68)
 
-## Phase 4: Feed Integration & UX Stability
+## Phase 4: Feed Integration & UX Stability [checkpoint: 3ad5d70]
 Integrate the optimized engine into the UI and ensure a smooth user experience.
 
 - [x] Task: Integrate Scoring Engine into `useForYouFeed` (a5b1e68)
