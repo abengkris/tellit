@@ -3,9 +3,9 @@
 ## Phase 1: Core WoT Infrastructure
 Implement the fundamental data structures and background processes for the Web of Trust.
 
-- [ ] Task: Extend Dexie schema for follows and trust scores
-    - [ ] Update `src/lib/db.ts` to include `follows` and `wotScores` tables
-    - [ ] Add migration logic for existing users
+- [~] Task: Extend Dexie schema for follows and trust scores
+    - [x] Update `src/lib/db.ts` to include `follows` and `wotScores` tables (a977c45)
+    - [x] Add migration logic for existing users (a977c45)
 - [ ] Task: Implement asynchronous follow-graph crawler
     - [ ] Create `src/lib/wot/crawler.ts` to fetch Kind 3 events (follows) from relays
     - [ ] Implement depth-limited (Depth=2) BFS to discover trusted profiles

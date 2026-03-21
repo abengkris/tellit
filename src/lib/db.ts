@@ -1,12 +1,13 @@
 import Dexie from "dexie";
 
-// We keep the DB class for future use, but the wotCache is removed 
-// as we've migrated to a Redis-backed on-demand WoT engine.
+// We keep the DB class for future use, and now we're re-adding 
+// local-first WoT tables to support high-speed trust scoring.
 export class TellItDB extends Dexie {
   constructor() {
     super("TellItDB");
-    this.version(4).stores({
-      // wotCache removed
+    this.version(5).stores({
+      follows: "pubkey, *follows", // pubkey is primary, follows is multi-valued index
+      wotScores: "pubkey, score, lastUpdated"
     });
   }
 }
