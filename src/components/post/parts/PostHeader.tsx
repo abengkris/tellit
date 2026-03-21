@@ -42,7 +42,7 @@ import { formatCompactDate } from "@/lib/utils/date";
 import { Avatar } from "@/components/common/Avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ScoredEvent } from "@/lib/feed/scorer";
+import { ScoredEvent } from "@/lib/feed/types";
 import { cn } from "@/lib/utils";
 import {
   Tooltip,

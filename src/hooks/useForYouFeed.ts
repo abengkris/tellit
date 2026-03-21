@@ -90,11 +90,11 @@ export function useForYouFeed({
           return event;
         });
 
-        if (!isInitialLoadDone.current || window.scrollY < 100) {
+        if (window.scrollY < 100) {
           setRankedPosts(events);
           setPendingRankedPosts(null);
         } else {
-          // If user is scrolled down, buffer the new ranking
+          // If user is scrolled down, buffer the new ranking to prevent jumping
           setPendingRankedPosts(events);
         }
       } else if (message.type === 'ERROR') {

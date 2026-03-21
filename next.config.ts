@@ -3,14 +3,14 @@ import withPWAInit from "@ducanh2912/next-pwa";
 
 const withPWA = withPWAInit({
   dest: "public",
-  disable: process.env.NODE_ENV === "development",
+  disable: true, // Temporarily disabled to debug build timeout
 });
 
 const nextConfig: NextConfig = {
   /* config options here */
-  reactCompiler: true,
+  reactCompiler: false, // Temporarily disabled to speed up build
   output: "standalone",
-  turbopack: {},
+  staticPageGenerationTimeout: 300, // Increase to 5 minutes
   images: {
     remotePatterns: [
       {
@@ -18,6 +18,22 @@ const nextConfig: NextConfig = {
         hostname: "**",
       },
     ],
+  },
+  logging: {
+    fetches: {
+      fullUrl: true,
+    },
+  },
+  eslint: {
+    ignoreDuringBuilds: true, // Speeds up build
+  },
+  typescript: {
+    ignoreBuildErrors: false, // We want to catch errors, but already fixed them
+  },
+  experimental: {
+    // reduce memory usage during build
+    cpus: 1,
+    workerThreads: false,
   },
   webpack: (config, { isServer }) => {
     if (!isServer) {

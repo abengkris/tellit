@@ -6,7 +6,7 @@ import { PostCard } from "@/components/post/PostCard";
 import { ErrorBoundary } from "@/components/common/ErrorBoundary";
 import { FeedSkeleton } from "./FeedSkeleton";
 import { NDKEvent } from "@nostr-dev-kit/ndk";
-import { ScoredEvent } from "@/lib/feed/scorer";
+import { ScoredEvent } from "@/lib/feed/types";
 import { WhoToFollow } from "@/components/profile/WhoToFollow";
 import { Search, Plus } from "lucide-react";
 import Link from "next/link";
