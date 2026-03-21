@@ -20,9 +20,9 @@ Implement the logic to gather all inputs needed for the ranking algorithm.
 - [x] Task: Implement Interest signal extractor (NIP-51) (30cdd53)
     - [x] Create `src/lib/feed/signals/interests.ts` to map user interests to post tags (30cdd53)
     - [x] Write tests for interest-based semantic matching (30cdd53)
-- [ ] Task: Implement Social Graph signal extractor
-    - [ ] Create `src/lib/feed/signals/social.ts` to identify mutual follows and interaction depth
-    - [ ] Write tests for mutual follow detection
+- [x] Task: Implement Social Graph signal extractor (c3c7be1)
+    - [x] Create `src/lib/feed/signals/social.ts` to identify mutual follows and interaction depth (c3c7be1)
+    - [x] Write tests for mutual follow detection (c3c7be1)
 - [ ] Task: Conductor - User Manual Verification 'Phase 2: Signal Data Retrieval' (Protocol in workflow.md)
 
 ## Phase 3: Scoring Engine Implementation
