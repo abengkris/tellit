@@ -1,6 +1,6 @@
 # Implementation Plan: Build Web of Trust (wot_20260321)
 
-## Phase 1: Core WoT Infrastructure
+## Phase 1: Core WoT Infrastructure [checkpoint: e98260c]
 Implement the fundamental data structures and background processes for the Web of Trust.
 
 - [~] Task: Extend Dexie schema for follows and trust scores
