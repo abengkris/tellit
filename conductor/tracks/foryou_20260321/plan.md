@@ -25,7 +25,7 @@ Implement the logic to gather all inputs needed for the ranking algorithm.
     - [x] Write tests for mutual follow detection (c3c7be1)
 - [x] Task: Conductor - User Manual Verification 'Phase 2: Signal Data Retrieval' (Protocol in workflow.md) (ab292a5)
 
-## Phase 3: Scoring Engine Implementation
+## Phase 3: Scoring Engine Implementation [checkpoint: 01886d8]
 Build the algorithm that combines all signals into a single ranking score.
 
 - [x] Task: Implement core ranking algorithm in Web Worker (ab292a5)
