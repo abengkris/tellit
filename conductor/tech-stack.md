@@ -17,6 +17,7 @@
 ## State Management & Persistence
 - **Zustand:** Lightweight, efficient global state management.
 - **Dexie:** Client-side IndexedDB wrapper for high-speed local data persistence.
+- **Web Workers:** Offloading heavy computations (like WoT scoring) to background threads to maintain a responsive main UI thread.
 - **Supabase:** Backend-as-a-service for extended metadata and global state.
 - **Redis (ioredis):** High-performance server-side caching and state.
 

@@ -21,6 +21,7 @@ A decentralized, metadata-resistant microblogging application built on the Nostr
 - **Microblogging Core:** Full support for posting notes, replies, and reactions (likes, reposts) with real-time updates.
 - **Article Support (Kind 30023):** Integrated long-form content creation and consumption.
 - **User Status Updates:** Real-time visibility into user activities and shared states.
+- **Web of Trust (WoT):** Integrated trust scoring and indicators based on social graph analysis, enhancing content discovery and signal-to-noise ratio.
 
 ## Unique Value Propositions
 - **Metadata Resistance:** Specialized implementation focused on minimizing the digital footprint left on relays.
