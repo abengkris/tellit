@@ -1,4 +1,3 @@
-import type { NextConfig } from "next";
 import withPWAInit from "@ducanh2912/next-pwa";
 
 const withPWA = withPWAInit({
@@ -6,7 +5,7 @@ const withPWA = withPWAInit({
   disable: true, // Temporarily disabled to debug build timeout
 });
 
-const nextConfig: NextConfig = {
+const nextConfig = {
   /* config options here */
   reactCompiler: false, // Temporarily disabled to speed up build
   output: "standalone",
@@ -35,7 +34,8 @@ const nextConfig: NextConfig = {
     cpus: 1,
     workerThreads: false,
   },
-  webpack: (config, { isServer }) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  webpack: (config: any, { isServer }: { isServer: boolean }) => {
     if (!isServer) {
       config.resolve.fallback = {
         ...config.resolve.fallback,
@@ -47,6 +47,7 @@ const nextConfig: NextConfig = {
     }
     return config;
   },
-};
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+} as any;
 
 export default withPWA(nextConfig);
