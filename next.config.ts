@@ -11,6 +11,7 @@ const nextConfig = {
   reactCompiler: false, // Temporarily disabled to speed up build
   output: "standalone",
   staticPageGenerationTimeout: 300, // Increase to 5 minutes
+  enablePrerenderSourceMaps: false, // Moved to top level in Next.js 16
   images: {
     remotePatterns: [
       {
