@@ -1,6 +1,6 @@
 # Implementation Plan: Optimize "For You" Feed (foryou_20260321)
 
-## Phase 1: Foundation & Scoring Interface
+## Phase 1: Foundation & Scoring Interface [checkpoint: 6abdc8a]
 Establish the core data structures and the background communication bridge for the scoring engine.
 
 - [x] Task: Define scoring types and ranking signals (964ff25)
@@ -9,7 +9,7 @@ Establish the core data structures and the background communication bridge for t
 - [x] Task: Scaffold the scoring Web Worker (964ff25)
     - [x] Create `src/lib/feed/scoring.worker.ts` (964ff25)
     - [x] Implement request/response protocol for batch scoring (964ff25)
-- [ ] Task: Conductor - User Manual Verification 'Phase 1: Foundation & Scoring Interface' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Phase 1: Foundation & Scoring Interface' (Protocol in workflow.md) (6abdc8a)
 
 ## Phase 2: Signal Data Retrieval
 Implement the logic to gather all inputs needed for the ranking algorithm.
