@@ -14,9 +14,9 @@ Establish the core data structures and the background communication bridge for t
 ## Phase 2: Signal Data Retrieval
 Implement the logic to gather all inputs needed for the ranking algorithm.
 
-- [ ] Task: Implement WoT signal extractor
-    - [ ] Create `src/lib/feed/signals/wot.ts` to fetch local WoT scores
-    - [ ] Write tests for WoT signal mapping
+- [x] Task: Implement WoT signal extractor (373c802)
+    - [x] Create `src/lib/feed/signals/wot.ts` to fetch local WoT scores (373c802)
+    - [x] Write tests for WoT signal mapping (373c802)
 - [ ] Task: Implement Interest signal extractor (NIP-51)
     - [ ] Create `src/lib/feed/signals/interests.ts` to map user interests to post tags
     - [ ] Write tests for interest-based semantic matching
