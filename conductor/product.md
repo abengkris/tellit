@@ -22,6 +22,7 @@ A decentralized, metadata-resistant microblogging application built on the Nostr
 - **Article Support (Kind 30023):** Integrated long-form content creation and consumption.
 - **User Status Updates:** Real-time visibility into user activities and shared states.
 - **Web of Trust (WoT):** Integrated trust scoring and indicators based on social graph analysis, enhancing content discovery and signal-to-noise ratio.
+- **Personalized Feed:** Optimized "For You" algorithm using social signals, interest matching, and interaction depth for high-relevance content discovery.
 
 ## Unique Value Propositions
 - **Metadata Resistance:** Specialized implementation focused on minimizing the digital footprint left on relays.

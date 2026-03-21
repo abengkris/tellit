@@ -13,6 +13,7 @@
 - **TailwindCSS:** Utility-first CSS for rapid, consistent styling.
 - **shadcn/ui & Radix UI:** Accessible, unstyled UI primitives for building custom components.
 - **Framer Motion:** High-quality animations for an 'alive' user experience.
+- **React Virtual (@tanstack/react-virtual):** High-performance virtualization for large feeds, ensuring 60fps scrolling and stable scroll positioning.
 
 ## State Management & Persistence
 - **Zustand:** Lightweight, efficient global state management.
