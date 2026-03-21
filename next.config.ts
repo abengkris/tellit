@@ -7,6 +7,7 @@ const withPWA = withPWAInit({
 
 const nextConfig = {
   /* config options here */
+  cacheComponents: true, // Enable Next.js 16 PPR and 'use cache'
   reactCompiler: false, // Temporarily disabled to speed up build
   output: "standalone",
   staticPageGenerationTimeout: 300, // Increase to 5 minutes

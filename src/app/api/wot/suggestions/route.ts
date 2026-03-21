@@ -1,12 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { WoTService } from "@/services/wot.service";
 
+import { cacheLife } from 'next/cache';
+
 /**
  * GET /api/wot/suggestions?pubkey=...&limit=...
  * 
  * Returns follow suggestions based on the user's D2 network in Redis.
  */
 export async function GET(req: NextRequest) {
+  "use cache";
+  cacheLife("minutes");
+
   try {
     const pubkey = req.nextUrl.searchParams.get("pubkey");
     const limit = parseInt(req.nextUrl.searchParams.get("limit") || "10");
