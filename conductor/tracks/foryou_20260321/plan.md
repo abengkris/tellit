@@ -23,7 +23,7 @@ Implement the logic to gather all inputs needed for the ranking algorithm.
 - [x] Task: Implement Social Graph signal extractor (c3c7be1)
     - [x] Create `src/lib/feed/signals/social.ts` to identify mutual follows and interaction depth (c3c7be1)
     - [x] Write tests for mutual follow detection (c3c7be1)
-- [ ] Task: Conductor - User Manual Verification 'Phase 2: Signal Data Retrieval' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Phase 2: Signal Data Retrieval' (Protocol in workflow.md) (ab292a5)
 
 ## Phase 3: Scoring Engine Implementation
 Build the algorithm that combines all signals into a single ranking score.
