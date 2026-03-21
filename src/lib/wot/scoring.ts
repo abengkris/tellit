@@ -5,8 +5,34 @@ export interface WoTScore {
   score: number;
   lastUpdated: number;
 }
-
 export class WoTScorer {
+  /**
+   * Runs the scoring calculation, preferably in a Web Worker to avoid blocking the main thread.
+   */
+  public async run(rootPubkey: string, maxDepth: number = 2): Promise<void> {
+    if (typeof window !== "undefined" && typeof Worker !== "undefined") {
+      return new Promise((resolve, reject) => {
+        const worker = new Worker(new URL("./wot.worker.ts", import.meta.url));
+        worker.onmessage = (event) => {
+          if (event.data.type === "success") {
+            resolve();
+          } else {
+            reject(new Error(event.data.error));
+          }
+          worker.terminate();
+        };
+        worker.onerror = (error) => {
+          reject(error);
+          worker.terminate();
+        };
+        worker.postMessage({ rootPubkey, maxDepth });
+      });
+    } else {
+      // Fallback to main thread (or for non-browser environments like tests)
+      return this.calculateScores(rootPubkey, maxDepth);
+    }
+  }
+
   /**
    * Calculates and stores trust scores based on follow distance.
    * @param rootPubkey The pubkey to start the calculation from.

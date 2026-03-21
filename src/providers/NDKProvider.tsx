@@ -14,6 +14,7 @@ import { useUIStore } from "@/store/ui";
 import { useWalletStore } from "@/store/wallet";
 import { getNDK, DEFAULT_RELAYS } from "@/lib/ndk";
 import { syncDMRelays } from "@/lib/actions/messages";
+import { WoTServiceLocal } from "@/services/wot.service.local";
 
 interface ExtendedCacheAdapter extends NDKCacheAdapter {
   getUnpublishedEvents?: () => Promise<{ event: NDKEvent; relays?: string[]; lastTryAt?: number }[]>;
@@ -407,6 +408,10 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ pubkey: session.pubkey })
             }).catch(err => console.error("[NDKProvider] WoT init failed:", err));
+
+            // Trigger Local WoT sync
+            const wotLocal = new WoTServiceLocal(instance);
+            wotLocal.startSync(session.pubkey);
           });
         }
       } else {

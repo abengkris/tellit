@@ -30,11 +30,11 @@ Expose the WoT data through hooks and update the UI with trust indicators.
 ## Phase 3: Performance Optimization & Testing
 Refine the system to ensure it meets our speed and UX standards.
 
-- [ ] Task: Offload scoring to a Web Worker
-    - [ ] Move the BFS and scoring logic to a dedicated Web Worker to keep the main thread responsive
-- [ ] Task: Implement background sync and reconciliation
-    - [ ] Ensure WoT data stays up-to-date with periodic relay syncs
-- [ ] Task: Full integration testing
+- [x] Task: Offload scoring to a Web Worker (2371541)
+    - [x] Move the BFS and scoring logic to a dedicated Web Worker to keep the main thread responsive (2371541)
+- [x] Task: Implement background sync and reconciliation (5e56573)
+    - [x] Ensure WoT data stays up-to-date with periodic relay syncs (5e56573)
+- [~] Task: Full integration testing
     - [ ] Write Vitest tests for scoring logic and Dexie interactions
     - [ ] Perform manual UX audit for UI responsiveness
 - [ ] Task: Conductor - User Manual Verification 'Phase 3: Performance Optimization & Testing' (Protocol in workflow.md)
