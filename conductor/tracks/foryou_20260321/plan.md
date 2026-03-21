@@ -11,7 +11,7 @@ Establish the core data structures and the background communication bridge for t
     - [x] Implement request/response protocol for batch scoring (964ff25)
 - [x] Task: Conductor - User Manual Verification 'Phase 1: Foundation & Scoring Interface' (Protocol in workflow.md) (6abdc8a)
 
-## Phase 2: Signal Data Retrieval
+## Phase 2: Signal Data Retrieval [checkpoint: 729c33c]
 Implement the logic to gather all inputs needed for the ranking algorithm.
 
 - [x] Task: Implement WoT signal extractor (373c802)
