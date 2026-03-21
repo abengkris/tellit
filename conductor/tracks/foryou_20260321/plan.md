@@ -1,0 +1,59 @@
+# Implementation Plan: Optimize "For You" Feed (foryou_20260321)
+
+## Phase 1: Foundation & Scoring Interface
+Establish the core data structures and the background communication bridge for the scoring engine.
+
+- [ ] Task: Define scoring types and ranking signals
+    - [ ] Create `src/lib/feed/types.ts` for scoring interfaces
+    - [ ] Document weight constants for social, interaction, and interest signals
+- [ ] Task: Scaffold the scoring Web Worker
+    - [ ] Create `src/lib/feed/scoring.worker.ts`
+    - [ ] Implement request/response protocol for batch scoring
+- [ ] Task: Conductor - User Manual Verification 'Phase 1: Foundation & Scoring Interface' (Protocol in workflow.md)
+
+## Phase 2: Signal Data Retrieval
+Implement the logic to gather all inputs needed for the ranking algorithm.
+
+- [ ] Task: Implement WoT signal extractor
+    - [ ] Create `src/lib/feed/signals/wot.ts` to fetch local WoT scores
+    - [ ] Write tests for WoT signal mapping
+- [ ] Task: Implement Interest signal extractor (NIP-51)
+    - [ ] Create `src/lib/feed/signals/interests.ts` to map user interests to post tags
+    - [ ] Write tests for interest-based semantic matching
+- [ ] Task: Implement Social Graph signal extractor
+    - [ ] Create `src/lib/feed/signals/social.ts` to identify mutual follows and interaction depth
+    - [ ] Write tests for mutual follow detection
+- [ ] Task: Conductor - User Manual Verification 'Phase 2: Signal Data Retrieval' (Protocol in workflow.md)
+
+## Phase 3: Scoring Engine Implementation
+Build the algorithm that combines all signals into a single ranking score.
+
+- [ ] Task: Implement core ranking algorithm in Web Worker
+    - [ ] Develop the scoring logic in `src/lib/feed/scoring.worker.ts`
+    - [ ] Implement additive weighting for combined signals
+- [ ] Task: Write integration tests for the scoring engine
+    - [ ] Create `src/lib/feed/__tests__/scoring.test.ts`
+    - [ ] Verify ranking order for various signal combinations
+- [ ] Task: Conductor - User Manual Verification 'Phase 3: Scoring Engine Implementation' (Protocol in workflow.md)
+
+## Phase 4: Feed Integration & UX Stability
+Integrate the optimized engine into the UI and ensure a smooth user experience.
+
+- [ ] Task: Integrate Scoring Engine into `useForYouFeed`
+    - [ ] Update `src/hooks/useForYouFeed.ts` to offload ranking to the Web Worker
+    - [ ] Implement optimistic rendering for the first set of items
+- [ ] Task: Implement Scroll Position Stability
+    - [ ] Add logic to `src/components/feed/FeedList.tsx` to handle background updates without jumping
+    - [ ] Write tests for scroll-stable insertion logic
+- [ ] Task: Conductor - User Manual Verification 'Phase 4: Feed Integration & UX Stability' (Protocol in workflow.md)
+
+## Phase 5: Final Optimization & UX Audit
+Perform final tuning and ensure all non-functional requirements are met.
+
+- [ ] Task: Performance Benchmarking & Tuning
+    - [ ] Audit CPU/Memory usage during large feed updates
+    - [ ] Refine batch sizes for scoring to ensure 60fps
+- [ ] Task: Full UX Audit
+    - [ ] Verify "No Blocking Spinners" across different network conditions
+    - [ ] Perform manual mobile responsiveness check
+- [ ] Task: Conductor - User Manual Verification 'Phase 5: Final Optimization & UX Audit' (Protocol in workflow.md)
