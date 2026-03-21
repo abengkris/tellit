@@ -6,9 +6,9 @@ Implement the fundamental data structures and background processes for the Web o
 - [~] Task: Extend Dexie schema for follows and trust scores
     - [x] Update `src/lib/db.ts` to include `follows` and `wotScores` tables (a977c45)
     - [x] Add migration logic for existing users (a977c45)
-- [ ] Task: Implement asynchronous follow-graph crawler
-    - [ ] Create `src/lib/wot/crawler.ts` to fetch Kind 3 events (follows) from relays
-    - [ ] Implement depth-limited (Depth=2) BFS to discover trusted profiles
+- [x] Task: Implement asynchronous follow-graph crawler (60d1f48)
+    - [x] Create `src/lib/wot/crawler.ts` to fetch Kind 3 events (follows) from relays (60d1f48)
+    - [x] Implement depth-limited (Depth=2) BFS to discover trusted profiles (60d1f48)
 - [ ] Task: Implement basic scoring algorithm
     - [ ] Create `src/lib/wot/scoring.ts` to calculate scores based on follow distances
     - [ ] Store results in the `wotScores` table in Dexie
