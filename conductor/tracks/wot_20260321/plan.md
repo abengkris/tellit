@@ -14,7 +14,7 @@ Implement the fundamental data structures and background processes for the Web o
     - [x] Store results in the `wotScores` table in Dexie (e3612d8)
 - [x] Task: Conductor - User Manual Verification 'Phase 1: Core WoT Infrastructure' (Protocol in workflow.md) (38b38c3)
 
-## Phase 2: Integration & UI Components
+## Phase 2: Integration & UI Components [checkpoint: 5e56573]
 Expose the WoT data through hooks and update the UI with trust indicators.
 
 - [x] Task: Create `useWoT` custom hook (f8ee6db)
