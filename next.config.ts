@@ -32,7 +32,6 @@ const nextConfig = {
     // optimize memory usage during build without sacrificing too much speed
     cpus: 1,
     webpackMemoryOptimizations: true,
-    preloadEntriesOnStart: false,
   },
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   webpack: (config: any, { isServer }: { isServer: boolean }) => {
