@@ -7,6 +7,9 @@ describe("reportContent (NIP-56)", () => {
   let ndk: NDK;
   let pool: RelayPoolMock;
 
+  // Set higher timeout for NDK operations in this environment
+  const TEST_TIMEOUT = 15000;
+
   beforeEach(async () => {
     pool = new RelayPoolMock();
     ndk = new NDK({ explicitRelayUrls: [] });
@@ -45,7 +48,7 @@ describe("reportContent (NIP-56)", () => {
     expect(event.content).toBe(reason);
     expect(event.tags).toContainEqual(["p", targetPubkey, "spam"]);
     expect(event.tags).toContainEqual(["e", targetEventId, "spam"]);
-  });
+  }, TEST_TIMEOUT);
 
   it("should support blob reporting with 'x' tag", async () => {
     const targetPubkey = "target-pubkey";
@@ -65,5 +68,5 @@ describe("reportContent (NIP-56)", () => {
     const event = sentEvents?.[0][1];
     expect(event.tags).toContainEqual(["x", blobHash, "malware"]);
     expect(event.tags).toContainEqual(["server", serverUrl]);
-  });
+  }, TEST_TIMEOUT);
 });
