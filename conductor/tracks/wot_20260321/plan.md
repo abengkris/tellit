@@ -9,9 +9,9 @@ Implement the fundamental data structures and background processes for the Web o
 - [x] Task: Implement asynchronous follow-graph crawler (60d1f48)
     - [x] Create `src/lib/wot/crawler.ts` to fetch Kind 3 events (follows) from relays (60d1f48)
     - [x] Implement depth-limited (Depth=2) BFS to discover trusted profiles (60d1f48)
-- [ ] Task: Implement basic scoring algorithm
-    - [ ] Create `src/lib/wot/scoring.ts` to calculate scores based on follow distances
-    - [ ] Store results in the `wotScores` table in Dexie
+- [x] Task: Implement basic scoring algorithm (e3612d8)
+    - [x] Create `src/lib/wot/scoring.ts` to calculate scores based on follow distances (e3612d8)
+    - [x] Store results in the `wotScores` table in Dexie (e3612d8)
 - [ ] Task: Conductor - User Manual Verification 'Phase 1: Core WoT Infrastructure' (Protocol in workflow.md)
 
 ## Phase 2: Integration & UI Components
