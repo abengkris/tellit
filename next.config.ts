@@ -28,6 +28,14 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: false, // We want to catch errors, but already fixed them
   },
+  turbopack: {
+    resolveAlias: {
+      fs: { browser: false },
+      net: { browser: false },
+      tls: { browser: false },
+      crypto: { browser: false },
+    },
+  },
   experimental: {
     // optimize memory usage during build without sacrificing too much speed
     cpus: 1,
