@@ -1,7 +1,7 @@
 import React, { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Camera, Image as ImageIcon, Loader2, ArrowRight, ChevronLeft, Upload, Link as LinkIcon, X } from "lucide-react";
+import { Camera, Loader2, ArrowRight, ChevronLeft, Upload, Link as LinkIcon, X } from "lucide-react";
 import { useOnboardingStore } from "@/store/onboarding";
 import { useBlossom } from "@/hooks/useBlossom";
 import { useUIStore } from "@/store/ui";

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import NDK, { NDKSigner, NDKFilter } from "@nostr-dev-kit/ndk";
+import NDK, { NDKFilter } from "@nostr-dev-kit/ndk";
 import { RelayPoolMock, UserGenerator, EventGenerator, SignerGenerator } from "@nostr-dev-kit/ndk/test";
 import { followUser, unfollowUser } from "../follow";
 
@@ -23,8 +23,6 @@ describe("follow/unfollow with NDK Test Utils", () => {
   });
 
   it("should follow a new user and publish a kind:3 event", async () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const alice = await UserGenerator.getUser("alice", ndk as any);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (ndk as any).signer = SignerGenerator.getSigner("alice");
     const relay = pool.getMockRelay("wss://relay.example.com");

@@ -24,6 +24,7 @@ export function IdentityStep({ onNext, onBack }: { onNext: () => void; onBack: (
         const result = await res.json();
         setAvailability(result);
       } catch (err) {
+        console.error("Failed to check handle availability:", err);
         setAvailability({ available: false, error: "Failed to check availability" });
       } finally {
         setIsChecking(false);

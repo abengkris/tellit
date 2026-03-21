@@ -137,7 +137,7 @@ export const publishPost = async (
       if (targetId && !event.tags.some(t => t[0] === 'q' && t[1] === targetId)) {
         event.tags.push(["q", targetId, relay, pubkey]);
       }
-    } catch (err) {
+    } catch (_) {
       // Ignore invalid bech32
     }
   }

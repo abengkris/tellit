@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { useNDK } from "@/hooks/useNDK";
-import { NDKEvent, NDKSubscriptionCacheUsage, NDKKind } from "@nostr-dev-kit/ndk";
+import { NDKSubscriptionCacheUsage, NDKKind } from "@nostr-dev-kit/ndk";
 import { useAuthStore } from "@/store/auth";
 
 export interface CustomEmoji {

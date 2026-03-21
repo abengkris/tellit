@@ -66,7 +66,7 @@ export function AsyncMediaEmbed({ url, imeta, pubkey }: { url: string; imeta?: I
           else if (contentType?.startsWith('audio/')) setType('audio');
           else setType('url');
         }
-      } catch (err) {
+      } catch (_) {
         if (isMounted) setType('url');
       }
     };

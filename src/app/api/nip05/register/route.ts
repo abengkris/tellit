@@ -156,7 +156,7 @@ export async function POST(req: NextRequest) {
     const supabase = getSupabaseAdmin();
 
     // 1. Check active handles
-    const { data: existingHandle, error: checkError } = await supabase
+    const { data: existingHandle } = await supabase
       .from('handles')
       .select('name, pubkey, created_at')
       .eq('name', name.toLowerCase())
@@ -196,9 +196,9 @@ export async function POST(req: NextRequest) {
                 }, { status: 409 });
               }
             } catch (err) {
+              console.error('[NIP-05 Register POST] Blink check error:', err);
               return NextResponse.json({ error: 'Handle is currently reserved.' }, { status: 409 });
-            }
-          }
+            }          }
         }
       }
     }

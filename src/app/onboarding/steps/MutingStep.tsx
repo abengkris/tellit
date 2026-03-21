@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { VolumeX, Plus, Trash2, ArrowRight, ChevronLeft, Volume2 } from "lucide-react";
+import { VolumeX, Plus, Trash2, ArrowRight, ChevronLeft } from "lucide-react";
 import { useOnboardingStore } from "@/store/onboarding";
 import { Badge } from "@/components/ui/badge";
 

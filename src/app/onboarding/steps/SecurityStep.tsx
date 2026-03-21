@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
-import { ShieldCheck, Copy, CheckCircle2, AlertTriangle, ChevronLeft, ArrowRight, Eye, EyeOff, Lock } from "lucide-react";
+import { ShieldCheck, Copy, CheckCircle2, AlertTriangle, ChevronLeft, Eye, EyeOff, Lock } from "lucide-react";
 import { useUIStore } from "@/store/ui";
 import { toNsec } from "@/lib/utils/nip19";
 

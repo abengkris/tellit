@@ -4,7 +4,6 @@ import { useMemo, useCallback } from "react";
 import NDKBlossom from "@nostr-dev-kit/ndk-blossom";
 import { useNDK } from "./useNDK";
 import { defaultSHA256Calculator } from "@nostr-dev-kit/ndk-blossom";
-import NDK, { NDKUser } from "@nostr-dev-kit/ndk";
 
 const DEFAULT_BLOSSOM_SERVERS = [
   "https://blossom.primal.net",
@@ -49,7 +48,7 @@ export function useBlossom() {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const correctUrl = await blossom.fixUrl(user as any, url);
         return correctUrl || url;
-      } catch (err) {
+      } catch (_) {
         return url;
       }
     },
@@ -63,7 +62,7 @@ export function useBlossom() {
         const user = ndk.getUser({ pubkey });
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         return await blossom.listBlobs(user as any);
-      } catch (err) {
+      } catch (_) {
         return [];
       }
     },
@@ -87,7 +86,7 @@ export function useBlossom() {
 
         // NDK-Blossom provides an optimized URL generator based on BUD-05
         return await blossom.getOptimizedUrl(url, options);
-      } catch (err) {
+      } catch (_) {
         return url;
       }
     },

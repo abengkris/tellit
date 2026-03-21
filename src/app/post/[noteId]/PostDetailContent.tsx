@@ -8,7 +8,6 @@ import { useThread } from "@/hooks/useThread";
 import { decodeNip19 } from "@/lib/utils/nip19";
 
 import { FeedSkeleton } from "@/components/feed/FeedSkeleton";
-import { ThreadNode } from "@/components/post/ThreadNode";
 import { PostComposer } from "@/components/post/PostComposer";
 
 export function PostDetailContent({ noteId }: { noteId: string }) {
@@ -20,8 +19,7 @@ export function PostDetailContent({ noteId }: { noteId: string }) {
     loading, 
     loadingReplies, 
     hasMoreReplies, 
-    loadMoreReplies,
-    fetchRepliesFor
+    loadMoreReplies
   } = useThread(hexId, relays);
   const router = useRouter();
 

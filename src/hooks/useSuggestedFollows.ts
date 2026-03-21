@@ -1,10 +1,9 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useNDK } from "@/hooks/useNDK";
 import { useAuthStore } from "@/store/auth";
 import { NDKEvent, NDKSubscriptionCacheUsage } from "@nostr-dev-kit/ndk";
-import { useWoTNetwork } from "./useWoTNetwork";
 import { useInteractionHistory } from "./useInteractionHistory";
 import { useLists } from "./useLists";
 

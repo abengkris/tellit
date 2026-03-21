@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { ImetaMetadata } from "@/lib/content/tokenizer";
 import { Blurhash } from "react-blurhash";
-import { Lightbox } from "@/components/common/Lightbox";
 
 export function ImageEmbed({ 
   url, 

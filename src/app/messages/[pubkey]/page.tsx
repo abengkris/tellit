@@ -3,12 +3,10 @@
 import React, { use, useState, useRef, useEffect } from "react";
 import { useChat } from "@/hooks/useChat";
 import { useProfile } from "@/hooks/useProfile";
-import { useNDK } from "@/hooks/useNDK";
 import { useAuthStore } from "@/store/auth";
 import { useUIStore } from "@/store/ui";
 import { useBlossom } from "@/hooks/useBlossom";
 import { useEmojis } from "@/hooks/useEmojis";
-import { sendMessage } from "@/lib/actions/messages";
 import { ArrowLeft, Send, Loader2, Image as ImageIcon, Smile, X } from "lucide-react";
 import Link from "next/link";
 import { Avatar } from "@/components/common/Avatar";
@@ -17,12 +15,11 @@ import { decodeNip19 } from "@/lib/utils/nip19";
 
 export default function ChatPage({ params }: { params: Promise<{ pubkey: string }> }) {
   const { pubkey } = use(params);
-  const { messenger, ndk } = useNDK();
   const { user: currentUser } = useAuthStore();
   const { addToast } = useUIStore();
   const { uploadFile } = useBlossom();
   const { emojis } = useEmojis();
-  const { messages, loading, sendMessage: sendMsg, markAsRead } = useChat(pubkey);
+  const { messages, loading, sendMessage: sendMsg } = useChat(pubkey);
   const { profile } = useProfile(pubkey);
   
   const [content, setContent] = useState("");

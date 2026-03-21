@@ -1,5 +1,5 @@
 
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach, Mock } from "vitest";
 import { Avatar } from "../Avatar";
 import { useBlossom } from "@/hooks/useBlossom";
@@ -18,8 +18,6 @@ global.ResizeObserver = vi.fn().mockImplementation(() => ({
 
 describe("Avatar Component", () => {
   const pubkey = "test-pubkey";
-  const originalSrc = "https://example.com/avatar.jpg";
-  const optimizedSrc = "https://blossom.example.com/optimized/avatar.webp";
   const robohashSrc = `https://robohash.org/${pubkey}?set=set1`;
 
   beforeEach(() => {

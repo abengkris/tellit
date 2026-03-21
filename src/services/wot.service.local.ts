@@ -1,7 +1,6 @@
 import NDK from "@nostr-dev-kit/ndk";
 import { WoTCrawler } from "../lib/wot/crawler";
 import { WoTScorer } from "../lib/wot/scoring";
-import { db } from "../lib/db";
 
 export class WoTServiceLocal {
   private ndk: NDK;

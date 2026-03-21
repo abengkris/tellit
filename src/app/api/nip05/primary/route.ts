@@ -61,6 +61,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true, message: `${handleName} is now your primary handle` });
 
   } catch (err: unknown) {
+    console.error('[NIP-05 Primary] Fatal Error:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

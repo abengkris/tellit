@@ -39,6 +39,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       },
     };
   } catch (err) {
+    console.error("[Post Metadata] Error generating metadata:", err);
     return {
       title: "Post",
     };

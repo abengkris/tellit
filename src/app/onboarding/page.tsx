@@ -6,32 +6,12 @@ import { useAuthStore } from "@/store/auth";
 import { useNDK } from "@/hooks/useNDK";
 import { useRouter } from "next/navigation";
 import { 
-  User, 
-  Camera, 
-  Hash, 
-  Users, 
-  VolumeX, 
-  ShieldCheck, 
-  ArrowRight, 
-  Check,
-  ChevronRight,
-  Sparkles,
-  Search,
-  Plus,
-  Trash2,
-  Lock,
   Loader2
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent } from "@/components/ui/card";
-import { Avatar } from "@/components/common/Avatar";
-import { Badge } from "@/components/ui/badge";
 import { updateProfile } from "@/lib/actions/profile";
 import { useUIStore } from "@/store/ui";
-import { useBlossom } from "@/hooks/useBlossom";
 import { cn } from "@/lib/utils";
-import { NDKEvent, NDKTag } from "@nostr-dev-kit/ndk";
+import { NDKEvent } from "@nostr-dev-kit/ndk";
 
 // Step Components
 import { WelcomeStep } from "./steps/WelcomeStep";
@@ -167,7 +147,7 @@ export default function OnboardingPage() {
       <div className="w-full max-w-xl">
         {/* Progress Bar */}
         <div className="flex gap-1 mb-8 px-4">
-          {(['identity', 'profile-image', 'interests', 'recommendations', 'muting', 'security'] as OnboardingStep[]).map((s, i) => {
+          {(['identity', 'profile-image', 'interests', 'recommendations', 'muting', 'security'] as OnboardingStep[]).map((s, _i) => {
             const steps = ['identity', 'profile-image', 'interests', 'recommendations', 'muting', 'security'];
             const currentIndex = steps.indexOf(currentStep);
             const stepIndex = steps.indexOf(s);

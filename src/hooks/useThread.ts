@@ -21,7 +21,7 @@ export function useThread(focalId?: string, hintRelays?: string[]) {
     if (!ndk || !hintRelays || hintRelays.length === 0) return undefined;
     try {
       return NDKRelaySet.fromRelayUrls(hintRelays, ndk);
-    } catch (e) {
+    } catch (_) {
       return undefined;
     }
   }, [ndk, hintRelays]);
@@ -178,8 +178,8 @@ export function useThread(focalId?: string, hintRelays?: string[]) {
       return Array.from(events)
         .filter(ev => eventIsReply(baseEvent, ev))
         .sort((a, b) => (a.created_at ?? 0) - (b.created_at ?? 0));
-    } catch (e) {
-      console.error("Error fetching nested replies:", e);
+    } catch (_) {
+      console.error("Error fetching nested replies:", _);
       return [];
     }
   }, [ndk, relaySet]);

@@ -6,10 +6,9 @@ import { useNDK } from "@/hooks/useNDK";
 import { useProfile } from "@/hooks/useProfile";
 import { formatDistanceToNow } from "date-fns";
 import Link from "next/link";
-import { nip19 } from "@nostr-dev-kit/ndk";
 import Image from "next/image";
 import { PostContentRenderer } from "../parts/PostContent";
-import { shortenPubkey, getEventNip19 } from "@/lib/utils/nip19";
+import { shortenPubkey } from "@/lib/utils/nip19";
 import { getPostUrl } from "@/lib/utils/identity";
 
 interface QuoteEmbedProps {
@@ -62,7 +61,6 @@ export function QuoteEmbed({ eventId, hintRelays, className = "" }: QuoteEmbedPr
 
 function QuoteEmbedContent({ event, className }: { event: NDKEvent; className: string }) {
   const { profile } = useProfile(event.pubkey);
-  const npub = nip19.npubEncode(event.pubkey);
   const postUrl = getPostUrl(event, profile);
 
   return (

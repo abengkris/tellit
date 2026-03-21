@@ -6,7 +6,6 @@ import { useNDK } from "@/hooks/useNDK";
 import { useAuthStore } from "@/store/auth";
 import { useUIStore } from "@/store/ui";
 import { NDKMessage, NDKConversation } from "@nostr-dev-kit/messages";
-import { NDKKind, NDKSubscriptionCacheUsage } from "@nostr-dev-kit/ndk";
 import { mapNDKMessage } from "@/lib/utils/messages";
 import { sendMessage as sendChatMessage } from "@/lib/actions/messages";
 

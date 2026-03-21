@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { PostDetailContent } from "@/app/post/[noteId]/PostDetailContent";
 import { decodeNip19 } from "@/lib/utils/nip19";
 import { resolveVanitySlug, isVanitySlug } from "@/lib/utils/identity";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { FeedSkeleton } from "@/components/feed/FeedSkeleton";
 
 interface Props {
