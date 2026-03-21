@@ -17,9 +17,9 @@ Implement the fundamental data structures and background processes for the Web o
 ## Phase 2: Integration & UI Components
 Expose the WoT data through hooks and update the UI with trust indicators.
 
-- [ ] Task: Create `useWoT` custom hook
-    - [ ] Implement `src/hooks/useWoT.ts` to provide real-time trust scores for any pubkey
-    - [ ] Ensure hook utilizes Dexie for near-instant data retrieval
+- [x] Task: Create `useWoT` custom hook (38b38c3)
+    - [x] Implement `src/hooks/useWoT.ts` to provide real-time trust scores for any pubkey (38b38c3)
+    - [x] Ensure hook utilizes Dexie for near-instant data retrieval (38b38c3)
 - [ ] Task: Add trust indicators to post components
     - [ ] Update `src/components/post/PostHeader.tsx` to display trust badges based on WoT score
     - [ ] Implement subtle tooltips explaining the trust relationship
