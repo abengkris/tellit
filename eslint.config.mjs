@@ -8,7 +8,11 @@ const eslintConfig = defineConfig([
   {
     rules: {
       "@typescript-eslint/no-explicit-any": "error",
-      "@typescript-eslint/no-unused-vars": "warn",
+      "@typescript-eslint/no-unused-vars": ["error", { 
+        "argsIgnorePattern": "^_",
+        "varsIgnorePattern": "^_",
+        "caughtErrorsIgnorePattern": "^_"
+      }],
       "@next/next/no-img-element": "warn",
       "react-hooks/exhaustive-deps": "warn",
       "react-hooks/set-state-in-effect": "warn"

@@ -5,8 +5,6 @@ import {
   Loader2, 
   ArrowLeft, 
   Calendar, 
-  RefreshCw, 
-  ExternalLink, 
   Share, 
   MessageSquare 
 } from "lucide-react";

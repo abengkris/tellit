@@ -45,6 +45,12 @@ vi.mock("../wallet", () => ({
   }
 }));
 
+// Mock Server Actions
+vi.mock("@/lib/actions/auth", () => ({
+  createSessionCookie: vi.fn().mockResolvedValue(undefined),
+  deleteSessionCookie: vi.fn().mockResolvedValue(undefined),
+}));
+
 describe("Auth Store", () => {
   beforeEach(() => {
     useAuthStore.setState({

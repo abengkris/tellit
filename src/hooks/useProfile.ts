@@ -63,7 +63,7 @@ export function useProfile(pubkey?: string) {
             globalProfileCache.set(pubkey, metadata);
             setProfile(metadata);
             setLoading(false); // Can stop loading early if found in cache
-          } catch (e) {
+          } catch (_) {
             // Ignore parse errors
           }
         }

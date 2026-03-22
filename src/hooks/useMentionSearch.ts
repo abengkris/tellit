@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useNDK } from "./useNDK";
 import { NDKUser, NDKSubscriptionCacheUsage } from "@nostr-dev-kit/ndk";
 import { useDebounce } from "use-debounce";

@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useNDK } from "@/hooks/useNDK";
-import { ScoringContext } from "@/lib/feed/scorer";
+import { ScoringContext } from "@/lib/feed/types";
 
 export function useScoringContext(
   viewerPubkey: string | undefined,

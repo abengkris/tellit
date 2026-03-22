@@ -15,7 +15,6 @@ import { ProfileSetupCard } from "@/components/profile/ProfileSetupCard";
 import { InterestSelector } from "@/components/feed/InterestSelector";
 import { useUIStore } from "@/store/ui";
 import { useLists } from "@/hooks/useLists";
-import { useProfile } from "@/hooks/useProfile";
 import Link from "next/link";
 
 type FeedTab = "following" | "forYou" | "global" | string;

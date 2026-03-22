@@ -7,7 +7,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { Play, FileText, Image as ImageIcon } from "lucide-react";
 import { tokenize, parseImeta } from "@/lib/content/tokenizer";
-import { getEventNip19 } from "@/lib/utils/nip19";
 import { getPostUrl, getArticleUrl } from "@/lib/utils/identity";
 import { Blurhash } from "react-blurhash";
 import { Skeleton } from "@/components/ui/skeleton";

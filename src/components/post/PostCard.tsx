@@ -23,7 +23,7 @@ import { shortenPubkey, getEventNip19 } from "@/lib/utils/nip19";
 import { getPostUrl, getArticleUrl } from "@/lib/utils/identity";
 import { formatFullTimestamp } from "@/lib/utils/date";
 import { useLists } from "@/hooks/useLists";
-import { ScoredEvent } from "@/lib/feed/scorer";
+import { ScoredEvent } from "@/lib/feed/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 

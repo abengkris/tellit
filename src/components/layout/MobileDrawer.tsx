@@ -4,7 +4,6 @@ import React from "react";
 import Link from "next/link";
 import { User, Bookmark, Activity, Settings, MessageSquare, PenTool, Wallet } from "lucide-react";
 import { useAuthStore } from "@/store/auth";
-import { useNDK } from "@/hooks/useNDK";
 import { useRelayStatus } from "@/hooks/useRelayStatus";
 import { useUIStore } from "@/store/ui";
 import { useWalletStore } from "@/store/wallet";

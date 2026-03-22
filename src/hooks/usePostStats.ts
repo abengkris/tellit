@@ -101,7 +101,7 @@ export function usePostStats(eventId?: string) {
                 newStats.totalSats += Math.floor(parseInt(amountTag[1]) / 1000);
               }
             }
-          } catch (e) {
+          } catch (_) {
             // Ignore parse errors
           }
         }

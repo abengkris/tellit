@@ -1,34 +1,6 @@
 import { NDKEvent } from "@nostr-dev-kit/ndk";
-
-export interface ScoringContext {
-  viewerPubkey: string;
-  followingSet: Set<string>;        
-  interactionHistory: Map<string, number>; 
-  networkDegreeMap?: Map<string, number>; // pubkey -> degree (1 or 2)
-  mutualsMap?: Map<string, number>;  // pubkey -> count of mutual followers
-  interestsSet?: Set<string>;        // list of hashtags user is interested in
-}
-
-export interface ScoredEvent {
-  event: NDKEvent;
-  score: number;
-  signals: Record<string, number>; 
-}
-
-const WEIGHTS = {
-  isFollowing: 60,        
-  networkDegree1: 70,     // Server-side verified D1 (matches followingSet mostly)
-  networkDegree2: 35,     // Server-side verified D2
-  frequentInteraction: 40, 
-  hasMedia: 8,            
-  hasLongContent: 5,      
-  isReply: -25,           
-  isRepost: 10,           
-  networkReaction: 15,    
-  networkReply: 12,
-  mutualsFactor: 15,      // multiplier for log10(mutuals)
-  interestMatch: 50,      // Boost for matching a topic user is interested in
-} as const;
+import { ScoringContext, ScoredEvent, RANKING_WEIGHTS as WEIGHTS } from "./types";
+import { calculateInterestSignal } from "./signals/interests";
 
 export function scoreEvent(
   event: NDKEvent,
@@ -39,18 +11,10 @@ export function scoreEvent(
   let score = 0;
 
   // --- Interests signals ---
-  if (ctx.interestsSet && ctx.interestsSet.size > 0) {
-    const eventTags = new Set(event.tags.filter(t => t[0] === 't').map(t => t[1].toLowerCase()));
-    let matches = 0;
-    ctx.interestsSet.forEach(interest => {
-      if (eventTags.has(interest.toLowerCase())) matches++;
-    });
-
-    if (matches > 0) {
-      const interestBoost = Math.min(matches * WEIGHTS.interestMatch, WEIGHTS.interestMatch * 2);
-      signals.interestMatch = interestBoost;
-      score += interestBoost;
-    }
+  const interestBoost = calculateInterestSignal(event, ctx.interestsSet);
+  if (interestBoost > 0) {
+    signals.interestMatch = interestBoost;
+    score += interestBoost;
   }
 
   // --- Social graph signals ---
@@ -59,7 +23,7 @@ export function scoreEvent(
     score += WEIGHTS.isFollowing;
   } 
 
-  // Redis-backed Network Degree boost
+  // Network Degree boost
   if (ctx.networkDegreeMap) {
     const degree = ctx.networkDegreeMap.get(event.pubkey);
     if (degree === 1) {
@@ -71,11 +35,21 @@ export function scoreEvent(
     }
   }
 
+  // Web of Trust (WoT) boost
+  if (ctx.wotScores) {
+    const wotScore = ctx.wotScores.get(event.pubkey) ?? 0;
+    if (wotScore > 0) {
+      const wotBoost = wotScore * WEIGHTS.wotScoreFactor;
+      signals.wot = wotBoost;
+      score += wotBoost;
+    }
+  }
+
   // Mutuals boost
   if (ctx.mutualsMap) {
     const mutuals = ctx.mutualsMap.get(event.pubkey) ?? 0;
     if (mutuals > 1) {
-      // 1 + log10(mutuals) boost as per WOT_PLAN.md
+      // 1 + log10(mutuals) boost
       const mutualsBoost = (1 + Math.log10(mutuals)) * WEIGHTS.mutualsFactor;
       signals.mutuals = Math.round(mutualsBoost * 10) / 10;
       score += mutualsBoost;

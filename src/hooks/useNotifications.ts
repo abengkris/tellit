@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from "react";
-import NDK, { NDKEvent, NDKFilter, NDKSubscription } from "@nostr-dev-kit/ndk";
+import { NDKEvent, NDKFilter, NDKSubscription } from "@nostr-dev-kit/ndk";
 import { useAuthStore } from "@/store/auth";
 import { useNDK } from "@/hooks/useNDK";
 

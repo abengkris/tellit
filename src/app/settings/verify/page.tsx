@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { useAuthStore } from "@/store/auth";
 import { useNDK } from "@/hooks/useNDK";
 import { useUIStore } from "@/store/ui";
@@ -15,7 +15,7 @@ import { updateProfileNIP05 } from "@/lib/actions/profile";
 import { LNPaymentModal } from "@/components/common/LNPaymentModal";
 import { useRelayList } from "@/hooks/useRelayList";
 
-export default function VerifyPage() {
+function VerifyContent() {
   const { user, isLoggedIn } = useAuthStore();
   const { ndk } = useNDK();
   const { addToast } = useUIStore();
@@ -375,5 +375,18 @@ export default function VerifyPage() {
         />
       )}
     </div>
+  );
+}
+
+export default function VerifyPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex flex-col items-center justify-center min-h-[50vh]">
+        <Loader2 className="animate-spin size-10 text-primary" />
+        <p className="mt-4 text-muted-foreground font-medium">Loading verification...</p>
+      </div>
+    }>
+      <VerifyContent />
+    </Suspense>
   );
 }

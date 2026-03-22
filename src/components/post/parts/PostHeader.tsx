@@ -14,10 +14,12 @@ import {
   Bookmark,
   BarChart2,
   ExternalLink,
-  Sparkles
+  Sparkles,
+  ShieldCheck
 } from "lucide-react";
 import Link from "next/link";
 
+import { useWoT } from "@/hooks/useWoT";
 import { UserIdentity } from "@/components/common/UserIdentity";
 import { 
   DropdownMenu, 
@@ -40,7 +42,7 @@ import { formatCompactDate } from "@/lib/utils/date";
 import { Avatar } from "@/components/common/Avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ScoredEvent } from "@/lib/feed/scorer";
+import { ScoredEvent } from "@/lib/feed/types";
 import { cn } from "@/lib/utils";
 import {
   Tooltip,
@@ -112,6 +114,7 @@ export const PostHeader: React.FC<PostHeaderProps> = ({
   variant = "feed",
   relevance
 }) => {
+  const { score } = useWoT(pubkey);
   const formattedTime = formatCompactDate(createdAt);
   const [showDeleteDialog, setShowDeleteDialog] = React.useState(false);
   const finalProfileUrl = profileUrl || `/${userNpub}`;
@@ -156,6 +159,26 @@ export const PostHeader: React.FC<PostHeaderProps> = ({
                 <span className="font-bold text-[17px] text-foreground leading-tight truncate">{display_name}</span>
                 <span className="text-muted-foreground text-[15px] truncate">@{name || userNpub.slice(0, 12)}</span>
               </Link>
+              {score > 0 && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="flex items-center gap-1 mt-0.5 cursor-help">
+                        <ShieldCheck className={cn(
+                          "size-3.5",
+                          score > 80 ? "text-green-500" : "text-muted-foreground/60"
+                        )} />
+                        <span className="text-[11px] font-bold text-muted-foreground/60">
+                          {score}% Trust
+                        </span>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent className="text-[10px] font-bold uppercase tracking-widest p-2">
+                      Web of Trust Score based on your connections
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
             </div>
           </div>
 
@@ -320,6 +343,23 @@ export const PostHeader: React.FC<PostHeaderProps> = ({
               />
             </Link>
             <div className="flex items-center gap-1 shrink-0 mt-1">
+              {score > 0 && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="flex items-center cursor-help">
+                        <ShieldCheck className={cn(
+                          "size-3",
+                          score > 80 ? "text-green-500" : "text-muted-foreground/60"
+                        )} />
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent className="text-[10px] font-bold uppercase tracking-widest p-2">
+                      WoT: {score}%
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
               {isPinned && (
                 <Badge variant="secondary" className="h-4 px-1.5 gap-1 text-primary bg-primary/10 border-primary/20 font-black uppercase text-[8px] tracking-tighter">
                   <Pin className="size-2" fill="currentColor" aria-hidden="true" />

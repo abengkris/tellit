@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { NDKEvent } from "@nostr-dev-kit/ndk";
-import { NDKMessenger, NDKMessage } from "@nostr-dev-kit/messages";
+import { NDKMessage } from "@nostr-dev-kit/messages";
 import { useNDK } from "@/hooks/useNDK";
 import { useAuthStore } from "@/store/auth";
 import { mapNDKMessage, MappedMessage } from "@/lib/utils/messages";

@@ -12,6 +12,7 @@ import { useInteractionHistory } from "@/hooks/useInteractionHistory";
 import { useDrafts } from "@/hooks/useDrafts";
 import { useProfile } from "@/hooks/useProfile";
 import { NDKEvent, NDKTag, nip19 } from "@nostr-dev-kit/ndk";
+import Image from "next/image";
 import { 
   ImageIcon, 
   Smile,
@@ -505,8 +506,13 @@ export const PostComposer: React.FC<PostComposerProps> = ({
               {mediaFiles.map((file) => (
                 <div key={file.url} className="relative rounded-2xl overflow-hidden group border border-border aspect-video bg-muted/30">
                   {file.type.startsWith("image/") ? (
-                    /* eslint-disable-next-line @next/next/no-img-element */
-                    <img src={file.url} alt="Uploaded media" className="w-full h-full object-cover transition-transform group-hover:scale-105 duration-500" />
+                    <Image 
+                      src={file.url} 
+                      alt="Uploaded media" 
+                      fill
+                      sizes="(max-width: 768px) 100vw, 50vw"
+                      className="object-cover transition-transform group-hover:scale-105 duration-500" 
+                    />
                   ) : (
                     <video src={file.url} className="w-full h-full object-cover" />
                   )}

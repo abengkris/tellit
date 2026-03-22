@@ -3,11 +3,11 @@ import { getSupabaseAdmin } from '@/lib/supabase';
 import { validateUsername, calculateHandlePrice } from '@/lib/nip05';
 import { createBlinkInvoice, checkBlinkInvoiceStatus } from '@/lib/blink';
 import { verifyEvent } from 'nostr-tools';
+import { verifySession } from '@/lib/dal';
 
 export async function GET(req: NextRequest) {
-  const { searchParams } = new URL(req.url);
-  const name = searchParams.get('name');
-  const pubkey = searchParams.get('pubkey');
+  const name = req.nextUrl.searchParams.get('name');
+  const pubkey = req.nextUrl.searchParams.get('pubkey');
 
   if (!name && !pubkey) {
     return NextResponse.json({ error: 'Missing name or pubkey' }, { status: 400 });
@@ -16,8 +16,13 @@ export async function GET(req: NextRequest) {
   try {
     const supabase = getSupabaseAdmin();
 
-    // ... (pubkey check logic remains the same until line 55)
     if (pubkey) {
+      // Secure check: Ensure requester owns the pubkey
+      const session = await verifySession();
+      if (!session || session.pubkey !== pubkey) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+      }
+
       // Fetch active handles
       const { data: handles } = await supabase
         .from('handles')
@@ -148,6 +153,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
+    // Secure check: Ensure requester owns the pubkey
+    const session = await verifySession();
+    if (!session || session.pubkey !== pubkey) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    }
+
     const validation = validateUsername(name);
     if (!validation.valid) {
       return NextResponse.json({ error: validation.error }, { status: 400 });
@@ -156,7 +167,7 @@ export async function POST(req: NextRequest) {
     const supabase = getSupabaseAdmin();
 
     // 1. Check active handles
-    const { data: existingHandle, error: checkError } = await supabase
+    const { data: existingHandle } = await supabase
       .from('handles')
       .select('name, pubkey, created_at')
       .eq('name', name.toLowerCase())
@@ -196,9 +207,9 @@ export async function POST(req: NextRequest) {
                 }, { status: 409 });
               }
             } catch (err) {
+              console.error('[NIP-05 Register POST] Blink check error:', err);
               return NextResponse.json({ error: 'Handle is currently reserved.' }, { status: 409 });
-            }
-          }
+            }          }
         }
       }
     }

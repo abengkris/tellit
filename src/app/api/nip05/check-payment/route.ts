@@ -3,8 +3,7 @@ import { getSupabaseAdmin } from '@/lib/supabase';
 import { checkBlinkInvoiceStatus } from '@/lib/blink';
 
 export async function GET(req: NextRequest) {
-  const { searchParams } = new URL(req.url);
-  const hash = searchParams.get('hash');
+  const hash = req.nextUrl.searchParams.get('hash');
 
   if (!hash) {
     return NextResponse.json({ error: 'Missing payment hash' }, { status: 400 });

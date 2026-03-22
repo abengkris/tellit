@@ -1,5 +1,4 @@
 import '@testing-library/jest-dom';
-import { vi } from 'vitest';
 import crypto from 'node:crypto';
 
 // Add Web Crypto support for tests

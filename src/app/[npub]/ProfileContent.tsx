@@ -34,6 +34,8 @@ import { MediaGrid } from "@/components/profile/MediaGrid";
 import { FormattedAbout } from "@/components/profile/FormattedAbout";
 import { ProfileBadges } from "@/components/profile/ProfileBadges";
 import { Avatar } from "@/components/common/Avatar";
+import { useWoT } from "@/hooks/useWoT";
+import { ShieldCheck, Users } from "lucide-react";
 
 import Image from "next/image";
 import Link from "next/link";
@@ -87,6 +89,7 @@ export function ProfileContent({ npubParam }: { npubParam: string }) {
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
   };
   const { profile, loading: profileLoading, profileUrl, refresh: refreshProfile } = useProfile(hexPubkey);
+  const { score, mutualCount } = useWoT(hexPubkey);
   const { relays: userRelays, loading: relaysLoading } = useRelayList(hexPubkey);
   const { generalStatus, musicStatus } = useUserStatus(hexPubkey);
   
@@ -312,6 +315,18 @@ export function ProfileContent({ npubParam }: { npubParam: string }) {
             {profile?.bot && (
               <Badge variant="secondary" className="h-5 px-1.5 font-black uppercase tracking-widest text-[9px] bg-primary/10 text-primary border-primary/20 rounded-md mt-1">
                 Bot
+              </Badge>
+            )}
+            {score > 0 && (
+              <Badge variant="secondary" className="h-5 px-1.5 font-black uppercase tracking-widest text-[9px] bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20 rounded-md mt-1 gap-1">
+                <ShieldCheck size={10} />
+                WoT: {score}%
+              </Badge>
+            )}
+            {mutualCount > 0 && (
+              <Badge variant="secondary" className="h-5 px-1.5 font-black uppercase tracking-widest text-[9px] bg-primary/10 text-primary border-primary/20 rounded-md mt-1 gap-1">
+                <Users size={10} />
+                Trusted by {mutualCount} friends
               </Badge>
             )}
           </div>

@@ -1,15 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase';
 
-export const dynamic = 'force-dynamic';
+import { cacheLife } from 'next/cache';
 
 /**
  * Public directory of verified handles.
  */
 export async function GET(req: NextRequest) {
-  const { searchParams } = new URL(req.url);
-  const limit = parseInt(searchParams.get('limit') || '50');
-  const offset = parseInt(searchParams.get('offset') || '0');
+  "use cache";
+  cacheLife("minutes");
+
+  const limit = parseInt(req.nextUrl.searchParams.get('limit') || '50');
+  const offset = parseInt(req.nextUrl.searchParams.get('offset') || '0');
 
   try {
     const supabase = getSupabaseAdmin();

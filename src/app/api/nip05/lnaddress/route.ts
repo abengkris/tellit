@@ -71,6 +71,7 @@ if (!isValid) {
     return NextResponse.json({ success: true, message: `Lightning address for ${handleName} updated` });
 
   } catch (err: unknown) {
+    console.error('[NIP-05 LnAddress] Fatal Error:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

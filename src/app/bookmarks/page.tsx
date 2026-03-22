@@ -4,7 +4,7 @@ import React from "react";
 import { useBookmarks } from "@/hooks/useBookmarks";
 import { PostCard } from "@/components/post/PostCard";
 import { FeedSkeleton } from "@/components/feed/FeedSkeleton";
-import { Bookmark, Ghost } from "lucide-react";
+import { Bookmark } from "lucide-react";
 
 export default function BookmarksPage() {
   const { events, loading } = useBookmarks();

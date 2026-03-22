@@ -88,7 +88,7 @@ export function MuteList({
       } else {
         addToast(`Failed to unmute ${name}`, "error");
       }
-    } catch (err) {
+    } catch (_err) {
       addToast(`Error unmuting user`, "error");
     } finally {
       setUnmuting(prev => {

@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { tokenize, Token, resolveDeprecatedMentions, buildImetaMap } from "@/lib/content/tokenizer";
 import { MentionLink } from "../tokens/MentionLink";
 import { HashtagLink } from "../tokens/HashtagLink";
@@ -14,7 +15,7 @@ import { ShortenedUrl } from "../tokens/ShortenedUrl";
 import { UrlPreview } from "../tokens/UrlPreview";
 import { PodcastEmbed } from "../tokens/PodcastEmbed";
 import { AsyncMediaEmbed } from "../tokens/AsyncMediaEmbed";
-import { NDKEvent, NDKArticle, NDKHighlight } from "@nostr-dev-kit/ndk";
+import { NDKEvent, NDKHighlight } from "@nostr-dev-kit/ndk";
 import { shortenPubkey, toNpub } from "@/lib/utils/nip19";
 import { useProfile } from "@/hooks/useProfile";
 import { Play } from "lucide-react";
@@ -267,14 +268,13 @@ export function PostContentRenderer({
       {isArticle && !isFullArticle && (
         <div className="flex flex-col gap-3">
           {event.tags.find(t => t[0] === 'image')?.[1] && (
-            <div className="w-full aspect-video rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-900 border border-gray-200 dark:border-gray-800">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img 
-                src={event.tags.find(t => t[0] === 'image')?.[1]} 
+            <div className="w-full aspect-video rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 relative">
+              <Image 
+                src={event.tags.find(t => t[0] === 'image')?.[1] || ""} 
                 alt={event.tags.find(t => t[0] === 'title')?.[1] || "Article hero"}
-                className="w-full h-full object-cover cursor-zoom-in"
-                loading="lazy"
-                decoding="async"
+                fill
+                sizes="(max-width: 768px) 100vw, 50vw"
+                className="object-cover cursor-zoom-in"
                 onClick={(e) => {
                   e.stopPropagation();
                   setLightboxIndex(0);

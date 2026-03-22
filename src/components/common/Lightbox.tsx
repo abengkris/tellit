@@ -10,6 +10,7 @@ import {
 import { X, Download, ExternalLink, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
+import Image from "next/image";
 
 interface LightboxMedia {
   url: string;
@@ -219,13 +220,16 @@ export const Lightbox: React.FC<LightboxProps> = ({
               onClick={onClose}
             >
               {currentMedia?.type === "image" ? (
-                /* eslint-disable-next-line @next/next/no-img-element */
-                <img
-                  src={currentMedia.url}
-                  alt={currentMedia.alt || ""}
-                  className="max-w-full max-h-full object-contain select-none shadow-2xl"
-                  onClick={(e) => e.stopPropagation()}
-                />
+                <div className="relative w-full h-full" onClick={(e) => e.stopPropagation()}>
+                  <Image
+                    src={currentMedia.url}
+                    alt={currentMedia.alt || ""}
+                    fill
+                    sizes="100vw"
+                    className="object-contain select-none shadow-2xl"
+                    priority
+                  />
+                </div>
               ) : (
                 <video
                   src={currentMedia?.url}

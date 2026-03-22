@@ -33,6 +33,7 @@ export async function GET(req: NextRequest) {
       url
     });
   } catch (err) {
+    console.error("[OG API] Error fetching metadata:", err);
     return NextResponse.json({ error: "Failed to fetch metadata" }, { status: 500 });
   }
 }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { WoTService } from "@/services/wot.service";
+import { verifySession } from "@/lib/dal";
 
 /**
  * POST /api/wot/init
@@ -19,6 +20,12 @@ export async function POST(req: NextRequest) {
         { error: "Pubkey is required" },
         { status: 400 }
       );
+    }
+
+    // Secure check: Ensure requester owns the pubkey
+    const session = await verifySession();
+    if (!session || session.pubkey !== pubkey) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
     // Trigger WoT initialization

@@ -53,7 +53,7 @@ export async function decryptData(encodedData: string, pin: string): Promise<str
       ciphertext
     );
     return decoder.decode(decrypted);
-  } catch (e) {
+  } catch (_) {
     throw new Error("Invalid PIN or corrupted data");
   }
 }

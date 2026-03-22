@@ -6,7 +6,8 @@ import { useNDK } from "@/hooks/useNDK";
 import { useWoTNetwork } from "./useWoTNetwork";
 import { useUIStore } from "@/store/ui";
 import { useInteractionHistory } from "./useInteractionHistory";
-import { ScoredEvent } from "@/lib/feed/scorer";
+import { ScoredEvent, ScoringWorkerMessage } from "@/lib/feed/types";
+import { fetchWoTSignals } from "@/lib/feed/signals/wot";
 import { validateEvent } from "@/lib/policies";
 
 
@@ -48,6 +49,7 @@ export function useForYouFeed({
 
   const [rawEvents, setRawEvents] = useState<NDKEvent[]>([]);
   const [rankedPosts, setRankedPosts] = useState<NDKEvent[]>([]);
+  const [pendingRankedPosts, setPendingRankedPosts] = useState<NDKEvent[] | null>(null);
   const [currentScoredEvents, setCurrentScoredEvents] = useState<ScoredEvent[]>([]);
   const [newCount, setNewCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -74,17 +76,30 @@ export function useForYouFeed({
   const scoringTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    workerRef.current = new Worker(new URL("@/lib/feed/scorer.worker.ts", import.meta.url));
+    workerRef.current = new Worker(new URL("@/lib/feed/scoring.worker.ts", import.meta.url));
     
-    workerRef.current.onmessage = (e: MessageEvent<ScoredEvent[]>) => {
+    workerRef.current.onmessage = (e: MessageEvent<ScoringWorkerMessage>) => {
       if (!ndk) return;
-      const scoredEvents = e.data;
-      setCurrentScoredEvents(scoredEvents);
-      const events = scoredEvents.map(se => {
-        const event = new NDKEvent(ndk, se.event);
-        return event;
-      });
-      setRankedPosts(events);
+      
+      const message = e.data;
+      if (message.type === 'BATCH_RESULTS') {
+        const scoredEvents = message.results;
+        setCurrentScoredEvents(scoredEvents);
+        const events = scoredEvents.map(se => {
+          const event = new NDKEvent(ndk, se.event);
+          return event;
+        });
+
+        if (window.scrollY < 100) {
+          setRankedPosts(events);
+          setPendingRankedPosts(null);
+        } else {
+          // If user is scrolled down, buffer the new ranking to prevent jumping
+          setPendingRankedPosts(events);
+        }
+      } else if (message.type === 'ERROR') {
+        console.error("[useForYouFeed] Scoring worker error:", message.error);
+      }
     };
 
     return () => {
@@ -130,18 +145,22 @@ export function useForYouFeed({
 
     if (scoringTimeoutRef.current) clearTimeout(scoringTimeoutRef.current);
 
-    // Increase debounce to 500ms to reduce main thread serialization pressure
-    scoringTimeoutRef.current = setTimeout(() => {
+    scoringTimeoutRef.current = setTimeout(async () => {
       // 1. Identify new events not yet sent to worker
       const newEvents = rawEvents.filter(e => !sentIds.current.has(e.id));
       
-      // 2. Prepare context for the worker (plain objects only)
+      // 2. Fetch WoT signals for all authors in the current raw feed
+      const allAuthors = Array.from(new Set(rawEvents.map(e => e.pubkey)));
+      const wotSignals = await fetchWoTSignals(allAuthors);
+
+      // 3. Prepare context for the worker (plain objects only)
       const context = {
         viewerPubkey,
         followingSet: Array.from(followingList),
-        interactionHistory: Array.from(historyMap.entries()), 
+        interactionHistory: Object.fromEntries(historyMap.entries()), 
         networkDegreeMap: network, 
         interestsSet: Array.from(interests),
+        wotScores: Object.fromEntries(wotSignals.entries()),
       };
 
       const plainEvents = newEvents.map(e => e.rawEvent());
@@ -150,8 +169,9 @@ export function useForYouFeed({
       newEvents.forEach(e => sentIds.current.add(e.id));
 
       workerRef.current?.postMessage({
+        type: 'SCORE_BATCH',
         events: plainEvents,
-        context, // Always send context to ensure worker is up to date with settings
+        ctx: context, // Always send context to ensure worker is up to date with settings
       });
     }, 500); 
 
@@ -297,6 +317,11 @@ export function useForYouFeed({
   }, [ndk, isReady, sync, followingList, discoverAuthors, queueUpdate, interests, viewerPubkey, rawEvents.length]); 
 
   const flushNewPosts = useCallback(() => {
+    if (pendingRankedPosts) {
+      setRankedPosts(pendingRankedPosts);
+      setPendingRankedPosts(null);
+    }
+
     if (!bufferRef.current.length) return;
 
     setRawEvents(prev => {
@@ -306,7 +331,7 @@ export function useForYouFeed({
 
     bufferRef.current = [];
     setNewCount(0);
-  }, []);
+  }, [pendingRankedPosts]);
 
   const loadMore = useCallback(async () => {
     if (!ndk || !hasMore || !rawEvents.length) return;

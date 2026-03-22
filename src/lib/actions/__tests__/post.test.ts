@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import NDK, { NDKSigner, NDKEvent } from "@nostr-dev-kit/ndk";
+import NDK from "@nostr-dev-kit/ndk";
 import { RelayPoolMock, UserGenerator, EventGenerator, SignerGenerator } from "@nostr-dev-kit/ndk/test";
 import { publishPost } from "../post";
 
@@ -24,8 +24,6 @@ describe("publishPost with NDK Test Utils", () => {
 
   it("should publish a basic note", async () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const alice = await UserGenerator.getUser("alice", ndk as any);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (ndk as any).signer = SignerGenerator.getSigner("alice");
     const relay = pool.getMockRelay("wss://relay.example.com");
 
@@ -47,7 +45,6 @@ describe("publishPost with NDK Test Utils", () => {
     const alice = await UserGenerator.getUser("alice", ndk as any);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (ndk as any).signer = SignerGenerator.getSigner("alice");
-    const relay = pool.getMockRelay("wss://relay.example.com");
 
     const rootEvent = await EventGenerator.createEvent(1, "Root post", alice.pubkey);
     const content = "This is a reply";

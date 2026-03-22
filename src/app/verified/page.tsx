@@ -8,7 +8,6 @@ import { Avatar } from "@/components/common/Avatar";
 import { Card, CardContent } from "@/components/ui/card";
 import Link from "next/link";
 import { useProfile } from "@/hooks/useProfile";
-import { format } from "date-fns";
 
 interface Handle {
   name: string;

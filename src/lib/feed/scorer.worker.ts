@@ -1,4 +1,5 @@
-import { ScoringContext, scoreEvent, ScoredEvent } from "./scorer";
+import { ScoringContext, ScoredEvent } from "./types";
+import { scoreEvent } from "./scorer";
 import { NDKEvent } from "@nostr-dev-kit/ndk";
 
 /**

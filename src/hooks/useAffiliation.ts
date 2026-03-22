@@ -44,7 +44,7 @@ export function useAffiliation(nip05: string | undefined) {
             const data = await res.json();
             rootPubkey = data.names?.['_'];
           }
-        } catch (e) {
+        } catch (_) {
           // ignore error for first try
         }
         
@@ -58,7 +58,7 @@ export function useAffiliation(nip05: string | undefined) {
               const dataFallback = await resFallback.json();
               rootPubkey = dataFallback.names?.[domainPart];
             }
-          } catch (e) {
+          } catch (_) {
             // ignore
           }
         }
@@ -68,7 +68,7 @@ export function useAffiliation(nip05: string | undefined) {
           affiliationCache[domain] = result;
           setAffiliationPubkey(result);
         }
-      } catch (err) {
+      } catch (_) {
         if (isMounted) {
           affiliationCache[domain] = null;
           setAffiliationPubkey(null);

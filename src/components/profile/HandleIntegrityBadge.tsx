@@ -33,7 +33,7 @@ export const HandleIntegrityBadge = ({ handle, onFixed }: { handle: HandleStatus
       } else {
         addToast("Failed to update profile", "error");
       }
-    } catch (err) {
+    } catch (_err) {
       addToast("An error occurred", "error");
     } finally {
       setIsFixing(false);

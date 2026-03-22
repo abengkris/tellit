@@ -22,7 +22,6 @@ interface Metadata {
 export function PodcastEmbed({ itemGuid, itemUrl, podcastGuid, podcastUrl }: PodcastEmbedProps) {
   const [metadata, setMetadata] = useState<Metadata | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
 
   const mainUrl = itemUrl || podcastUrl;
   const isFountain = mainUrl?.includes("fountain.fm");
@@ -36,10 +35,9 @@ export function PodcastEmbed({ itemGuid, itemUrl, podcastGuid, podcastUrl }: Pod
     fetch(`/api/og?url=${encodeURIComponent(mainUrl)}`)
       .then((res) => res.json())
       .then((data) => {
-        if (data.error) setError(true);
-        else setMetadata(data);
+        if (!data.error) setMetadata(data);
       })
-      .catch(() => setError(true))
+      .catch(() => {})
       .finally(() => {
         setLoading(false);
       });
