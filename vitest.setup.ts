@@ -1,5 +1,11 @@
 import '@testing-library/jest-dom';
+import { cleanup } from '@testing-library/react';
+import { afterEach } from 'vitest';
 import crypto from 'node:crypto';
+
+afterEach(() => {
+  cleanup();
+});
 
 // Add Web Crypto support for tests
 if (!global.crypto) {

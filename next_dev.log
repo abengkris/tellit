@@ -1,0 +1,63 @@
+npm warn Unknown cli config "--turbopack". This will stop working in the next major version of npm.
+
+> tellit@0.7.8 dev
+> NODE_OPTIONS='--require ./mock-os.js' next dev
+
+⚠ Invalid next.config.ts options detected: 
+⚠     Invalid input at "turbopack.resolveAlias.fs"
+⚠     Expected string, received boolean at "turbopack.resolveAlias.fs"
+⚠     Expected array, received boolean at "turbopack.resolveAlias.fs"
+⚠     Expected object, received boolean at "turbopack.resolveAlias.fs"
+⚠     Invalid input at "turbopack.resolveAlias.net"
+⚠     Expected string, received boolean at "turbopack.resolveAlias.net"
+⚠     Expected array, received boolean at "turbopack.resolveAlias.net"
+⚠     Expected object, received boolean at "turbopack.resolveAlias.net"
+⚠     Invalid input at "turbopack.resolveAlias.tls"
+⚠     Expected string, received boolean at "turbopack.resolveAlias.tls"
+⚠     Expected array, received boolean at "turbopack.resolveAlias.tls"
+⚠     Expected object, received boolean at "turbopack.resolveAlias.tls"
+⚠     Invalid input at "turbopack.resolveAlias.crypto"
+⚠     Expected string, received boolean at "turbopack.resolveAlias.crypto"
+⚠     Expected array, received boolean at "turbopack.resolveAlias.crypto"
+⚠     Expected object, received boolean at "turbopack.resolveAlias.crypto"
+⚠ See more info here: https://nextjs.org/docs/messages/invalid-next-config
+▲ Next.js 16.1.6 (Turbopack)
+- Local:         http://localhost:3000
+- Environments: .env.local
+- Experiments (use with caution):
+  · cpus: 1
+  ⨯ serverSourceMaps
+
+✓ Starting...
+
+-----
+[1m[31mFATAL[39m[0m: An unexpected Turbopack error occurred. A panic log has been written to /tmp/next-panic-d252b184b06dd463b3d35caffbb637ee.log.
+
+To help make Turbopack better, report this error by clicking here: https://github.com/vercel/next.js/discussions/new?category=turbopack-error-report&title=Turbopack%20Error%3A%20boolean%20values%20are%20invalid%20in%20exports%20field%20entries&body=Turbopack%20version%3A%20%6023c46498%60%0ANext.js%20version%3A%20%600.0.0%60%0A%0AError%20message%3A%0A%60%60%60%0ATurbopack%20Error%3A%20boolean%20values%20are%20invalid%20in%20exports%20field%20entries%0A%60%60%60&labels=Turbopack,Turbopack%20Panic%20Backtrace
+-----
+
+Error [TurbopackInternalError]: boolean values are invalid in exports field entries
+
+Debug info:
+- Execution of get_entrypoints_with_issues_operation failed
+- Execution of EntrypointsOperation::new failed
+- Execution of Project::entrypoints failed
+- Execution of Project::middleware_endpoint failed
+- Execution of *MiddlewareEndpoint::new failed
+- Execution of Project::node_middleware_context failed
+- Execution of AppProject::edge_ecmascript_client_reference_transition failed
+- Execution of *NextEcmascriptClientReferenceTransition::new failed
+- Execution of AppProject::client_transition failed
+- Execution of *FullContextTransition::new failed
+- Execution of AppProject::client_module_context failed
+- Execution of *ModuleAssetContext::new failed
+- Execution of get_client_module_options_context failed
+- Execution of *get_jsx_transform_options failed
+- Execution of get_client_resolve_options_context failed
+- Execution of get_next_client_import_map failed
+- Execution of NextConfig::resolve_alias_options failed
+- boolean values are invalid in exports field entries
+    at <unknown> (TurbopackInternalError: boolean values are invalid in exports field entries) {
+  location: undefined
+}
+[?25h

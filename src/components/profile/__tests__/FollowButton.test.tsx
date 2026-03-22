@@ -73,7 +73,7 @@ describe("FollowButton", () => {
     });
 
     render(<FollowButton targetPubkey={targetPubkey} />);
-    expect(screen.getByText(/Following/i)).toBeDefined();
+    expect(screen.getByText("Following…")).toBeDefined();
   });
 
   it("should display 'Unfollowing…' when pending unfollow", () => {
@@ -86,6 +86,6 @@ describe("FollowButton", () => {
     });
 
     render(<FollowButton targetPubkey={targetPubkey} />);
-    expect(screen.getByText(/Unfollowing/i)).toBeDefined();
+    expect(screen.getByText("Unfollowing…")).toBeDefined();
   });
 });
