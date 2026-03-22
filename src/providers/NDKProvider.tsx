@@ -15,6 +15,7 @@ import { useWalletStore } from "@/store/wallet";
 import { getNDK, DEFAULT_RELAYS } from "@/lib/ndk";
 import { syncDMRelays } from "@/lib/actions/messages";
 import { WoTServiceLocal } from "@/services/wot.service.local";
+import { formatNDKError, NDKErrorType } from "@/lib/error-handler";
 
 interface ExtendedCacheAdapter extends NDKCacheAdapter {
   getUnpublishedEvents?: () => Promise<{ event: NDKEvent; relays?: string[]; lastTryAt?: number }[]>;
@@ -359,7 +360,8 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
 
     instance.on("event:publish-failed", (event: NDKEvent, error: Error) => {
       console.error(`Event ${event.id} failed to publish:`, error);
-      stableDepsRef.current.addToast(`Failed to publish event. It will be retried automatically.`, "error");
+      const formatted = formatNDKError(error, NDKErrorType.PUBLISH_FAILED);
+      stableDepsRef.current.addToast(formatted.message, "error");
     });
 
     // We use any casting because some NDK versions emit these events but might not have them in all Type definitions
