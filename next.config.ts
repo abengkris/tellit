@@ -7,11 +7,11 @@ const withPWA = withPWAInit({
 
 const nextConfig = {
   /* config options here */
-  cacheComponents: true, // Re-enable Next.js 16 PPR and 'use cache'
+  cacheComponents: false, // Disabled to resolve 45min build hang
   reactCompiler: false, // Temporarily disabled to speed up build
   output: "standalone",
-  staticPageGenerationTimeout: 300, // Increase to 5 minutes
-  enablePrerenderSourceMaps: false, // Moved to top level in Next.js 16
+  staticPageGenerationTimeout: 120, // Reduce timeout to fail faster if hanging
+  enablePrerenderSourceMaps: false,
   images: {
     remotePatterns: [
       {
@@ -26,15 +26,7 @@ const nextConfig = {
     },
   },
   typescript: {
-    ignoreBuildErrors: false, // We want to catch errors, but already fixed them
-  },
-  turbopack: {
-    resolveAlias: {
-      fs: { browser: "./src/lib/utils/empty.ts" },
-      net: { browser: "./src/lib/utils/empty.ts" },
-      tls: { browser: "./src/lib/utils/empty.ts" },
-      crypto: { browser: "./src/lib/utils/empty.ts" },
-    },
+    ignoreBuildErrors: false, 
   },
   experimental: {
     // optimize memory usage during build without sacrificing too much speed
