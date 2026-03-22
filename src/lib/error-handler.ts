@@ -37,9 +37,15 @@ export function formatNDKError(
       isCritical = false;
   }
 
-  return {
+  const result = {
     message,
     isCritical,
     originalError: error,
   };
+
+  if (!isCritical && type !== NDKErrorType.UNKNOWN) {
+    console.warn(`[NDK Error]: ${error.message}`, error);
+  }
+
+  return result;
 }

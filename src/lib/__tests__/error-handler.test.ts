@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { formatNDKError, NDKErrorType } from "../error-handler";
 
 describe("error-handler", () => {
@@ -25,6 +25,15 @@ describe("error-handler", () => {
       
       expect(formatted.message).toBe("An unexpected error occurred");
       expect(formatted.isCritical).toBe(false);
+    });
+
+    it("should log the error to the console if it's not critical", () => {
+      const consoleSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+      const error = new Error("Relay connection lost");
+      formatNDKError(error, NDKErrorType.CONNECTION_FAILED);
+      
+      expect(consoleSpy).toHaveBeenCalledWith("[NDK Error]: Relay connection lost", error);
+      consoleSpy.mockRestore();
     });
   });
 });
