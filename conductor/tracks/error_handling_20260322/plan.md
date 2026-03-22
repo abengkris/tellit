@@ -7,7 +7,7 @@
 - [x] Task: Conductor - User Manual Verification 'Phase 1: Infrastructure' (Protocol in workflow.md) 6ce96b8
 
 ## Phase 2: Global Error Listening
-- [ ] Task: Implement a global NDK error listener
+- [x] Task: Implement a global NDK error listener 85b76fb
     - [ ] Update `src/providers/NDKProvider.tsx` to listen for global NDK events.
     - [ ] Write tests to verify that the listener correctly catches and processes errors.
 - [ ] Task: Conductor - User Manual Verification 'Phase 2: Global Error Listening' (Protocol in workflow.md)
