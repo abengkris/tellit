@@ -6,11 +6,11 @@
     - [ ] Write unit tests for the error handler utility.
 - [x] Task: Conductor - User Manual Verification 'Phase 1: Infrastructure' (Protocol in workflow.md) 6ce96b8
 
-## Phase 2: Global Error Listening
+## Phase 2: Global Error Listening [checkpoint: ce11392]
 - [x] Task: Implement a global NDK error listener 85b76fb
     - [ ] Update `src/providers/NDKProvider.tsx` to listen for global NDK events.
     - [ ] Write tests to verify that the listener correctly catches and processes errors.
-- [ ] Task: Conductor - User Manual Verification 'Phase 2: Global Error Listening' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Phase 2: Global Error Listening' (Protocol in workflow.md) ce11392
 
 ## Phase 3: UI Integration
 - [ ] Task: Connect error handler to UI notifications
