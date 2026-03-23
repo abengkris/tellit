@@ -9,7 +9,7 @@ export default defineConfig({
     globals: true,
     setupFiles: ['./vitest.setup.ts'],
     pool: 'forks',
-    // @ts-ignore
+    // @ts-expect-error - Vitest types for poolOptions are slightly off in this version
     poolOptions: {
       forks: {
         workerResponseTimeout: 120000,

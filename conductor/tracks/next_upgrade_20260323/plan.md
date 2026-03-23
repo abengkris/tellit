@@ -1,10 +1,10 @@
 # Implementation Plan: Upgrade Next.js to Latest Stable
 
 ## Phase 1: Baseline and Preparation
-- [ ] Task: Record current dependency baseline
-    - [ ] List current versions of `next`, `react`, `react-dom`, and Vercel packages.
-- [ ] Task: Verify current project health
-    - [ ] Run `npm run lint` and `npm test` to ensure a clean starting point.
+- [x] Task: Record current dependency baseline 2183c36
+    - [x] List current versions: next@16.1.6, react@19.2.3, react-dom@19.2.3, @vercel/analytics@2.0.1, @vercel/speed-insights@2.0.0.
+- [x] Task: Verify current project health 2183c36
+    - [x] Run `npm run lint` (0 errors, 18 warnings) and `npm test` (sample test passed).
 - [ ] Task: Conductor - User Manual Verification 'Phase 1: Baseline and Preparation' (Protocol in workflow.md)
 
 ## Phase 2: Upgrade Execution
