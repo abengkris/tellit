@@ -29,8 +29,11 @@ export const MessageBubbleContent: React.FC<MessageBubbleContentProps> = ({ text
 
   const tokens = useMemo(() => tokenize(text), [text]);
 
+  const cleanUrlFn = (u: string) => u.replace(/[.,;!?:()\[\]{}'"]+$/, "");
+
   const isMediaUrl = (url: string) => {
-    const path = url.split('?')[0].split('#')[0].toLowerCase();
+    const cleaned = cleanUrlFn(url);
+    const path = cleaned.split('?')[0].split('#')[0].toLowerCase();
     return !!path.match(/\.(jpg|jpeg|png|gif|webp|avif|svg|jfif|mp4|mov|webm|ogg)$/);
   };
 
@@ -42,9 +45,10 @@ export const MessageBubbleContent: React.FC<MessageBubbleContentProps> = ({ text
       if (token.type === "image" || token.type === "video") {
         mediaT.push(token);
       } else if (token.type === "url") {
-        const cleanUrl = token.value.replace(/[.,;]$/, "");
+        const cleanUrl = cleanUrlFn(token.value);
         if (isMediaUrl(cleanUrl)) {
-          const isVideo = cleanUrl.match(/\.(mp4|mov|webm|ogg)$/i);
+          const path = cleanUrl.split('?')[0].split('#')[0].toLowerCase();
+          const isVideo = path.match(/\.(mp4|mov|webm|ogg)$/);
           mediaT.push({
             ...token,
             type: isVideo ? "video" : "image",

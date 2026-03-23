@@ -157,8 +157,11 @@ export function PostContentRenderer({
   const tokens = useMemo(() => tokenize(normalizedContent), [normalizedContent]);
   const commentTokens = useMemo(() => comment ? tokenize(comment) : [], [comment]);
 
+  const cleanUrlFn = (u: string) => u.replace(/[.,;!?:()\[\]{}'"]+$/, "");
+
   const isMediaUrl = (url: string) => {
-    const path = url.split('?')[0].split('#')[0].toLowerCase();
+    const cleaned = cleanUrlFn(url);
+    const path = cleaned.split('?')[0].split('#')[0].toLowerCase();
     return !!path.match(/\.(jpg|jpeg|png|gif|webp|avif|svg|jfif|mp4|mov|webm|ogg)$/);
   };
 
@@ -180,9 +183,10 @@ export function PostContentRenderer({
       } else if (token.type === "lightning" && token.value) {
         card.push(token);
       } else if (token.type === "url" && token.value) {
-        const cleanUrl = token.value.replace(/[.,;]$/, "");
+        const cleanUrl = cleanUrlFn(token.value);
         if (isMediaUrl(cleanUrl) || imetaMap.has(cleanUrl)) {
-          const isVideo = cleanUrl.match(/\.(mp4|mov|webm|ogg)$/i) || imetaMap.get(cleanUrl)?.mimeType?.startsWith('video/');
+          const path = cleanUrl.split('?')[0].split('#')[0].toLowerCase();
+          const isVideo = path.match(/\.(mp4|mov|webm|ogg)$/) || imetaMap.get(cleanUrl)?.mimeType?.startsWith('video/');
           media.push({
             ...token,
             type: isVideo ? "video" : "image",
@@ -211,12 +215,13 @@ export function PostContentRenderer({
 
   const allMediaForLightbox = useMemo(() => {
     try {
+      const cleanUrlFn = (u: string) => u.replace(/[.,;!?:()\[\]{}'"]+$/, "");
       const media = mediaTokens
         .filter(t => t && t.value)
         .map(t => ({
-          url: t.value.replace(/[.,;]$/, ""),
+          url: cleanUrlFn(t.value),
           type: t.type as "image" | "video",
-          alt: imetaMap.get(t.value.replace(/[.,;]$/, ""))?.alt
+          alt: imetaMap.get(cleanUrlFn(t.value))?.alt
         }));
 
       const articleImage = event.tags.find(t => t[0] === 'image')?.[1];
@@ -249,11 +254,11 @@ export function PostContentRenderer({
   // NIP-24: Collect 'r' tags that aren't already in the text
   const extraRTags = useMemo(() => {
     const rTags = event.tags.filter(t => t[0] === 'r' && t[1]);
-    const existingUrls = new Set(urlTokens.map(t => t.value.replace(/[.,;]$/, "")));
+    const existingUrls = new Set(urlTokens.map(t => cleanUrlFn(t.value)));
     
     return rTags
       .map(t => t[1])
-      .filter(url => !existingUrls.has(url));
+      .filter(url => !existingUrls.has(cleanUrlFn(url)));
   }, [event.tags, urlTokens]);
 
   return (
@@ -403,7 +408,7 @@ export function PostContentRenderer({
               {mediaTokens.length === 1 ? (
                 mediaTokens.map((token, i) => {
                   if (!token.value) return null;
-                  const cleanUrl = token.value.replace(/[.,;]$/, "");
+                  const cleanUrl = cleanUrlFn(token.value);
                   const imeta = imetaMap.get(cleanUrl);
                   return token.type === "image" ? (
                     <ImageEmbed 
@@ -429,7 +434,7 @@ export function PostContentRenderer({
                 }`}>
                   {mediaTokens.slice(0, 4).map((token, i) => {
                     if (!token.value) return null;
-                    const cleanUrl = token.value.replace(/[.,;]$/, "");
+                    const cleanUrl = cleanUrlFn(token.value);
                     const imeta = imetaMap.get(cleanUrl);
                     const isLarge = mediaTokens.length === 3 && i === 0;
                     
@@ -475,14 +480,14 @@ export function PostContentRenderer({
           {renderMedia && audioTokens.length > 0 && (
             <div className="space-y-2 w-full">
               {audioTokens.map((token, i) => {
-                const cleanUrl = token.value.replace(/[.,;]$/, "");
+                const cleanUrl = cleanUrlFn(token.value);
                 return <AudioEmbed key={i} url={cleanUrl} />;
               })}
             </div>
           )}
 
           {renderMedia && urlTokens.map((token, i) => {
-            const cleanUrl = token.value.replace(/[.,;]$/, "");
+            const cleanUrl = cleanUrlFn(token.value);
             const imeta = imetaMap.get(cleanUrl);
             return <AsyncMediaEmbed key={i} url={cleanUrl} imeta={imeta} pubkey={event.pubkey} />;
           })}
@@ -506,7 +511,7 @@ export function PostContentRenderer({
 
           {urlTokens
             .filter(token => {
-              const cleanUrl = token.value.replace(/[.,;]$/, "");
+              const cleanUrl = cleanUrlFn(token.value);
               return cleanUrl !== podcastMetadata?.itemUrl && cleanUrl !== podcastMetadata?.podcastUrl;
             })
             .map((token, i) => (

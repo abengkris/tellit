@@ -54,7 +54,7 @@ export function ImageEmbed({
         maxHeight: '80vh',
         width: aspectRatio ? 'auto' : '100%',
         maxWidth: '100%',
-        minHeight: !loaded && !aspectRatio ? '200px' : 'auto' 
+        minHeight: !loaded ? (aspectRatio ? 'auto' : '200px') : 'auto'
       }}
     >
       {/* Placeholder: Blurhash or Skeleton */}
@@ -75,25 +75,49 @@ export function ImageEmbed({
         </div>
       )}
 
-      {/* next/image for automatic optimization and better UX */}
-      <Image
-        src={displayUrl}
-        alt={imeta?.alt || "Post media"}
-        fill
-        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-        className={`transition-opacity duration-500 block mx-auto cursor-pointer relative z-10 ${
-          objectFit === "cover" ? "object-cover" : "object-contain"
-        } ${
-          loaded ? "opacity-100" : "opacity-0"
-        }`}
-        onLoad={() => setLoaded(true)}
-        onError={() => setError(true)}
-        onClick={e => {
-          e.stopPropagation();
-          onClick?.();
-        }}
-        unoptimized={url.includes('.gif')}
-      />
+      {/* 
+        We use a regular img tag for unknown aspect ratios to prevent container collapse
+        which happens with next/image + fill when the parent has auto height.
+        If we HAVE an aspect ratio, next/image with fill works perfectly.
+      */}
+      {aspectRatio ? (
+        <Image
+          src={displayUrl}
+          alt={imeta?.alt || "Post media"}
+          fill
+          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+          className={`transition-opacity duration-500 block mx-auto cursor-pointer relative z-10 ${
+            objectFit === "cover" ? "object-cover" : "object-contain"
+          } ${
+            loaded ? "opacity-100" : "opacity-0"
+          }`}
+          onLoad={() => setLoaded(true)}
+          onError={() => setError(true)}
+          onClick={e => {
+            e.stopPropagation();
+            onClick?.();
+          }}
+          unoptimized={url.includes('.gif')}
+        />
+      ) : (
+        /* eslint-disable-next-line @next/next/no-img-element */
+        <img
+          src={displayUrl}
+          alt={imeta?.alt || "Post media"}
+          className={`transition-opacity duration-500 block mx-auto cursor-pointer relative z-10 w-full max-h-[80vh] ${
+            objectFit === "cover" ? "object-cover h-full" : "object-contain h-auto"
+          } ${
+            loaded ? "opacity-100" : "opacity-0"
+          }`}
+          onLoad={() => setLoaded(true)}
+          onError={() => setError(true)}
+          onClick={e => {
+            e.stopPropagation();
+            onClick?.();
+          }}
+          loading="lazy"
+        />
+      )}
     </div>
   );
 }

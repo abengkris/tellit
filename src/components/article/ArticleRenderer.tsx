@@ -123,7 +123,7 @@ export function ArticleRenderer({ content: rawContent }: ArticleRendererProps) {
           img: ({ src, alt, ...props }) => {
             if (!src) return null;
             
-            const isVideo = typeof src === 'string' && /\.(mp4|webm|ogg|mov)$/i.test(src);
+            const isVideo = typeof src === 'string' && src.split('?')[0].split('#')[0].toLowerCase().match(/\.(mp4|webm|ogg|mov)$/);
 
             if (isVideo && typeof src === 'string') {
               return (
