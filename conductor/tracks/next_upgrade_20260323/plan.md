@@ -8,10 +8,10 @@
 - [x] Task: Conductor - User Manual Verification 'Phase 1: Baseline and Preparation' (Protocol in workflow.md) a3222fc
 
 ## Phase 2: Upgrade Execution
-- [~] Task: Execute Next.js upgrade command
-    - [ ] Run `npx next upgrade` and handle interactive prompts.
-- [ ] Task: Update related Vercel dependencies
-    - [ ] Update `@vercel/analytics` and `@vercel/speed-insights`.
+- [x] Task: Execute Next.js upgrade command 5f0abed
+    - [x] Run `npx next upgrade`. Upgraded to Next.js 16.2.1 and React 19.2.4.
+- [x] Task: Update related Vercel dependencies 5f0abed
+    - [x] Confirmed @vercel/analytics@2.0.1 and @vercel/speed-insights@2.0.0 are already at latest.
 - [ ] Task: Conductor - User Manual Verification 'Phase 2: Upgrade Execution' (Protocol in workflow.md)
 
 ## Phase 3: Post-Upgrade Verification and Fixes
