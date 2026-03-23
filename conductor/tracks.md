@@ -9,5 +9,5 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 ---
 
-- [~] **Track: Upgrade Next.js to latest stable version**
+- [x] **Track: Upgrade Next.js to latest stable version**
 *Link: [./tracks/next_upgrade_20260323/](./tracks/next_upgrade_20260323/)*
