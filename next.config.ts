@@ -1,7 +1,7 @@
 const nextConfig = {
   /* config options here */
   output: "standalone",
-  staticPageGenerationTimeout: 300,
+  staticPageGenerationTimeout: 600,
   productionBrowserSourceMaps: false,
   images: {
     remotePatterns: [
@@ -24,6 +24,10 @@ const nextConfig = {
   },
   experimental: {
     turbo: {
+      resolveAlias: {
+        "@codesandbox/sandpack-client": "react",
+        "shiki": "react",
+      },
       rules: {
         "*.svg": {
           loaders: ["@svgr/webpack"],
@@ -31,6 +35,15 @@ const nextConfig = {
         },
       },
     },
+  },
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  webpack: (config: any) => {
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      "@codesandbox/sandpack-client": false,
+      "shiki": false,
+    };
+    return config;
   },
 };
 
