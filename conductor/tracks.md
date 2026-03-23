@@ -6,3 +6,8 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 - [x] **Track: bug fix: Vitest worker timeouts (unhandled errors) during full test suite run.**
 *Link: [./tracks/vitest_timeouts_20260322/](./tracks/vitest_timeouts_20260322/)*
+
+---
+
+- [ ] **Track: Upgrade Next.js to latest stable version**
+*Link: [./tracks/next_upgrade_20260323/](./tracks/next_upgrade_20260323/)*
