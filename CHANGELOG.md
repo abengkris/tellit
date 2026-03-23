@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.7.14] - 2026-03-23
+
+### Fixed
+- **Image Rendering Reliability:** Fixed a critical issue where images with unknown aspect ratios would collapse to zero height in `ImageEmbed`. The component now uses a robust fallback to native `<img>` tags for these cases.
+- **Improved URL Cleaning:** Enhanced `cleanUrlFn` to strip a wider range of trailing punctuation (parentheses, brackets, etc.) from URLs, ensuring more reliable media detection from various text formats.
+- **Robust Video Detection:** Updated video detection logic to correctly handle URLs with query parameters or hashes, preventing misidentification of videos as images.
+- **Consistent Media Rendering:** Standardized media detection and cleaning logic across `PostContentRenderer` and `MessageBubbleContent` for a unified user experience.
+
 ## [0.7.13] - 2026-03-20
 
 ### Added
