@@ -19,7 +19,6 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  // Removed serverExternalPackages for NDK to resolve fatal conflict with auto-transpilation in v16
   serverExternalPackages: [
     "dexie",
     "ioredis",
@@ -29,6 +28,8 @@ const nextConfig = {
   experimental: {
     cpus: 4,
     workerThreads: false,
+    // Required for "use cache" and cacheLife() in v16
+    cacheComponents: true, 
     optimizePackageImports: [
       "lucide-react",
       "@nostr-dev-kit/ndk",

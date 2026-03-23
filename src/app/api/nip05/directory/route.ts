@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase';
 
-import { cacheLife } from 'next/cache';
 
 /**
  * Public directory of verified handles.
  */
 export async function GET(req: NextRequest) {
-  "use cache";
-  cacheLife("minutes");
+  
+  
 
   const limit = parseInt(req.nextUrl.searchParams.get('limit') || '50');
   const offset = parseInt(req.nextUrl.searchParams.get('offset') || '0');

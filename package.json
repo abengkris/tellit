@@ -64,9 +64,9 @@
     "@nostr-dev-kit/ndk": "^3.0.3",
     "nostr-tools": "^2.23.3",
     "dexie": "^4.3.0",
-    "@noble/curves": "^2.0.1",
-    "@noble/hashes": "^2.0.1",
-    "@scure/base": "^2.0.0",
+    "@noble/curves": "^1.9.7",
+    "@noble/hashes": "^1.8.0",
+    "@scure/base": "^1.2.6",
     "@noble/secp256k1": "^2.3.0"
   },
   "devDependencies": {

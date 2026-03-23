@@ -3,7 +3,6 @@ import { toNpub, getEventNip19 } from "@/lib/utils/nip19";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { NDKEvent } from "@nostr-dev-kit/ndk";
 import { idLog } from "./id-logger";
-import { cacheLife } from "next/cache";
 
 /**
  * List of reserved slugs that cannot be used as vanity usernames.
@@ -119,8 +118,8 @@ export function isVanitySlug(slug: string): boolean {
  * Resolves a vanity username to a hex pubkey using the handles table.
  */
 export async function resolveVanitySlug(slug: string): Promise<string | null> {
-  "use cache";
-  cacheLife("days");
+  
+  
 
   if (!slug || !isVanitySlug(slug)) return null;
 
