@@ -19,7 +19,8 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  // eslint: { ignoreDuringBuilds: true }, // Removed as it causes warnings in v16
+  // Ensure we don't transpile what we want to keep external
+  transpilePackages: [], 
   serverExternalPackages: [
     "@nostr-dev-kit/ndk",
     "@nostr-dev-kit/ndk-cache-dexie",
@@ -42,6 +43,7 @@ const nextConfig = {
       "@nostr-dev-kit/messages",
       "@nostr-dev-kit/sessions",
       "@nostr-dev-kit/wallet",
+      "@nostr-dev-kit/sync",
       "@nostrify/ndk",
       "@nostrify/nostrify",
       "date-fns",
