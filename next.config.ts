@@ -19,15 +19,8 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  // Ensure we don't transpile what we want to keep external
-  transpilePackages: [], 
+  // Removed serverExternalPackages for NDK to resolve fatal conflict with auto-transpilation in v16
   serverExternalPackages: [
-    "@nostr-dev-kit/ndk",
-    "@nostr-dev-kit/ndk-cache-dexie",
-    "@nostr-dev-kit/messages",
-    "@nostr-dev-kit/sessions",
-    "@nostr-dev-kit/wallet",
-    "@nostr-dev-kit/sync",
     "dexie",
     "ioredis",
     "nostr-tools",
