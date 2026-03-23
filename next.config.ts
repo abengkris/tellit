@@ -2,6 +2,7 @@ const nextConfig = {
   /* config options here */
   output: "standalone",
   staticPageGenerationTimeout: 300,
+  productionBrowserSourceMaps: false,
   images: {
     remotePatterns: [
       {
@@ -18,7 +19,19 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  turbopack: {},
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+  experimental: {
+    turbo: {
+      rules: {
+        "*.svg": {
+          loaders: ["@svgr/webpack"],
+          as: "*.js",
+        },
+      },
+    },
+  },
 };
 
 export default nextConfig;
