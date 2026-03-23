@@ -1,7 +1,7 @@
 const nextConfig = {
   /* config options here */
   output: "standalone",
-  staticPageGenerationTimeout: 1200, // 20 minutes for static generation
+  staticPageGenerationTimeout: 2400, // 40 minutes for static generation
   productionBrowserSourceMaps: false,
   images: {
     remotePatterns: [
@@ -23,19 +23,10 @@ const nextConfig = {
     ignoreDuringBuilds: true,
   },
   experimental: {
-    // Force standard webpack for production to avoid Turbopack memory/time issues in v16
-    turbo: {
-      resolveAlias: {
-        "@codesandbox/sandpack-client": "react",
-        "shiki": "react",
-      },
-      rules: {
-        "*.svg": {
-          loaders: ["@svgr/webpack"],
-          as: "*.js",
-        },
-      },
-    },
+    // Limit concurrency to avoid memory pressure on large build machines
+    cpus: 4,
+    workerThreads: false,
+    
     optimizePackageImports: [
       "lucide-react",
       "@nostr-dev-kit/ndk",
@@ -48,7 +39,7 @@ const nextConfig = {
       "radix-ui",
       "framer-motion",
       "@tanstack/react-virtual",
-      "lucide-react"
+      "nostr-tools"
     ],
     serverExternalPackages: [
       "@nostr-dev-kit/ndk",
@@ -59,7 +50,8 @@ const nextConfig = {
       "@nostr-dev-kit/sync",
       "dexie",
       "ioredis",
-      "nostr-tools"
+      "nostr-tools",
+      "@supabase/supabase-js"
     ],
   },
   webpack: (config: any) => {
@@ -69,7 +61,9 @@ const nextConfig = {
       "shiki": false,
     };
     
-    // Performance optimization for Webpack
+    // Disable some heavy webpack plugins if needed
+    // config.plugins = config.plugins.filter(p => p.constructor.name !== 'SomeHeavyPlugin');
+
     config.optimization = {
       ...config.optimization,
       moduleIds: 'deterministic',
