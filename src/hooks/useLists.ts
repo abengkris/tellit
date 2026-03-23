@@ -82,6 +82,13 @@ export function useLists(targetPubkey?: string) {
     }
 
     setLoading(true);
+    let isMounted = true;
+
+    // Safety timeout: 10 seconds to fetch lists from relays/cache
+    const timeout = setTimeout(() => {
+      if (isMounted) setLoading(false);
+    }, 10000);
+
     try {
       // Fetch common NIP-51 and NIP-39 lists
       const kinds = [
@@ -96,6 +103,8 @@ export function useLists(targetPubkey?: string) {
         { kinds, authors: [pubkey] },
         { cacheUsage: NDKSubscriptionCacheUsage.CACHE_FIRST }
       );
+
+      if (!isMounted) return;
 
       const newMuted = new Set<string>();
       const newBookmarks = new Set<string>();
@@ -160,8 +169,13 @@ export function useLists(targetPubkey?: string) {
     } catch (err) {
       console.error("Error fetching NIP-51 lists:", err);
     } finally {
-      setLoading(false);
+      if (isMounted) {
+        clearTimeout(timeout);
+        setLoading(false);
+      }
     }
+
+    return () => { isMounted = false; clearTimeout(timeout); };
   }, [ndk, isReady, pubkey, currentUser, isOwnProfile]);
 
   useEffect(() => {

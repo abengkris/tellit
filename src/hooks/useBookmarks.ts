@@ -11,6 +11,9 @@ export function useBookmarks() {
 
   useEffect(() => {
     if (!ndk || !isReady || listsLoading) {
+      if (!isReady || listsLoading) {
+        setLoading(true);
+      }
       return;
     }
 
@@ -22,6 +25,11 @@ export function useBookmarks() {
 
     let isMounted = true;
     setLoading(true);
+
+    // Safety timeout to prevent infinite loading state
+    const timeout = setTimeout(() => {
+      if (isMounted) setLoading(false);
+    }, 5000);
 
     const fetchBookmarkedEvents = async () => {
       try {
@@ -41,13 +49,19 @@ export function useBookmarks() {
       } catch (err) {
         console.error("Error fetching bookmarked events:", err);
       } finally {
-        if (isMounted) setLoading(false);
+        if (isMounted) {
+          clearTimeout(timeout);
+          setLoading(false);
+        }
       }
     };
 
     fetchBookmarkedEvents();
 
-    return () => { isMounted = false; };
+    return () => { 
+      isMounted = false; 
+      clearTimeout(timeout);
+    };
   }, [ndk, isReady, bookmarkedEventIds, listsLoading]);
 
   return { events: bookmarkedEvents, loading };
