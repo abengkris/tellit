@@ -1,7 +1,7 @@
 const nextConfig = {
   /* config options here */
   output: "standalone",
-  staticPageGenerationTimeout: 2400, // 40 minutes for static generation
+  staticPageGenerationTimeout: 2400,
   productionBrowserSourceMaps: false,
   images: {
     remotePatterns: [
@@ -19,14 +19,22 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
+  // eslint: { ignoreDuringBuilds: true }, // Removed as it causes warnings in v16
+  serverExternalPackages: [
+    "@nostr-dev-kit/ndk",
+    "@nostr-dev-kit/ndk-cache-dexie",
+    "@nostr-dev-kit/messages",
+    "@nostr-dev-kit/sessions",
+    "@nostr-dev-kit/wallet",
+    "@nostr-dev-kit/sync",
+    "dexie",
+    "ioredis",
+    "nostr-tools",
+    "@supabase/supabase-js"
+  ],
   experimental: {
-    // Limit concurrency to avoid memory pressure on large build machines
     cpus: 4,
     workerThreads: false,
-    
     optimizePackageImports: [
       "lucide-react",
       "@nostr-dev-kit/ndk",
@@ -34,24 +42,12 @@ const nextConfig = {
       "@nostr-dev-kit/messages",
       "@nostr-dev-kit/sessions",
       "@nostr-dev-kit/wallet",
-      "@nostr-dev-kit/sync",
+      "@nostrify/ndk",
+      "@nostrify/nostrify",
       "date-fns",
       "radix-ui",
       "framer-motion",
-      "@tanstack/react-virtual",
-      "nostr-tools"
-    ],
-    serverExternalPackages: [
-      "@nostr-dev-kit/ndk",
-      "@nostr-dev-kit/ndk-cache-dexie",
-      "@nostr-dev-kit/messages",
-      "@nostr-dev-kit/sessions",
-      "@nostr-dev-kit/wallet",
-      "@nostr-dev-kit/sync",
-      "dexie",
-      "ioredis",
-      "nostr-tools",
-      "@supabase/supabase-js"
+      "@tanstack/react-virtual"
     ],
   },
   webpack: (config: any) => {
@@ -61,9 +57,6 @@ const nextConfig = {
       "shiki": false,
     };
     
-    // Disable some heavy webpack plugins if needed
-    // config.plugins = config.plugins.filter(p => p.constructor.name !== 'SomeHeavyPlugin');
-
     config.optimization = {
       ...config.optimization,
       moduleIds: 'deterministic',
