@@ -1,7 +1,7 @@
 const nextConfig = {
   /* config options here */
   output: "standalone",
-  staticPageGenerationTimeout: 600,
+  staticPageGenerationTimeout: 1200, // 20 minutes for static generation
   productionBrowserSourceMaps: false,
   images: {
     remotePatterns: [
@@ -23,6 +23,7 @@ const nextConfig = {
     ignoreDuringBuilds: true,
   },
   experimental: {
+    // Force standard webpack for production to avoid Turbopack memory/time issues in v16
     turbo: {
       resolveAlias: {
         "@codesandbox/sandpack-client": "react",
@@ -35,14 +36,46 @@ const nextConfig = {
         },
       },
     },
+    optimizePackageImports: [
+      "lucide-react",
+      "@nostr-dev-kit/ndk",
+      "@nostr-dev-kit/ndk-cache-dexie",
+      "@nostr-dev-kit/messages",
+      "@nostr-dev-kit/sessions",
+      "@nostr-dev-kit/wallet",
+      "@nostr-dev-kit/sync",
+      "date-fns",
+      "radix-ui",
+      "framer-motion",
+      "@tanstack/react-virtual",
+      "lucide-react"
+    ],
+    serverExternalPackages: [
+      "@nostr-dev-kit/ndk",
+      "@nostr-dev-kit/ndk-cache-dexie",
+      "@nostr-dev-kit/messages",
+      "@nostr-dev-kit/sessions",
+      "@nostr-dev-kit/wallet",
+      "@nostr-dev-kit/sync",
+      "dexie",
+      "ioredis",
+      "nostr-tools"
+    ],
   },
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   webpack: (config: any) => {
     config.resolve.alias = {
       ...config.resolve.alias,
       "@codesandbox/sandpack-client": false,
       "shiki": false,
     };
+    
+    // Performance optimization for Webpack
+    config.optimization = {
+      ...config.optimization,
+      moduleIds: 'deterministic',
+      minimize: true,
+    };
+
     return config;
   },
 };
