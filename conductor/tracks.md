@@ -14,6 +14,6 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 ---
 
-- [ ] **Track: bug fix: cant access bookmarks**
+- [x] **Track: bug fix: cant access bookmarks**
 *Link: [./tracks/bookmarks_20260323/](./tracks/bookmarks_20260323/)*
 
