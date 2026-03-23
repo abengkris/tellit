@@ -3,6 +3,7 @@ const nextConfig = {
   output: "standalone",
   staticPageGenerationTimeout: 2400,
   productionBrowserSourceMaps: false,
+  cacheComponents: false, // Explicitly disable to resolve conflict with 'force-dynamic'
   images: {
     remotePatterns: [
       {
@@ -28,8 +29,6 @@ const nextConfig = {
   experimental: {
     cpus: 4,
     workerThreads: false,
-    // Required for "use cache" and cacheLife() in v16
-    cacheComponents: true, 
     optimizePackageImports: [
       "lucide-react",
       "@nostr-dev-kit/ndk",
@@ -46,6 +45,7 @@ const nextConfig = {
       "@tanstack/react-virtual"
     ],
   },
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   webpack: (config: any) => {
     config.resolve.alias = {
       ...config.resolve.alias,
