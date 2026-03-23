@@ -9,5 +9,5 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 ---
 
-- [~] **Track: Optimize build time should complete under 40 minutes**
+- [x] **Track: Optimize build time should complete under 40 minutes**
 *Link: [./tracks/build_opt_20260323/](./tracks/build_opt_20260323/)*
