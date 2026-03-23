@@ -1,7 +1,7 @@
 # Implementation Plan: Optimize Vercel Build Time
 
 ## Phase 1: Baseline and Analysis
-- [ ] Task: Establish current build time baseline
+- [~] Task: Establish current build time baseline
     - [ ] Record current build duration from Vercel dashboard.
     - [ ] Analyze build logs to identify the longest-running steps (e.g., `collecting page data`, `building chunks`).
 - [ ] Task: Conductor - User Manual Verification 'Phase 1: Baseline and Analysis' (Protocol in workflow.md)
