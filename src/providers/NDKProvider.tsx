@@ -524,13 +524,18 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
 
     initApp().then((msgInstance) => {
       console.log("[NDKProvider] App initialized, connecting...");
-      const connectPromise = instance.connect();
-      const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 10000));
+      const CONNECTION_TIMEOUT = 6000;
+      const connectPromise = instance.connect(CONNECTION_TIMEOUT);
+      const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), CONNECTION_TIMEOUT));
 
       // 1. Unblock UI immediately so hooks can start serving from cache
       setIsReady(true);
 
+      let tasksStarted = false;
       const startDeferredTasks = async () => {
+        if (tasksStarted) return;
+        tasksStarted = true;
+
         if (sessionManager.activePubkey && msgInstance) {
           try {
             console.log("[NDKProvider] Starting deferred tasks...");
@@ -574,7 +579,10 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
         }
       };
 
-      // 2. Connect in background and process unpublished events
+      // 2. Start deferred tasks early if connection is taking too long
+      const taskTimer = setTimeout(startDeferredTasks, 2500);
+
+      // 3. Connect in background and process unpublished events
       Promise.race([connectPromise, timeoutPromise])
         .then(async () => {
           console.log("[NDKProvider] Connected!");
@@ -590,12 +598,14 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
               }
             } catch { /* ignore */ }
           }
-          // Defer heavy non-critical tasks slightly more
-          setTimeout(startDeferredTasks, 1500);
+          // Defer heavy non-critical tasks slightly if not already started
+          clearTimeout(taskTimer);
+          setTimeout(startDeferredTasks, 500);
         })
         .catch(async (err) => { 
           console.warn("[NDKProvider] Connection timeout or error, proceeding anyway:", err.message);
-          setTimeout(startDeferredTasks, 2000);
+          clearTimeout(taskTimer);
+          startDeferredTasks();
         });
     });
 

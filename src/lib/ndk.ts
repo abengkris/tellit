@@ -2,12 +2,12 @@ import NDK, { NDKRelay } from "@nostr-dev-kit/ndk";
 
 export const DEFAULT_RELAYS = [
   "wss://relay.primal.net",
-  "wss://nos.lol",
-  "wss://relay.damus.io",
-  "wss://relay.nostr.band",
   "wss://nostr.wine",
-  "wss://relay.snort.social",
+  "wss://relay.nostr.band",
+  "wss://nos.lol",
   "wss://purple.relayer.org",
+  "wss://relay.snort.social",
+  "wss://relay.damus.io", // Moved to end as fallback
 ];
 
 let ndkInstance: NDK | null = null;
