@@ -155,6 +155,7 @@ export function useFeed(authors: string[], kinds: number[] = [1, 20, 1063, 1068,
     const options = { 
       closeOnEose: true, 
       groupable: true,
+      groupableDelay: 250,
       cacheUsage: NDKSubscriptionCacheUsage.PARALLEL,
       relayGoalPerAuthor: validAuthors.length > 50 ? 2 : 3, // Adjust redundancy based on list size
     };
@@ -245,6 +246,7 @@ export function useFeed(authors: string[], kinds: number[] = [1, 20, 1063, 1068,
       { 
         closeOnEose: false,
         groupable: true,
+        groupableDelay: 250,
         cacheUsage: NDKSubscriptionCacheUsage.ONLY_RELAY // Only listen for NEW events from relays
       },
       {

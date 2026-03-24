@@ -68,9 +68,31 @@ export function usePausedFeed({
       { ...filter, limit: 20 },
       { 
         closeOnEose: false,
+        groupable: true,
+        groupableDelay: 250,
         cacheUsage: NDKSubscriptionCacheUsage.PARALLEL 
       },
       {
+        onEvents: async (events: NDKEvent[]) => {
+          // Process initial batch from cache
+          const validEvents: NDKEvent[] = [];
+          for (const event of events) {
+            if (seenIds.current.has(event.id)) continue;
+            const ok = await validateEvent(event);
+            if (!ok) continue;
+            seenIds.current.add(event.id);
+            validEvents.push(event);
+          }
+
+          if (validEvents.length > 0) {
+            setPosts(prev => {
+              const next = [...prev, ...validEvents].sort(
+                (a, b) => (b.created_at ?? 0) - (a.created_at ?? 0)
+              );
+              return next.slice(0, maxVisible);
+            });
+          }
+        },
         onEvent: async (event: NDKEvent) => {
           if (seenIds.current.has(event.id)) return;
           

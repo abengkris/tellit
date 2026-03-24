@@ -243,16 +243,6 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
     } catch { /* ignore */ }
 
     const instance = getNDK();
-    
-    // Offload signature verification to a Web Worker (Speed Optimization)
-    try {
-      const sigWorker = new Worker(new URL('@nostr-dev-kit/ndk/workers/sig-verification', import.meta.url));
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (instance as any).signatureVerificationWorker = sigWorker;
-      console.log("[NDKProvider] Signature verification offloaded to Web Worker");
-    } catch (e) {
-      console.warn("[NDKProvider] Failed to initialize signature verification worker:", e);
-    }
 
     if (!instance.cacheAdapter && dexieAdapter) {
       const adapter = dexieAdapter as unknown as ExtendedCacheAdapter;

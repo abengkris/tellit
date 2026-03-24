@@ -86,9 +86,48 @@ export function useReactions(eventId?: string) {
       filter, 
       { 
         closeOnEose: true,
-        groupable: true 
+        groupable: true,
+        groupableDelay: 250,
       },
       {
+        onEvents: (events: NDKEvent[]) => {
+          setReactions((prev) => {
+            const next = { ...prev };
+            for (const event of events) {
+              if (seenEvents.current.has(event.id)) continue;
+              seenEvents.current.add(event.id);
+
+              // 1. Likes
+              if (event.kind === 7 || event.kind === 17) {
+                if ((event.content === "+" || event.content === "") && !next.likes.includes(event.pubkey)) {
+                  next.likes = [...next.likes, event.pubkey];
+                }
+              } 
+              // 2. Reposts
+              else if (event.kind === 6 || event.kind === 16) {
+                if (!next.reposts.includes(event.pubkey)) {
+                  next.reposts = [...next.reposts, event.pubkey];
+                }
+              }
+              // 3. Zaps
+              else if (event.kind === 9735) {
+                try {
+                  const description = event.tags.find(t => t[0] === 'description')?.[1];
+                  if (description) {
+                    const zapRequest = JSON.parse(description);
+                    const amountTag = zapRequest.tags.find((t: string[]) => t[0] === 'amount');
+                    const amount = amountTag ? Math.floor(parseInt(amountTag[1]) / 1000) : 0;
+                    const zapperPubkey = zapRequest.pubkey;
+                    if (zapperPubkey) {
+                      next.zaps = [...next.zaps, { pubkey: zapperPubkey, amount }];
+                    }
+                  }
+                } catch { /* ignore */ }
+              }
+            }
+            return next;
+          });
+        },
         onEvent: handleEvent,
         onEose: () => {
           setReactions(prev => ({ ...prev, loading: false }));

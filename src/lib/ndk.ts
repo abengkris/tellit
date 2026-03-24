@@ -52,6 +52,22 @@ export function getNDK(): NDK {
       if (totalSeen > 500) return 0.05;  // 5%
       return 0.5; // 50% for new relays
     };
+
+    // Offload signature verification to a Web Worker (Speed Optimization)
+    if (typeof window !== "undefined") {
+      try {
+        // Next.js / Webpack 5 standard way to load workers
+        const sigWorker = new Worker(
+          new URL("@nostr-dev-kit/ndk/workers/sig-verification", import.meta.url),
+          { type: "module" }
+        );
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (ndkInstance as any).signatureVerificationWorker = sigWorker;
+        console.log("[NDK] Signature verification offloaded to Web Worker");
+      } catch (e) {
+        console.warn("[NDK] Failed to initialize signature verification worker:", e);
+      }
+    }
   }
   return ndkInstance;
 }

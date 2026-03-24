@@ -254,6 +254,8 @@ export function useForYouFeed({
 
     const options = {
       closeOnEose: false,
+      groupable: true,
+      groupableDelay: 250,
       cacheUsage: NDKSubscriptionCacheUsage.PARALLEL,
     };
 
