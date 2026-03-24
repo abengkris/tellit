@@ -75,19 +75,13 @@ export function useLists(targetPubkey?: string) {
   // Cache latest events to avoid redundant fetches and clobbering
   const listEventsRef = useRef<Map<number, NDKEvent>>(new Map());
 
-  const fetchLists = useCallback(async () => {
+  const fetchLists = useCallback(async (isMounted: () => boolean) => {
     if (!ndk || !isReady || !pubkey) {
       setLoading(false);
       return;
     }
 
     setLoading(true);
-    let isMounted = true;
-
-    // Safety timeout: 10 seconds to fetch lists from relays/cache
-    const timeout = setTimeout(() => {
-      if (isMounted) setLoading(false);
-    }, 10000);
 
     try {
       // Fetch common NIP-51 and NIP-39 lists
@@ -104,7 +98,7 @@ export function useLists(targetPubkey?: string) {
         { cacheUsage: NDKSubscriptionCacheUsage.CACHE_FIRST }
       );
 
-      if (!isMounted) return;
+      if (!isMounted()) return;
 
       const newMuted = new Set<string>();
       const newBookmarks = new Set<string>();
@@ -169,17 +163,28 @@ export function useLists(targetPubkey?: string) {
     } catch (err) {
       console.error("Error fetching NIP-51 lists:", err);
     } finally {
-      if (isMounted) {
-        clearTimeout(timeout);
+      if (isMounted()) {
         setLoading(false);
       }
     }
-
-    return () => { isMounted = false; clearTimeout(timeout); };
   }, [ndk, isReady, pubkey, currentUser, isOwnProfile]);
 
   useEffect(() => {
-    fetchLists();
+    let isMounted = true;
+    
+    // Safety timeout: 10 seconds to fetch lists from relays/cache
+    const timeout = setTimeout(() => {
+      if (isMounted) setLoading(false);
+    }, 10000);
+
+    fetchLists(() => isMounted).finally(() => {
+      clearTimeout(timeout);
+    });
+
+    return () => { 
+      isMounted = false; 
+      clearTimeout(timeout); 
+    };
   }, [fetchLists]);
 
   const updateList = useCallback(async (
