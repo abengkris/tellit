@@ -6,7 +6,8 @@ import {
   Dialog, 
   DialogContent, 
   DialogHeader, 
-  DialogTitle 
+  DialogTitle,
+  DialogDescription
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
@@ -30,6 +31,9 @@ export const UserListModal: React.FC<UserListModalProps> = ({
       <DialogContent className="p-0 gap-0 sm:max-w-md h-[70vh] flex flex-col overflow-hidden">
         <DialogHeader className="p-4 border-b shrink-0">
           <DialogTitle className="font-black text-xl">{title}</DialogTitle>
+          <DialogDescription className="sr-only">
+            List of users for {title}.
+          </DialogDescription>
         </DialogHeader>
 
         <ScrollArea className="flex-1 min-h-0">

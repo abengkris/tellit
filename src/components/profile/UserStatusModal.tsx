@@ -9,7 +9,8 @@ import { useUserStatus } from "@/hooks/useUserStatus";
 import { 
   Dialog, 
   DialogContent, 
-  DialogTitle 
+  DialogTitle,
+  DialogDescription
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -104,7 +105,12 @@ export const UserStatusModal: React.FC<UserStatusModalProps> = ({
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="sm:max-w-md p-0 gap-0 overflow-hidden border-none shadow-2xl flex flex-col max-h-[80vh]">
         <div className="p-4 border-b shrink-0 flex flex-row items-center justify-between">
-          <DialogTitle className="font-black text-xl">Set Status</DialogTitle>
+          <div>
+            <DialogTitle className="font-black text-xl">Set Status</DialogTitle>
+            <DialogDescription className="sr-only">
+              Update your current activity or status on Nostr.
+            </DialogDescription>
+          </div>
           <div className="mr-8">
             <Button
               onClick={() => handleSubmit()}

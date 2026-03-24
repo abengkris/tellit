@@ -10,7 +10,8 @@ import {
   Dialog, 
   DialogContent, 
   DialogHeader, 
-  DialogTitle 
+  DialogTitle,
+  DialogDescription
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -97,6 +98,9 @@ export const ReportModal: React.FC<ReportModalProps> = ({
             <Flag className="size-5" aria-hidden="true" />
             Report Content
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            Select a reason for reporting this content. This will create a kind 1984 event.
+          </DialogDescription>
         </DialogHeader>
 
         <ScrollArea className="flex-1 min-h-0">

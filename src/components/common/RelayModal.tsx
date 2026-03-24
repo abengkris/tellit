@@ -8,7 +8,8 @@ import {
   Dialog, 
   DialogContent, 
   DialogHeader, 
-  DialogTitle 
+  DialogTitle,
+  DialogDescription
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -62,6 +63,9 @@ export const RelayModal: React.FC<RelayModalProps> = ({ isOpen, onClose }) => {
             <Server className="size-5" aria-hidden="true" />
             Network Status
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            View connection status and latency for your current Nostr relays.
+          </DialogDescription>
         </DialogHeader>
 
         <ScrollArea className="flex-1 min-h-0">

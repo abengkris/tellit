@@ -10,7 +10,8 @@ import {
   Dialog, 
   DialogContent, 
   DialogHeader, 
-  DialogTitle 
+  DialogTitle,
+  DialogDescription
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,6 +38,9 @@ export const NewMessageModal: React.FC<NewMessageModalProps> = ({ onClose }) => 
       <DialogContent className="sm:max-w-md p-0 gap-0 overflow-hidden border-none shadow-2xl flex flex-col h-[80vh]">
         <DialogHeader className="p-4 border-b shrink-0">
           <DialogTitle className="font-black text-xl">New message</DialogTitle>
+          <DialogDescription className="sr-only">
+            Search for a person to start a private conversation.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="p-4 border-b shrink-0 bg-muted/30">

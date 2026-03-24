@@ -13,7 +13,8 @@ import {
   Dialog, 
   DialogContent, 
   DialogHeader, 
-  DialogTitle 
+  DialogTitle,
+  DialogDescription
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -171,6 +172,9 @@ export const ZapModal: React.FC<ZapModalProps> = ({ event, user, onClose, onSucc
             <Zap className="size-5" fill="currentColor" aria-hidden="true" />
             Send Zap
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            Send a lightning payment (zap) to this user.
+          </DialogDescription>
         </DialogHeader>
 
         <ScrollArea className="flex-1 min-h-0">

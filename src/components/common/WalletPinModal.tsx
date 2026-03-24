@@ -9,7 +9,8 @@ import {
   Dialog, 
   DialogContent, 
   DialogHeader, 
-  DialogTitle 
+  DialogTitle,
+  DialogDescription
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -110,6 +111,9 @@ export const WalletPinModal: React.FC<WalletPinModalProps> = ({
             )}
             {mode === "setup" ? "Secure Your Wallet" : "Unlock Wallet"}
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            {mode === "setup" ? "Set a security PIN for your wallet." : "Provide your PIN to decrypt wallet keys."}
+          </DialogDescription>
         </DialogHeader>
 
         <ScrollArea className="flex-1 min-h-0">

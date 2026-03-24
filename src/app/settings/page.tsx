@@ -27,6 +27,7 @@ import { Badge } from "@/components/ui/badge";
 import { 
   Dialog, 
   DialogContent, 
+  DialogDescription,
   DialogHeader, 
   DialogTitle 
 } from "@/components/ui/dialog";
@@ -438,9 +439,9 @@ export default function SettingsPage() {
                 <AlertTriangle className="size-6" />
                 DANGER ZONE
               </DialogTitle>
-              <CardDescription className="text-base font-medium pt-2">
+              <DialogDescription className="text-base font-medium pt-2 text-destructive">
                 This will send a **Request to Vanish** (NIP-62) to all relays.
-              </CardDescription>
+              </DialogDescription>
             </DialogHeader>
             
             <div className="space-y-4 py-4">
@@ -577,6 +578,9 @@ export default function SettingsPage() {
               <VolumeX className="size-5" />
               Muted Users
             </DialogTitle>
+            <DialogDescription className="sr-only">
+              List of users you have muted on Nostr.
+            </DialogDescription>
           </DialogHeader>
 
           <ScrollArea className="flex-1 min-h-0">

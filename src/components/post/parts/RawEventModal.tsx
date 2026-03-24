@@ -8,7 +8,8 @@ import {
   Dialog, 
   DialogContent, 
   DialogHeader, 
-  DialogTitle 
+  DialogTitle,
+  DialogDescription
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -36,10 +37,15 @@ export const RawEventModal: React.FC<RawEventModalProps> = ({ event, isOpen, onC
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="p-0 gap-0 sm:max-w-2xl max-h-[80vh] flex flex-col overflow-hidden border-none shadow-2xl">
         <DialogHeader className="p-6 border-b shrink-0 flex flex-row items-center justify-between">
-          <DialogTitle className="flex items-center gap-2 text-muted-foreground font-black">
-            <Code className="size-5" aria-hidden="true" />
-            Raw Event Data
-          </DialogTitle>
+          <div>
+            <DialogTitle className="flex items-center gap-2 text-muted-foreground font-black">
+              <Code className="size-5" aria-hidden="true" />
+              Raw Event Data
+            </DialogTitle>
+            <DialogDescription className="sr-only">
+              View the underlying JSON data for this Nostr event.
+            </DialogDescription>
+          </div>
           <div className="mr-8">
             <Button 
               variant="ghost" 

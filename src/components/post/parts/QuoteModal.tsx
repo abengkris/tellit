@@ -11,7 +11,8 @@ import {
   Dialog, 
   DialogContent, 
   DialogHeader, 
-  DialogTitle 
+  DialogTitle,
+  DialogDescription
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
@@ -33,6 +34,9 @@ export const QuoteModal: React.FC<QuoteModalProps> = ({ event, onClose }) => {
       <DialogContent className="sm:max-w-xl p-0 gap-0 overflow-hidden border-none shadow-2xl flex flex-col max-h-[90vh]">
         <DialogHeader className="p-4 border-b shrink-0">
           <DialogTitle className="text-center font-black text-lg">Quote</DialogTitle>
+          <DialogDescription className="sr-only">
+            Quote this post in a new note.
+          </DialogDescription>
         </DialogHeader>
 
         <ScrollArea className="flex-1 min-h-0 bg-background">

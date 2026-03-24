@@ -50,7 +50,8 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Dialog, 
   DialogContent, 
-  DialogTitle 
+  DialogTitle,
+  DialogDescription
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
@@ -561,6 +562,9 @@ export function ProfileContent({ npubParam }: { npubParam: string }) {
               <Clock className="text-primary size-5" aria-hidden="true" />
               Profile History
             </DialogTitle>
+            <DialogDescription className="sr-only">
+              History of when this profile was created and last updated on the Nostr network.
+            </DialogDescription>
           </div>
           
           <ScrollArea className="flex-1 min-h-0">

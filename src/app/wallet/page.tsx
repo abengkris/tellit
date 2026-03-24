@@ -36,6 +36,7 @@ import { Button } from "@/components/ui/button";
 import { 
   Dialog, 
   DialogContent, 
+  DialogDescription,
   DialogHeader, 
   DialogTitle 
 } from "@/components/ui/dialog";
@@ -509,7 +510,7 @@ export default function WalletPage() {
         <DialogContent className="sm:max-w-md p-6 rounded-[2rem] border-none shadow-2xl">
           <DialogHeader>
             <DialogTitle className="text-2xl font-black">Receive Sats</DialogTitle>
-            <CardDescription className="font-medium">Generate a Lightning invoice using NWC</CardDescription>
+            <DialogDescription className="font-medium">Generate a Lightning invoice using NWC</DialogDescription>
           </DialogHeader>
 
           {!generatedInvoice ? (
