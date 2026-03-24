@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
-const SidebarItem = ({ 
+const SidebarItem = React.memo(({ 
   href, 
   icon: Icon, 
   label, 
@@ -53,41 +53,43 @@ const SidebarItem = ({
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <Button
-          variant="ghost"
-          asChild
+        <Link 
+          href={href} 
+          aria-label={label} 
+          onClick={handleClick}
+          prefetch={false}
           className={cn(
-            "flex items-center justify-start gap-4 p-3 h-auto rounded-full transition-colors relative w-fit lg:w-full",
-            active ? "font-bold text-primary bg-accent/50" : "text-muted-foreground hover:text-foreground"
+            "flex items-center justify-start gap-4 p-3 rounded-full transition-all active:scale-95 duration-200 relative w-fit lg:w-full",
+            active ? "font-black text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
           )}
         >
-          <Link href={href} aria-label={label} onClick={handleClick}>
-            <div className="relative flex items-center justify-center shrink-0 size-7">
-              {pubkey ? (
-                <Avatar pubkey={pubkey} size={28} isLoading={isLoading} nip05={nip05} />
-              ) : Icon ? (
-                <Icon className={cn("size-7", active ? "text-primary" : "")} strokeWidth={active ? 3 : 2} />
-              ) : null}
-              
-              {badge !== undefined && badge > 0 && (
-                <Badge 
-                  variant="destructive" 
-                  className="absolute -top-1.5 -right-1.5 min-w-4 h-4 p-0 flex items-center justify-center text-[10px] font-black rounded-full border-2 border-background"
-                >
-                  {badge > 9 ? "9+" : badge}
-                </Badge>
-              )}
-            </div>
-            <span className="hidden lg:block text-xl">{label}</span>
-          </Link>
-        </Button>
+          <div className="relative flex items-center justify-center shrink-0 size-7">
+            {pubkey ? (
+              <Avatar pubkey={pubkey} size={28} isLoading={isLoading} nip05={nip05} />
+            ) : Icon ? (
+              <Icon className={cn("size-7", active ? "text-primary" : "")} strokeWidth={active ? 3 : 2} />
+            ) : null}
+            
+            {badge !== undefined && badge > 0 && (
+              <Badge 
+                variant="destructive" 
+                className="absolute -top-1.5 -right-1.5 min-w-4 h-4 p-0 flex items-center justify-center text-[10px] font-black rounded-full border-2 border-background"
+              >
+                {badge > 9 ? "9+" : badge}
+              </Badge>
+            )}
+          </div>
+          <span className={cn("hidden lg:block text-xl", active ? "font-black" : "font-medium")}>{label}</span>
+        </Link>
       </TooltipTrigger>
       <TooltipContent side="right" className="lg:hidden">
         {label} {badge && badge > 0 ? `(${badge})` : ""}
       </TooltipContent>
     </Tooltip>
   );
-};
+});
+
+SidebarItem.displayName = "SidebarItem";
 
 export const Sidebar = () => {
   const { user, isLoggedIn, login } = useAuthStore();
@@ -138,7 +140,7 @@ export const Sidebar = () => {
                 asChild
                 className="flex items-center justify-start gap-4 p-3 h-auto rounded-full hover:bg-yellow-500/10 text-yellow-600 dark:text-yellow-500 transition-colors w-fit lg:w-full overflow-hidden"
               >
-                <Link href="/wallet">
+                <Link href="/wallet" prefetch={false}>
                   <div className="flex items-center justify-center shrink-0 size-7">
                     <Wallet className="size-7" fill={balance !== null ? "currentColor" : "none"} />
                   </div>

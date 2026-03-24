@@ -171,6 +171,7 @@ export function HomeContent() {
 
             <Link
               href="/settings/profile"
+              prefetch={false}
               className="flex-none px-5 py-4 text-gray-400 hover:text-blue-500 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500"
               title="Manage Interests"
               aria-label="Manage Interests"

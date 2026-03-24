@@ -64,10 +64,10 @@ export const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }
           <div className="w-8" />
         )}
         
-        <Link href="/" className="font-black text-xl text-primary tracking-tighter">Tell it!</Link>
-        
+        <Link href="/" className="font-black text-xl text-primary tracking-tighter" prefetch={false}>Tell it!</Link>
+
         <Button asChild variant="ghost" size="icon" className="relative hover:bg-accent rounded-full">
-          <Link href="/notifications" aria-label={`Notifications ${unreadCount > 0 ? `(${unreadCount} new)` : ""}`}>
+          <Link href="/notifications" aria-label={`Notifications ${unreadCount > 0 ? `(${unreadCount} new)` : ""}`} prefetch={false}>
             <Bell className="size-5" aria-hidden="true" />
             {unreadCount > 0 && (
               <Badge variant="destructive" className="absolute top-1.5 right-1.5 size-2.5 p-0 min-w-0 rounded-full border-2 border-background" />
@@ -139,24 +139,24 @@ const MobileNavItem = ({ href, icon: Icon, active, badge }: { href: string; icon
   };
 
   return (
-    <Button asChild variant="ghost" className={cn(
-      "p-3 rounded-full transition-all active:scale-90 relative h-auto",
-      active ? 'text-primary' : 'text-muted-foreground'
-    )}>
-      <Link 
-        href={href} 
-        aria-label={`${label} ${badge && badge > 0 ? `(${badge} new)` : ""}`}
-        onClick={handleClick}
-      >
-        <Icon 
-          className="size-6"
-          strokeWidth={active ? 3 : 2} 
-          aria-hidden="true"
-        />
-        {badge !== undefined && badge > 0 && (
-          <Badge variant="destructive" className="absolute top-2 right-2 size-2.5 p-0 min-w-0 rounded-full border-2 border-background" />
-        )}
-      </Link>
-    </Button>
+    <Link 
+            href={href} 
+            aria-label={`${label} ${badge && badge > 0 ? "(${badge} new)" : ""}`}
+            onClick={handleClick}
+            prefetch={false}
+            className={cn(
+        "p-3 rounded-full transition-all active:scale-90 duration-200 relative flex items-center justify-center",
+        active ? 'text-primary' : 'text-muted-foreground hover:bg-accent/50'
+      )}
+    >
+      <Icon 
+        className="size-6"
+        strokeWidth={active ? 3 : 2} 
+        aria-hidden="true"
+      />
+      {badge !== undefined && badge > 0 && (
+        <Badge variant="destructive" className="absolute top-2 right-2 size-2.5 p-0 min-w-0 rounded-full border-2 border-background" />
+      )}
+    </Link>
   );
 };

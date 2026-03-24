@@ -20,7 +20,7 @@ import { useRouter } from "next/navigation";
 import { shortenPubkey } from "@/lib/utils/nip19";
 import { cn } from "@/lib/utils";
 
-const AccountItem = ({ 
+const AccountItem = React.memo(({ 
   pubkey, 
   isActive, 
   onSelect, 
@@ -37,7 +37,7 @@ const AccountItem = ({
   return (
     <DropdownMenuItem 
       className={cn(
-        "flex items-center justify-between gap-3 p-2 rounded-xl cursor-pointer transition-colors",
+        "flex items-center justify-between gap-3 p-2 rounded-xl cursor-pointer transition-colors group/item",
         isActive ? "bg-accent/50 font-bold" : "hover:bg-accent/30"
       )}
       onClick={() => onSelect(pubkey)}
@@ -52,7 +52,7 @@ const AccountItem = ({
           <Button
             variant="ghost"
             size="icon"
-            className="size-6 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
+            className="size-6 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg opacity-0 group-hover/item:opacity-100 transition-opacity"
             onClick={(e) => onRemove(e, pubkey)}
           >
             <Trash2 size={12} />
@@ -61,9 +61,11 @@ const AccountItem = ({
       </div>
     </DropdownMenuItem>
   );
-};
+});
 
-export const AccountSwitcher = () => {
+AccountItem.displayName = "AccountItem";
+
+export const AccountSwitcher = React.memo(() => {
   const { user, accounts, switchAccount, removeAccount, logout } = useAuthStore();
   const { sessions } = useNDK();
   const router = useRouter();
@@ -133,7 +135,7 @@ export const AccountSwitcher = () => {
               key={pubkey}
               pubkey={pubkey} 
               isActive={false} 
-              onSelect={handleSwitchAccount}
+              onSelect={handleSwitchAccount} 
               onRemove={handleRemoveAccount}
             />
           ))}
@@ -161,4 +163,6 @@ export const AccountSwitcher = () => {
       </DropdownMenuContent>
     </DropdownMenu>
   );
-};
+});
+
+AccountSwitcher.displayName = "AccountSwitcher";

@@ -31,6 +31,18 @@ interface MobileDrawerProps {
 }
 
 export const MobileDrawer: React.FC<MobileDrawerProps> = ({ isOpen, onClose, onOpenRelays }) => {
+  return (
+    <Sheet open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <SheetContent side="left" className="w-[280px] p-0 flex flex-col gap-0 border-r-0">
+        {isOpen && (
+          <MobileDrawerContent onClose={onClose} onOpenRelays={onOpenRelays} />
+        )}
+      </SheetContent>
+    </Sheet>
+  );
+};
+
+const MobileDrawerContent = ({ onClose, onOpenRelays }: { onClose: () => void; onOpenRelays: () => void }) => {
   const { user } = useAuthStore();
   const { unreadMessagesCount, hideBalance } = useUIStore();
   const { connectedCount, totalCount } = useRelayStatus();
@@ -40,8 +52,7 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({ isOpen, onClose, onO
   const { balance, nwcPairingCode } = useWalletStore();
 
   return (
-    <Sheet open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <SheetContent side="left" className="w-[280px] p-0 flex flex-col gap-0 border-r-0">
+    <>
         <SheetHeader className="p-4 border-b flex flex-row items-center justify-between space-y-0">
           <SheetTitle className="text-xl font-black text-primary text-left">Account</SheetTitle>
           <AccountSwitcher />
@@ -176,30 +187,28 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({ isOpen, onClose, onO
             Whatever it is, just Tell It.
           </p>
         </div>
-      </SheetContent>
-    </Sheet>
+    </>
   );
 };
 
 const DrawerItem = ({ href, icon, label, onClick, badge }: { href: string; icon: React.ReactNode; label: string; onClick: () => void; badge?: number }) => (
-  <Button
-    variant="ghost"
-    asChild
-    className="w-full justify-start gap-4 h-auto p-4 rounded-xl text-foreground font-bold"
+  <Link 
+    href={href} 
+    onClick={onClick}
+    prefetch={false}
+    className="w-full flex items-center justify-start gap-4 p-4 rounded-xl text-foreground font-bold hover:bg-accent/50 active:scale-95 transition-all duration-200"
   >
-    <Link href={href} onClick={onClick}>
-      <div className="relative flex items-center justify-center">
-        {icon}
-        {badge !== undefined && badge > 0 && (
-          <Badge 
-            variant="destructive" 
-            className="absolute -top-1.5 -right-1.5 min-w-4 h-4 p-0 flex items-center justify-center text-[10px] font-black rounded-full border-2 border-background"
-          >
-            {badge > 9 ? "9+" : badge}
-          </Badge>
-        )}
-      </div>
-      <span className="text-base">{label}</span>
-    </Link>
-  </Button>
+    <div className="relative flex items-center justify-center">
+      {icon}
+      {badge !== undefined && badge > 0 && (
+        <Badge 
+          variant="destructive" 
+          className="absolute -top-1.5 -right-1.5 min-w-4 h-4 p-0 flex items-center justify-center text-[10px] font-black rounded-full border-2 border-background"
+        >
+          {badge > 9 ? "9+" : badge}
+        </Badge>
+      )}
+    </div>
+    <span className="text-base">{label}</span>
+  </Link>
 );
