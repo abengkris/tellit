@@ -50,7 +50,6 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Dialog, 
   DialogContent, 
-  DialogHeader, 
   DialogTitle 
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -547,9 +546,9 @@ export function ProfileContent({ npubParam }: { npubParam: string }) {
         pubkey={hexPubkey}
       />
 
-      {showZapModal && ndk && (
+      {showZapModal && (
         <ZapModal
-          user={ndk.getUser({ pubkey: hexPubkey })}
+          user={ndk?.getUser({ pubkey: hexPubkey })}
           onClose={() => setShowZapModal(false)}
         />
       )}
@@ -557,12 +556,12 @@ export function ProfileContent({ npubParam }: { npubParam: string }) {
       {/* Profile History Modal */}
       <Dialog open={showDatesModal} onOpenChange={setShowDatesModal}>
         <DialogContent className="sm:max-w-xs p-0 gap-0 overflow-hidden border-none shadow-2xl flex flex-col max-h-[80vh]">
-          <DialogHeader className="p-5 border-b shrink-0 flex flex-row items-center justify-between">
+          <div className="p-5 border-b shrink-0 flex flex-row items-center justify-between">
             <DialogTitle className="text-lg font-black flex items-center gap-2">
               <Clock className="text-primary size-5" aria-hidden="true" />
               Profile History
             </DialogTitle>
-          </DialogHeader>
+          </div>
           
           <ScrollArea className="flex-1 min-h-0">
             <div className="p-6 space-y-6">

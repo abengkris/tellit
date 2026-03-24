@@ -9,7 +9,6 @@ import { useUserStatus } from "@/hooks/useUserStatus";
 import { 
   Dialog, 
   DialogContent, 
-  DialogHeader, 
   DialogTitle 
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -38,14 +37,17 @@ export const UserStatusModal: React.FC<UserStatusModalProps> = ({
   const [status, setStatus] = useState("");
 
   useEffect(() => {
-    if (generalStatus?.content) {
-      setStatus(generalStatus.content);
+    if (isOpen) {
+      setStatus(generalStatus?.content || "");
     }
   }, [generalStatus, isOpen]);
 
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
-    if (!ndk) return;
+    if (!ndk) {
+      addToast("NDK not initialized. Please try again.", "error");
+      return;
+    }
 
     setLoading(true);
     try {
@@ -55,9 +57,10 @@ export const UserStatusModal: React.FC<UserStatusModalProps> = ({
         onSuccess?.();
         onClose();
       } else {
-        addToast("Failed to update status.", "error");
+        addToast("Failed to update status. Check your connection.", "error");
       }
-    } catch {
+    } catch (err) {
+      console.error("Error updating status:", err);
       addToast("Error updating status.", "error");
     } finally {
       setLoading(false);
@@ -65,7 +68,10 @@ export const UserStatusModal: React.FC<UserStatusModalProps> = ({
   };
 
   const clearStatus = async () => {
-    if (!ndk) return;
+    if (!ndk) {
+      addToast("NDK not initialized. Please try again.", "error");
+      return;
+    }
     setLoading(true);
     try {
       const success = await updateStatus(ndk, "", "general");
@@ -74,8 +80,11 @@ export const UserStatusModal: React.FC<UserStatusModalProps> = ({
         addToast("Status cleared", "success");
         onSuccess?.();
         onClose();
+      } else {
+        addToast("Failed to clear status.", "error");
       }
-    } catch {
+    } catch (err) {
+      console.error("Error clearing status:", err);
       addToast("Failed to clear status", "error");
     } finally {
       setLoading(false);
@@ -94,7 +103,7 @@ export const UserStatusModal: React.FC<UserStatusModalProps> = ({
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="sm:max-w-md p-0 gap-0 overflow-hidden border-none shadow-2xl flex flex-col max-h-[80vh]">
-        <DialogHeader className="p-4 border-b shrink-0 flex flex-row items-center justify-between">
+        <div className="p-4 border-b shrink-0 flex flex-row items-center justify-between">
           <DialogTitle className="font-black text-xl">Set Status</DialogTitle>
           <div className="mr-8">
             <Button
@@ -106,7 +115,7 @@ export const UserStatusModal: React.FC<UserStatusModalProps> = ({
               {loading ? <Loader2 className="animate-spin size-4" aria-hidden="true" /> : "Update"}
             </Button>
           </div>
-        </DialogHeader>
+        </div>
 
         <ScrollArea className="flex-1 min-h-0">
           <div className="p-6 space-y-8">

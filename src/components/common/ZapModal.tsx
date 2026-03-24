@@ -70,18 +70,26 @@ export const ZapModal: React.FC<ZapModalProps> = ({ event, user, onClose, onSucc
   }, [ndk, event, user, invoice, onSuccess, addToast, target, refreshNDKBalance]);
 
   const handleZap = async () => {
-    if (!ndk || loading || !target) return;
+    if (!ndk) {
+      addToast("NDK not initialized. Please try again.", "error");
+      return;
+    }
+    
+    if (loading || !target) return;
 
     setLoading(true);
     try {
       const targetUser = event ? event.author : user;
       
       if (targetUser) {
-        console.log(`[ZapModal] Force-fetching profile for ${targetUser.pubkey}...`);
         // Use parallel fetching from multiple relays to ensure we get the lud16
-        await targetUser.fetchProfile({ 
-          cacheUsage: NDKSubscriptionCacheUsage.PARALLEL,
-        });
+        try {
+          await targetUser.fetchProfile({ 
+            cacheUsage: NDKSubscriptionCacheUsage.PARALLEL,
+          });
+        } catch (e) {
+          console.warn("[ZapModal] Failed to fetch profile:", e);
+        }
       }
 
       const zapTarget = event || user;
@@ -97,17 +105,17 @@ export const ZapModal: React.FC<ZapModalProps> = ({ event, user, onClose, onSucc
         return;
       }
 
-      console.log(`[ZapModal] Creating zap invoice for ${lud16 || targetUser?.pubkey}...`);
-      
       // Force refresh balance right before check
-      await refreshNDKBalance();
+      try {
+        await refreshNDKBalance();
+      } catch (e) {
+        console.warn("[ZapModal] Failed to refresh balance:", e);
+      }
 
       // Balance check for internal wallets (Cashu/NWC)
       if (wallet && (walletType === 'nip-60' || walletType === 'nwc')) {
-        // If balance is exactly 0 or null, or less than requested amount
-        if (balance === 0 || balance === null || balance < amount) {
-          const currentBalance = balance || 0;
-          addToast(`Insufficient balance. You have ${currentBalance} sats, but need ${amount}.`, "error");
+        if (balance !== null && balance < amount) {
+          addToast(`Insufficient balance. You have ${balance} sats, but need ${amount}.`, "error");
           setLoading(false);
           return;
         }
@@ -133,13 +141,12 @@ export const ZapModal: React.FC<ZapModalProps> = ({ event, user, onClose, onSucc
             const webln = window.webln;
             await webln.enable();
             await webln.sendPayment(bolt11);
-            // Confirmation will come through the event listener
           } catch (e) {
             console.warn("WebLN payment failed or was cancelled:", e);
           }
         }
       } else {
-        addToast(error ? `Zap failed: ${error}` : "Failed to create zap invoice. Ensure recipient has a valid LN address.", "error");
+        addToast(error ? `Zap failed: ${error}` : "Failed to create zap invoice.", "error");
       }
     } catch (err) {
       console.error(err);
