@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 ## [0.7.15] - 2026-03-24
 
 ### Fixed
+- **Blink API Compatibility:** Fixed an issue where `lnInvoicePaymentStatus` was incorrectly called with a `paymentHash`, leading to type errors. The library now uses `lnInvoicePaymentStatusByHash` with the correct GraphQL input type.
 - **Identity Resolution:** Fixed a persistent warning when resolving `og-image.png` and other static assets. Added a robust `RESERVED_SLUGS` list and ensured `public/og-image.png` exists to prevent it from being caught by dynamic profile routes.
 - **Route Protection:** Added `verified` and `manifest.webmanifest` to the list of reserved vanity handles to prevent routing conflicts.
 

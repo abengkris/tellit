@@ -74,12 +74,9 @@ export async function createBlinkInvoice(amount: number, memo: string) {
  */
 export async function checkBlinkInvoiceStatus(paymentHash: string) {
   const query = `
-    query lnInvoicePaymentStatus($input: LnInvoicePaymentStatusInput!) {
-      lnInvoicePaymentStatus(input: $input) {
+    query lnInvoicePaymentStatusByHash($input: LnInvoicePaymentStatusByHashInput!) {
+      lnInvoicePaymentStatusByHash(input: $input) {
         status
-        errors {
-          message
-        }
       }
     }
   `;
@@ -91,5 +88,10 @@ export async function checkBlinkInvoiceStatus(paymentHash: string) {
   };
 
   const data = await fetchBlink(query, variables);
-  return data.lnInvoicePaymentStatus.status;
+  
+  if (!data?.lnInvoicePaymentStatusByHash) {
+    throw new Error("Failed to get invoice status from Blink");
+  }
+
+  return data.lnInvoicePaymentStatusByHash.status;
 }
