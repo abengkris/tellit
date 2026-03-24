@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase';
 import { verifyEvent } from 'nostr-tools';
 
@@ -13,17 +13,17 @@ export async function POST(req: NextRequest) {
     const { event } = body;
 
     if (!event) {
-      return NextResponse.json({ error: 'Missing signed event' }, { status: 400 });
+      return Response.json({ error: 'Missing signed event' }, { status: 400 });
     }
 
     const isValid = verifyEvent(event);
     if (!isValid) {
-      return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
+      return Response.json({ error: 'Invalid signature' }, { status: 400 });
     }
 
     const handleTag = event.tags.find((t: string[]) => t[0] === 'handle');
     if (!handleTag) {
-      return NextResponse.json({ error: 'Missing handle in event tags' }, { status: 400 });
+      return Response.json({ error: 'Missing handle in event tags' }, { status: 400 });
     }
 
     const handleName = handleTag[1];
@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (!handle || handle.pubkey !== pubkey) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+      return Response.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
     // 2. Set all user's handles to not primary
@@ -55,13 +55,13 @@ export async function POST(req: NextRequest) {
       .eq('name', handleName.toLowerCase());
 
     if (updateError) {
-      return NextResponse.json({ error: 'Failed to set primary handle' }, { status: 500 });
+      return Response.json({ error: 'Failed to set primary handle' }, { status: 500 });
     }
 
-    return NextResponse.json({ success: true, message: `${handleName} is now your primary handle` });
+    return Response.json({ success: true, message: `${handleName} is now your primary handle` });
 
   } catch (err: unknown) {
     console.error('[NIP-05 Primary] Fatal Error:', err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return Response.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

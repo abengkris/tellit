@@ -1,14 +1,13 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
-  const { searchParams } = new URL(req.url);
-  const name = searchParams.get('name');
+  const name = req.nextUrl.searchParams.get('name');
 
   if (!name) {
-    return NextResponse.json({ error: 'Missing name parameter' }, { status: 400 });
+    return Response.json({ error: 'Missing name parameter' }, { status: 400 });
   }
 
   try {
@@ -23,13 +22,13 @@ export async function GET(req: NextRequest) {
       if (error && error.code !== 'PGRST116') {
         console.error('[NIP-05 Resolver] DB Error:', error);
       }
-      return NextResponse.json({ names: {} });
+      return Response.json({ names: {} });
     }
 
     // Check if handle is expired (1 year limit)
     const expiresAt = new Date(new Date(data.created_at).setFullYear(new Date(data.created_at).getFullYear() + 1));
     if (new Date() > expiresAt) {
-      return NextResponse.json({ names: {} });
+      return Response.json({ names: {} });
     }
 
     const response: { names: Record<string, string>; relays?: Record<string, string[]> } = {
@@ -44,7 +43,7 @@ export async function GET(req: NextRequest) {
       };
     }
 
-    return NextResponse.json(response, {
+    return Response.json(response, {
       headers: {
         'Access-Control-Allow-Origin': '*',
         'Content-Type': 'application/json'
@@ -52,6 +51,6 @@ export async function GET(req: NextRequest) {
     });
   } catch (err) {
     console.error('[NIP-05 Resolver] Error:', err);
-    return NextResponse.json({ names: {} });
+    return Response.json({ names: {} });
   }
 }

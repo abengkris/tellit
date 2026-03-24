@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 
 export async function GET(req: NextRequest) {
   const url = req.nextUrl.searchParams.get("url");
-  if (!url) return NextResponse.json({ error: "Missing URL" }, { status: 400 });
+  if (!url) return Response.json({ error: "Missing URL" }, { status: 400 });
 
   try {
     const response = await fetch(url, {
@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
     const image = getMeta("image");
     const siteName = getMeta("site_name");
 
-    return NextResponse.json({
+    return Response.json({
       title,
       description,
       image,
@@ -34,6 +34,6 @@ export async function GET(req: NextRequest) {
     });
   } catch (err) {
     console.error("[OG API] Error fetching metadata:", err);
-    return NextResponse.json({ error: "Failed to fetch metadata" }, { status: 500 });
+    return Response.json({ error: "Failed to fetch metadata" }, { status: 500 });
   }
 }

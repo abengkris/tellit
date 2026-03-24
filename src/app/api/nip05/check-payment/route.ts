@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase';
 import { checkBlinkInvoiceStatus } from '@/lib/blink';
 
@@ -6,7 +6,7 @@ export async function GET(req: NextRequest) {
   const hash = req.nextUrl.searchParams.get('hash');
 
   if (!hash) {
-    return NextResponse.json({ error: 'Missing payment hash' }, { status: 400 });
+    return Response.json({ error: 'Missing payment hash' }, { status: 400 });
   }
 
   try {
@@ -21,12 +21,12 @@ export async function GET(req: NextRequest) {
 
     if (fetchError || !registration) {
       const status = fetchError?.code === 'PGRST116' ? 404 : 500;
-      return NextResponse.json({ error: fetchError?.message || 'Registration not found' }, { status });
+      return Response.json({ error: fetchError?.message || 'Registration not found' }, { status });
     }
 
     // 2. If already paid in DB, just return success
     if (registration.status === 'paid') {
-      return NextResponse.json({ status: 'PAID', handle: `${registration.name}@tellit.id` });
+      return Response.json({ status: 'PAID', handle: `${registration.name}@tellit.id` });
     }
 
     // 3. Check status via Blink API
@@ -56,7 +56,7 @@ export async function GET(req: NextRequest) {
             .update({ status: 'conflict' })
             .eq('payment_hash', hash);
           
-          return NextResponse.json({ 
+          return Response.json({ 
             status: 'ERROR', 
             error: `Handle was claimed by someone else just before your payment was processed. Please contact support with your payment hash: ${hash}` 
           });
@@ -87,7 +87,7 @@ export async function GET(req: NextRequest) {
         console.warn('[NIP-05 Check Payment] Failed to update registration status:', updateError);
       }
 
-      return NextResponse.json({ status: 'PAID', handle: `${registration.name}@tellit.id` });
+      return Response.json({ status: 'PAID', handle: `${registration.name}@tellit.id` });
     }
 
     if (blinkStatus === 'EXPIRED' && registration.status !== 'expired') {
@@ -97,11 +97,11 @@ export async function GET(req: NextRequest) {
         .eq('payment_hash', hash);
     }
 
-    return NextResponse.json({ status: blinkStatus });
+    return Response.json({ status: blinkStatus });
 
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Internal server error';
     console.error('[NIP-05 Check Payment] Error:', err);
-    return NextResponse.json({ error: message }, { status: 500 });
+    return Response.json({ error: message }, { status: 500 });
   }
 }

@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { WoTService } from "@/services/wot.service";
 import { verifySession } from "@/lib/dal";
 
@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
     const limit = parseInt(req.nextUrl.searchParams.get("limit") || "10");
 
     if (!pubkey) {
-      return NextResponse.json(
+      return Response.json(
         { error: "Pubkey is required" },
         { status: 400 }
       );
@@ -26,18 +26,18 @@ export async function GET(req: NextRequest) {
     // Secure check: Ensure requester owns the pubkey
     const session = await verifySession();
     if (!session || session.pubkey !== pubkey) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+      return Response.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
     const suggestions = await WoTService.getSuggestions(pubkey, limit);
 
-    return NextResponse.json({
+    return Response.json({
       suggestions,
       pubkey
     });
   } catch (error) {
     console.error("[WoT API] Suggestions failed:", error);
-    return NextResponse.json(
+    return Response.json(
       { error: "Internal Server Error" },
       { status: 500 }
     );

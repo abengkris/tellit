@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase';
 import { verifyEvent } from 'nostr-tools';
 
@@ -8,13 +8,13 @@ export async function POST(req: NextRequest) {
     const { event } = body;
 
     if (!event) {
-      return NextResponse.json({ error: 'Missing signed event' }, { status: 400 });
+      return Response.json({ error: 'Missing signed event' }, { status: 400 });
     }
 
     // 1. Verify the signature
     const isValid = verifyEvent(event);
     if (!isValid) {
-      return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
+      return Response.json({ error: 'Invalid signature' }, { status: 400 });
     }
 
     // 2. Extract transfer details from event
@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
     const newPubkeyTag = event.tags.find((t: string[]) => t[0] === 'new_pubkey');
 
     if (!handleTag || !newPubkeyTag) {
-      return NextResponse.json({ error: 'Missing handle or new_pubkey in event tags' }, { status: 400 });
+      return Response.json({ error: 'Missing handle or new_pubkey in event tags' }, { status: 400 });
     }
 
     const handleName = handleTag[1];
@@ -41,11 +41,11 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (fetchError || !handle) {
-      return NextResponse.json({ error: 'Handle not found' }, { status: 404 });
+      return Response.json({ error: 'Handle not found' }, { status: 404 });
     }
 
     if (handle.pubkey !== currentOwnerPubkey) {
-      return NextResponse.json({ error: 'Unauthorized: You do not own this handle' }, { status: 403 });
+      return Response.json({ error: 'Unauthorized: You do not own this handle' }, { status: 403 });
     }
 
     // 4. Update the handle owner
@@ -56,10 +56,10 @@ export async function POST(req: NextRequest) {
 
     if (updateError) {
       console.error('[NIP-05 Transfer] DB Update Error:', updateError);
-      return NextResponse.json({ error: 'Database update failed' }, { status: 500 });
+      return Response.json({ error: 'Database update failed' }, { status: 500 });
     }
 
-    return NextResponse.json({ 
+    return Response.json({ 
       success: true, 
       message: `Handle ${handleName}@tellit.id transferred successfully to ${newPubkey}` 
     });
@@ -67,6 +67,6 @@ export async function POST(req: NextRequest) {
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Internal server error';
     console.error('[NIP-05 Transfer] Error:', err);
-    return NextResponse.json({ error: message }, { status: 500 });
+    return Response.json({ error: message }, { status: 500 });
   }
 }

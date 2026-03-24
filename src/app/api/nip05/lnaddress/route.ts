@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase';
 import { verifyEvent } from 'nostr-tools';
 
@@ -13,14 +13,14 @@ export async function POST(req: NextRequest) {
     const { event } = body;
 if (!event) {
   console.error('[NIP-05 LnAddress] Missing event');
-  return NextResponse.json({ error: 'Missing signed event' }, { status: 400 });
+  return Response.json({ error: 'Missing signed event' }, { status: 400 });
 }
 
 // 1. Verify the signature
 const isValid = verifyEvent(event);
 if (!isValid) {
   console.error('[NIP-05 LnAddress] Invalid signature', event.id);
-  return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
+  return Response.json({ error: 'Invalid signature' }, { status: 400 });
 }
 
 
@@ -29,7 +29,7 @@ if (!isValid) {
 
     if (!handleTag || !lnTag) {
       console.error('[NIP-05 LnAddress] Missing tags', { handleTag, lnTag });
-      return NextResponse.json({ error: 'Missing handle or lightning_address in event tags' }, { status: 400 });
+      return Response.json({ error: 'Missing handle or lightning_address in event tags' }, { status: 400 });
     }
 
     const handleName = handleTag[1];
@@ -53,7 +53,7 @@ if (!isValid) {
         owner: handle?.pubkey, 
         requester: pubkey 
       });
-      return NextResponse.json({ error: 'Unauthorized: You do not own this handle' }, { status: 403 });
+      return Response.json({ error: 'Unauthorized: You do not own this handle' }, { status: 403 });
     }
 
     // 2. Update the lightning address
@@ -64,14 +64,14 @@ if (!isValid) {
 
     if (updateError) {
       console.error('[NIP-05 LnAddress] DB Update Error:', updateError);
-      return NextResponse.json({ error: `Database update failed: ${updateError.message}` }, { status: 500 });
+      return Response.json({ error: `Database update failed: ${updateError.message}` }, { status: 500 });
     }
 
     console.log(`[NIP-05 LnAddress] Success: ${handleName} updated to ${lightningAddress}`);
-    return NextResponse.json({ success: true, message: `Lightning address for ${handleName} updated` });
+    return Response.json({ success: true, message: `Lightning address for ${handleName} updated` });
 
   } catch (err: unknown) {
     console.error('[NIP-05 LnAddress] Fatal Error:', err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return Response.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

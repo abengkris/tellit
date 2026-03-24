@@ -1,10 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 
 export async function GET(request: NextRequest) {
   const identifier = request.nextUrl.searchParams.get('identifier');
 
   if (!identifier || !identifier.includes('@')) {
-    return NextResponse.json({ error: 'Invalid identifier' }, { status: 400 });
+    return Response.json({ error: 'Invalid identifier' }, { status: 400 });
   }
 
   const [name, domain] = identifier.split('@');
@@ -19,13 +19,13 @@ export async function GET(request: NextRequest) {
     });
 
     if (!response.ok) {
-      return NextResponse.json({ error: 'Failed to fetch NIP-05' }, { status: response.status });
+      return Response.json({ error: 'Failed to fetch NIP-05' }, { status: response.status });
     }
 
     const data = await response.json();
-    return NextResponse.json(data);
+    return Response.json(data);
   } catch (error) {
     console.error('NIP-05 Proxy Error:', error);
-    return NextResponse.json({ error: 'Network error' }, { status: 500 });
+    return Response.json({ error: 'Network error' }, { status: 500 });
   }
 }

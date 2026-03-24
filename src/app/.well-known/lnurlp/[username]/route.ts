@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase';
 
 export const dynamic = 'force-dynamic';
@@ -22,7 +22,7 @@ export async function GET(
       .single();
 
     if (!handle || !handle.lightning_address) {
-      return NextResponse.json({ error: 'Lightning Address not found for this handle' }, { status: 404 });
+      return Response.json({ error: 'Lightning Address not found for this handle' }, { status: 404 });
     }
 
     // A Lightning Address is user@domain.com
@@ -30,16 +30,16 @@ export async function GET(
     const [user, domain] = handle.lightning_address.split('@');
     
     if (!user || !domain) {
-      return NextResponse.json({ error: 'Invalid Lightning Address configured' }, { status: 500 });
+      return Response.json({ error: 'Invalid Lightning Address configured' }, { status: 500 });
     }
 
     const targetUrl = `https://${domain}/.well-known/lnurlp/${user}`;
     
     // Redirect to the actual LNURL provider
-    return NextResponse.redirect(targetUrl);
+    return Response.redirect(targetUrl);
 
   } catch (err) {
     console.error('[LNURL Proxy] Error:', err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return Response.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase';
 
 
@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
 
     if (error) throw error;
 
-    return NextResponse.json({
+    return Response.json({
       handles: handles || [],
       total: count || 0,
       limit,
@@ -38,6 +38,6 @@ export async function GET(req: NextRequest) {
 
   } catch (err) {
     console.error('[Directory API] Error:', err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return Response.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
