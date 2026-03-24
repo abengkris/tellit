@@ -12,8 +12,3 @@ This file tracks all major tracks for the project. Each track has its own detail
 - [x] **Track: bug fix: failed to render images from post content**
 *Link: [./tracks/post_media_fix_20260323/](./tracks/post_media_fix_20260323/)*
 
----
-
-- [x] **Track: bug fix: cant access bookmarks**
-*Link: [./tracks/bookmarks_20260323/](./tracks/bookmarks_20260323/)*
-
