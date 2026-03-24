@@ -159,11 +159,11 @@ export function PostContentRenderer({
 
   const cleanUrlFn = (u: string) => u.replace(/[.,;!?:()\[\]{}'"]+$/, "");
 
-  const isMediaUrl = (url: string) => {
+  const isMediaUrl = useMemo(() => (url: string) => {
     const cleaned = cleanUrlFn(url);
     const path = cleaned.split('?')[0].split('#')[0].toLowerCase();
     return !!path.match(/\.(jpg|jpeg|png|gif|webp|avif|svg|jfif|mp4|mov|webm|ogg)$/);
-  };
+  }, []);
 
   const { textTokens, mediaTokens, audioTokens, quoteTokens, cardTokens, urlTokens } = useMemo(() => {
     const text: Token[] = [];
@@ -211,7 +211,7 @@ export function PostContentRenderer({
     }
 
     return { textTokens: text, mediaTokens: media, audioTokens: audio, quoteTokens: quote, cardTokens: card, urlTokens: url };
-  }, [tokens, renderQuotes, imetaMap]);
+  }, [tokens, renderQuotes, imetaMap, isMediaUrl]);
 
   const allMediaForLightbox = useMemo(() => {
     try {

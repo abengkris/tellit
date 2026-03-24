@@ -12,3 +12,8 @@ This file tracks all major tracks for the project. Each track has its own detail
 - [x] **Track: bug fix: failed to render images from post content**
 *Link: [./tracks/post_media_fix_20260323/](./tracks/post_media_fix_20260323/)*
 
+---
+
+- [ ] **Track: optimize feed rendering and user experience**
+*Link: [./tracks/feed_optimization_20260323/](./tracks/feed_optimization_20260323/)*
+

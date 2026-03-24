@@ -47,7 +47,6 @@ import { cn } from "@/lib/utils";
 import {
   Tooltip,
   TooltipContent,
-  TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
@@ -160,24 +159,22 @@ export const PostHeader: React.FC<PostHeaderProps> = ({
                 <span className="text-muted-foreground text-[15px] truncate">@{name || userNpub.slice(0, 12)}</span>
               </Link>
               {score > 0 && (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div className="flex items-center gap-1 mt-0.5 cursor-help">
-                        <ShieldCheck className={cn(
-                          "size-3.5",
-                          score > 80 ? "text-green-500" : "text-muted-foreground/60"
-                        )} />
-                        <span className="text-[11px] font-bold text-muted-foreground/60">
-                          {score}% Trust
-                        </span>
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent className="text-[10px] font-bold uppercase tracking-widest p-2">
-                      Web of Trust Score based on your connections
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="flex items-center gap-1 mt-0.5 cursor-help">
+                      <ShieldCheck className={cn(
+                        "size-3.5",
+                        score > 80 ? "text-green-500" : "text-muted-foreground/60"
+                      )} />
+                      <span className="text-[11px] font-bold text-muted-foreground/60">
+                        {score}% Trust
+                      </span>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent className="text-[10px] font-bold uppercase tracking-widest p-2">
+                    Web of Trust Score based on your connections
+                  </TooltipContent>
+                </Tooltip>
               )}
             </div>
           </div>
@@ -344,21 +341,19 @@ export const PostHeader: React.FC<PostHeaderProps> = ({
             </Link>
             <div className="flex items-center gap-1 shrink-0 mt-1">
               {score > 0 && (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div className="flex items-center cursor-help">
-                        <ShieldCheck className={cn(
-                          "size-3",
-                          score > 80 ? "text-green-500" : "text-muted-foreground/60"
-                        )} />
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent className="text-[10px] font-bold uppercase tracking-widest p-2">
-                      WoT: {score}%
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="flex items-center cursor-help">
+                      <ShieldCheck className={cn(
+                        "size-3",
+                        score > 80 ? "text-green-500" : "text-muted-foreground/60"
+                      )} />
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent className="text-[10px] font-bold uppercase tracking-widest p-2">
+                    WoT: {score}%
+                  </TooltipContent>
+                </Tooltip>
               )}
               {isPinned && (
                 <Badge variant="secondary" className="h-4 px-1.5 gap-1 text-primary bg-primary/10 border-primary/20 font-black uppercase text-[8px] tracking-tighter">
@@ -417,41 +412,39 @@ export const PostHeader: React.FC<PostHeaderProps> = ({
           )}
 
           {relevance && relevance.signals && (
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="flex items-center shrink-0 mt-1 ml-1 cursor-help opacity-60 hover:opacity-100 transition-opacity">
-                    <Sparkles className="size-3 text-blue-500" fill="currentColor" />
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent side="top" className="max-w-[200px] text-[10px] font-bold uppercase tracking-widest p-2 bg-background border shadow-xl z-50">
-                  <div className="flex flex-col gap-1">
-                    <span className="text-blue-500 mb-1">Recommended for you:</span>
-                    {Object.entries(relevance.signals)
-                      .sort(([, a], [, b]) => (b as number) - (a as number))
-                      .slice(0, 3)
-                      .map(([signal, value]) => {
-                        let label = signal;
-                        if (signal === 'isFollowing') label = 'Following';
-                        if (signal === 'networkDegree2') label = 'In your network';
-                        if (signal === 'interestMatch') label = 'Matches your interests';
-                        if (signal === 'frequentInteraction') label = 'Someone you interact with';
-                        if (signal === 'networkReaction') label = 'Liked by your friends';
-                        if (signal === 'networkReply') label = 'Discussed by your friends';
-                        if (signal === 'mutuals') label = 'Common connections';
-                        if (signal === 'freshness') return null; // Skip freshness as a "reason"
-                        
-                        return (value as number) > 0 ? (
-                          <div key={signal} className="flex justify-between gap-2">
-                            <span>{label}</span>
-                          </div>
-                        ) : null;
-                      })
-                    }
-                  </div>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex items-center shrink-0 mt-1 ml-1 cursor-help opacity-60 hover:opacity-100 transition-opacity">
+                  <Sparkles className="size-3 text-blue-500" fill="currentColor" />
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="max-w-[200px] text-[10px] font-bold uppercase tracking-widest p-2 bg-background border shadow-xl z-50">
+                <div className="flex flex-col gap-1">
+                  <span className="text-blue-500 mb-1">Recommended for you:</span>
+                  {Object.entries(relevance.signals)
+                    .sort(([, a], [, b]) => (b as number) - (a as number))
+                    .slice(0, 3)
+                    .map(([signal, value]) => {
+                      let label = signal;
+                      if (signal === 'isFollowing') label = 'Following';
+                      if (signal === 'networkDegree2') label = 'In your network';
+                      if (signal === 'interestMatch') label = 'Matches your interests';
+                      if (signal === 'frequentInteraction') label = 'Someone you interact with';
+                      if (signal === 'networkReaction') label = 'Liked by your friends';
+                      if (signal === 'networkReply') label = 'Discussed by your friends';
+                      if (signal === 'mutuals') label = 'Common connections';
+                      if (signal === 'freshness') return null; // Skip freshness as a "reason"
+                      
+                      return (value as number) > 0 ? (
+                        <div key={signal} className="flex justify-between gap-2">
+                          <span>{label}</span>
+                        </div>
+                      ) : null;
+                    })
+                  }
+                </div>
+              </TooltipContent>
+            </Tooltip>
           )}
 
           {clientName && (

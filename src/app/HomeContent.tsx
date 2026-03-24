@@ -16,6 +16,7 @@ import { InterestSelector } from "@/components/feed/InterestSelector";
 import { useUIStore } from "@/store/ui";
 import { useLists } from "@/hooks/useLists";
 import Link from "next/link";
+import { BackToTop } from "@/components/layout/BackToTop";
 
 type FeedTab = "following" | "forYou" | "global" | string;
 
@@ -212,6 +213,7 @@ export function HomeContent() {
           </div>
         ))}
       </div>
+      <BackToTop />
     </>
   );
 }

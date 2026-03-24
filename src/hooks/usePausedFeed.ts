@@ -41,11 +41,12 @@ export function usePausedFeed({
   const subRef = useRef<NDKSubscription | null>(null);
   const prevFilterRef = useRef<string>("");
 
+  const filterStr = JSON.stringify(filter);
+
   useEffect(() => {
     if (!ndk || !isReady) return;
 
-    const currentFilterStr = JSON.stringify(filter);
-    const filterChanged = currentFilterStr !== prevFilterRef.current;
+    const filterChanged = filterStr !== prevFilterRef.current;
     
     if (filterChanged) {
       isInitialLoadDone.current = false;
@@ -56,7 +57,7 @@ export function usePausedFeed({
       });
       bufferRef.current = [];
       seenIds.current = new Set();
-      prevFilterRef.current = currentFilterStr;
+      prevFilterRef.current = filterStr;
     } else if (posts.length > 0) {
       // If filter didn't change and we have posts, don't show loading
       Promise.resolve().then(() => setIsLoading(false));
@@ -65,7 +66,10 @@ export function usePausedFeed({
 
     const sub = ndk.subscribe(
       { ...filter, limit: 20 },
-      { closeOnEose: false },
+      { 
+        closeOnEose: false,
+        cacheUsage: NDKSubscriptionCacheUsage.PARALLEL 
+      },
       {
         onEvent: async (event: NDKEvent) => {
           if (seenIds.current.has(event.id)) return;
@@ -91,7 +95,7 @@ export function usePausedFeed({
           }
         },
         onEose: () => {
-          setIsLoading(false);
+          Promise.resolve().then(() => setIsLoading(false));
           if (bufferDelayTimer.current) clearTimeout(bufferDelayTimer.current);
           bufferDelayTimer.current = setTimeout(() => {
             isInitialLoadDone.current = true;
@@ -106,14 +110,14 @@ export function usePausedFeed({
       subRef.current = null;
       if (bufferDelayTimer.current) clearTimeout(bufferDelayTimer.current);
     };
-  }, [ndk, isReady, JSON.stringify(filter), bufferDelay, maxBuffer, maxVisible]);
+  }, [ndk, isReady, filterStr, bufferDelay, maxBuffer, maxVisible, filter]);
 
   useEffect(() => {
     if (posts.length > 0) {
       const oldest = posts[posts.length - 1].created_at;
       Promise.resolve().then(() => setOldestTimestamp(oldest));
     }
-  }, [posts]);
+  }, [posts, posts.length]);
 
   const flushNewPosts = useCallback(() => {
     if (bufferRef.current.length === 0) return;

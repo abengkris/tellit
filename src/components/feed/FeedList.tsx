@@ -44,8 +44,8 @@ export function FeedList({
 
   const virtualizer = useWindowVirtualizer({
     count: posts.length,
-    estimateSize: () => 250,
-    overscan: 5,
+    estimateSize: () => 300,
+    overscan: 10,
     scrollMargin,
   });
 
@@ -153,20 +153,28 @@ export function FeedList({
       </div>
 
       {/* Load more trigger + indicator */}
-      <div ref={bottomRef} className="py-12 flex justify-center">
+      <div ref={bottomRef} className="py-16 flex flex-col items-center justify-center">
         {hasMore && posts.length > 0 && (
-          <div className="flex gap-1.5" aria-label="Loading more posts…">
-            {[0, 1, 2].map(i => (
-              <div
-                key={i}
-                className="w-2.5 h-2.5 bg-primary/40 rounded-full animate-bounce motion-reduce:animate-none"
-                style={{ animationDelay: `${i * 150}ms` }}
-              />
-            ))}
+          <div className="flex flex-col items-center gap-4 animate-in fade-in duration-700">
+            <div className="flex gap-1.5" aria-label="Loading more posts…">
+              {[0, 1, 2].map(i => (
+                <div
+                  key={i}
+                  className="w-2 h-2 bg-primary/50 rounded-full animate-bounce"
+                  style={{ animationDelay: `${i * 150}ms`, animationDuration: '1s' }}
+                />
+              ))}
+            </div>
+            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50">
+              Fetching more magic
+            </span>
           </div>
         )}
         {!hasMore && posts.length > 0 && (
-          <p className="text-muted-foreground text-sm font-bold">You&apos;ve reached the end of the road</p>
+          <div className="flex flex-col items-center gap-2 animate-in fade-in slide-in-from-bottom-2 duration-500">
+            <div className="w-8 h-1 bg-border rounded-full mb-2" />
+            <p className="text-muted-foreground text-xs font-black uppercase tracking-widest">You&apos;ve reached the end</p>
+          </div>
         )}
       </div>
     </div>

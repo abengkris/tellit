@@ -230,7 +230,7 @@ export function useForYouFeed({
       prevFollowingListRef.current = followingStr;
       Promise.resolve().then(() => setDiscoverPubkeys(followingList));
     } else if (rawEvents.length > 0) {
-      setIsLoading(false);
+      Promise.resolve().then(() => setIsLoading(false));
       return;
     }
 
@@ -238,7 +238,7 @@ export function useForYouFeed({
     const validAuthors = discoverAuthors.filter(a => !!a && /^[0-9a-fA-F]{64}$/.test(a));
 
     if (!validAuthors.length) {
-      setIsLoading(false);
+      Promise.resolve().then(() => setIsLoading(false));
       return;
     }
 
@@ -254,6 +254,7 @@ export function useForYouFeed({
 
     const options = {
       closeOnEose: false,
+      cacheUsage: NDKSubscriptionCacheUsage.PARALLEL,
     };
 
     const handlers = {
@@ -291,10 +292,10 @@ export function useForYouFeed({
         }
       },
       onEose: () => {
-        setIsLoading(false);
+        Promise.resolve().then(() => setIsLoading(false));
         setTimeout(() => {
           isInitialLoadDone.current = true;
-        }, 1500);
+        }, 2000);
       }
     };
 

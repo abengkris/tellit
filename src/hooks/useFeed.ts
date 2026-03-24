@@ -219,7 +219,7 @@ export function useFeed(authors: string[], kinds: number[] = [1, 20, 1063, 1068,
     } else {
       subscriptionRef.current = ndk.subscribe(filter, options, handlers);
     }
-  }, [ndk, isReady, sync, authors, kinds, filterType, matchesFilter]);
+  }, [ndk, isReady, sync, authors, kinds, filterType, matchesFilter, posts, queueUpdate]);
 
   // Real-time listener: starts immediately, independent of loading history
   useEffect(() => {
