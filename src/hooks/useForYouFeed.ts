@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { NDKEvent, NDKKind, NDKSubscription, NDKFilter } from "@nostr-dev-kit/ndk";
+import { NDKEvent, NDKKind, NDKSubscription, NDKFilter, NDKSubscriptionCacheUsage } from "@nostr-dev-kit/ndk";
 import { useNDK } from "@/hooks/useNDK";
 import { useWoTNetwork } from "./useWoTNetwork";
 import { useUIStore } from "@/store/ui";
