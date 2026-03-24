@@ -1,15 +1,20 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import { NDKProvider } from "@/providers/NDKProvider";
 import { Toaster } from "@/components/ui/sonner";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useAuthStore } from "@/store/auth";
 import { Loader2 } from "lucide-react";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { initRemoteLogger } from "@/lib/remote-logger";
 
 export function ClientShell({ children }: { children: React.ReactNode }) {
   const { _hasHydrated, isLoading: isAuthLoading } = useAuthStore();
+
+  useEffect(() => {
+    initRemoteLogger();
+  }, []);
 
   return (
     <NDKProvider>

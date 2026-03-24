@@ -15,6 +15,7 @@ import { ProfileSetupCard } from "@/components/profile/ProfileSetupCard";
 import { InterestSelector } from "@/components/feed/InterestSelector";
 import { useUIStore } from "@/store/ui";
 import { useLists } from "@/hooks/useLists";
+import { useFollowing } from "@/hooks/useFollowing";
 import Link from "next/link";
 import { BackToTop } from "@/components/layout/BackToTop";
 
@@ -22,7 +23,7 @@ type FeedTab = "following" | "forYou" | "global" | string;
 
 export function HomeContent() {
   const { isLoggedIn, user, isLoading: isAuthLoading, _hasHydrated } = useAuthStore();
-  const { ndk, isReady } = useNDK();
+  const { isReady } = useNDK();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<FeedTab>("forYou");
   const { interests } = useLists();
@@ -30,8 +31,7 @@ export function HomeContent() {
 
   const interestList = useMemo(() => Array.from(interests), [interests]);
 
-  const [followingPubkeys, setFollowingPubkeys] = useState<string[]>([]);
-  const lastFetchedPubkeyRef = useRef<string | null>(null);
+  const { following: followingPubkeys } = useFollowing(user?.pubkey);
 
   console.log("[HomeContent] Render", { 
     isLoggedIn, 
@@ -62,21 +62,6 @@ export function HomeContent() {
       localStorage.setItem("home_active_tab", activeTab);
     }
   }, [activeTab, _hasHydrated]);
-
-  useEffect(() => {
-    if (isReady && isLoggedIn && user && lastFetchedPubkeyRef.current !== user.pubkey) {
-      console.log("[HomeContent] Fetching following list for", user.pubkey);
-      lastFetchedPubkeyRef.current = user.pubkey;
-      ndk?.fetchEvent({ kinds: [3], authors: [user.pubkey] }).then((event) => {
-        if (event) {
-          const pubkeys = event.tags
-            .filter((t) => t[0] === "p")
-            .map((t) => t[1]);
-          setFollowingPubkeys(pubkeys);
-        }
-      });
-    }
-  }, [ndk, isReady, isLoggedIn, user]);
 
   // Protected route check
   useEffect(() => {
@@ -189,30 +174,28 @@ export function HomeContent() {
       )}
 
       <div className="pb-20">
-        <div className={activeTab === "forYou" ? "block" : "hidden"}>
+        {activeTab === "forYou" && (
           <ForYouFeedTab 
             viewerPubkey={user.pubkey} 
             followingList={followingPubkeys} 
             interests={interestList}
           />
-        </div>
+        )}
         
-        <div className={activeTab === "following" ? "block" : "hidden"}>
+        {activeTab === "following" && (
           <FollowingFeedTab 
             followingList={followingPubkeys} 
             viewerPubkey={user.pubkey}
           />
-        </div>
+        )}
 
-        <div className={activeTab === "global" ? "block" : "hidden"}>
+        {activeTab === "global" && (
           <GlobalFeedTab />
-        </div>
+        )}
 
-        {interestList.map((tag) => (
-          <div key={tag} className={activeTab === tag ? "block" : "hidden"}>
-            <InterestsFeedTab interestList={[tag]} />
-          </div>
-        ))}
+        {interestList.includes(activeTab) && (
+          <InterestsFeedTab interestList={[activeTab]} />
+        )}
       </div>
       <BackToTop />
     </>
@@ -225,7 +208,7 @@ const InterestsFeedTab = memo(({ interestList }: { interestList: string[] }) => 
     "#t": interestList,
   }), [interestList]);
 
-  const { posts, newCount, isLoading, flushNewPosts, loadMore, hasMore } =
+  const { posts, newCount, isLoading, isProcessing, flushNewPosts, loadMore, hasMore } =
     usePausedFeed({ filter });
 
   const handleFlush = useCallback(() => {
@@ -244,6 +227,7 @@ const InterestsFeedTab = memo(({ interestList }: { interestList: string[] }) => 
       <FeedList 
         posts={posts}
         isLoading={isLoading}
+        isProcessing={isProcessing}
         loadMore={loadMore}
         hasMore={hasMore}
         emptyMessage="No posts found matching your interests. Try adding more in your profile!"
@@ -263,7 +247,7 @@ const ForYouFeedTab = memo(({
   followingList: string[];
   interests: string[];
 }) => {
-  const { posts, scoredEvents, newCount, isLoading, wotStatus, wotSize, hasInterests, flushNewPosts, loadMore, hasMore } = 
+  const { posts, scoredEvents, newCount, isLoading, isProcessing, wotStatus, wotSize, hasInterests, flushNewPosts, loadMore, hasMore } = 
     useForYouFeed({ viewerPubkey, followingList, interests });
 
   const handleFlush = useCallback(() => {
@@ -283,6 +267,7 @@ const ForYouFeedTab = memo(({
         posts={posts}
         scoredEvents={scoredEvents}
         isLoading={isLoading}
+        isProcessing={isProcessing}
         loadMore={loadMore}
         hasMore={hasMore}
         emptyMessage={hasInterests 
@@ -362,7 +347,7 @@ const FollowingFeedTab = memo(({ followingList, viewerPubkey }: { followingList:
     authors,
   }), [authors]);
 
-  const { posts, newCount, isLoading, flushNewPosts, loadMore, hasMore } =
+  const { posts, newCount, isLoading, isProcessing, flushNewPosts, loadMore, hasMore } =
     usePausedFeed({ filter });
 
   const handleFlush = useCallback(() => {
@@ -376,6 +361,7 @@ const FollowingFeedTab = memo(({ followingList, viewerPubkey }: { followingList:
       <FeedList 
         posts={posts}
         isLoading={isLoading}
+        isProcessing={isProcessing}
         loadMore={loadMore}
         hasMore={hasMore}
         emptyMessage="Try following some people to see their posts here!" 
@@ -391,7 +377,7 @@ const GlobalFeedTab = memo(() => {
     kinds: [1, 6, 16, 1068, 30023] as NDKKind[],
   }), []);
 
-  const { posts, newCount, isLoading, flushNewPosts, loadMore, hasMore } =
+  const { posts, newCount, isLoading, isProcessing, flushNewPosts, loadMore, hasMore } =
     usePausedFeed({ filter });
 
   const handleFlush = useCallback(() => {
@@ -405,6 +391,7 @@ const GlobalFeedTab = memo(() => {
       <FeedList 
         posts={posts}
         isLoading={isLoading}
+        isProcessing={isProcessing}
         loadMore={loadMore}
         hasMore={hasMore}
         emptyMessage="The global feed is empty? That's impossible!" 

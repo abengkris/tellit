@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { X, Camera, Image as ImageIcon, Loader2, AlertCircle, Check, Upload, Tag, ShieldCheck, Trash2, Info } from "lucide-react";
+import { X, Camera, Image as ImageIcon, AlertCircle, Check, Upload, Tag, ShieldCheck, Trash2, Info } from "lucide-react";
 import { ProfileMetadata } from "@/hooks/useProfile";
 import { updateProfile } from "@/lib/actions/profile";
 import { useNDK } from "@/hooks/useNDK";
@@ -169,11 +169,10 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({
             type="button"
             className="absolute inset-0 flex flex-col items-center justify-center bg-black/20 group-hover:bg-black/40 cursor-pointer transition-all gap-2 w-full h-full rounded-none"
             onClick={() => bannerInputRef.current?.click()}
+            loading={uploadingBanner}
             aria-label="Change Banner"
           >
-            {uploadingBanner ? (
-              <Loader2 className="text-white animate-spin size-8" aria-hidden="true" />
-            ) : (
+            {!uploadingBanner && (
               <>
                 <ImageIcon className="text-white drop-shadow-md size-8" aria-hidden="true" />
                 <Badge variant="secondary" className="bg-black/40 text-white border-white/20 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity font-black uppercase tracking-widest text-[10px]">
@@ -207,11 +206,10 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({
                 type="button"
                 className="absolute inset-0 flex items-center justify-center bg-black/40 group-hover:bg-black/60 rounded-full cursor-pointer transition-all w-full h-full"
                 onClick={() => avatarInputRef.current?.click()}
+                loading={uploadingAvatar}
                 aria-label="Change Avatar"
               >
-                {uploadingAvatar ? (
-                  <Loader2 className="text-white animate-spin size-6" aria-hidden="true" />
-                ) : (
+                {!uploadingAvatar && (
                   <Camera className="text-white size-6" aria-hidden="true" />
                 )}
               </Button>
@@ -592,10 +590,9 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({
               )}
               <Button 
                 type="submit" 
-                disabled={loading}
+                loading={loading}
                 className="flex-1 h-12 rounded-2xl font-black shadow-lg shadow-primary/20"
               >
-                {loading ? <Loader2 className="animate-spin size-5 mr-2" /> : null}
                 Save Profile
               </Button>
             </div>

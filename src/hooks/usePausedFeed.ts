@@ -16,6 +16,7 @@ interface UsePausedFeedReturn {
   posts: NDKEvent[];            
   newCount: number;             
   isLoading: boolean;
+  isProcessing: boolean;
   flushNewPosts: () => void;    
   loadMore: () => void;         
   hasMore: boolean;
@@ -31,6 +32,7 @@ export function usePausedFeed({
   const [posts, setPosts] = useState<NDKEvent[]>([]);
   const [newCount, setNewCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [isProcessing, setIsProcessing] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [oldestTimestamp, setOldestTimestamp] = useState<number | undefined>();
 
@@ -74,23 +76,31 @@ export function usePausedFeed({
       },
       {
         onEvents: async (events: NDKEvent[]) => {
-          // Process initial batch from cache
-          const validEvents: NDKEvent[] = [];
-          for (const event of events) {
-            if (seenIds.current.has(event.id)) continue;
-            const ok = await validateEvent(event);
-            if (!ok) continue;
-            seenIds.current.add(event.id);
-            validEvents.push(event);
-          }
+          setIsProcessing(true);
+          try {
+            // Parallelize validation for initial batch from cache
+            const validationResults = await Promise.all(
+              events.map(async (event) => {
+                if (seenIds.current.has(event.id)) return null;
+                const ok = await validateEvent(event);
+                if (!ok) return null;
+                return event;
+              })
+            );
 
-          if (validEvents.length > 0) {
-            setPosts(prev => {
-              const next = [...prev, ...validEvents].sort(
-                (a, b) => (b.created_at ?? 0) - (a.created_at ?? 0)
-              );
-              return next.slice(0, maxVisible);
-            });
+            const validEvents = validationResults.filter((e): e is NDKEvent => e !== null);
+
+            if (validEvents.length > 0) {
+              validEvents.forEach(e => seenIds.current.add(e.id));
+              setPosts(prev => {
+                const next = [...prev, ...validEvents].sort(
+                  (a, b) => (b.created_at ?? 0) - (a.created_at ?? 0)
+                );
+                return next.slice(0, maxVisible);
+              });
+            }
+          } finally {
+            setIsProcessing(false);
           }
         },
         onEvent: async (event: NDKEvent) => {
@@ -139,7 +149,7 @@ export function usePausedFeed({
       const oldest = posts[posts.length - 1].created_at;
       Promise.resolve().then(() => setOldestTimestamp(oldest));
     }
-  }, [posts, posts.length]);
+  }, [posts]);
 
   const flushNewPosts = useCallback(() => {
     if (bufferRef.current.length === 0) return;
@@ -180,5 +190,5 @@ export function usePausedFeed({
     });
   }, [ndk, oldestTimestamp, hasMore, filter, maxVisible]);
 
-  return { posts, newCount, isLoading, flushNewPosts, loadMore, hasMore };
+  return { posts, newCount, isLoading, isProcessing, flushNewPosts, loadMore, hasMore };
 }

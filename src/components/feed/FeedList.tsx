@@ -8,7 +8,7 @@ import { FeedSkeleton } from "./FeedSkeleton";
 import { NDKEvent } from "@nostr-dev-kit/ndk";
 import { ScoredEvent } from "@/lib/feed/types";
 import { WhoToFollow } from "@/components/profile/WhoToFollow";
-import { Search, Plus } from "lucide-react";
+import { Search, Plus, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -17,6 +17,7 @@ interface FeedListProps {
   posts: NDKEvent[];
   scoredEvents?: ScoredEvent[];
   isLoading: boolean;
+  isProcessing?: boolean;
   loadMore: () => void;
   hasMore: boolean;
   emptyMessage?: string;
@@ -27,6 +28,7 @@ export function FeedList({
   posts, 
   scoredEvents,
   isLoading, 
+  isProcessing = false,
   loadMore, 
   hasMore, 
   emptyMessage = "Nothing to see here yet.",
@@ -71,12 +73,22 @@ export function FeedList({
   return (
     <div className="relative">
       {/* Loading skeleton for initial load */}
-      {isLoading && posts.length === 0 && (
+      {(isLoading || (isProcessing && posts.length === 0)) && posts.length === 0 && (
         <FeedSkeleton />
       )}
 
+      {/* Processing indicator (when we already have some posts but are ranking more) */}
+      {isProcessing && posts.length > 0 && (
+        <div className="sticky top-20 left-1/2 -translate-x-1/2 z-20 animate-in fade-in zoom-in duration-300 pointer-events-none">
+          <div className="bg-primary text-primary-foreground px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-xl flex items-center gap-2 backdrop-blur-md opacity-90 mx-auto w-fit">
+            <Loader2 className="size-3 animate-spin" />
+            <span>Ranking Magic…</span>
+          </div>
+        </div>
+      )}
+
       {/* Empty state */}
-      {!isLoading && posts.length === 0 && (
+      {!isLoading && !isProcessing && posts.length === 0 && (
         <div className="flex flex-col items-center">
           <div className="py-16 text-center px-4 w-full">
             <p className="text-4xl mb-3" aria-hidden="true">🌐</p>

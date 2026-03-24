@@ -161,11 +161,21 @@ export function useFeed(authors: string[], kinds: number[] = [1, 20, 1063, 1068,
     };
 
     const handlers = {
-      onEvents: (events: NDKEvent[]) => {
+      onEvents: async (events: NDKEvent[]) => {
         eventsReceived += events.length;
         if (isLoadMore) return; // onEvents is primarily for initial cache load
         
-        const filtered = events.filter(e => matchesFilter(e));
+        // Parallelize validation for initial batch from cache
+        const validationResults = await Promise.all(
+          events.map(async (event) => {
+            const ok = await matchesFilter(event);
+            if (!ok) return null;
+            return event;
+          })
+        );
+
+        const filtered = validationResults.filter((e): e is NDKEvent => e !== null);
+        
         if (filtered.length > 0) {
           queueUpdate(filtered);
         }

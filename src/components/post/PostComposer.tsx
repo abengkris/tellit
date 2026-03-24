@@ -738,17 +738,11 @@ export const PostComposer: React.FC<PostComposerProps> = ({
 
             <Button
               onClick={handlePost}
-              disabled={isPosting || isUploading || (!content.trim() && mediaFiles.length === 0)}
-              className="px-8 rounded-full font-black shadow-lg shadow-primary/20 gap-2"
+              loading={isPosting}
+              disabled={isUploading || (!content.trim() && mediaFiles.length === 0)}
+              className="px-8 rounded-full font-black shadow-lg shadow-primary/20 gap-2 h-10"
             >
-              {isPosting ? (
-                <>
-                  <Loader2 className="size-4 animate-spin" />
-                  <span>Posting…</span>
-                </>
-              ) : (
-                replyTo ? "Reply" : quoteEvent ? "Quote" : "Post"
-              )}
+              {replyTo ? "Reply" : quoteEvent ? "Quote" : "Post"}
             </Button>
           </div>
         </div>

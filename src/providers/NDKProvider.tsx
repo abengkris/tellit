@@ -184,7 +184,10 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
   // Separate effect for wallet pairing code and lock state changes
   useEffect(() => {
     if (ndk) {
-      initWallet(ndk);
+      // Use requestAnimationFrame to defer state update and avoid cascading renders
+      requestAnimationFrame(() => {
+        initWallet(ndk);
+      });
     }
   }, [ndk, nwcPairingCode, cashuMints, walletType, isLocked, initWallet]);
 
@@ -394,16 +397,19 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
             stableDepsRef.current.setUser(user);
             stableDepsRef.current.setLoginState(true, session.pubkey);
             
-            // Trigger WoT initialization
-            fetch("/api/wot/init", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ pubkey: session.pubkey })
-            }).catch(err => console.error("[NDKProvider] WoT init failed:", err));
+            // Defer WoT and other non-critical background tasks
+            setTimeout(() => {
+              // Trigger WoT initialization
+              fetch("/api/wot/init", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ pubkey: session.pubkey })
+              }).catch(err => console.error("[NDKProvider] WoT init failed:", err));
 
-            // Trigger Local WoT sync
-            const wotLocal = new WoTServiceLocal(instance);
-            wotLocal.startSync(session.pubkey);
+              // Trigger Local WoT sync
+              const wotLocal = new WoTServiceLocal(instance);
+              wotLocal.startSync(session.pubkey);
+            }, 3000);
           });
         }
       } else {
@@ -496,7 +502,6 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
           console.error("[NutzapMonitor] Nutzap redemption failed", event.id, error);
         });
 
-        monitor.start({});
         nutzapMonitorRef.current = monitor;
         setNutzapMonitor(monitor);
       }
@@ -522,33 +527,34 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
       const connectPromise = instance.connect();
       const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 10000));
 
-      const startMessenger = async () => {
+      // 1. Unblock UI immediately so hooks can start serving from cache
+      setIsReady(true);
+
+      const startDeferredTasks = async () => {
         if (sessionManager.activePubkey && msgInstance) {
           try {
-            console.log("[NDKProvider] Starting NDKMessenger...", { hasSigner: !!instance.signer });
+            console.log("[NDKProvider] Starting deferred tasks...");
+            
+            // Start messenger (DM sync)
             await msgInstance.start();
-            console.log("[NDKProvider] NDKMessenger started successfully");
-            // Publish preferred DM relays for NIP-17 discovery
             syncDMRelays(msgInstance, DEFAULT_RELAYS).catch(() => {});
             
-            // Background sync for historical messages using NDKSync (Negentropy)
+            // Background DM sync (Negentropy)
             if (instance.activeUser && sync) {
               const dmFilter = { 
                 kinds: [1059, 14], 
                 "#p": [instance.activeUser.pubkey],
                 since: Math.floor(Date.now() / 1000) - (7 * 24 * 60 * 60) // Last 7 days
               };
-              
-              console.log("[NDKProvider] Starting background DM sync...");
-              sync.sync(dmFilter, { autoFetch: true }).then((result) => {
-                console.log(`[NDKProvider] DM sync complete. Synced ${result.events.length} messages.`);
-              }).catch(err => {
-                console.warn("[NDKProvider] Background DM sync failed:", err);
-              });
+              sync.sync(dmFilter, { autoFetch: true }).catch(() => {});
+            }
+
+            // Nutzap monitor
+            if (nutzapMonitorRef.current) {
+              nutzapMonitorRef.current.start({});
             }
 
             msgInstance.on("message", (message: NDKMessage) => {
-              console.log("[NDKProvider] Received incoming message event", message.id);
               const currentPubkey = sessionManager.activePubkey;
               if (message.sender?.pubkey !== currentPubkey && message.recipient?.pubkey === currentPubkey) {
                 const isCurrentChat = stableDepsRef.current.activeChatPubkey === message.sender?.pubkey;
@@ -564,14 +570,14 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
                 }
               }
             });
-          } catch (e) { console.error("[NDKProvider] Failed to start messenger:", e); }
+          } catch (e) { console.error("[NDKProvider] Failed to start deferred tasks:", e); }
         }
       };
 
+      // 2. Connect in background and process unpublished events
       Promise.race([connectPromise, timeoutPromise])
         .then(async () => {
           console.log("[NDKProvider] Connected!");
-          setIsReady(true);
           if (instance.cacheAdapter && (instance.cacheAdapter as ExtendedCacheAdapter).getUnpublishedEvents) {
             try {
               const unpublished = await (instance.cacheAdapter as ExtendedCacheAdapter).getUnpublishedEvents!();
@@ -584,12 +590,12 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
               }
             } catch { /* ignore */ }
           }
-          await startMessenger();
+          // Defer heavy non-critical tasks slightly more
+          setTimeout(startDeferredTasks, 1500);
         })
         .catch(async (err) => { 
           console.warn("[NDKProvider] Connection timeout or error, proceeding anyway:", err.message);
-          setIsReady(true); 
-          await startMessenger();
+          setTimeout(startDeferredTasks, 2000);
         });
     });
 
@@ -599,7 +605,7 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
       if (nutzapMonitorRef.current) try { nutzapMonitorRef.current.stop(); } catch { /* ignore */ }
       initializingRef.current = false;
     };
-  }, [initWallet]);
+  }, [initWallet, ndk, isReady, sync]);
 
   const refreshBalance = useCallback(async () => {
     if (walletRef.current) {

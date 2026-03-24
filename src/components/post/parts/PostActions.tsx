@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useMemo, useEffect, memo } from "react";
-import { MessageCircle, Repeat2, Heart, Zap, Bookmark, Quote, Share, Loader2, Smile } from "lucide-react";
+import { MessageCircle, Repeat2, Heart, Zap, Bookmark, Quote, Share, Smile } from "lucide-react";
 import { useUIStore } from "@/store/ui";
 import { useLists } from "@/hooks/useLists";
 import { useEmojis } from "@/hooks/useEmojis";
@@ -79,7 +79,7 @@ export const PostActions = memo(({
   const [reactionsPubkeys, setReactionsPubkeys] = useState<string[]>([]);
 
   const { addToast, defaultZapAmount } = useUIStore();
-  const { ndk, refreshBalance } = useNDK();
+  const { ndk, refreshBalance, isReady } = useNDK();
   const { recordInteraction } = useInteractionHistory();
   const { emojis } = useEmojis();
   const { bookmarkedEventIds, bookmarkPost, unbookmarkPost } = useLists();
@@ -295,8 +295,9 @@ export const PostActions = memo(({
           </DropdownMenu>
           {variant === "feed" && (
             <button 
-              className="text-xs cursor-pointer hover:underline ml-0.5 pr-2 py-2 outline-none focus-visible:underline focus-visible:text-primary"
+              className="text-xs cursor-pointer hover:underline ml-0.5 pr-2 py-2 outline-none focus-visible:underline focus-visible:text-primary disabled:opacity-50 disabled:pointer-events-none"
               onClick={openRepostsModal}
+              disabled={!isReady}
               aria-label={`${optimisticCombined} reposts and quotes`}
             >
               {optimisticCombined > 0 ? formatCount(optimisticCombined) : ""}
@@ -347,7 +348,8 @@ export const PostActions = memo(({
                       <button
                         key={emoji.shortcode}
                         onClick={() => handleEmojiReaction(emoji)}
-                        className="p-1 hover:bg-accent rounded-md transition-colors aspect-square flex items-center justify-center"
+                        disabled={!isReady}
+                        className="p-1 hover:bg-accent rounded-md transition-colors aspect-square flex items-center justify-center disabled:opacity-50 disabled:pointer-events-none"
                         title={emoji.shortcode}
                       >
                         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -362,8 +364,9 @@ export const PostActions = memo(({
           
           {variant === "feed" && (
             <button 
-              className="text-xs cursor-pointer hover:underline ml-0.5 pr-2 py-2 outline-none focus-visible:underline focus-visible:text-pink-500"
+              className="text-xs cursor-pointer hover:underline ml-0.5 pr-2 py-2 outline-none focus-visible:underline focus-visible:text-pink-500 disabled:opacity-50 disabled:pointer-events-none"
               onClick={openLikesModal}
+              disabled={!isReady}
               aria-label={`${optimisticLikes} likes`}
             >
               {optimisticLikes > 0 ? formatCount(optimisticLikes) : ""}
@@ -383,13 +386,11 @@ export const PostActions = memo(({
                   e.preventDefault();
                   onZapClick?.(e);
                 }}
-                disabled={isZapping}
+                loading={isZapping}
                 className="hover:text-yellow-500 hover:bg-yellow-500/10 rounded-full"
                 aria-label="Zap"
               >
-                {isZapping ? (
-                  <Loader2 className="size-5 animate-spin text-yellow-500" />
-                ) : (
+                {!isZapping && (
                   <Zap className={cn("size-5", optimisticZaps > 0 && "text-yellow-500 fill-yellow-500")} />
                 )}
               </Button>
@@ -399,10 +400,11 @@ export const PostActions = memo(({
           {variant === "feed" && (
             <button 
               className={cn(
-                "text-xs cursor-pointer hover:underline ml-0.5 pr-2 py-2 outline-none focus-visible:underline",
+                "text-xs cursor-pointer hover:underline ml-0.5 pr-2 py-2 outline-none focus-visible:underline disabled:opacity-50 disabled:pointer-events-none",
                 optimisticZaps > 0 && "text-yellow-600 dark:text-yellow-400 font-bold"
               )}
               onClick={openZapsModal}
+              disabled={!isReady}
               aria-label={`${optimisticZaps} zaps`}
             >
               {optimisticZaps > 0 ? formatCount(optimisticZaps) : ""}

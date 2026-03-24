@@ -22,6 +22,7 @@ interface UseForYouFeedReturn {
   scoredEvents: ScoredEvent[];
   newCount: number;
   isLoading: boolean;
+  isProcessing: boolean;
   wotStatus: "idle" | "loading" | "ready" | "error";
   wotSize: number;            
   hasInterests: boolean;
@@ -53,6 +54,7 @@ export function useForYouFeed({
   const [currentScoredEvents, setCurrentScoredEvents] = useState<ScoredEvent[]>([]);
   const [newCount, setNewCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [isScoring, setIsScoring] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const hasInterests = interests.length > 0;
 
@@ -97,8 +99,10 @@ export function useForYouFeed({
           // If user is scrolled down, buffer the new ranking to prevent jumping
           setPendingRankedPosts(events);
         }
+        setIsScoring(false);
       } else if (message.type === 'ERROR') {
         console.error("[useForYouFeed] Scoring worker error:", message.error);
+        setIsScoring(false);
       }
     };
 
@@ -173,6 +177,7 @@ export function useForYouFeed({
         events: plainEvents,
         ctx: context, // Always send context to ensure worker is up to date with settings
       });
+      setIsScoring(true);
     }, 500); 
 
     return () => {
@@ -372,6 +377,7 @@ export function useForYouFeed({
     scoredEvents: currentScoredEvents,
     newCount,
     isLoading,
+    isProcessing: isScoring,
     wotStatus,
     wotSize,
     hasInterests,

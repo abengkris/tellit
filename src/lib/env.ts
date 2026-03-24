@@ -27,5 +27,6 @@ export const ENV = {
   BLINK: {
     API_KEY: getOptionalEnv('BLINK_API_KEY'),
     WALLET_ID: getOptionalEnv('BLINK_WALLET_ID'),
-  }
+  },
+  TELLIT_NSEC: getOptionalEnv('TELLIT_NSEC'),
 };

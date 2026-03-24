@@ -15,13 +15,13 @@ import {
   EyeOff, 
   Copy, 
   CheckCircle2, 
-  Loader2,
   Database,
   Lock,
   Shield
 } from "lucide-react";
 import { toNsec } from "@/lib/utils/nip19";
 import { RestoreBackupModal } from "@/components/settings/RestoreBackupModal";
+import { Button } from "@/components/ui/button";
 
 export default function LoginPage() {
   const [privateKey, setPrivateKey] = useState("");
@@ -67,7 +67,6 @@ export default function LoginPage() {
   const router = useRouter();
 
   // Redirect if already logged in and not trying to add another account
-  // We can use a search param like ?add=true to stay on this page
   useEffect(() => {
     if (isLoggedIn && !window.location.search.includes('add=true')) {
       router.push("/");
@@ -155,12 +154,14 @@ export default function LoginPage() {
             </div>
 
             <div className="flex flex-col space-y-3">
-              <button
+              <Button
                 onClick={() => router.push("/onboarding")}
-                className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-6 rounded-2xl transition-all shadow-lg shadow-blue-500/20"
+                size="lg"
+                className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold h-14 rounded-2xl transition-all shadow-lg shadow-blue-500/20"
+                allowOffline
               >
                 I&apos;ve saved it, let&apos;s go!
-              </button>
+              </Button>
               <p className="text-[10px] text-red-500 font-bold uppercase tracking-wider">
                 No recovery possible if lost
               </p>
@@ -184,16 +185,15 @@ export default function LoginPage() {
           <div className="space-y-6">
             <div className="space-y-3">
               <h2 className="text-xs font-black uppercase tracking-widest text-muted-foreground">New to Tell it?</h2>
-              <button
+              <Button
                 onClick={handleGenerateKey}
-                disabled={isLoading || !isReady}
-                className="w-full flex items-center justify-center space-x-3 bg-primary hover:bg-primary/90 text-primary-foreground font-black py-5 px-6 rounded-2xl transition-all shadow-xl shadow-primary/20 disabled:opacity-50 group"
+                loading={isLoading}
+                size="lg"
+                className="w-full flex items-center justify-center space-x-3 bg-primary hover:bg-primary/90 text-primary-foreground font-black h-16 rounded-2xl transition-all shadow-xl shadow-primary/20 group"
               >
-                <div aria-live="polite" className="flex items-center gap-2 text-lg">
-                  {isLoading ? <Loader2 className="animate-spin" /> : <PlusCircle size={22} className="transition-transform group-hover:rotate-90 duration-500" />}
-                  <span>{!isReady ? "Please wait…" : "Get Started (Free)"}</span>
-                </div>
-              </button>
+                {!isLoading && <PlusCircle size={22} className="transition-transform group-hover:rotate-90 duration-500 mr-2" />}
+                <span className="text-lg">Get Started (Free)</span>
+              </Button>
               <p className="text-[10px] text-muted-foreground font-medium">Create a new decentralized identity in seconds.</p>
             </div>
 
@@ -207,16 +207,16 @@ export default function LoginPage() {
             </div>
 
             <div className="grid grid-cols-1 gap-3">
-              <button
+              <Button
                 onClick={handleNip07Login}
-                disabled={isLoading || !isReady}
-                className="w-full flex items-center justify-center space-x-3 bg-white dark:bg-gray-800 border-2 border-gray-100 dark:border-gray-700 hover:border-primary dark:hover:border-primary text-gray-900 dark:text-white font-bold py-4 px-6 rounded-2xl transition-all group disabled:opacity-50"
+                loading={isLoading}
+                variant="outline"
+                size="lg"
+                className="w-full flex items-center justify-center space-x-3 bg-white dark:bg-gray-800 border-2 border-gray-100 dark:border-gray-700 hover:border-primary dark:hover:border-primary text-gray-900 dark:text-white font-bold h-14 rounded-2xl transition-all group"
               >
-                <LogIn size={20} className="group-hover:text-primary transition-colors" />
-                <span aria-live="polite">
-                  {!isReady ? "Initializing…" : (isLoading ? "Connecting…" : "Use Browser Extension")}
-                </span>
-              </button>
+                {!isLoading && <LogIn size={20} className="group-hover:text-primary transition-colors mr-2" />}
+                <span>Use Browser Extension</span>
+              </Button>
             </div>
           </div>
 
@@ -330,25 +330,26 @@ export default function LoginPage() {
               </div>
             )}
 
-            <button
+            <Button
               type="submit"
-              disabled={isLoading || !isReady || (loginMethod === 'nsec' && !privateKey) || (loginMethod === 'ncryptsec' && (!privateKey || !password)) || (loginMethod === 'bunker' && !bunkerUri)}
-              className="w-full bg-foreground text-background font-black py-4 px-6 rounded-2xl hover:opacity-90 transition-all disabled:opacity-50 shadow-lg text-lg"
+              loading={isLoading}
+              size="lg"
+              className="w-full bg-foreground text-background font-black h-16 rounded-2xl hover:opacity-90 transition-all shadow-lg text-lg"
+              disabled={(!privateKey && loginMethod !== 'bunker') || (loginMethod === 'ncryptsec' && !password) || (loginMethod === 'bunker' && !bunkerUri)}
             >
-              <span aria-live="polite">
-                {!isReady ? "Initializing…" : (isLoading ? "Please wait…" : "Sign In")}
-              </span>
-            </button>
+              Sign In
+            </Button>
 
             {hasBackups && (
-              <button
+              <Button
                 type="button"
                 onClick={() => setIsRestoreModalOpen(true)}
-                className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl border-2 border-primary/20 bg-primary/5 text-primary font-black text-sm hover:bg-primary/10 transition-all"
+                variant="outline"
+                className="w-full flex items-center justify-center gap-2 h-12 rounded-2xl border-2 border-primary/20 bg-primary/5 text-primary font-black text-sm hover:bg-primary/10 transition-all"
               >
                 <Shield size={16} />
                 Restore from local backup
-              </button>
+              </Button>
             )}
           </form>
 
