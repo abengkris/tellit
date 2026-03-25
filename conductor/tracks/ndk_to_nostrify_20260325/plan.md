@@ -28,10 +28,10 @@
 - [x] Task: Implement optimistic updates for the local `NStore` when publishing. 503ccfc
 - [x] Task: Conductor - User Manual Verification 'Publishing and Interactive Actions' (Protocol in workflow.md) e78aa12
 
-## Phase 4: Final Refactoring and Cleanup
+## Phase 4: Final Refactoring and Cleanup [checkpoint: 9163ec0]
 *Goal: Remove NDK traces from the Microblogging slice and verify performance.*
 
 - [x] Task: Perform a thorough cleanup of unused NDK-related imports and logic in the Microblogging components. db962e1
 - [x] Task: Verify 80%+ code coverage for all new Nostrify-based modules and hooks. b0f1ff6
-- [ ] Task: Measure and document performance (Load time <500ms, Bundle size -20%).
-- [ ] Task: Conductor - User Manual Verification 'Final Refactoring and Cleanup' (Protocol in workflow.md)
+- [x] Task: Measure and document performance (Load time <500ms, Bundle size -20%). 354b934
+- [x] Task: Conductor - User Manual Verification 'Final Refactoring and Cleanup' (Protocol in workflow.md) 9163ec0
