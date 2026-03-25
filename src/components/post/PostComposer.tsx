@@ -3,7 +3,9 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useAuthStore } from "@/store/auth";
 import { useNDK } from "@/hooks/useNDK";
-import { publishPost, ZapSplit } from "@/lib/actions/post";
+import { ZapSplit } from "@/lib/actions/post";
+import { buildPostTemplate } from "@/lib/actions/nostrify-post";
+import { useNostrifyPublish } from "@/hooks/useNostrifyPublish";
 import { createPoll, PollOption } from "@/lib/actions/poll";
 import { saveDraftWrap } from "@/lib/actions/drafts";
 import { useUIStore } from "@/store/ui";
@@ -89,6 +91,7 @@ export const PostComposer: React.FC<PostComposerProps> = ({
   const [showMentionPicker, setShowMentionPicker] = useState(false);
   const [cursorPos, setCursorPos] = useState(0);
   const { results: mentionResults } = useMentionSearch(mentionQuery);
+  const { publish } = useNostrifyPublish();
   
   const [pollOptions, setPollOptions] = useState<PollOption[]>([
     { id: "0", label: "" },
@@ -321,7 +324,9 @@ export const PostComposer: React.FC<PostComposerProps> = ({
           contentWarning: showContentWarning ? contentWarning.trim() : undefined
         };
 
-        event = await publishPost(ndk, finalContent, options);
+        const template = buildPostTemplate(finalContent, options);
+        const signedEvent = await publish(template);
+        event = new NDKEvent(ndk, signedEvent);
       }
 
       if (event) {

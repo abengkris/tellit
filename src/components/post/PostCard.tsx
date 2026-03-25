@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, memo } from "react";
-import { NDKEvent, isEventOriginalPost } from "@nostr-dev-kit/ndk";
+import { NDKEvent } from "@nostr-dev-kit/ndk";
 import { useProfile } from "@/hooks/useProfile";
 import { usePostStats } from "@/hooks/usePostStats";
 import { useNDK } from "@/hooks/useNDK";
@@ -11,17 +11,16 @@ import { ZapModal } from "@/components/common/ZapModal";
 import { PostHeader } from "./parts/PostHeader";
 import { PostContentRenderer } from "./parts/PostContent";
 import { PostActions } from "./parts/PostActions";
-import { deletePost, repostEvent, requestSummarization } from "@/lib/actions/post";
-import { reactToEvent } from "@/lib/actions/reactions";
+import { deletePost, requestSummarization } from "@/lib/actions/post";
+import { useNostrifyPublish } from "@/hooks/useNostrifyPublish";
 import { useUIStore } from "@/store/ui";
 import { RawEventModal } from "./parts/RawEventModal";
 import { ReportModal } from "./parts/ReportModal";
 import { ReplyModal } from "./parts/ReplyModal";
 import { QuoteModal } from "./parts/QuoteModal";
 import { PollRenderer } from "./PollRenderer";
-import { shortenPubkey, getEventNip19 } from "@/lib/utils/nip19";
+import { shortenPubkey } from "@/lib/utils/nip19";
 import { getPostUrl, getArticleUrl } from "@/lib/utils/identity";
-import { formatFullTimestamp } from "@/lib/utils/date";
 import { useLists } from "@/hooks/useLists";
 import { ScoredEvent } from "@/lib/feed/types";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -51,6 +50,7 @@ export const PostCard = memo(({
   const [isDeleted, setIsDeleted] = useState(false);
   const { user: currentUser } = useAuthStore();
   const { ndk, isReady } = useNDK();
+  const { react, repost } = useNostrifyPublish();
   const [showZapModal, setShowZapModal] = useState(false);
   const [showRawModal, setShowRawModal] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
@@ -196,10 +196,8 @@ export const PostCard = memo(({
 
   const handleRepost = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!ndk || !isReady) return;
-    
     try {
-      await repostEvent(ndk, displayEvent);
+      await repost(displayEvent);
     } catch (err) {
       console.error(err);
       addToast("Failed to repost", "error");
@@ -208,11 +206,9 @@ export const PostCard = memo(({
 
   const handleLike = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!ndk || !isReady) return;
-
     try {
       if (userLiked) return;
-      await reactToEvent(ndk, displayEvent, "+");
+      await react(displayEvent, "+");
     } catch (err) {
       console.error(err);
       addToast("Failed to like post", "error");
@@ -220,9 +216,8 @@ export const PostCard = memo(({
   };
 
   const handleEmojiReaction = async (emoji: { shortcode: string, url: string }) => {
-    if (!ndk || !isReady) return;
     try {
-      await reactToEvent(ndk, displayEvent, `:${emoji.shortcode}:`, emoji.url);
+      await react(displayEvent, `:${emoji.shortcode}:`, emoji.url);
     } catch (err) {
       console.error(err);
       addToast("Failed to send reaction", "error");
