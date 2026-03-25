@@ -13,7 +13,7 @@
 ## Phase 2: Data Fetching and Feed Migration
 *Goal: Migrate the read-side of Microblogging from NDK to Nostrify.*
 
-- [ ] Task: Create a new `useNostrifyFeed` hook to replace or complement the current feed logic for the Microblogging slice.
+- [~] Task: Create a new `useNostrifyFeed` hook to replace or complement the current feed logic for the Microblogging slice.
 - [ ] Task: Implement event fetching and streaming logic using `NRelay` and `AsyncGenerators`.
 - [ ] Task: Integrate `NStore` (NPostgres) for caching and retrieving Kind 1 notes.
 - [ ] Task: Update the main Home Feed component to use the new `useNostrifyFeed` hook.
