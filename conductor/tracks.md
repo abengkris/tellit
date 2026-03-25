@@ -14,5 +14,5 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 ---
 
-- [ ] **Track: migration from NDK to Nostrify**
+- [~] **Track: migration from NDK to Nostrify**
 *Link: [./tracks/ndk_to_nostrify_20260325/](./tracks/ndk_to_nostrify_20260325/)*

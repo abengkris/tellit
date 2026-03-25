@@ -3,7 +3,7 @@
 ## Phase 1: Core Nostrify Infrastructure Setup
 *Goal: Initialize the foundation for Nostrify with Relays, Signers, and Storage.*
 
-- [ ] Task: Install required Nostrify dependencies (`@nostrify/nostrify`, `@nostrify/postgres`, etc.).
+- [~] Task: Install required Nostrify dependencies (`@nostrify/nostrify`, `@nostrify/postgres`, etc.).
 - [ ] Task: Implement `NSigner` factory/adapter for NIP-07 and Private Key support.
 - [ ] Task: Implement `NRelay` manager to handle multiple relay connections and pools.
 - [ ] Task: Set up `NPostgres` for storage, integrating it with existing Supabase/Postgres infrastructure.
