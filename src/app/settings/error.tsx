@@ -12,7 +12,7 @@ export default function Error({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error("Search Error:", error);
+    console.error("Settings Error:", error);
   }, [error]);
 
   return (
@@ -20,9 +20,9 @@ export default function Error({
       <div className="bg-destructive/10 p-4 rounded-2xl mb-6 border border-destructive/20">
         <AlertCircle size={40} className="text-destructive" />
       </div>
-      <h2 className="text-xl font-black mb-2 tracking-tighter">Search Error</h2>
+      <h2 className="text-xl font-black mb-2 tracking-tighter">Settings Error</h2>
       <p className="text-muted-foreground mb-6 max-w-sm text-sm">
-        Search encountered an error. Please try again.
+        Failed to load settings. Please try again.
       </p>
       <Button
         onClick={() => reset()}

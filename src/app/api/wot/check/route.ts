@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { WoTService } from "@/services/wot.service";
 import { verifySession } from "@/lib/dal";
+import { apiError, apiSuccess } from "@/lib/api-utils";
 
 /**
  * POST /api/wot/check
@@ -14,37 +15,27 @@ export async function POST(req: NextRequest) {
     const { viewerPubkey, pubkeys } = body;
 
     if (!viewerPubkey || !pubkeys || !Array.isArray(pubkeys)) {
-      return Response.json(
-        { error: "viewerPubkey and an array of pubkeys are required" },
-        { status: 400 }
-      );
+      return apiError("viewerPubkey and an array of pubkeys are required", 400);
     }
 
     // Secure check: Ensure requester owns the viewerPubkey
     const session = await verifySession();
     if (!session || session.pubkey !== viewerPubkey) {
-      return Response.json({ error: 'Unauthorized' }, { status: 403 });
+      return apiError("Unauthorized", 403);
     }
 
     // Cap the request size to prevent Redis abuse
     if (pubkeys.length > 500) {
-      return Response.json(
-        { error: "Too many pubkeys. Maximum 500 allowed." },
-        { status: 400 }
-      );
+      return apiError("Too many pubkeys. Maximum 500 allowed.", 400);
     }
 
     const network = await WoTService.checkTrust(viewerPubkey, pubkeys);
 
-    return Response.json({
+    return apiSuccess({
       network,
       viewer: viewerPubkey
     });
   } catch (error) {
-    console.error("[WoT API] Trust check failed:", error);
-    return Response.json(
-      { error: "Internal Server Error" },
-      { status: 500 }
-    );
+    return apiError("Internal Server Error", 500, error);
   }
 }

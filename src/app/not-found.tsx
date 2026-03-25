@@ -1,24 +1,30 @@
 import Link from "next/link";
-import { Search } from "lucide-react";
+import { Search, Home } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export default function NotFound() {
   return (
-    <>
-      <div className="flex flex-col items-center justify-center min-h-[60vh] p-4 text-center">
-        <div className="bg-gray-100 dark:bg-gray-900 p-4 rounded-full mb-6">
-          <Search size={48} className="text-gray-400" />
-        </div>
-        <h2 className="text-2xl font-bold mb-2">Page Not Found</h2>
-        <p className="text-gray-500 dark:text-gray-400 mb-8 max-w-md">
-          The page you are looking for doesn&apos;t exist or has been moved.
-        </p>
-        <Link
-          href="/"
-          className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-8 rounded-2xl transition-all shadow-lg shadow-blue-500/20"
-        >
-          Go Home
-        </Link>
+    <div className="flex flex-col items-center justify-center min-h-[70vh] p-6 text-center animate-in fade-in zoom-in duration-500">
+      <div className="bg-muted p-8 rounded-[2.5rem] mb-8 border border-border shadow-xl">
+        <Search size={64} className="text-muted-foreground/50" />
       </div>
-    </>
+      
+      <h2 className="text-3xl font-black mb-3 tracking-tighter">Page not found</h2>
+      
+      <p className="text-muted-foreground mb-10 max-w-md font-medium leading-relaxed">
+        The page you are looking for doesn&apos;t exist or has been moved to a different decentralized relay.
+      </p>
+
+      <Button
+        asChild
+        size="lg"
+        className="bg-primary hover:bg-primary/90 text-primary-foreground font-black px-10 rounded-2xl transition-all shadow-xl shadow-primary/20 gap-2 h-14"
+      >
+        <Link href="/">
+          <Home size={20} />
+          <span>Back to Home</span>
+        </Link>
+      </Button>
+    </div>
   );
 }
