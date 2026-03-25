@@ -598,8 +598,19 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
             try {
               const unpublished = await (instance.cacheAdapter as ExtendedCacheAdapter).getUnpublishedEvents!();
               if (unpublished && unpublished.length > 0) {
+                const seenUnpublishedIds = new Set<string>();
+                const now = Math.floor(Date.now() / 1000);
+                
                 for (const item of unpublished) {
                   const event = item.event;
+                  if (!event.id || seenUnpublishedIds.has(event.id)) continue;
+                  
+                  // Don't retry events created in the last 60 seconds
+                  // to avoid racing with the current session's optimistic publishes
+                  if (event.created_at && (now - event.created_at < 60)) continue;
+                  
+                  seenUnpublishedIds.add(event.id);
+                  
                   event.ndk = instance;
                   event.publish().catch(() => {});
                 }

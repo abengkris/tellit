@@ -34,6 +34,7 @@ async function sendRemoteLog(level: "warn" | "error", args: unknown[]) {
       "local-cache:save",
       "signature verification offloaded",
       "Failed to sync with relay",
+      "Duplicate event publishing detected",
     ];
 
     if (noisySubstrings.some(str => message.includes(str))) {
