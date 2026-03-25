@@ -6,11 +6,10 @@ import { useAuthStore } from "@/store/auth";
 import { useNDK } from "@/hooks/useNDK";
 import { useProfile } from "@/hooks/useProfile";
 import { useAppSettings } from "@/hooks/useAppSettings";
-import { Bell, Shield, User, Globe, Wallet, Clock, LogOut, Key, VolumeX, BadgeCheck, RefreshCcw, Sun, Moon, Monitor, Trash, AlertTriangle } from "lucide-react";
+import { Bell, Shield, User, Globe, Wallet, LogOut, Key, VolumeX, BadgeCheck, RefreshCcw, Sun, Moon, Monitor, Trash, AlertTriangle } from "lucide-react";
 import { useTheme } from "next-themes";
 import { Avatar } from "@/components/common/Avatar";
 import Link from "next/link";
-import { NDKEvent } from "@nostr-dev-kit/ndk";
 import { useLists } from "@/hooks/useLists";
 import { MuteList } from "@/components/profile/MuteList";
 import { KeyBackupModal } from "@/components/settings/KeyBackupModal";
@@ -35,13 +34,9 @@ import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 
-interface ExtendedCacheAdapter {
-  getUnpublishedEvents?: () => Promise<{ event: NDKEvent; relays?: string[]; lastTryAt?: number }[]>;
-}
-
 export default function SettingsPage() {
   const { isLoggedIn, user, logout, logoutAll, accounts } = useAuthStore();
-  const { sessions, ndk, isReady } = useNDK();
+  const { sessions, ndk } = useNDK();
   const { profile } = useProfile(user?.pubkey);
   const { mutedPubkeys, loading: loadingLists } = useLists();
   const { loading: settingsLoading, lastSync, saveSettings, fetchSettings } = useAppSettings();
@@ -57,22 +52,10 @@ export default function SettingsPage() {
 
   const { theme, setTheme } = useTheme();
   const [permissionStatus, setPermissionStatus] = useState<NotificationPermission>("default");
-  const [unpublishedCount, setUnpublishedCount] = useState(0);
   const [isMuteListModalOpen, setIsMuteListModalOpen] = useState(false);
   const [isKeyBackupModalOpen, setIsKeyBackupModalOpen] = useState(false);
   const [isVanishDialogOpen, setIsVanishDialogOpen] = useState(false);
   const [isVanishing, setIsVanishing] = useState(false);
-
-  useEffect(() => {
-    if (isReady && ndk?.cacheAdapter) {
-      const adapter = ndk.cacheAdapter as ExtendedCacheAdapter;
-      if (adapter.getUnpublishedEvents) {
-        adapter.getUnpublishedEvents().then((events) => {
-          setUnpublishedCount(events.length);
-        }).catch(() => {});
-      }
-    }
-  }, [isReady, ndk]);
 
   useEffect(() => {
     if (typeof window !== "undefined" && "Notification" in window) {
@@ -180,22 +163,6 @@ export default function SettingsPage() {
                       <Link href="/settings/profile">
                         <User className="size-4 text-primary" />
                         <span>Edit Profile</span>
-                      </Link>
-                    </Button>
-
-                    <Button 
-                      asChild
-                      variant="outline"
-                      className="rounded-2xl font-black h-12 bg-background border-none shadow-sm relative group"
-                    >
-                      <Link href="/settings/unpublished">
-                        <Clock className="size-4 text-primary" />
-                        <span>Local Outbox</span>
-                        {unpublishedCount > 0 && (
-                          <Badge variant="destructive" className="absolute -top-1 -right-1 h-5 min-w-5 flex items-center justify-center p-0 rounded-full border-2 border-background animate-in zoom-in duration-300">
-                            {unpublishedCount}
-                          </Badge>
-                        )}
                       </Link>
                     </Button>
 
