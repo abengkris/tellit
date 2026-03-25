@@ -19,12 +19,15 @@ import { ReportModal } from "./parts/ReportModal";
 import { ReplyModal } from "./parts/ReplyModal";
 import { QuoteModal } from "./parts/QuoteModal";
 import { PollRenderer } from "./PollRenderer";
-import { shortenPubkey } from "@/lib/utils/nip19";
+import { shortenPubkey, getEventNip19 } from "@/lib/utils/nip19";
 import { getPostUrl, getArticleUrl } from "@/lib/utils/identity";
+import { formatFullTimestamp } from "@/lib/utils/date";
 import { useLists } from "@/hooks/useLists";
 import { ScoredEvent } from "@/lib/feed/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { Avatar } from "../common/Avatar";
+import { Card, CardContent } from "@/components/ui/card";
 
 type ThreadLine = "none" | "top" | "bottom" | "both";
 
@@ -64,11 +67,8 @@ export const PostCard = memo(({
   } = useLists();
 
   const isRepost = event?.kind === 6 || event?.kind === 16;
-  const isHighlight = event?.kind === 9802;
   const isQuote = event?.tags.some(t => t[0] === 'q');
-  const isReply = event ? (!isEventOriginalPost(event) && !isQuote) : false;
   
-  // Call hooks unconditionally
   const { profile: repostAuthorProfile } = useProfile(isRepost ? event?.pubkey : undefined);
   
   const displayEvent = isRepost && repostedEvent ? repostedEvent : event;
@@ -78,7 +78,7 @@ export const PostCard = memo(({
   const { profile, loading: profileLoading, profileUrl } = useProfile(displayEvent?.pubkey);
   const { 
     likes, 
-    reposts, 
+    reposts: repostsCount, 
     comments, 
     quotes, 
     combinedReposts,
@@ -102,16 +102,15 @@ export const PostCard = memo(({
             return;
           }
         } catch {
-          // Ignore parse errors
+          // Ignore
         }
       }
 
       const eTag = event.tags.find(t => t[0] === 'e');
-      const aTag = event.tags.find(t => t[0] === 'a');
-      const targetId = eTag?.[1] || aTag?.[1];
+      const targetId = eTag?.[1];
 
       if (targetId) {
-        Promise.resolve().then(() => setRepostLoading(true));
+        setRepostLoading(true);
         ndk.fetchEvent(targetId)
           .then(ev => {
             if (ev) setRepostedEvent(ev);
@@ -126,7 +125,7 @@ export const PostCard = memo(({
     profile?.display_name || profile?.name || (displayEvent?.pubkey ? shortenPubkey(displayEvent.pubkey) : ""),
   [profile, displayEvent?.pubkey]);
 
-  const avatar = profile?.picture || (profile as { image?: string })?.image;
+  const avatar = profile?.picture || (profile as any)?.image;
 
   const repostAuthorName = useMemo(() => {
     if (!event) return "";
@@ -137,7 +136,7 @@ export const PostCard = memo(({
 
   const userNpub = useMemo(() => {
     try {
-      return displayEvent?.author?.npub || "";
+      return (displayEvent as any)?.author?.npub || "";
     } catch {
       return "";
     }
@@ -156,8 +155,6 @@ export const PostCard = memo(({
     return replyPTag ? replyPTag[1] : null;
   }, [displayEvent?.tags]);
 
-  // NOW we can have early returns
-  // Safety check: if event is missing essential fields, return a small error UI or null
   if (!event || !event.id || !event.pubkey) {
     return (
       <div className="p-4 text-xs text-muted-foreground italic border-b opacity-50">
@@ -166,9 +163,8 @@ export const PostCard = memo(({
     );
   }
 
-  // Ensure displayEvent is valid
   if (!displayEvent || !displayEvent.id) {
-    return null; // Or some fallback
+    return null;
   }
 
   const handleDelete = async (e?: React.MouseEvent) => {
@@ -279,9 +275,6 @@ export const PostCard = memo(({
       }
     } else {
       try {
-        // We'll copy both or just URL? Usually URL is preferred for clipboard,
-        // but we can offer a better dropdown if needed. 
-        // For now, let's keep clipboard to just the URL but add the URI to share.
         await navigator.clipboard.writeText(shareUrl);
         addToast("Link copied to clipboard!", "success");
       } catch (err) {
@@ -323,38 +316,31 @@ export const PostCard = memo(({
     );
   }
 
-  try {
-    return (
-      <article 
-        className={cn(
-          "group relative flex flex-col px-4 pt-3 pb-2 border-b border-border hover:bg-accent/5 transition-colors overflow-visible",
-          variant === "detail" && "hover:bg-transparent px-4 py-0 border-b-0",
-          isFocal && "bg-transparent border-l-0"
-        )}
-        style={{ paddingLeft: `${1 + indent * 1.5}rem` }}
-      >
-        {variant === "feed" && (
-          <Link 
-            href={navigationHref}
-            className="absolute inset-0 z-0"
-            aria-label={`View post by ${display_name}`}
-          />
-        )}
+  return (
+    <Card 
+      className={cn(
+        "border-0 border-b border-border/50 rounded-none bg-transparent hover:bg-muted/30 transition-colors",
+        isFocal ? "bg-muted/10 border-b-0" : "",
+        indent > 0 ? "ml-4 border-l border-border/50" : ""
+      )}
+    >
+      <CardContent className={cn("p-4 pb-2", indent > 0 ? "pl-4" : "")}>
+        <div className="flex space-x-3">
+          {/* Thread lines */}
+          <div className="flex flex-col items-center">
+            <div className={cn("w-0.5 grow", (threadLine === "top" || threadLine === "both") ? "bg-border/50" : "bg-transparent")} />
+            <Avatar 
+              pubkey={displayEvent.pubkey} 
+              user={profile} 
+              size={variant === "detail" ? "lg" : "md"}
+              className="z-10"
+            />
+            <div className={cn("w-0.5 grow mt-2", (threadLine === "bottom" || threadLine === "both") ? "bg-border/50" : "bg-transparent")} />
+          </div>
 
-        <div className="flex relative min-w-0 z-10 pointer-events-none">
-          {/* Refined Thread Lines - Centered at 1.5rem (center of w-12 avatar) */}
-          {(threadLine === "top" || threadLine === "both") && (
-            <div className="absolute top-[-1.5rem] left-[1.5rem] w-0.5 h-[2.5rem] bg-border/60 -translate-x-1/2" />
-          )}
-          {(threadLine === "bottom" || threadLine === "both") && (
-            <div className="absolute top-[3.5rem] bottom-[-1.5rem] left-[1.5rem] w-0.5 bg-border/60 -translate-x-1/2" />
-          )}
-
-          {/* Content Area */}
-          <div className="flex-1 min-w-0 overflow-visible pointer-events-auto z-10">
-            <PostHeader
+          <div className="flex-1 min-w-0">
+            <PostHeader 
               display_name={display_name}
-              name={profile?.name}
               avatar={avatar}
               isLoading={profileLoading}
               userNpub={userNpub}
@@ -363,7 +349,7 @@ export const PostCard = memo(({
               nip05={profile?.nip05}
               createdAt={displayEvent.created_at}
               isRepost={isRepost}
-              isReply={isReply}
+              isReply={false}
               repostAuthorName={repostAuthorName}
               bot={profile?.bot}
               isArticle={isArticle}
@@ -383,42 +369,34 @@ export const PostCard = memo(({
               variant={variant}
               relevance={scoredEvent}
             />
+            
+            {replyingToPubkey && variant === "feed" && (
+              <div className="text-[13px] text-muted-foreground mt-0.5 mb-1">
+                Replying to <Link href={`/p/${replyingToPubkey}`} className="text-primary hover:underline">@{shortenPubkey(replyingToPubkey)}</Link>
+              </div>
+            )}
 
             {(() => {
-              const subject = displayEvent.tags.find(t => t[0] === 'subject')?.[1];
-              if (!subject) return null;
+              const subj = displayEvent.tags.find(t => t[0] === 'subject')?.[1];
+              if (!subj) return null;
               return (
                 <div className={cn(
                   "font-bold text-foreground mb-1",
-                  variant === "detail" ? "text-2xl mt-4" : "ml-14 text-base"
+                  variant === "detail" ? "text-2xl mt-4" : "text-base"
                 )}>
-                  {subject}
+                  {subj}
                 </div>
               );
             })()}
 
             <div className={cn(
               "mt-2",
-              variant === "detail" ? "text-xl sm:text-2xl leading-normal mb-6 font-normal tracking-tight" : "text-[15px] sm:text-[16px] ml-14 leading-relaxed"
+              variant === "detail" ? "text-xl sm:text-2xl leading-normal mb-6 font-normal tracking-tight" : "text-[15px] sm:text-[16px] leading-relaxed"
             )}>
-              <PostContentRenderer
-                content={displayEvent.content || ""}
-                replyingToPubkey={replyingToPubkey}
-                isRepost={isRepost}
-                isHighlight={isHighlight}
-                isArticle={isArticle}
-                isQuote={isQuote}
-                event={displayEvent}
-                className={variant === "detail" ? "prose-2xl" : ""}
-                variant={variant}
-              />
+              <PostContentRenderer content={displayEvent.content} tags={displayEvent.tags} />
             </div>
 
-            {isPoll && (
-              <div className={cn(variant !== "detail" && "ml-14 mt-3")}>
-                <PollRenderer event={displayEvent} />
-              </div>
-            )}
+            {isPoll && <PollRenderer event={displayEvent} />}
 
             {variant === "detail" && (
               <div className="flex flex-col mt-6">
@@ -467,92 +445,59 @@ export const PostCard = memo(({
                 )}
               </div>
             )}
-            <div className={cn(variant !== "detail" && "ml-14 mt-1")}>
-              <PostActions
-                eventId={displayEvent.id}
-                authorPubkey={displayEvent.pubkey}
-                likes={likes}
-                reposts={reposts}
-                comments={comments}
-                quotes={quotes}
-                combinedReposts={combinedReposts}
-                bookmarks={bookmarks}
-                zaps={totalSats}
-                userReacted={userLiked ? '+' : null}
-                userReposted={userReposted}
-                onZapClick={() => setShowZapModal(true)}
-                onReplyClick={() => setShowReplyModal(true)}
-                onLikeClick={handleLike}
-                onEmojiReaction={handleEmojiReaction}
-                onRepostClick={handleRepost}
-                onQuoteClick={handleQuote}
-                onShareClick={handleShare}
-                variant={variant}
-              />
-            </div>
+
+            <PostActions 
+              eventId={displayEvent.id}
+              authorPubkey={displayEvent.pubkey}
+              likes={likes}
+              reposts={repostsCount}
+              comments={comments}
+              quotes={quotes}
+              combinedReposts={combinedReposts}
+              bookmarks={bookmarks}
+              zaps={totalSats}
+              userReacted={userLiked ? "+" : null}
+              userReposted={userReposted}
+              onReplyClick={() => setShowReplyModal(true)}
+              onRepostClick={handleRepost}
+              onLikeClick={handleLike}
+              onZapClick={() => setShowZapModal(true)}
+              onQuoteClick={handleQuote}
+              onEmojiReaction={handleEmojiReaction}
+              onShareClick={handleShare}
+              variant={variant}
+            />
           </div>
         </div>
-        {showReplyModal && (
-          <div className="relative">
-            <ReplyModal
-              event={displayEvent}
-              onClose={() => setShowReplyModal(false)}
-            />
-          </div>
-        )}
+      </CardContent>
 
-        {showQuoteModal && (
-          <div className="relative">
-            <QuoteModal
-              event={displayEvent}
-              onClose={() => setShowQuoteModal(false)}
-            />
-          </div>
-        )}
-
-        {showZapModal && (
-          <div className="relative">
-            <ZapModal
-              event={displayEvent}
-              onClose={() => setShowZapModal(false)}
-            />
-          </div>
-        )}
-
-        {showRawModal && (
-          <div className="relative">
-            <RawEventModal
-              event={displayEvent}
-              isOpen={showRawModal}
-              onClose={() => setShowRawModal(false)}
-            />
-          </div>
-        )}
-
-        {showReportModal && (
-          <div className="relative">
-            <ReportModal
-              targetPubkey={displayEvent.pubkey}
-              targetEventId={displayEvent.id}
-              isOpen={showReportModal}
-              onClose={() => setShowReportModal(false)}
-            />
-          </div>
-        )}
-      </article>
-    );
-  } catch (err) {
-    console.error("[PostCard] Render crash for event:", event.id, err);
-    return (
-      <div className="p-4 text-xs text-muted-foreground italic border-b opacity-50">
-        Error rendering post content
-      </div>
-    );
-  }
-}, (prevProps, nextProps) => {
-  return prevProps?.event?.id === nextProps?.event?.id && 
-         prevProps?.threadLine === nextProps?.threadLine && 
-         prevProps?.isFocal === nextProps?.isFocal &&
-         prevProps?.indent === nextProps?.indent;
+      <ZapModal 
+        isOpen={showZapModal} 
+        onClose={() => setShowZapModal(false)} 
+        event={displayEvent}
+      />
+      <RawEventModal
+        isOpen={showRawModal}
+        onClose={() => setShowRawModal(false)}
+        event={displayEvent}
+      />
+      <ReportModal
+        isOpen={showReportModal}
+        onClose={() => setShowReportModal(false)}
+        event={displayEvent}
+      />
+      <ReplyModal
+        isOpen={showReplyModal}
+        onClose={() => setShowReplyModal(false)}
+        replyTo={displayEvent}
+      />
+      <QuoteModal
+        isOpen={showQuoteModal}
+        onClose={() => setShowQuoteModal(false)}
+        quoteEvent={displayEvent}
+      />
+    </Card>
+  );
 });
+
 PostCard.displayName = "PostCard";

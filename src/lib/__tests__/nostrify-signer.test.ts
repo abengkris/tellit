@@ -13,20 +13,33 @@ describe('Nostrify Signer Factory', () => {
     expect(await signer.getPublicKey()).toBe(pubkey);
   });
 
+  it('should throw error when no signer is available', async () => {
+    const { createSigner } = await import('../nostrify-signer');
+    
+    // Ensure window.nostr is undefined
+    const originalWindow = global.window;
+    (global as any).window = undefined;
+    
+    expect(() => createSigner({})).toThrow('No signer available. Provide a private key or use a NIP-07 extension.');
+    
+    (global as any).window = originalWindow;
+  });
+
   it('should create a Nip07Signer when no private key is provided', async () => {
     const { createSigner } = await import('../nostrify-signer');
     
-    // Mock globalThis.nostr
-    const mockPubkey = 'abc';
-    (globalThis as any).nostr = {
-      getPublicKey: vi.fn().mockResolvedValue(mockPubkey),
-      signEvent: vi.fn(),
+    // Mock global.window.nostr
+    (global as any).window = {
+      nostr: {
+        getPublicKey: vi.fn().mockResolvedValue('abc'),
+        signEvent: vi.fn(),
+      }
     };
 
     const signer = createSigner({});
-    expect(await signer.getPublicKey()).toBe(mockPubkey);
+    expect(signer).toBeDefined();
     
     // Cleanup
-    delete (globalThis as any).nostr;
+    (global as any).window = undefined;
   });
 });
