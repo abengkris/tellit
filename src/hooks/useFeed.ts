@@ -112,7 +112,6 @@ export function useFeed(authors: string[], kinds: number[] = [1, 20, 1063, 1068,
 
   const fetchFeed = useCallback(async (isLoadMore = false) => {
     if (!ndk || !isReady) {
-      setLoading(false);
       return;
     }
 

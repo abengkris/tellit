@@ -22,7 +22,7 @@ import { BackToTop } from "@/components/layout/BackToTop";
 type FeedTab = "following" | "forYou" | "global" | string;
 
 export function HomeContent() {
-  const { isLoggedIn, user, isLoading: isAuthLoading, _hasHydrated } = useAuthStore();
+  const { isLoggedIn, user, publicKey, isLoading: isAuthLoading, _hasHydrated } = useAuthStore();
   const { isReady } = useNDK();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<FeedTab>("forYou");
@@ -38,14 +38,16 @@ export function HomeContent() {
 
   const interestList = useMemo(() => Array.from(interests), [interests]);
 
-  const { following: followingPubkeys } = useFollowing(user?.pubkey);
+  const { following: followingPubkeys } = useFollowing(publicKey || undefined);
 
   console.log("[HomeContent] Render", { 
     isLoggedIn, 
     isReady, 
     isAuthLoading, 
     _hasHydrated, 
-    activeTab
+    activeTab,
+    hasUser: !!user,
+    hasPubkey: !!publicKey
   });
 
   // Load persisted tab
@@ -79,7 +81,7 @@ export function HomeContent() {
     }
   }, [isLoggedIn, isAuthLoading, _hasHydrated, router]);
 
-  if (!isLoggedIn || !user) return null;
+  if (!isLoggedIn || !publicKey) return null;
 
   return (
     <>
@@ -186,7 +188,7 @@ export function HomeContent() {
       <div className="pb-20">
         {activeTab === "forYou" && (
           <ForYouFeedTab 
-            viewerPubkey={user.pubkey} 
+            viewerPubkey={publicKey} 
             followingList={followingPubkeys} 
             interests={interestList}
           />
@@ -195,7 +197,7 @@ export function HomeContent() {
         {activeTab === "following" && (
           <FollowingFeedTab 
             followingList={followingPubkeys} 
-            viewerPubkey={user.pubkey}
+            viewerPubkey={publicKey}
           />
         )}
 

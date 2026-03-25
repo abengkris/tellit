@@ -433,29 +433,30 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
         });
       };
 
-      // 1. Try to restore signer from payload (Preferred method)
+      // 1. Initialize core NDK instance and cache
+      setNdk(instance);
+      const syncInstance = new NDKSync(instance);
+      setSync(syncInstance);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      setRelay(new NDKStore(instance as any));
+
+      // 2. Start session and wallet initialization in parallel
+      const sessionPromise = sessionManager.restore();
+      const walletPromise = initWallet(instance);
+
+      // 3. Handle signer restoration
       if (stableDepsRef.current.signerPayload) {
-        try {
-          const restoredSigner = await ndkSignerFromPayload(stableDepsRef.current.signerPayload, instance);
+        ndkSignerFromPayload(stableDepsRef.current.signerPayload, instance).then((restoredSigner) => {
           if (restoredSigner) {
             console.log("[NDKProvider] Signer restored from payload");
             instance.signer = restoredSigner;
-            
-            if (restoredSigner instanceof NDKNip46Signer) {
-              restoredSigner.on("auth", handleSignerAuth);
-            }
-
-            // Bunker signers might need to be "readied"
+            if (restoredSigner instanceof NDKNip46Signer) restoredSigner.on("auth", handleSignerAuth);
             if (stableDepsRef.current.loginType === 'bunker') {
               restoredSigner.blockUntilReady().catch(e => console.error("Bunker signer failed to ready:", e));
             }
           }
-        } catch (e) {
-          console.error("Failed to restore signer from payload:", e);
-        }
-      } 
-      // 2. Legacy fallback for Bunker signer
-      else if (stableDepsRef.current.loginType === 'bunker' && stableDepsRef.current.bunkerUri) {
+        }).catch(e => console.error("Failed to restore signer from payload:", e));
+      } else if (stableDepsRef.current.loginType === 'bunker' && stableDepsRef.current.bunkerUri) {
         try {
           const signer = NDKNip46Signer.bunker(
             instance, 
@@ -470,32 +471,20 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
         }
       }
 
-      await sessionManager.restore();
-      await initWallet(instance);
-      setNdk(instance);
-      setSync(new NDKSync(instance));
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      setRelay(new NDKStore(instance as any));
+      await Promise.all([sessionPromise, walletPromise]);
 
       const currentPubkey = sessionManager.activePubkey;
 
-      // Initialize Nutzap Monitor if logged in
+      // 4. Background tasks
       if (currentPubkey) {
         const user = instance.getUser({ pubkey: currentPubkey });
         const monitor = new NDKNutzapMonitor(instance, user, {});
-        
-        if (walletRef.current) {
-          monitor.wallet = walletRef.current;
-        }
+        if (walletRef.current) monitor.wallet = walletRef.current;
 
         monitor.on("redeemed", (events, amount) => {
           console.log(`[NutzapMonitor] Redeemed ${amount} sats from ${events.length} nutzaps`);
           stableDepsRef.current.addToast(`Received ${amount} sats via Nutzap!`, "success");
           walletRef.current?.updateBalance?.();
-        });
-
-        monitor.on("seen_in_unknown_mint", (event) => {
-          console.log("[NutzapMonitor] Nutzap seen in unknown mint", event.id);
         });
 
         monitor.on("failed", (event, error) => {
@@ -504,22 +493,19 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
 
         nutzapMonitorRef.current = monitor;
         setNutzapMonitor(monitor);
-      }
 
-      let msgInstance: NDKMessenger | null = null;
-      if (currentPubkey) {
         try {
           const storage = (dexieAdapter && currentPubkey) 
             ? new CacheModuleStorage(dexieAdapter as unknown as NDKCacheAdapter, currentPubkey) 
             : undefined;
-          msgInstance = new NDKMessenger(instance, { 
-            storage
-          });
+          const msgInstance = new NDKMessenger(instance, { storage });
           messengerRef.current = msgInstance;
           setMessenger(msgInstance);
+          return msgInstance;
         } catch (e) { console.error("Failed to initialize NDKMessenger:", e); }
       }
-      return msgInstance;
+      
+      return null;
     };
 
     initApp().then((msgInstance) => {
