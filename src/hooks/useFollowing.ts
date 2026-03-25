@@ -19,7 +19,8 @@ export function useFollowing(pubkey?: string) {
 
     try {
       // 1. Try Cache-Only first if we don't have it in memory
-      if (!following.length && !forceRelay) {
+      const hasFollowing = globalFollowingCache.has(pubkey);
+      if (!hasFollowing && !forceRelay) {
         const cachedEvent = await ndk.fetchEvent(
           { kinds: [3], authors: [pubkey] },
           { cacheUsage: NDKSubscriptionCacheUsage.ONLY_CACHE }
@@ -56,7 +57,7 @@ export function useFollowing(pubkey?: string) {
     } finally {
       setLoading(false);
     }
-  }, [ndk, isReady, pubkey, following.length]);
+  }, [ndk, isReady, pubkey]);
 
   useEffect(() => {
     if (!ndk || !isReady || !pubkey) {

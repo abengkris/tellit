@@ -28,6 +28,8 @@ export function useFeed(authors: string[], kinds: number[] = [1, 20, 1063, 1068,
   const oldestTimestampRef = useRef<number | undefined>(undefined);
   const lastAuthorsRef = useRef<string[]>([]);
 
+  const newestTimestampRef = useRef<number | undefined>(undefined);
+
   const processUpdateBuffer = useCallback(() => {
     if (updateBufferRef.current.length === 0) return;
 
@@ -47,6 +49,7 @@ export function useFeed(authors: string[], kinds: number[] = [1, 20, 1063, 1068,
       
       if (sorted.length > 0) {
         oldestTimestampRef.current = sorted[sorted.length - 1].created_at;
+        newestTimestampRef.current = sorted[0].created_at;
       }
       
       return sorted.slice(0, MAX_POSTS);
@@ -211,9 +214,8 @@ export function useFeed(authors: string[], kinds: number[] = [1, 20, 1063, 1068,
     };
 
     if (sync && !isLoadMore) {
-      // Determine the 'since' parameter from existing posts if we have them, 
-      // otherwise trust the cache provider's behavior or use a sensible default (e.g. 24h)
-      const lastSessionTimestamp = posts.length > 0 ? posts[0].created_at : undefined;
+      // Determine the 'since' parameter from existing posts if we have them
+      const lastSessionTimestamp = newestTimestampRef.current;
       
       const syncFilter = { ...filter };
       if (lastSessionTimestamp) {
@@ -229,7 +231,7 @@ export function useFeed(authors: string[], kinds: number[] = [1, 20, 1063, 1068,
     } else {
       subscriptionRef.current = ndk.subscribe(filter, options, handlers);
     }
-  }, [ndk, isReady, sync, authors, kinds, filterType, matchesFilter, posts, queueUpdate]);
+  }, [ndk, isReady, sync, authors, kinds, filterType, matchesFilter, queueUpdate]);
 
   // Real-time listener: starts immediately, independent of loading history
   useEffect(() => {

@@ -26,7 +26,8 @@ export function useRelayList(pubkey?: string) {
 
     try {
       // 1. Try Cache-Only first
-      if (!relays.length && !forceRelay) {
+      const hasRelays = globalRelayCache.has(pubkey);
+      if (!hasRelays && !forceRelay) {
         const cachedEvent = await ndk.fetchEvent(
           { kinds: [10002], authors: [pubkey] },
           { cacheUsage: NDKSubscriptionCacheUsage.ONLY_CACHE }
@@ -88,7 +89,7 @@ export function useRelayList(pubkey?: string) {
     } finally {
       setLoading(false);
     }
-  }, [ndk, isReady, pubkey, relays.length]);
+  }, [ndk, isReady, pubkey]);
 
   useEffect(() => {
     if (!ndk || !isReady || !pubkey) {
