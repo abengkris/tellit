@@ -18,6 +18,6 @@
 - **Accessibility**: Follows WCAG standards for an inclusive experience.
 
 ## Technical Design
-- **Local-First**: Cache data locally using Dexie.
+- **Local-First**: Cache data locally using NStore (NPostgres) and Dexie.
 - **Optimistic UI**: Update the UI immediately, even before the network confirms.
 - **Decentralized**: Ensure full compatibility with the Nostr protocol.
