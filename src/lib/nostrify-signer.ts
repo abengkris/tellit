@@ -11,7 +11,7 @@ export interface CreateSignerOptions {
  */
 export function createSigner(options: CreateSignerOptions = {}): NostrSigner {
   if (options.privateKey) {
-    return new NSecSigner(options.privateKey);
+    return new NSecSigner(new Uint8Array(Buffer.from(options.privateKey, 'hex')));
   }
 
   if (typeof window !== 'undefined' && window.nostr) {

@@ -27,7 +27,8 @@ export function createStorage(dbOrUrl?: Kysely<NPostgresSchema> | string): NPost
     }),
   });
 
-  return new NPostgres(kysely);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return new NPostgres(kysely as any);
 }
 
 /**

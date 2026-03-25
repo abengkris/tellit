@@ -7,7 +7,8 @@ import { NPool, NRelay1 } from '@nostrify/nostrify';
 export function createRelayPool(relays: string[]): NPool {
   return new NPool({
     open: (url) => new NRelay1(url),
-    relays,
+    reqRouter: (filters) => new Map(relays.map((url) => [url, filters])),
+    eventRouter: () => relays,
   });
 }
 
