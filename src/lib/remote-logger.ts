@@ -27,6 +27,19 @@ async function sendRemoteLog(level: "warn" | "error", args: unknown[]) {
     // Don't log requests to the log endpoint itself to avoid infinite loops
     if (message.includes(LOG_ENDPOINT)) return;
 
+    // Filter out noisy non-critical Nostr/UI warnings
+    const noisySubstrings = [
+      "Sync session timeout",
+      "Missing Description or aria-describedby",
+      "local-cache:save",
+      "signature verification offloaded",
+      "Failed to sync with relay",
+    ];
+
+    if (noisySubstrings.some(str => message.includes(str))) {
+      return;
+    }
+
     fetch(LOG_ENDPOINT, {
       method: "POST",
       headers: { "Content-Type": "application/json" },

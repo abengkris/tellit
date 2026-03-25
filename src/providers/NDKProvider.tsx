@@ -549,9 +549,17 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
               const dmFilter = { 
                 kinds: [1059, 14], 
                 "#p": [instance.activeUser.pubkey],
-                since: Math.floor(Date.now() / 1000) - (7 * 24 * 60 * 60) // Last 7 days
+                since: Math.floor(Date.now() / 1000) - (3 * 24 * 60 * 60) // Reduced to last 3 days
               };
-              sync.sync(dmFilter, { autoFetch: true }).catch(() => {});
+              
+              sync.sync(dmFilter, { autoFetch: true }).catch((err) => {
+                // Suppress timeout errors in logs as they are intermittent and expected on some relays
+                if (err?.message?.includes("timeout") || err?.message?.includes("Timeout")) {
+                  console.warn("[NDKProvider] DM sync timed out on one or more relays, will retry on next boot.");
+                } else {
+                  console.error("[NDKProvider] DM sync failed:", err);
+                }
+              });
             }
 
             // Nutzap monitor
