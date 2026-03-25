@@ -27,6 +27,11 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "/",
   },
+  manifest: "/manifest.json",
+  icons: {
+    icon: "/favicon.ico",
+    apple: "/favicon.ico", // Using existing for now, ideal to have separate 180x180 png
+  },
   openGraph: {
     title: "Tell it!",
     description: "Whatever it is, just Tell It.",
@@ -36,7 +41,7 @@ export const metadata: Metadata = {
     type: "website",
     images: [
       {
-        url: "https://tellit.id/og-image.png",
+        url: "/og-image.png",
         width: 1200,
         height: 630,
         alt: "Tell it!",
@@ -47,11 +52,22 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Tell it!",
     description: "Whatever it is, just Tell It.",
-    images: ["https://tellit.id/og-image.png"],
+    images: ["/og-image.png"],
+    creator: "@tellit_id",
   },
   robots: {
     index: true,
     follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+  verification: {
+    // Add verification tokens if available
   },
 };
 
