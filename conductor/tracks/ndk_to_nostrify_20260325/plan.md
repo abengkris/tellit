@@ -4,8 +4,8 @@
 *Goal: Initialize the foundation for Nostrify with Relays, Signers, and Storage.*
 
 - [x] Task: Install required Nostrify dependencies (`@nostrify/nostrify`, `@nostrify/postgres`, etc.). cd9e77a
-- [ ] Task: Implement `NSigner` factory/adapter for NIP-07 and Private Key support.
-- [ ] Task: Implement `NRelay` manager to handle multiple relay connections and pools.
+- [x] Task: Implement `NSigner` factory/adapter for NIP-07 and Private Key support. 7915edc
+- [~] Task: Implement `NRelay` manager to handle multiple relay connections and pools.
 - [ ] Task: Set up `NPostgres` for storage, integrating it with existing Supabase/Postgres infrastructure.
 - [ ] Task: Define base `NPolicy` for event validation and basic filtering using `NSchema`.
 - [ ] Task: Conductor - User Manual Verification 'Core Nostrify Infrastructure Setup' (Protocol in workflow.md)
