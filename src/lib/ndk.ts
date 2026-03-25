@@ -7,7 +7,6 @@ export const DEFAULT_RELAYS = [
   "wss://nos.lol",
   "wss://purple.relayer.org",
   "wss://relay.snort.social",
-  "wss://relay.damus.io", // Moved to end as fallback
 ];
 
 let ndkInstance: NDK | null = null;

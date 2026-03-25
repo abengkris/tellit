@@ -35,6 +35,7 @@ async function sendRemoteLog(level: "warn" | "error", args: unknown[]) {
       "signature verification offloaded",
       "Failed to sync with relay",
       "Duplicate event publishing detected",
+      "[NDKProvider] Connection timeout",
     ];
 
     if (noisySubstrings.some(str => message.includes(str))) {

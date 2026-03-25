@@ -524,7 +524,7 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
 
     initApp().then((msgInstance) => {
       console.log("[NDKProvider] App initialized, connecting...");
-      const CONNECTION_TIMEOUT = 6000;
+      const CONNECTION_TIMEOUT = 8000;
       const connectPromise = instance.connect(CONNECTION_TIMEOUT);
       const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), CONNECTION_TIMEOUT));
 
