@@ -19,14 +19,14 @@
 - [x] Task: Update the main Home Feed component to use the new `useNostrifyFeed` hook. 21136f7
 - [x] Task: Conductor - User Manual Verification 'Data Fetching and Feed Migration' (Protocol in workflow.md) 4fae3c2
 
-## Phase 3: Publishing and Interactive Actions
+## Phase 3: Publishing and Interactive Actions [checkpoint: e78aa12]
 *Goal: Migrate the write-side (posting and reacting) from NDK to Nostrify.*
 
 - [x] Task: Create a new `useNostrifyPublish` hook for sending Kind 1 notes and Kind 7 reactions. ea3ae28
 - [x] Task: Update the Note Creation component to use Nostrify's `NSigner` and `NRelay` for publishing. 503ccfc
 - [x] Task: Update Reaction components (likes, etc.) to use Nostrify. 503ccfc
 - [x] Task: Implement optimistic updates for the local `NStore` when publishing. 503ccfc
-- [~] Task: Conductor - User Manual Verification 'Publishing and Interactive Actions' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Publishing and Interactive Actions' (Protocol in workflow.md) e78aa12
 
 ## Phase 4: Final Refactoring and Cleanup
 *Goal: Remove NDK traces from the Microblogging slice and verify performance.*
