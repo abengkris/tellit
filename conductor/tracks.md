@@ -12,3 +12,7 @@ This file tracks all major tracks for the project. Each track has its own detail
 - [x] **Track: bug fix: failed to render images from post content**
 *Link: [./tracks/post_media_fix_20260323/](./tracks/post_media_fix_20260323/)*
 
+---
+
+- [ ] **Track: migration from NDK to Nostrify**
+*Link: [./tracks/ndk_to_nostrify_20260325/](./tracks/ndk_to_nostrify_20260325/)*

@@ -64,6 +64,10 @@ export function useHandleStatus() {
     try {
       idLog.debug(`Checking handle status for: ${user.pubkey}`);
       const data = await getHandleStatusAction(undefined, user.pubkey);
+      
+      if (!data || 'error' in data) {
+        throw new Error(data?.error || 'Failed to fetch handle status');
+      }
 
       if (data.allHandleDetails) {
         const statuses: HandleStatus[] = data.allHandleDetails.map((h: HandleDetail) => {
@@ -140,7 +144,8 @@ export function useHandleStatus() {
         if (processedPending.some(p => p.status === 'paid')) {
           const finalData = await getHandleStatusAction(undefined, user.pubkey);
           
-          if (finalData.allHandleDetails) {
+          if (finalData && 'allHandleDetails' in finalData && finalData.allHandleDetails) {
+            const now = new Date();
             const finalStatuses: HandleStatus[] = finalData.allHandleDetails.map((h: HandleDetail) => {
               const registeredAt = new Date(h.created_at);
               const expiresAt = new Date(registeredAt);

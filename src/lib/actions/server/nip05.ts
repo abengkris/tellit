@@ -26,7 +26,7 @@ export async function getHandleStatusAction(name?: string, pubkey?: string) {
 
       const { data: handles } = await supabase
         .from('handles')
-        .select('name, created_at, relays, lightning_address, is_primary')
+        .select('name, created_at, relays, lightning_address, is_primary, pubkey')
         .eq('pubkey', pubkey);
       
       const { data: pending } = await supabase

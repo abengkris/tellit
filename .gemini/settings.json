@@ -1,10 +1,16 @@
 {
   "mcpServers": {
-    "next-devtools": {
-      "command": "npx",
+   "nostrify": {
+      "type": "stdio",
+      "command": "deno",
       "args": [
-        "-y",
-        "next-devtools-mcp@latest"
+        "run",
+        "-A",
+        "jsr:@soapbox/docs-mcp",
+        "--name",
+        "Nostrify",
+        "--site",
+        "nostrify.dev"
       ]
     }
   }
