@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useMemo, memo, useRef } from "react";
+import React, { useState, useEffect, useCallback, useMemo, memo, useRef, useTransition } from "react";
 import { PostComposer } from "@/components/post/PostComposer";
 import { useAuthStore } from "@/store/auth";
 import { useNDK } from "@/hooks/useNDK";
@@ -26,8 +26,15 @@ export function HomeContent() {
   const { isReady } = useNDK();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<FeedTab>("forYou");
+  const [isPending, startTransition] = useTransition();
   const { interests } = useLists();
   const isRedirectingRef = useRef(false);
+
+  const handleTabChange = useCallback((tab: FeedTab) => {
+    startTransition(() => {
+      setActiveTab(tab);
+    });
+  }, []);
 
   const interestList = useMemo(() => Array.from(interests), [interests]);
 
@@ -82,11 +89,14 @@ export function HomeContent() {
         </div>
         
         <nav className="flex w-full overflow-x-auto no-scrollbar scroll-smooth touch-pan-x" role="tablist">
+          {isPending && (
+            <div className="absolute top-0 left-0 right-0 h-0.5 bg-blue-500/30 animate-pulse z-20" />
+          )}
           <div className="flex flex-nowrap min-w-full">
             <button
               role="tab"
               aria-selected={activeTab === "forYou"}
-              onClick={() => setActiveTab("forYou")}
+              onClick={() => handleTabChange("forYou")}
               className={`flex-none px-5 py-4 text-sm font-bold transition-colors hover:bg-gray-100 dark:hover:bg-gray-900 relative whitespace-nowrap outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 ${
                 activeTab === "forYou" ? "text-blue-500" : "text-gray-500"
               }`}
@@ -103,7 +113,7 @@ export function HomeContent() {
             <button
               role="tab"
               aria-selected={activeTab === "following"}
-              onClick={() => setActiveTab("following")}
+              onClick={() => handleTabChange("following")}
               className={`flex-none px-5 py-4 text-sm font-bold transition-colors hover:bg-gray-100 dark:hover:bg-gray-900 relative whitespace-nowrap outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 ${
                 activeTab === "following" ? "text-blue-500" : "text-gray-500"
               }`}
@@ -122,7 +132,7 @@ export function HomeContent() {
                 key={tag}
                 role="tab"
                 aria-selected={activeTab === tag}
-                onClick={() => setActiveTab(tag)}
+                onClick={() => handleTabChange(tag)}
                 className={`flex-none px-5 py-4 text-sm font-bold transition-colors hover:bg-gray-100 dark:hover:bg-gray-900 relative whitespace-nowrap outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 ${
                   activeTab === tag ? "text-blue-500" : "text-gray-500"
                 }`}
@@ -140,7 +150,7 @@ export function HomeContent() {
             <button
               role="tab"
               aria-selected={activeTab === "global"}
-              onClick={() => setActiveTab("global")}
+              onClick={() => handleTabChange("global")}
               className={`flex-none px-5 py-4 text-sm font-bold transition-colors hover:bg-gray-100 dark:hover:bg-gray-900 relative whitespace-nowrap outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 ${
                 activeTab === "global" ? "text-blue-500" : "text-gray-500"
               }`}

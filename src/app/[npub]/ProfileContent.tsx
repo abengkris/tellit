@@ -366,7 +366,7 @@ export function ProfileContent({ npubParam }: { npubParam: string }) {
                       e.stopPropagation();
                       if (ndk) {
                         await updateStatus(ndk, "", "general");
-                        window.location.reload();
+                        router.refresh();
                       }
                     }}
                     className="ml-1 opacity-0 group-hover:opacity-100 transition-opacity hover:text-destructive"

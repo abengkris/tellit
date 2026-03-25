@@ -7,6 +7,7 @@ import { TrendingTags } from "./TrendingTags";
 import { WhoToFollow } from "../profile/WhoToFollow";
 import { useAuthStore } from "@/store/auth";
 import { Input } from "@/components/ui/input";
+import Link from "next/link";
 
 export const RightPanel = () => {
   const [query, setQuery] = useState("");
@@ -48,10 +49,10 @@ export const RightPanel = () => {
 
       <footer className="px-4 text-[11px] text-muted-foreground flex flex-col gap-1">
         <div className="flex flex-wrap gap-x-3 gap-y-1">
-          <a href="#" className="hover:underline">Terms of Service</a>
-          <a href="#" className="hover:underline">Privacy Policy</a>
-          <a href="#" className="hover:underline">Cookie Policy</a>
-          <a href="#" className="hover:underline">Accessibility</a>
+          <Link href="#" className="hover:underline">Terms of Service</Link>
+          <Link href="#" className="hover:underline">Privacy Policy</Link>
+          <Link href="#" className="hover:underline">Cookie Policy</Link>
+          <Link href="#" className="hover:underline">Accessibility</Link>
         </div>
         <p>© 2026 Tell it! Inc.</p>
       </footer>

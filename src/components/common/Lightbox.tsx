@@ -11,6 +11,7 @@ import { X, Download, ExternalLink, ChevronLeft, ChevronRight } from "lucide-rea
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
+import Link from "next/link";
 
 interface LightboxMedia {
   url: string;
@@ -131,10 +132,10 @@ export const Lightbox: React.FC<LightboxProps> = ({
                 size="sm"
                 className="text-white hover:bg-white/20 rounded-full bg-black/20 backdrop-blur-sm px-4 gap-2 h-10 hidden sm:flex"
               >
-                <a href={postHref}>
+                <Link href={postHref}>
                   <ExternalLink className="size-4" />
                   <span className="font-bold">View Post</span>
-                </a>
+                </Link>
               </Button>
             )}
             <Button

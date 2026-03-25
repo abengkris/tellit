@@ -236,7 +236,8 @@ export function SearchContent() {
     const queryStr = params.toString();
     const newUrl = queryStr ? `/search?${queryStr}` : "/search";
     
-    if (window.location.search !== `?${queryStr}` && (window.location.search !== "" || queryStr !== "")) {
+    // Use searchParams.toString() to check if we actually need to navigate
+    if (searchParams.toString() !== queryStr) {
       router.replace(newUrl, { scroll: false });
     }
   }, [debouncedQuery, router, searchParams]);

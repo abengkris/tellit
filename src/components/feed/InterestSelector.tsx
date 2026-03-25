@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Check, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLists } from "@/hooks/useLists";
+import { useRouter } from "next/navigation";
 
 const TOPICS = [
   { id: "nostr", label: "Nostr", emoji: "🌐" },
@@ -27,6 +28,7 @@ const TOPICS = [
 export function InterestSelector() {
   const { interests, addInterest, removeInterest } = useLists();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const router = useRouter();
 
   const toggleTopic = (id: string) => {
     if (interests.has(id)) {
@@ -42,7 +44,7 @@ export function InterestSelector() {
     // We just wait a bit to show a nice transition
     setTimeout(() => {
       setIsSubmitting(false);
-      window.location.reload(); // Refresh to trigger new feed fetch
+      router.refresh(); // Refresh to trigger new feed fetch
     }, 1500);
   };
 
