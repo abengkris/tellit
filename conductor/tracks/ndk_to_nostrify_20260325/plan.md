@@ -1,6 +1,6 @@
 # Implementation Plan: Migration from NDK to Nostrify (Microblogging Slice)
 
-## Phase 1: Core Nostrify Infrastructure Setup
+## Phase 1: Core Nostrify Infrastructure Setup [checkpoint: b7f9ffb]
 *Goal: Initialize the foundation for Nostrify with Relays, Signers, and Storage.*
 
 - [x] Task: Install required Nostrify dependencies (`@nostrify/nostrify`, `@nostrify/postgres`, etc.). cd9e77a
@@ -8,7 +8,7 @@
 - [x] Task: Implement `NRelay` manager to handle multiple relay connections and pools. 1347e17
 - [x] Task: Set up `NPostgres` for storage, integrating it with existing Supabase/Postgres infrastructure. 05efb2a
 - [x] Task: Define base `NPolicy` for event validation and basic filtering using `NSchema`. b19cdc7
-- [~] Task: Conductor - User Manual Verification 'Core Nostrify Infrastructure Setup' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Core Nostrify Infrastructure Setup' (Protocol in workflow.md) b7f9ffb
 
 ## Phase 2: Data Fetching and Feed Migration
 *Goal: Migrate the read-side of Microblogging from NDK to Nostrify.*
