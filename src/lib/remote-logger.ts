@@ -10,6 +10,26 @@ const LOG_ENDPOINT = "/api/log";
 const THROTTLE_MS = 5000; // Only send one log every 5 seconds to avoid spam
 let lastLogTime = 0;
 
+function safeStringify(obj: unknown): string {
+  try {
+    return JSON.stringify(obj);
+  } catch (_e) {
+    try {
+      // Fallback for circular references or large objects
+      const cache = new Set();
+      return JSON.stringify(obj, (key, value) => {
+        if (typeof value === 'object' && value !== null) {
+          if (cache.has(value)) return "[Circular]";
+          cache.add(value);
+        }
+        return value;
+      });
+    } catch (_e2) {
+      return "[Unstringifiable Object]";
+    }
+  }
+}
+
 async function sendRemoteLog(level: "warn" | "error", args: unknown[]) {
   const now = Date.now();
   if (now - lastLogTime < THROTTLE_MS) return;
@@ -19,7 +39,7 @@ async function sendRemoteLog(level: "warn" | "error", args: unknown[]) {
     const message = args
       .map((arg) => {
         if (arg instanceof Error) return arg.stack || arg.message;
-        if (typeof arg === "object") return JSON.stringify(arg);
+        if (typeof arg === "object" && arg !== null) return safeStringify(arg);
         return String(arg);
       })
       .join(" ");
