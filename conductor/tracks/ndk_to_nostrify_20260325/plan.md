@@ -22,7 +22,7 @@
 ## Phase 3: Publishing and Interactive Actions
 *Goal: Migrate the write-side (posting and reacting) from NDK to Nostrify.*
 
-- [ ] Task: Create a new `useNostrifyPublish` hook for sending Kind 1 notes and Kind 7 reactions.
+- [~] Task: Create a new `useNostrifyPublish` hook for sending Kind 1 notes and Kind 7 reactions.
 - [ ] Task: Update the Note Creation component to use Nostrify's `NSigner` and `NRelay` for publishing.
 - [ ] Task: Update Reaction components (likes, etc.) to use Nostrify.
 - [ ] Task: Implement optimistic updates for the local `NStore` when publishing.
