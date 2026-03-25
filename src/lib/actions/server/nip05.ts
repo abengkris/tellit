@@ -304,3 +304,42 @@ export async function transferHandleAction(signedEvent: NostrEvent) {
     return { error: 'Internal server error' };
   }
 }
+
+/**
+ * Server Action to set a handle as primary for a user.
+ */
+export async function setPrimaryHandleAction(handleName: string, pubkey: string) {
+  try {
+    const session = await verifySession();
+    if (!session || session.pubkey !== pubkey) return { error: 'Unauthorized' };
+
+    const supabase = getSupabaseAdmin();
+
+    const { data: handle } = await supabase
+      .from('handles')
+      .select('pubkey')
+      .eq('name', handleName.toLowerCase())
+      .single();
+
+    if (!handle || handle.pubkey !== pubkey) return { error: 'Unauthorized' };
+
+    // Reset all other handles for this pubkey to not primary
+    await supabase.from('handles').update({ is_primary: false }).eq('pubkey', pubkey);
+    
+    // Set this handle as primary
+    const { error } = await supabase
+      .from('handles')
+      .update({ is_primary: true })
+      .eq('name', handleName.toLowerCase());
+
+    if (error) throw error;
+
+    revalidatePath('/settings/handle');
+    revalidatePath(`/${pubkey}`);
+    
+    return { success: true };
+  } catch (err) {
+    console.error('[NIP-05 Action Primary] Error:', err);
+    return { error: 'Internal server error' };
+  }
+}

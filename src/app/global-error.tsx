@@ -2,7 +2,6 @@
 
 import { useEffect } from "react";
 import { AlertCircle, RotateCcw } from "lucide-react";
-import { Button } from "@/components/ui/button";
 
 export default function GlobalError({
   error,
@@ -42,14 +41,13 @@ export default function GlobalError({
             A system-level error occurred that prevented the application from loading. Our team has been notified.
           </p>
 
-          <Button
+          <button
             onClick={() => reset()}
-            size="lg"
             className="flex items-center space-x-3 bg-blue-500 hover:bg-blue-600 text-white font-black h-16 px-10 rounded-[2rem] transition-all shadow-2xl shadow-blue-500/20 active:scale-95 group"
           >
             <RotateCcw size={24} className="group-hover:rotate-180 transition-transform duration-500" />
             <span className="text-lg">Restart Application</span>
-          </Button>
+          </button>
           
           {error.digest && (
             <p className="mt-12 text-[10px] font-mono text-gray-400 uppercase tracking-widest bg-gray-100 dark:bg-white/5 px-4 py-2 rounded-full border border-border">
