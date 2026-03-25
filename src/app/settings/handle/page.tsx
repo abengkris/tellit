@@ -44,6 +44,13 @@ import { Input } from "@/components/ui/input";
 import { NDKEvent } from "@nostr-dev-kit/ndk";
 import { Avatar } from "@/components/common/Avatar";
 import { decodeNip19, shortenPubkey } from "@/lib/utils/nip19";
+import { 
+  updateLightningAddressAction, 
+  updateRelaysAction, 
+  cancelRegistrationAction, 
+  transferHandleAction,
+  setPrimaryHandleAction
+} from "@/lib/actions/server/nip05";
 const LightningAddressDialog = ({ 
   handleName, 
   initialAddress,
@@ -79,15 +86,10 @@ const LightningAddressDialog = ({
       ];
       
       await event.sign();
-      const res = await fetch("/api/nip05/lnaddress", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ event: event.rawEvent() })
-      });
+      const res = await updateLightningAddressAction(event.rawEvent());
 
-      const data = await res.json();
-      if (data.success) {
-        addToast(data.message, "success");
+      if (res.success) {
+        addToast(res.message || "Address updated", "success");
         
         // Auto-sync to profile to fix the "Not linked" issue
         if (address) {
@@ -97,13 +99,11 @@ const LightningAddressDialog = ({
 
         setIsOpen(false);
         onSuccess();
-        if (typeof window !== 'undefined') window.location.reload(); // Force refresh to ensure all hooks see the DB change
       } else {
-        console.error("[LightningAddress] API Error:", data);
-        addToast(data.error || "Failed to update address", "error");
+        addToast(res.error || "Failed to update address", "error");
       }
     } catch (err) {
-      console.error("[LightningAddress] Fetch Error:", err);
+      console.error("[LightningAddress] Error:", err);
       addToast("An error occurred", "error");
     } finally {
       setIsUpdating(false);
@@ -226,19 +226,14 @@ const RelayEditorDialog = ({
       ];
 
       await event.sign();
-      const res = await fetch("/api/nip05/relays", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ event: event.rawEvent() })
-      });
+      const res = await updateRelaysAction(event.rawEvent());
 
-      const data = await res.json();
-      if (data.success) {
-        addToast(data.message, "success");
+      if (res.success) {
+        addToast(res.message || "Relays updated", "success");
         setIsOpen(false);
         onSuccess();
       } else {
-        addToast(data.error || "Failed to update relays", "error");
+        addToast(res.error || "Failed to update relays", "error");
       }
     } catch (err) {
       console.error(err);
@@ -346,18 +341,13 @@ const CancelRegistrationDialog = ({
       event.tags = [["payment_hash", paymentHash]];
       await event.sign();
 
-      const res = await fetch("/api/nip05/register", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ event: event.rawEvent() })
-      });
+      const res = await cancelRegistrationAction(event.rawEvent());
 
-      const data = await res.json();
-      if (data.success) {
+      if (res.success) {
         addToast("Registration cancelled", "success");
         onSuccess();
       } else {
-        addToast(data.error || "Failed to cancel", "error");
+        addToast(res.error || "Failed to cancel", "error");
       }
     } catch (err) {
       console.error(err);
@@ -438,22 +428,14 @@ const TransferHandleDialog = ({
 
       
       await event.sign();
-      const signedEvent = event.rawEvent();
+      const res = await transferHandleAction(event.rawEvent());
 
-      // 2. Call the transfer API
-      const res = await fetch("/api/nip05/transfer", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ event: signedEvent })
-      });
-
-      const data = await res.json();
-      if (data.success) {
-        addToast(data.message, "success");
+      if (res.success) {
+        addToast(res.message || "Transfer successful", "success");
         setIsOpen(false);
         onSuccess();
       } else {
-        addToast(data.error || "Transfer failed", "error");
+        addToast(res.error || "Transfer failed", "error");
       }
     } catch (err) {
       console.error(err);
@@ -593,18 +575,13 @@ export default function ManageHandlePage() {
       event.tags = [["handle", handleName]];
       
       await event.sign();
-      const res = await fetch("/api/nip05/primary", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ event: event.rawEvent() })
-      });
+      const res = await setPrimaryHandleAction(handleName, user.pubkey);
 
-      const data = await res.json();
-      if (data.success) {
-        addToast(data.message, "success");
+      if (res.success) {
+        addToast("Primary handle set successfully", "success");
         refreshStatus();
       } else {
-        addToast(data.error || "Failed to set primary", "error");
+        addToast(res.error || "Failed to set primary", "error");
       }
     } catch (err) {
       console.error(err);

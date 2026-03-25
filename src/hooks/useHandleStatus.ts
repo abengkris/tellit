@@ -46,6 +46,8 @@ interface PendingHandleDetail {
   isTaken?: boolean;
 }
 
+import { getHandleStatusAction } from "@/lib/actions/server/nip05";
+
 /**
  * Hook to check and monitor the expiration status of the user's registered handles.
  */
@@ -61,8 +63,7 @@ export function useHandleStatus() {
     setLoading(true);
     try {
       idLog.debug(`Checking handle status for: ${user.pubkey}`);
-      const res = await fetch(`/api/nip05/register?pubkey=${user.pubkey}`);
-      const data = await res.json();
+      const data = await getHandleStatusAction(undefined, user.pubkey);
 
       if (data.allHandleDetails) {
         const statuses: HandleStatus[] = data.allHandleDetails.map((h: HandleDetail) => {
@@ -107,7 +108,6 @@ export function useHandleStatus() {
               const checkData = await checkRes.json();
               if (checkData.status === 'PAID') {
                 // If it was just paid, we should probably refresh the whole thing 
-                // but for now just return the updated status
                 return {
                   name: ph.name,
                   amount: ph.amount,
@@ -138,10 +138,7 @@ export function useHandleStatus() {
 
         // If any were marked as paid, we should refresh to get them in the active list
         if (processedPending.some(p => p.status === 'paid')) {
-          const now = new Date();
-          // Re-fetch to get the newly activated handles in data.allHandleDetails
-          const finalRes = await fetch(`/api/nip05/register?pubkey=${user.pubkey}`);
-          const finalData = await finalRes.json();
+          const finalData = await getHandleStatusAction(undefined, user.pubkey);
           
           if (finalData.allHandleDetails) {
             const finalStatuses: HandleStatus[] = finalData.allHandleDetails.map((h: HandleDetail) => {
