@@ -4,12 +4,10 @@ import React, { useState, useEffect, useCallback, useMemo, memo, useRef, useTran
 import { PostComposer } from "@/components/post/PostComposer";
 import { useAuthStore } from "@/store/auth";
 import { useNDK } from "@/hooks/useNDK";
-import { NDKKind } from "@nostr-dev-kit/ndk";
 import { useRouter } from "next/navigation";
 import { Sparkles, Users, Globe, Hash, Settings } from "lucide-react";
 import { FeedList } from "@/components/feed/FeedList";
 import { NewPostsIsland } from "@/components/feed/NewPostsIsland";
-import { usePausedFeed } from "@/hooks/usePausedFeed";
 import { useForYouFeed } from "@/hooks/useForYouFeed";
 import { ProfileSetupCard } from "@/components/profile/ProfileSetupCard";
 import { InterestSelector } from "@/components/feed/InterestSelector";
@@ -18,6 +16,8 @@ import { useLists } from "@/hooks/useLists";
 import { useFollowing } from "@/hooks/useFollowing";
 import Link from "next/link";
 import { BackToTop } from "@/components/layout/BackToTop";
+
+import { useNostrifyPausedFeed } from "@/hooks/useNostrifyPausedFeed";
 
 type FeedTab = "following" | "forYou" | "global" | string;
 
@@ -215,13 +215,8 @@ export function HomeContent() {
 }
 
 const InterestsFeedTab = memo(({ interestList }: { interestList: string[] }) => {
-  const filter = useMemo(() => ({
-    kinds: [1, 6, 16, 1068, 30023] as NDKKind[],
-    "#t": interestList,
-  }), [interestList]);
-
-  const { posts, newCount, isLoading, isProcessing, flushNewPosts, loadMore, hasMore } =
-    usePausedFeed({ filter });
+  const { posts, newCount, isLoading, flushNewPosts, loadMore, hasMore } =
+    useNostrifyPausedFeed({ kinds: [1, 6, 16, 1068, 30023], limit: 50 });
 
   const handleFlush = useCallback(() => {
     flushNewPosts();
@@ -354,13 +349,8 @@ function WoTStatusBanner({
 const FollowingFeedTab = memo(({ followingList, viewerPubkey }: { followingList: string[]; viewerPubkey: string }) => {
   const authors = useMemo(() => followingList.length > 0 ? followingList : [viewerPubkey], [followingList, viewerPubkey]);
   
-  const filter = useMemo(() => ({
-    kinds: [1, 6, 16, 1068, 30023] as NDKKind[],
-    authors,
-  }), [authors]);
-
-  const { posts, newCount, isLoading, isProcessing, flushNewPosts, loadMore, hasMore } =
-    usePausedFeed({ filter });
+  const { posts, newCount, isLoading, flushNewPosts, loadMore, hasMore } =
+    useNostrifyPausedFeed({ authors, kinds: [1, 6, 16, 1068, 30023], limit: 50 });
 
   const handleFlush = useCallback(() => {
     flushNewPosts();
@@ -373,7 +363,6 @@ const FollowingFeedTab = memo(({ followingList, viewerPubkey }: { followingList:
       <FeedList 
         posts={posts}
         isLoading={isLoading}
-        isProcessing={isProcessing}
         loadMore={loadMore}
         hasMore={hasMore}
         emptyMessage="Try following some people to see their posts here!" 
@@ -385,12 +374,8 @@ const FollowingFeedTab = memo(({ followingList, viewerPubkey }: { followingList:
 FollowingFeedTab.displayName = "FollowingFeedTab";
 
 const GlobalFeedTab = memo(() => {
-  const filter = useMemo(() => ({
-    kinds: [1, 6, 16, 1068, 30023] as NDKKind[],
-  }), []);
-
-  const { posts, newCount, isLoading, isProcessing, flushNewPosts, loadMore, hasMore } =
-    usePausedFeed({ filter });
+  const { posts, newCount, isLoading, flushNewPosts, loadMore, hasMore } =
+    useNostrifyPausedFeed({ kinds: [1, 6, 16, 1068, 30023], limit: 50 });
 
   const handleFlush = useCallback(() => {
     flushNewPosts();
@@ -403,7 +388,6 @@ const GlobalFeedTab = memo(() => {
       <FeedList 
         posts={posts}
         isLoading={isLoading}
-        isProcessing={isProcessing}
         loadMore={loadMore}
         hasMore={hasMore}
         emptyMessage="The global feed is empty? That's impossible!" 
