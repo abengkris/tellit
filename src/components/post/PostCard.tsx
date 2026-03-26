@@ -67,6 +67,7 @@ export const PostCard = memo(({
   } = useLists();
 
   const isRepost = event?.kind === 6 || event?.kind === 16;
+  const isHighlight = event?.kind === 9802;
   const isQuote = event?.tags.some(t => t[0] === 'q');
   
   const { profile: repostAuthorProfile } = useProfile(isRepost ? event?.pubkey : undefined);
@@ -110,7 +111,7 @@ export const PostCard = memo(({
       const targetId = eTag?.[1];
 
       if (targetId) {
-        setRepostLoading(true);
+        Promise.resolve().then(() => setRepostLoading(true));
         ndk.fetchEvent(targetId)
           .then(ev => {
             if (ev) setRepostedEvent(ev);
@@ -125,7 +126,7 @@ export const PostCard = memo(({
     profile?.display_name || profile?.name || (displayEvent?.pubkey ? shortenPubkey(displayEvent.pubkey) : ""),
   [profile, displayEvent?.pubkey]);
 
-  const avatar = profile?.picture || (profile as any)?.image;
+  const avatar = profile?.picture || (profile as Record<string, unknown> | undefined)?.image;
 
   const repostAuthorName = useMemo(() => {
     if (!event) return "";
@@ -136,7 +137,7 @@ export const PostCard = memo(({
 
   const userNpub = useMemo(() => {
     try {
-      return (displayEvent as any)?.author?.npub || "";
+      return (displayEvent as Record<string, unknown> | undefined)?.author?.npub || "";
     } catch {
       return "";
     }
@@ -296,7 +297,7 @@ export const PostCard = memo(({
     }
   };
 
-  if (isDeleted || (currentUser?.pubkey !== displayEvent.pubkey && isMuted(displayEvent.pubkey))) return null;
+  if (isDeleted) return null;
 
   if (isRepost && repostLoading) {
     return (
@@ -393,10 +394,24 @@ export const PostCard = memo(({
               "mt-2",
               variant === "detail" ? "text-xl sm:text-2xl leading-normal mb-6 font-normal tracking-tight" : "text-[15px] sm:text-[16px] leading-relaxed"
             )}>
-              <PostContentRenderer content={displayEvent.content} tags={displayEvent.tags} />
+              <PostContentRenderer
+                content={displayEvent.content || ""}
+                event={displayEvent}
+                replyingToPubkey={replyingToPubkey}
+                isRepost={isRepost}
+                isHighlight={isHighlight}
+                isArticle={isArticle}
+                isQuote={isQuote}
+                className={variant === "detail" ? "prose-2xl" : ""}
+                variant={variant}
+              />
             </div>
 
-            {isPoll && <PollRenderer event={displayEvent} />}
+            {isPoll && (
+              <div className={cn(variant !== "detail" && "ml-14 mt-3")}>
+                <PollRenderer event={displayEvent} />
+              </div>
+            )}
 
             {variant === "detail" && (
               <div className="flex flex-col mt-6">

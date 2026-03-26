@@ -113,7 +113,7 @@ export function useNostrifyFeed(options: UseNostrifyFeedOptions = {}) {
       console.error('Failed to fetch feed:', error);
       setLoading(false);
     }
-  }, [ndk, authorsKey, kindsKey, relaysKey, limit]);
+  }, [ndk, authorsKey, kindsKey, relaysKey, limit, authors, kinds, relays]);
 
   const loadMore = useCallback(() => {
     if (oldestTimestampRef.current) {
