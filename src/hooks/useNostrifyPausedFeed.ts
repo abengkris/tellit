@@ -47,7 +47,7 @@ export function useNostrifyPausedFeed(options: UseNostrifyFeedOptions = {}): Use
 
       setNewCount(trulyNew.length);
     }
-  }, [allPosts, loading, visiblePosts]);
+  }, [allPosts, loading]);
 
   const flushNewPosts = useCallback(() => {
     setVisiblePosts(allPosts);

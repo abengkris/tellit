@@ -234,7 +234,6 @@ const InterestsFeedTab = memo(({ interestList }: { interestList: string[] }) => 
       <FeedList 
         posts={posts}
         isLoading={isLoading}
-        isProcessing={isProcessing}
         loadMore={loadMore}
         hasMore={hasMore}
         emptyMessage="No posts found matching your interests. Try adding more in your profile!"
