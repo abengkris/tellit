@@ -41,9 +41,17 @@ export default function GlobalError({
             A system-level error occurred that prevented the application from loading. Our team has been notified.
           </p>
 
+          <div className="mb-10 p-4 bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-900/20 rounded-2xl text-left overflow-auto max-w-2xl w-full">
+            <p className="text-red-600 dark:text-red-400 font-bold mb-2">Error Details:</p>
+            <pre className="text-xs font-mono text-red-500 dark:text-red-400 whitespace-pre-wrap">
+              {error.message}
+              {"\n\n"}
+              {error.stack}
+            </pre>
+          </div>
+
           <button
-            onClick={() => reset()}
-            className="flex items-center space-x-3 bg-blue-500 hover:bg-blue-600 text-white font-black h-16 px-10 rounded-[2rem] transition-all shadow-2xl shadow-blue-500/20 active:scale-95 group"
+            onClick={() => reset()}            className="flex items-center space-x-3 bg-blue-500 hover:bg-blue-600 text-white font-black h-16 px-10 rounded-[2rem] transition-all shadow-2xl shadow-blue-500/20 active:scale-95 group"
           >
             <RotateCcw size={24} className="group-hover:rotate-180 transition-transform duration-500" />
             <span className="text-lg">Restart Application</span>
