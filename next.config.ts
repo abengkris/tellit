@@ -61,6 +61,7 @@ const nextConfig = {
         child_process: false,
         net: false,
         tls: false,
+        perf_hooks: false,
       };
     }
     

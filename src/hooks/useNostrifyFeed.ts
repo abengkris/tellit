@@ -51,25 +51,28 @@ export function useNostrifyFeed(options: UseNostrifyFeedOptions = {}) {
       // 1. Fetch from Storage first
       const storage = await getStorage();
       const filters: NostrFilter[] = [{ authors, kinds, limit, until }];
-      const cachedEvents = await storage.query(filters);
       
-      if (cachedEvents.length > 0) {
-        const ndkCachedEvents = cachedEvents.map(e => new NDKEvent(ndk, e));
-        setPosts((prev) => {
-          if (!until) return ndkCachedEvents;
-          const combined = [...prev, ...ndkCachedEvents];
-          const unique = Array.from(new Map(combined.map(p => [p.id, p])).values());
-          return unique.sort((a, b) => (b.created_at ?? 0) - (a.created_at ?? 0)).slice(0, 500);
-        });
+      if (storage) {
+        const cachedEvents = await storage.query(filters);
         
-        const last = cachedEvents[cachedEvents.length - 1];
-        if (typeof last.created_at === 'number') {
-          oldestTimestampRef.current = last.created_at;
+        if (cachedEvents.length > 0) {
+          const ndkCachedEvents = cachedEvents.map(e => new NDKEvent(ndk, e));
+          setPosts((prev) => {
+            if (!until) return ndkCachedEvents;
+            const combined = [...prev, ...ndkCachedEvents];
+            const unique = Array.from(new Map(combined.map(p => [p.id, p])).values());
+            return unique.sort((a, b) => (b.created_at ?? 0) - (a.created_at ?? 0)).slice(0, 500);
+          });
+          
+          const last = cachedEvents[cachedEvents.length - 1];
+          if (typeof last.created_at === 'number') {
+            oldestTimestampRef.current = last.created_at;
+          }
         }
-      }
 
-      if (cachedEvents.length < limit && cachedEvents.length > 0) {
-        setHasMore(false);
+        if (cachedEvents.length < limit && cachedEvents.length > 0) {
+          setHasMore(false);
+        }
       }
 
       // 2. Initialize Pool and Subscribe to Relays
@@ -101,7 +104,9 @@ export function useNostrifyFeed(options: UseNostrifyFeedOptions = {}) {
             }
             return sorted;
           });
-          storage.event(event).catch(() => {});
+          if (storage) {
+            storage.event(event).catch(() => {});
+          }
         } else if (msg[0] === 'EOSE') {
           if (!until) {
             setLoading(false);

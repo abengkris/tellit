@@ -25,7 +25,9 @@ export function useNostrifyPublish(relays: string[] = DEFAULT_RELAYS) {
     // 3. Optimistic Save to Storage
     try {
       const storage = await getStorage();
-      await storage.event(signedEvent);
+      if (storage) {
+        await storage.event(signedEvent);
+      }
     } catch (error) {
       console.error('Failed to save to local storage optimistically:', error);
     }

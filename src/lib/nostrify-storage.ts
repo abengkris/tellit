@@ -1,15 +1,28 @@
-import { NPostgres, type NPostgresSchema } from '@nostrify/db';
-import { Kysely } from 'kysely';
-import { PostgresJSDialect } from 'kysely-postgres-js';
-import postgres from 'postgres';
+import { type NPostgres, type NPostgresSchema } from '@nostrify/db';
+import { type Kysely } from 'kysely';
 import { ENV } from './env';
 
 let storageInstance: NPostgres | null = null;
 
 /**
  * Creates an NPostgres storage instance using the provided Kysely instance or database URL.
+ * Note: This function only works on the server as it requires Node.js modules.
  */
-export function createStorage(dbOrUrl?: Kysely<NPostgresSchema> | string): NPostgres {
+export async function createStorage(dbOrUrl?: Kysely<NPostgresSchema> | string): Promise<NPostgres> {
+  const isServer = typeof window === 'undefined';
+  
+  if (!isServer) {
+    throw new Error('createStorage can only be called on the server.');
+  }
+
+  // Dynamically import Node-specific modules
+  const [{ NPostgres }, { Kysely }, { PostgresJSDialect }, { default: postgres }] = await Promise.all([
+    import('@nostrify/db'),
+    import('kysely'),
+    import('kysely-postgres-js'),
+    import('postgres'),
+  ]);
+
   if (dbOrUrl instanceof Kysely) {
     return new NPostgres(dbOrUrl);
   }
@@ -33,10 +46,15 @@ export function createStorage(dbOrUrl?: Kysely<NPostgresSchema> | string): NPost
 
 /**
  * Gets the singleton storage instance.
+ * On the client, this returns null to avoid build/runtime errors with Node modules.
  */
-export async function getStorage(): Promise<NPostgres> {
+export async function getStorage(): Promise<NPostgres | null> {
+  if (typeof window !== 'undefined') {
+    return null;
+  }
+
   if (!storageInstance) {
-    storageInstance = createStorage();
+    storageInstance = await createStorage();
     // Automatically migrate the database schema on first initialization
     await storageInstance.migrate();
   }
