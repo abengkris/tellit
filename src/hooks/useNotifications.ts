@@ -178,9 +178,16 @@ export function useNotifications() {
     }
   };
 
-  const markAsRead = () => {
+  const markAsRead = useCallback(() => {
     setUnreadCount(0);
-  };
+  }, []);
 
-  return { notifications, unreadCount, markAsRead, loading, loadMore, hasMore };
+  return useMemo(() => ({ 
+    notifications, 
+    unreadCount, 
+    markAsRead, 
+    loading, 
+    loadMore, 
+    hasMore 
+  }), [notifications, unreadCount, markAsRead, loading, hasMore]);
 }

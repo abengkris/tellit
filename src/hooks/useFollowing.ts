@@ -76,5 +76,11 @@ export function useFollowing(pubkey?: string) {
     fetchFollowing();
   }, [ndk, isReady, pubkey, fetchFollowing]);
 
-  return { following, loading, refresh: () => fetchFollowing(true) };
+  const refresh = useCallback(() => fetchFollowing(true), [fetchFollowing]);
+
+  return useMemo(() => ({ 
+    following, 
+    loading, 
+    refresh 
+  }), [following, loading, refresh]);
 }

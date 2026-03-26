@@ -33,8 +33,14 @@ export function useRelayStatus() {
         };
       });
       
-      setRelays(statusList);
-      setConnectedCount(allRelays.filter((r) => r.status === NDKRelayStatus.CONNECTED).length);
+      setRelays((prev) => {
+        if (JSON.stringify(prev) === JSON.stringify(statusList)) return prev;
+        return statusList;
+      });
+      setConnectedCount((prev) => {
+        const next = allRelays.filter((r) => r.status === NDKRelayStatus.CONNECTED).length;
+        return prev === next ? prev : next;
+      });
     };
 
     // Initial check
@@ -46,5 +52,9 @@ export function useRelayStatus() {
     return () => clearInterval(interval);
   }, [ndk, isReady]);
 
-  return { relays, connectedCount, totalCount: relays.length };
+  return useMemo(() => ({ 
+    relays, 
+    connectedCount, 
+    totalCount: relays.length 
+  }), [relays, connectedCount]);
 }

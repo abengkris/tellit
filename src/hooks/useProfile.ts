@@ -125,8 +125,8 @@ export function useProfile(pubkey?: string) {
 
   useEffect(() => {
     if (!ndk || !isReady || !pubkey) {
-      setProfile(null);
-      setLoading(false);
+      setProfile(prev => (prev === null ? prev : null));
+      setLoading(prev => (prev === false ? prev : false));
       return;
     }
 
@@ -137,7 +137,7 @@ export function useProfile(pubkey?: string) {
     }
 
     if (cached) {
-      setProfile(cached);
+      setProfile(prev => (prev === cached ? prev : cached));
       // Even if cached, we might want to background-refresh if it's "old"
       // But for session performance, we just return
       lastFetchedPubkey.current = pubkey;
@@ -151,5 +151,12 @@ export function useProfile(pubkey?: string) {
     return getProfileUrl(profile ? { ...profile, pubkey } : { pubkey });
   }, [profile, pubkey]);
 
-  return { profile, loading, profileUrl, refresh: () => fetchMetadata(true) };
+  const refresh = useCallback(() => fetchMetadata(true), [fetchMetadata]);
+
+  return useMemo(() => ({ 
+    profile, 
+    loading, 
+    profileUrl, 
+    refresh 
+  }), [profile, loading, profileUrl, refresh]);
 }

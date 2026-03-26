@@ -335,39 +335,82 @@ export function useLists(targetPubkey?: string) {
     }
   }, [ndk, currentUser, isOwnProfile]);
 
-  return {
+  const addExternalIdentity = useCallback((platform: string, identity: string, proof: string, isPrivate: boolean = false) => 
+    updateList(ListKind.ExternalIdentities, 'i', `${platform}:${identity}`, 'add', [proof], isPrivate), [updateList]);
+
+  const removeExternalIdentity = useCallback((platform: string, identity: string) => 
+    updateList(ListKind.ExternalIdentities, 'i', `${platform}:${identity}`, 'remove'), [updateList]);
+
+  const isPinned = useCallback((eventId: string) => pinnedEventIds.has(eventId), [pinnedEventIds]);
+  const isBookmarked = useCallback((eventId: string) => bookmarkedEventIds.has(eventId), [bookmarkedEventIds]);
+  const isMuted = useCallback((pubkey: string) => mutedPubkeys.has(pubkey), [mutedPubkeys]);
+  const isInterested = useCallback((hashtag: string) => interests.has(hashtag.toLowerCase().replace('#', '')), [interests]);
+
+  const muteUser = useCallback((pubkey: string) => updateList(ListKind.Mute, 'p', pubkey, 'add'), [updateList]);
+  const unmuteUser = useCallback((pubkey: string) => updateList(ListKind.Mute, 'p', pubkey, 'remove'), [updateList]);
+  
+  const bookmarkPost = useCallback((eventId: string, isPrivate: boolean = false) => updateList(ListKind.Bookmarks, 'e', eventId, 'add', [], isPrivate), [updateList]);
+  const unbookmarkPost = useCallback((eventId: string) => updateList(ListKind.Bookmarks, 'e', eventId, 'remove'), [updateList]);
+  
+  const pinPost = useCallback((eventId: string, isPrivate: boolean = false) => updateList(ListKind.Pinned, 'e', eventId, 'add', [], isPrivate), [updateList]);
+  const unpinPost = useCallback((eventId: string) => updateList(ListKind.Pinned, 'e', eventId, 'remove'), [updateList]);
+
+  const addInterest = useCallback((hashtag: string, isPrivate: boolean = false) => updateList(ListKind.Interests, 't', hashtag.toLowerCase().replace('#', ''), 'add', [], isPrivate), [updateList]);
+  const removeInterest = useCallback((hashtag: string) => updateList(ListKind.Interests, 't', hashtag.toLowerCase().replace('#', ''), 'remove'), [updateList]);
+
+  return useMemo(() => ({
     mutedPubkeys,
     bookmarkedEventIds,
     pinnedEventIds,
     loading,
-    refresh: fetchLists,
+    refresh: () => fetchLists(() => true),
     
     // Muting
-    muteUser: (pubkey: string) => updateList(ListKind.Mute, 'p', pubkey, 'add'),
-    unmuteUser: (pubkey: string) => updateList(ListKind.Mute, 'p', pubkey, 'remove'),
+    muteUser,
+    unmuteUser,
     
     // Bookmarking
-    bookmarkPost: (eventId: string, isPrivate: boolean = false) => updateList(ListKind.Bookmarks, 'e', eventId, 'add', [], isPrivate),
-    unbookmarkPost: (eventId: string) => updateList(ListKind.Bookmarks, 'e', eventId, 'remove'),
+    bookmarkPost,
+    unbookmarkPost,
     
     // Pinning
-    pinPost: (eventId: string, isPrivate: boolean = false) => updateList(ListKind.Pinned, 'e', eventId, 'add', [], isPrivate),
-    unpinPost: (eventId: string) => updateList(ListKind.Pinned, 'e', eventId, 'remove'),
-    isPinned: (eventId: string) => pinnedEventIds.has(eventId),
-    isBookmarked: (eventId: string) => bookmarkedEventIds.has(eventId),
-    isMuted: (pubkey: string) => mutedPubkeys.has(pubkey),
+    pinPost,
+    unpinPost,
+    isPinned,
+    isBookmarked,
+    isMuted,
 
     // Interests
     interests,
-    addInterest: (hashtag: string, isPrivate: boolean = false) => updateList(ListKind.Interests, 't', hashtag.toLowerCase().replace('#', ''), 'add', [], isPrivate),
-    removeInterest: (hashtag: string) => updateList(ListKind.Interests, 't', hashtag.toLowerCase().replace('#', ''), 'remove'),
-    isInterested: (hashtag: string) => interests.has(hashtag.toLowerCase().replace('#', '')),
+    addInterest,
+    removeInterest,
+    isInterested,
 
     // External Identities (NIP-39)
     externalIdentities,
-    addExternalIdentity: (platform: string, identity: string, proof: string, isPrivate: boolean = false) => 
-      updateList(ListKind.ExternalIdentities, 'i', `${platform}:${identity}`, 'add', [proof], isPrivate),
-    removeExternalIdentity: (platform: string, identity: string) => 
-      updateList(ListKind.ExternalIdentities, 'i', `${platform}:${identity}`, 'remove'),
-  };
+    addExternalIdentity,
+    removeExternalIdentity,
+  }), [
+    mutedPubkeys, 
+    bookmarkedEventIds, 
+    pinnedEventIds, 
+    loading, 
+    interests, 
+    externalIdentities,
+    muteUser,
+    unmuteUser,
+    bookmarkPost,
+    unbookmarkPost,
+    pinPost,
+    unpinPost,
+    isPinned,
+    isBookmarked,
+    isMuted,
+    addInterest,
+    removeInterest,
+    isInterested,
+    addExternalIdentity,
+    removeExternalIdentity,
+    fetchLists
+  ]);
 }

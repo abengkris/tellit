@@ -137,8 +137,16 @@ export function useForYouFeed({
       });
 
       if (d2Authors.size > 0) {
-        setDiscoverAuthors(prev => Array.from(new Set([...prev, ...d2Authors])));
-        setDiscoverPubkeys(prev => Array.from(new Set([...prev, ...d2Authors])));
+        setDiscoverAuthors(prev => {
+          const next = Array.from(new Set([...prev, ...d2Authors]));
+          if (next.length === prev.length) return prev;
+          return next;
+        });
+        setDiscoverPubkeys(prev => {
+          const next = Array.from(new Set([...prev, ...d2Authors]));
+          if (next.length === prev.length) return prev;
+          return next;
+        });
       }
     }).catch(err => console.error("[useForYouFeed] D2 discovery failed:", err));
   }, [ndk, isReady, topInteracted]);
@@ -153,6 +161,8 @@ export function useForYouFeed({
       // 1. Identify new events not yet sent to worker
       const newEvents = rawEvents.filter(e => !sentIds.current.has(e.id));
       
+      if (newEvents.length === 0) return;
+
       // 2. Fetch WoT signals for all authors in the current raw feed
       const allAuthors = Array.from(new Set(rawEvents.map(e => e.pubkey)));
       const wotSignals = await fetchWoTSignals(allAuthors);
@@ -200,6 +210,8 @@ export function useForYouFeed({
       // Faster way to deduplicate if list is already fairly large
       const uniqueMap = new Map();
       combined.filter(e => e && e.id).forEach(e => uniqueMap.set(e.id, e));
+      
+      if (uniqueMap.size === prev.length) return prev;
       return Array.from(uniqueMap.values());
     });
     
@@ -207,6 +219,7 @@ export function useForYouFeed({
     const newPubkeys = newEvents.map(e => e.pubkey);
     setDiscoverPubkeys(prev => {
       const next = Array.from(new Set([...prev, ...newPubkeys])).slice(0, 1000);
+      if (next.length === prev.length) return prev;
       return next;
     });
   }, []);
@@ -227,13 +240,15 @@ export function useForYouFeed({
     if (listChanged) {
       Promise.resolve().then(() => {
         setIsLoading(true);
-        setRawEvents([]);
+        setRawEvents((prev) => (prev.length === 0 ? prev : []));
       });
       seenIds.current = new Set();
       isInitialLoadDone.current = false;
       bufferRef.current = [];
       prevFollowingListRef.current = followingStr;
-      Promise.resolve().then(() => setDiscoverPubkeys(followingList));
+      Promise.resolve().then(() => {
+        setDiscoverPubkeys((prev) => (prev.length === followingList.length ? prev : followingList));
+      });
     } else if (rawEvents.length > 0 && isLoading) {
       Promise.resolve().then(() => setIsLoading(false));
       return;
@@ -243,7 +258,7 @@ export function useForYouFeed({
     const validAuthors = discoverAuthors.filter(a => !!a && /^[0-9a-fA-F]{64}$/.test(a));
 
     if (!validAuthors.length) {
-      Promise.resolve().then(() => setIsLoading(false));
+      if (isLoading) Promise.resolve().then(() => setIsLoading(false));
       return;
     }
 
@@ -295,7 +310,10 @@ export function useForYouFeed({
           queueUpdate([event]);
         } else {
           bufferRef.current = [event, ...bufferRef.current];
-          setNewCount(bufferRef.current.length);
+          setNewCount((prev) => {
+            const next = bufferRef.current.length;
+            return prev === next ? prev : next;
+          });
         }
       },
       onEose: () => {
@@ -324,7 +342,7 @@ export function useForYouFeed({
       if (subscriptionRef.current) subscriptionRef.current.stop();
       if (updateTimeoutRef.current) clearTimeout(updateTimeoutRef.current);
     };
-  }, [ndk, isReady, sync, followingList, discoverAuthors, queueUpdate, interests, viewerPubkey, rawEvents.length]); 
+  }, [ndk, isReady, sync, followingList, discoverAuthors, queueUpdate, interests, viewerPubkey, rawEvents.length, isLoading]); 
 
   const flushNewPosts = useCallback(() => {
     if (pendingRankedPosts) {
@@ -336,7 +354,9 @@ export function useForYouFeed({
 
     setRawEvents(prev => {
       const combined = [...bufferRef.current, ...prev].slice(0, 150);
-      return combined.filter((v, i, a) => v && v.id && a.findIndex(t => t && t.id === v.id) === i);
+      const unique = combined.filter((v, i, a) => v && v.id && a.findIndex(t => t && t.id === v.id) === i);
+      if (unique.length === prev.length) return prev;
+      return unique;
     });
 
     bufferRef.current = [];
@@ -366,15 +386,19 @@ export function useForYouFeed({
 
     const newEvents = Array.from(older).filter(e => e && e.id && !seenIds.current.has(e.id));
     newEvents.forEach(e => seenIds.current.add(e.id));
-    if (newEvents.length < 30) setHasMore(false);
+    
+    const nextHasMore = newEvents.length >= 30;
+    setHasMore((prev) => (prev === nextHasMore ? prev : nextHasMore));
 
     setRawEvents(prev => {
       const combined = [...prev, ...newEvents];
-      return combined.filter((v, i, a) => v && v.id && a.findIndex(t => t && t.id === v.id) === i);
+      const unique = combined.filter((v, i, a) => v && v.id && a.findIndex(t => t && t.id === v.id) === i);
+      if (unique.length === prev.length) return prev;
+      return unique;
     });
   }, [ndk, rawEvents, hasMore, discoverAuthors, interests]); 
   
-  return {
+  return useMemo(() => ({
     posts,
     scoredEvents: currentScoredEvents,
     newCount,
@@ -386,5 +410,17 @@ export function useForYouFeed({
     flushNewPosts,
     loadMore,
     hasMore,
-  };
+  }), [
+    posts,
+    currentScoredEvents,
+    newCount,
+    isLoading,
+    isScoring,
+    wotStatus,
+    wotSize,
+    hasInterests,
+    flushNewPosts,
+    loadMore,
+    hasMore
+  ]);
 }

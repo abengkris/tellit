@@ -50,5 +50,9 @@ export function useWoT(pubkey?: string) {
     fetchData();
   }, [pubkey, currentUser?.pubkey]);
 
-  return { score, mutualCount, loading };
+  return useMemo(() => ({ 
+    score, 
+    mutualCount, 
+    loading 
+  }), [score, mutualCount, loading]);
 }

@@ -40,15 +40,19 @@ export function useWoTNetwork(pubkeys: string[]) {
       })
         .then((res) => res.json())
         .then((data) => {
-          if (mounted && data.network) {
+          if (mounted && data.network && Object.keys(data.network).length > 0) {
             // Update global cache
             Object.assign(globalTrustCache, data.network);
-            setNetwork((prev) => ({ ...prev, ...data.network }));
+            setNetwork((prev) => {
+              const next = { ...prev, ...data.network };
+              if (Object.keys(next).length === Object.keys(prev).length) return prev;
+              return next;
+            });
           }
         })
         .catch((err) => console.error("[useWoTNetwork] Fetch failed:", err))
         .finally(() => {
-          if (mounted) setLoading(false);
+          if (mounted) setLoading(prev => (prev === false ? prev : false));
         });
     }, 400);
 
@@ -57,5 +61,5 @@ export function useWoTNetwork(pubkeys: string[]) {
     };
   }, [activeSession?.pubkey, unknownPubkeys]);
 
-  return { network, loading };
+  return useMemo(() => ({ network, loading }), [network, loading]);
 }

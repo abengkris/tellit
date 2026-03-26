@@ -620,7 +620,7 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
       if (nutzapMonitorRef.current) try { nutzapMonitorRef.current.stop(); } catch { /* ignore */ }
       initializingRef.current = false;
     };
-  }, [initWallet, ndk, isReady, sync]);
+  }, []); // Only run on mount
 
   const refreshBalance = useCallback(async () => {
     if (walletRef.current) {

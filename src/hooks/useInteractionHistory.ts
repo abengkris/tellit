@@ -56,10 +56,13 @@ export const useInteractionHistoryStore = create<InteractionHistoryState>()(
 
 export function useInteractionHistory() {
   const store = useInteractionHistoryStore();
-  return {
+  
+  const historyMap = useMemo(() => store.getHistoryMap(), [store.history]);
+
+  return useMemo(() => ({
     history: store.history,
     recordInteraction: store.recordInteraction,
     topInteracted: store.getTopInteracted,
-    historyMap: store.getHistoryMap(),
-  };
+    historyMap,
+  }), [store.history, store.recordInteraction, store.getTopInteracted, historyMap]);
 }
