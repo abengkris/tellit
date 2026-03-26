@@ -40,12 +40,20 @@ export function useNostrifyPausedFeed(options: UseNostrifyFeedOptions = {}): Use
       if (paginated.length > 0) {
         setVisiblePosts(prev => {
           const combined = [...prev, ...paginated];
-          return Array.from(new Map(combined.map(p => [p.id, p])).values())
+          const unique = Array.from(new Map(combined.map(p => [p.id, p])).values())
             .sort((a, b) => (b.created_at ?? 0) - (a.created_at ?? 0));
+          
+          if (unique.length === prev.length) return prev;
+          return unique;
         });
       }
 
-      setNewCount(trulyNew.length);
+      setNewCount(prev => {
+        // Calculate trulyNew using the functional state 'prev' is not possible here easily,
+        // but we can compute oldestVisible from allPosts and the logic.
+        // Actually, we can just use the computed trulyNew.length.
+        return prev === trulyNew.length ? prev : trulyNew.length;
+      });
     }
   }, [allPosts, loading]);
 

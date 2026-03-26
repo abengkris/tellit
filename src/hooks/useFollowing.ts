@@ -61,8 +61,8 @@ export function useFollowing(pubkey?: string) {
 
   useEffect(() => {
     if (!ndk || !isReady || !pubkey) {
-      setFollowing([]);
-      setLoading(false);
+      setFollowing((prev) => (prev.length === 0 ? prev : []));
+      setLoading((prev) => (prev === false ? prev : false));
       return;
     }
 

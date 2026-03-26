@@ -234,7 +234,7 @@ export function useForYouFeed({
       bufferRef.current = [];
       prevFollowingListRef.current = followingStr;
       Promise.resolve().then(() => setDiscoverPubkeys(followingList));
-    } else if (rawEvents.length > 0) {
+    } else if (rawEvents.length > 0 && isLoading) {
       Promise.resolve().then(() => setIsLoading(false));
       return;
     }
@@ -299,7 +299,9 @@ export function useForYouFeed({
         }
       },
       onEose: () => {
-        Promise.resolve().then(() => setIsLoading(false));
+        Promise.resolve().then(() => {
+          setIsLoading((prev) => (prev === false ? prev : false));
+        });
         setTimeout(() => {
           isInitialLoadDone.current = true;
         }, 2000);
