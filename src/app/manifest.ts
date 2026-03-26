@@ -18,12 +18,14 @@ export default function manifest(): MetadataRoute.Manifest {
       {
         src: '/favicon.ico',
         sizes: '192x192',
-        type: 'image/x-icon',
+        type: 'image/png',
+        purpose: 'maskable',
       },
       {
         src: '/favicon.ico',
         sizes: '512x512',
-        type: 'image/x-icon',
+        type: 'image/png',
+        purpose: 'maskable',
       }
     ],
     orientation: 'portrait',

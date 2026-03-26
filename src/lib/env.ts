@@ -31,5 +31,9 @@ export const ENV = {
   DATABASE: {
     URL: getOptionalEnv('TELLIT_POSTGRES_URL') || getOptionalEnv('DATABASE_URL'),
   },
+  VAPID: {
+    PUBLIC: getOptionalEnv('NEXT_PUBLIC_VAPID_PUBLIC_KEY'),
+    PRIVATE: getOptionalEnv('VAPID_PRIVATE_KEY'),
+  },
   TELLIT_NSEC: getOptionalEnv('TELLIT_NSEC'),
 };

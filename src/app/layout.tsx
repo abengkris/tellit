@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ClientShell } from "@/components/layout/ClientShell";
@@ -17,6 +17,14 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+export const viewport: Viewport = {
+  themeColor: "#3b82f6",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+};
+
 export const metadata: Metadata = {
   title: {
     default: "Tell it! - Whatever it is, just Tell It.",
@@ -24,6 +32,15 @@ export const metadata: Metadata = {
   },
   description: "A decentralized microblogging platform built on Nostr. Whatever it is, just Tell It.",
   metadataBase: new URL("https://tellit.id"),
+  applicationName: "Tell it!",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Tell it!",
+  },
+  formatDetection: {
+    telephone: false,
+  },
   alternates: {
     canonical: "/",
   },

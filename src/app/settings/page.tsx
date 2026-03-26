@@ -1,18 +1,19 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { useUIStore, RelayAuthStrategy } from "@/store/ui";
 import { useAuthStore } from "@/store/auth";
 import { useNDK } from "@/hooks/useNDK";
 import { useProfile } from "@/hooks/useProfile";
 import { useAppSettings } from "@/hooks/useAppSettings";
-import { Bell, Shield, User, Globe, Wallet, LogOut, Key, VolumeX, BadgeCheck, RefreshCcw, Sun, Moon, Monitor, Trash, AlertTriangle } from "lucide-react";
+import { Shield, User, Globe, Wallet, LogOut, Key, VolumeX, BadgeCheck, RefreshCcw, Sun, Moon, Monitor, Trash, AlertTriangle } from "lucide-react";
 import { useTheme } from "next-themes";
 import { Avatar } from "@/components/common/Avatar";
 import Link from "next/link";
 import { useLists } from "@/hooks/useLists";
 import { MuteList } from "@/components/profile/MuteList";
 import { KeyBackupModal } from "@/components/settings/KeyBackupModal";
+import { PushNotificationSettings } from "@/components/settings/PushNotificationSettings";
 import { requestVanish } from "@/lib/actions/vanish";
 import { 
   Card, 
@@ -41,8 +42,6 @@ export default function SettingsPage() {
   const { mutedPubkeys, loading: loadingLists } = useLists();
   const { loading: settingsLoading, lastSync, saveSettings, fetchSettings } = useAppSettings();
   const { 
-    browserNotificationsEnabled, 
-    setBrowserNotificationsEnabled,
     wotStrictMode,
     setWotStrictMode,
     relayAuthStrategy,
@@ -51,44 +50,10 @@ export default function SettingsPage() {
   } = useUIStore();
 
   const { theme, setTheme } = useTheme();
-  const [permissionStatus, setPermissionStatus] = useState<NotificationPermission>("default");
   const [isMuteListModalOpen, setIsMuteListModalOpen] = useState(false);
   const [isKeyBackupModalOpen, setIsKeyBackupModalOpen] = useState(false);
   const [isVanishDialogOpen, setIsVanishDialogOpen] = useState(false);
   const [isVanishing, setIsVanishing] = useState(false);
-
-  useEffect(() => {
-    if (typeof window !== "undefined" && "Notification" in window) {
-      Promise.resolve().then(() => setPermissionStatus(Notification.permission));
-    }
-  }, []);
-
-  const handleNotificationToggle = async (enabled: boolean) => {
-    if (!("Notification" in window)) {
-      addToast("Browser does not support notifications", "error");
-      return;
-    }
-
-    if (enabled) {
-      const permission = await Notification.requestPermission();
-      setPermissionStatus(permission);
-      
-      if (permission === "granted") {
-        setBrowserNotificationsEnabled(true);
-        addToast("Notifications enabled!", "success");
-        new Notification("Tell it!", {
-          body: "Notifications are now active.",
-          icon: "/favicon.ico"
-        });
-      } else {
-        setBrowserNotificationsEnabled(false);
-        addToast("Permission denied for notifications", "error");
-      }
-    } else {
-      setBrowserNotificationsEnabled(false);
-      addToast("Notifications disabled", "info");
-    }
-  };
 
   const handleLogout = () => {
     logout(sessions);
@@ -484,31 +449,7 @@ export default function SettingsPage() {
             </Card>
 
             {/* Browser Notifications */}
-            <Card className={cn(
-              "rounded-3xl border-none bg-muted/30 shadow-none",
-              browserNotificationsEnabled && permissionStatus === "denied" && "ring-1 ring-destructive/50"
-            )}>
-              <CardContent className="p-4 flex items-center justify-between">
-                <div className="flex items-center gap-4 min-w-0">
-                  <div className="p-3 bg-primary/10 text-primary rounded-2xl shrink-0">
-                    <Bell size={20} />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="font-black truncate">Notifications</div>
-                    <div className="text-xs text-muted-foreground font-medium truncate">Alerts for new messages and mentions</div>
-                  </div>
-                </div>
-                <Switch
-                  checked={browserNotificationsEnabled}
-                  onCheckedChange={handleNotificationToggle}
-                />
-              </CardContent>
-              {browserNotificationsEnabled && permissionStatus === "denied" && (
-                <div className="px-4 pb-4 text-[10px] text-destructive font-black uppercase tracking-tight text-center">
-                  ⚠️ Blocked by browser settings. Please enable them.
-                </div>
-              )}
-            </Card>
+            <PushNotificationSettings />
 
             {/* WoT Strict Mode */}
             <Card className="rounded-3xl border-none bg-muted/30 shadow-none">
