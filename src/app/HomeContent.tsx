@@ -54,21 +54,24 @@ export function HomeContent() {
   useEffect(() => {
     if (_hasHydrated) {
       const savedTab = localStorage.getItem("home_active_tab");
-      if (savedTab) {
+      if (savedTab && savedTab !== activeTab) {
         // If it's a dynamic tag, verify it still exists in interests
         if (["forYou", "following", "global"].includes(savedTab)) {
-          Promise.resolve().then(() => setActiveTab(savedTab));
+          setActiveTab(savedTab);
         } else if (interests.has(savedTab)) {
-          Promise.resolve().then(() => setActiveTab(savedTab));
+          setActiveTab(savedTab);
         }
       }
     }
-  }, [_hasHydrated, interests]);
+  }, [_hasHydrated, interests, activeTab]);
 
   // Save active tab
   useEffect(() => {
     if (_hasHydrated) {
-      localStorage.setItem("home_active_tab", activeTab);
+      const currentSaved = localStorage.getItem("home_active_tab");
+      if (currentSaved !== activeTab) {
+        localStorage.setItem("home_active_tab", activeTab);
+      }
     }
   }, [activeTab, _hasHydrated]);
 
