@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 
@@ -57,12 +58,12 @@ export const useInteractionHistoryStore = create<InteractionHistoryState>()(
 export function useInteractionHistory() {
   const store = useInteractionHistoryStore();
   
-  const historyMap = useMemo(() => store.getHistoryMap(), [store.history]);
+  const historyMap = useMemo(() => store.getHistoryMap(), [store]);
 
   return useMemo(() => ({
     history: store.history,
     recordInteraction: store.recordInteraction,
     topInteracted: store.getTopInteracted,
     historyMap,
-  }), [store.history, store.recordInteraction, store.getTopInteracted, historyMap]);
+  }), [store, historyMap]);
 }

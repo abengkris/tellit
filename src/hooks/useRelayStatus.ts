@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNDK } from "./useNDK";
 import { NDKRelayStatus } from "@nostr-dev-kit/ndk";
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { useNDK } from "@/hooks/useNDK";
 import { NDKEvent, NDKSubscriptionCacheUsage, NDKInterestList, NDKList } from "@nostr-dev-kit/ndk";
 import { useAuthStore } from "@/store/auth";

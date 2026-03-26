@@ -11,3 +11,8 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 - [x] **Track: bug fix: failed to render images from post content**
 *Link: [./tracks/post_media_fix_20260323/](./tracks/post_media_fix_20260323/)*
+
+---
+
+- [x] **Track: fix Radix UI Dialog missing description warnings**
+*Link: [./archive/fix_dialog_warnings_20260326/](./archive/fix_dialog_warnings_20260326/)*

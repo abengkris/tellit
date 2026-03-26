@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { useNDK } from "@/hooks/useNDK";
 import { NDKSubscriptionCacheUsage } from "@nostr-dev-kit/ndk";
 

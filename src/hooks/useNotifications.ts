@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { NDKEvent, NDKFilter, NDKSubscription } from "@nostr-dev-kit/ndk";
 import { useAuthStore } from "@/store/auth";
 import { useNDK } from "@/hooks/useNDK";
@@ -170,13 +170,13 @@ export function useNotifications() {
     return () => {
       if (subscriptionRef.current) subscriptionRef.current.stop();
     };
-  }, [ndk, isReady, sync, isLoggedIn, user?.pubkey, processEvent]);
+  }, [ndk, isReady, sync, isLoggedIn, user, processEvent]);
 
-  const loadMore = () => {
+  const loadMore = useCallback(() => {
     if (!loading && hasMore) {
       fetchNotifications(true);
     }
-  };
+  }, [loading, hasMore, fetchNotifications]);
 
   const markAsRead = useCallback(() => {
     setUnreadCount(0);
@@ -189,5 +189,5 @@ export function useNotifications() {
     loading, 
     loadMore, 
     hasMore 
-  }), [notifications, unreadCount, markAsRead, loading, hasMore]);
+  }), [notifications, unreadCount, markAsRead, loading, loadMore, hasMore]);
 }
