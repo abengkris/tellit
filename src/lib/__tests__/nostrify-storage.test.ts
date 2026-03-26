@@ -1,10 +1,10 @@
 /** @vitest-environment node */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { createStorage, getStorage } from '../nostrify-storage';
+import { type NPostgresSchema, NPostgres } from '@nostrify/db';
 import { Kysely } from 'kysely';
-import { NPostgres } from '@nostrify/db';
 import postgres from 'postgres';
 import { ENV } from '../env';
+import { createStorage, getStorage } from '../nostrify-storage';
 
 vi.mock('postgres', () => ({
   default: vi.fn().mockReturnValue({}),
@@ -44,7 +44,7 @@ describe('Nostrify Storage Manager', () => {
   });
 
   it('should initialize NPostgres with a Kysely instance', async () => {
-    const kysely = new Kysely({} as unknown as ConstructorParameters<typeof Kysely>[0]);
+    const kysely = new Kysely({} as unknown as ConstructorParameters<typeof Kysely>[0]) as unknown as Kysely<NPostgresSchema>;
     const storage = await createStorage(kysely);
     expect(storage).toBeDefined();
     expect(NPostgres).toHaveBeenCalledWith(kysely);

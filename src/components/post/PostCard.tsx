@@ -332,7 +332,7 @@ export const PostCard = memo(({
             <div className={cn("w-0.5 grow", (threadLine === "top" || threadLine === "both") ? "bg-border/50" : "bg-transparent")} />
             <Avatar 
               pubkey={displayEvent.pubkey} 
-              user={profile} 
+              src={avatar} 
               size={variant === "detail" ? 52 : 48}
               className="z-10"
             />
