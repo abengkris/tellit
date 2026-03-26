@@ -14,8 +14,8 @@ vi.mock('kysely', async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown>>();
   return {
     ...actual,
-    Kysely: vi.fn().mockImplementation(function() {
-      (this as { migrate: unknown }).migrate = vi.fn().mockResolvedValue({});
+    Kysely: vi.fn().mockImplementation(function(this: { migrate: unknown }) {
+      this.migrate = vi.fn().mockResolvedValue({});
     }),
   };
 });
@@ -25,8 +25,8 @@ vi.mock('kysely-postgres-js', () => ({
 }));
 
 vi.mock('@nostrify/db', () => ({
-  NPostgres: vi.fn().mockImplementation(function() {
-    (this as { migrate: unknown }).migrate = vi.fn().mockResolvedValue({});
+  NPostgres: vi.fn().mockImplementation(function(this: { migrate: unknown }) {
+    this.migrate = vi.fn().mockResolvedValue({});
   }),
 }));
 

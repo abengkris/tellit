@@ -126,7 +126,7 @@ export const PostCard = memo(({
     profile?.display_name || profile?.name || (displayEvent?.pubkey ? shortenPubkey(displayEvent.pubkey) : ""),
   [profile, displayEvent?.pubkey]);
 
-  const avatar = profile?.picture || (profile as Record<string, unknown> | undefined)?.image;
+  const avatar = profile?.picture || (profile as Record<string, unknown> | undefined)?.image as string | undefined;
 
   const repostAuthorName = useMemo(() => {
     if (!event) return "";
@@ -137,7 +137,7 @@ export const PostCard = memo(({
 
   const userNpub = useMemo(() => {
     try {
-      return (displayEvent as Record<string, unknown> | undefined)?.author?.npub || "";
+      return (displayEvent as NDKEvent & { author?: { npub?: string } }).author?.npub || "";
     } catch {
       return "";
     }
@@ -333,7 +333,7 @@ export const PostCard = memo(({
             <Avatar 
               pubkey={displayEvent.pubkey} 
               user={profile} 
-              size={variant === "detail" ? "lg" : "md"}
+              size={variant === "detail" ? 52 : 48}
               className="z-10"
             />
             <div className={cn("w-0.5 grow mt-2", (threadLine === "bottom" || threadLine === "both") ? "bg-border/50" : "bg-transparent")} />
@@ -486,31 +486,39 @@ export const PostCard = memo(({
         </div>
       </CardContent>
 
-      <ZapModal 
-        isOpen={showZapModal} 
-        onClose={() => setShowZapModal(false)} 
-        event={displayEvent}
-      />
-      <RawEventModal
-        isOpen={showRawModal}
-        onClose={() => setShowRawModal(false)}
-        event={displayEvent}
-      />
-      <ReportModal
-        isOpen={showReportModal}
-        onClose={() => setShowReportModal(false)}
-        event={displayEvent}
-      />
-      <ReplyModal
-        isOpen={showReplyModal}
-        onClose={() => setShowReplyModal(false)}
-        replyTo={displayEvent}
-      />
-      <QuoteModal
-        isOpen={showQuoteModal}
-        onClose={() => setShowQuoteModal(false)}
-        quoteEvent={displayEvent}
-      />
+      {showZapModal && (
+        <ZapModal 
+          onClose={() => setShowZapModal(false)} 
+          event={displayEvent}
+        />
+      )}
+      {showRawModal && (
+        <RawEventModal
+          isOpen={showRawModal}
+          onClose={() => setShowRawModal(false)}
+          event={displayEvent}
+        />
+      )}
+      {showReportModal && (
+        <ReportModal
+          targetPubkey={displayEvent.pubkey}
+          targetEventId={displayEvent.id}
+          isOpen={showReportModal}
+          onClose={() => setShowReportModal(false)}
+        />
+      )}
+      {showReplyModal && (
+        <ReplyModal
+          onClose={() => setShowReplyModal(false)}
+          event={displayEvent}
+        />
+      )}
+      {showQuoteModal && (
+        <QuoteModal
+          onClose={() => setShowQuoteModal(false)}
+          event={displayEvent}
+        />
+      )}
     </Card>
   );
 });
