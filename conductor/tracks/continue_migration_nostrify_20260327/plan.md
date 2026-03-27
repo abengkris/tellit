@@ -1,10 +1,10 @@
 ### **Plan: continue_migration_nostrify_20260327**
 
 #### **Phase 1: Foundation & Local Storage (SQL Store)**
-- [ ] Task: Set up Nostrify SQL Store (`@nostrify/store/sql`) and establish the base connection and schema.
-    - [ ] Research and implement the appropriate SQL adapter for the project (e.g., PostgreSQL or SQLite).
-    - [ ] Write failing tests for SQL store initialization and basic CRUD operations.
-    - [ ] Implement the store and verify that tests pass.
+- [x] Task: Set up Nostrify SQL Store (`@nostrify/store/sql`) and establish the base connection and schema. (5ab12d4)
+    - [x] Research and implement the appropriate SQL adapter for the project (e.g., PostgreSQL or SQLite).
+    - [x] Write failing tests for SQL store initialization and basic CRUD operations.
+    - [x] Implement the store and verify that tests pass.
 - [ ] Task: Replace `NDKCacheAdapterDexie` with Nostrify SQL Store in the global NDK setup (if still needed) or parallelized Nostrify setup.
     - [ ] Update `src/lib/ndk.ts` (or equivalent) to initialize Nostrify's store.
     - [ ] Write tests to verify that the store is correctly initialized and accessible.
