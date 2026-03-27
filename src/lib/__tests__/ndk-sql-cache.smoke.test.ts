@@ -21,7 +21,6 @@ vi.mock('@nostrify/ndk', async () => ({}));
 
 vi.mock('@nostr-dev-kit/ndk', async () => {
   const actual = await vi.importActual('@nostr-dev-kit/ndk');
-  // @ts-expect-error - mock NDK class
   class MockNDK extends (actual as any).default { // eslint-disable-line @typescript-eslint/no-explicit-any
     constructor(opts: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
       super(opts);

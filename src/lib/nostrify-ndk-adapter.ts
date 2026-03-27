@@ -36,7 +36,9 @@ export class NostrifyNDKCacheAdapter implements NDKCacheAdapter {
    * Custom method used by TellIt application to manually discard unpublished events.
    */
   public async discardUnpublishedEvent(eventId: string): Promise<void> {
-    await this.store.remove([{ ids: [eventId] }]);
+    if (this.store.remove) {
+      await this.store.remove([{ ids: [eventId] }]);
+    }
   }
 
   public async getUnpublishedEvents(): Promise<{ event: NDKEvent; relays?: string[]; lastTryAt?: number }[]> {
@@ -48,6 +50,8 @@ export class NostrifyNDKCacheAdapter implements NDKCacheAdapter {
 
   // Optional methods that can be implemented for better performance/functionality
   public async deleteEventIds(eventIds: string[]): Promise<void> {
-    await this.store.remove([{ ids: eventIds }]);
+    if (this.store.remove) {
+      await this.store.remove([{ ids: eventIds }]);
+    }
   }
 }
