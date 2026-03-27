@@ -22,12 +22,10 @@ vi.mock('postgres', () => ({
   default: vi.fn().mockReturnValue({}),
 }));
 
-vi.mock('@electric-sql/pglite', () => ({
-  PGlite: vi.fn().mockImplementation(function() { return {}; }),
-}));
-
 vi.mock('kysely-pglite', () => ({
-  PgliteDialect: vi.fn().mockImplementation(function() { return {}; }),
+  KyselyPGlite: vi.fn().mockImplementation(function() { 
+    return { dialect: {} }; 
+  }),
 }));
 
 vi.mock('kysely', () => ({
@@ -51,6 +49,33 @@ describe('Nostrify SQL Store', () => {
     const store = await createSqlStore();
     expect(store).toBeDefined();
     expect(NPostgres).toHaveBeenCalled();
+  });
+
+  it('should use PostgresJSDialect on the server', async () => {
+    // Force server environment
+    const originalWindow = global.window;
+    // @ts-expect-error - testing server-side
+    delete global.window;
+
+    await createSqlStore();
+    
+    const { PostgresJSDialect } = await import('kysely-postgres-js');
+    expect(PostgresJSDialect).toHaveBeenCalled();
+
+    global.window = originalWindow;
+  });
+
+  it('should use KyselyPGlite on the client', async () => {
+    // Mock window to simulate client environment
+    global.window = {} as any; // eslint-disable-line @typescript-eslint/no-explicit-any
+
+    await createSqlStore();
+    
+    const { KyselyPGlite } = await import('kysely-pglite');
+    expect(KyselyPGlite).toHaveBeenCalled();
+
+    // @ts-expect-error - cleanup
+    delete global.window;
   });
 
   it('should support basic CRUD operations', async () => {

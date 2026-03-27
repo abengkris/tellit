@@ -35,18 +35,16 @@ export async function createSqlStore(): Promise<NPostgres> {
     return new NPostgres(kysely);
   } else {
     // Client-side initialization with pglite
-    const [{ PGlite }, { PgliteDialect }] = await Promise.all([
-      import('@electric-sql/pglite'),
+    const [{ KyselyPGlite }] = await Promise.all([
       import('kysely-pglite'),
     ]);
 
     // Use a persistent path for pglite in the browser if possible
-    // For now, using an in-memory or default indexedDB path
-    const db = new PGlite('idb://tellit-nostr-v1');
+    // idb:// uses IndexedDB for persistence
+    const kpg = new KyselyPGlite('idb://tellit-nostr-v1');
+    
     const kysely = new Kysely<NPostgresSchema>({
-      dialect: new PgliteDialect({
-        database: db,
-      }) as any, // eslint-disable-line @typescript-eslint/no-explicit-any
+      dialect: kpg.dialect,
     });
 
     return new NPostgres(kysely);
