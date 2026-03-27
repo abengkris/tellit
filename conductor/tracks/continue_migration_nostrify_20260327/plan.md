@@ -1,0 +1,43 @@
+### **Plan: continue_migration_nostrify_20260327**
+
+#### **Phase 1: Foundation & Local Storage (SQL Store)**
+- [ ] Task: Set up Nostrify SQL Store (`@nostrify/store/sql`) and establish the base connection and schema.
+    - [ ] Research and implement the appropriate SQL adapter for the project (e.g., PostgreSQL or SQLite).
+    - [ ] Write failing tests for SQL store initialization and basic CRUD operations.
+    - [ ] Implement the store and verify that tests pass.
+- [ ] Task: Replace `NDKCacheAdapterDexie` with Nostrify SQL Store in the global NDK setup (if still needed) or parallelized Nostrify setup.
+    - [ ] Update `src/lib/ndk.ts` (or equivalent) to initialize Nostrify's store.
+    - [ ] Write tests to verify that the store is correctly initialized and accessible.
+- [ ] Task: Implement a data migration strategy (or a clean start) for moving from Dexie to the SQL store.
+    - [ ] Write failing tests for the migration logic.
+    - [ ] Implement the migration and verify that tests pass.
+- [ ] Task: Conductor - User Manual Verification 'Phase 1: Foundation & Local Storage' (Protocol in workflow.md)
+
+#### **Phase 2: Core Note & Reaction Migration**
+- [ ] Task: Migrate Kind 1 (Notes) and Kind 7 (Reactions) logic to use Nostrify's event handling and signing.
+    - [ ] Write failing tests for fetching and publishing Kind 1 and Kind 7 events using Nostrify.
+    - [ ] Implement the migration in `useNostrifyPublish` or equivalent hooks.
+    - [ ] Refactor components (e.g., `PostCard`, `PostActions`) to use Nostrify's event schema instead of `NDKEvent`.
+    - [ ] Verify that all tests pass and coverage is >80%.
+- [ ] Task: Conductor - User Manual Verification 'Phase 2: Core Note & Reaction Migration' (Protocol in workflow.md)
+
+#### **Phase 3: NIP-17 Messaging & Profile Migration**
+- [ ] Task: Migrate NIP-17 Private Messaging (Kind 1059, 1058, 14) to Nostrify.
+    - [ ] Write failing tests for NIP-17 messaging flows (send/receive) using Nostrify's messaging policies.
+    - [ ] Implement the migration in the `useMessages` hook and related services.
+    - [ ] Verify that messaging remains secure and metadata-resistant.
+- [ ] Task: Migrate Profile & Metadata (Kind 0) fetching and updating to use Nostrify's signers and stores.
+    - [ ] Write failing tests for profile fetching and metadata updates.
+    - [ ] Implement the migration in the `useProfile` and `useIdentity` hooks.
+    - [ ] Verify that all tests pass.
+- [ ] Task: Conductor - User Manual Verification 'Phase 3: NIP-17 Messaging & Profile Migration' (Protocol in workflow.md)
+
+#### **Phase 4: Feed & Filtering Migration**
+- [ ] Task: Migrate Feed loading logic and filtering to use Nostrify's policies and pool management.
+    - [ ] Write failing tests for feed fetching with complex filters (e.g., following list, global feed).
+    - [ ] Implement the migration in `useFeed` and related hooks.
+    - [ ] Refactor filtering and sorting logic to use Nostrify's patterns.
+- [ ] Task: Final verification of the entire migration and cleanup of NDK dependencies.
+    - [ ] Conduct a thorough review of the codebase for remaining NDK references.
+    - [ ] Run the full test suite and verify >80% coverage.
+- [ ] Task: Conductor - User Manual Verification 'Phase 4: Feed & Filtering Migration' (Protocol in workflow.md)
