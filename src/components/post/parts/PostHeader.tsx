@@ -80,6 +80,7 @@ interface PostHeaderProps {
   onSummarizeClick?: () => void;
   variant?: "feed" | "detail";
   relevance?: ScoredEvent;
+  showAvatar?: boolean;
 }
 
 export const PostHeader: React.FC<PostHeaderProps> = ({
@@ -111,7 +112,8 @@ export const PostHeader: React.FC<PostHeaderProps> = ({
   navigationHref,
   onSummarizeClick,
   variant = "feed",
-  relevance
+  relevance,
+  showAvatar = true
 }) => {
   const { score } = useWoT(pubkey);
   const formattedTime = formatCompactDate(createdAt);
@@ -142,17 +144,19 @@ export const PostHeader: React.FC<PostHeaderProps> = ({
 
         <div className="flex items-center justify-between mb-3 min-w-0">
           <div className="flex items-center space-x-3 truncate min-w-0" onClick={(e) => e.stopPropagation()}>
-            <Link href={finalProfileUrl} aria-label={`View ${display_name}'s profile`} className="shrink-0">
-              <Avatar 
-                pubkey={pubkey} 
-                src={avatar} 
-                isLoading={isLoading} 
-                size={52} 
-                nip05={nip05}
-                className="w-[52px] h-[52px] ring-1 ring-border/10" 
-                aria-hidden="true"
-              />
-            </Link>
+            {showAvatar && (
+              <Link href={finalProfileUrl} aria-label={`View ${display_name}'s profile`} className="shrink-0">
+                <Avatar 
+                  pubkey={pubkey} 
+                  src={avatar} 
+                  isLoading={isLoading} 
+                  size={52} 
+                  nip05={nip05}
+                  className="w-[52px] h-[52px] ring-1 ring-border/10" 
+                  aria-hidden="true"
+                />
+              </Link>
+            )}
             <div className="flex flex-col truncate min-w-0">
               <Link href={finalProfileUrl} className="flex flex-col truncate min-w-0 hover:underline">
                 <span className="font-bold text-[17px] text-foreground leading-tight truncate">{display_name}</span>
@@ -307,7 +311,10 @@ export const PostHeader: React.FC<PostHeaderProps> = ({
     <>
       {/* Repost Header */}
       {isRepost && (
-        <div className="flex items-center space-x-2 text-muted-foreground text-xs font-bold mb-2 ml-10 truncate min-w-0">
+        <div className={cn(
+          "flex items-center space-x-2 text-muted-foreground text-xs font-bold mb-2 truncate min-w-0",
+          showAvatar ? "ml-10" : "ml-0"
+        )}>
           <Repeat2 size={14} className="shrink-0" aria-hidden="true" />
           <span className="truncate">{repostAuthorName} reposted</span>
         </div>
@@ -315,19 +322,21 @@ export const PostHeader: React.FC<PostHeaderProps> = ({
 
       <div className="flex items-center justify-between mb-0.5 min-w-0">
         <div className="flex items-center space-x-1 truncate min-w-0" onClick={(e) => e.stopPropagation()}>
-          <div className="mr-4 shrink-0 z-10">
-            <Link href={finalProfileUrl} aria-label={`View ${display_name}'s profile`}>
-              <Avatar 
-                pubkey={pubkey} 
-                src={avatar} 
-                isLoading={isLoading} 
-                size={48} 
-                nip05={nip05}
-                className="w-12 h-12 ring-4 ring-background" 
-                aria-hidden="true"
-              />
-            </Link>
-          </div>
+          {showAvatar && (
+            <div className="mr-4 shrink-0 z-10">
+              <Link href={finalProfileUrl} aria-label={`View ${display_name}'s profile`}>
+                <Avatar 
+                  pubkey={pubkey} 
+                  src={avatar} 
+                  isLoading={isLoading} 
+                  size={48} 
+                  nip05={nip05}
+                  className="w-12 h-12 ring-4 ring-background" 
+                  aria-hidden="true"
+                />
+              </Link>
+            </div>
+          )}
           <div className="flex items-center gap-1 truncate min-w-0">
             <Link href={finalProfileUrl} className="flex items-center gap-1 truncate min-w-0 hover:underline">
               <UserIdentity 

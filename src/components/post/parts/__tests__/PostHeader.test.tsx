@@ -51,4 +51,24 @@ describe("PostHeader", () => {
     const shield = container.querySelector(".lucide-shield-check");
     expect(shield).toBeNull();
   });
+
+  it("should not render avatar when showAvatar is false", () => {
+    const { queryByTestId } = render(
+      <TooltipProvider>
+        <PostHeader {...defaultProps} showAvatar={false} />
+      </TooltipProvider>
+    );
+
+    expect(queryByTestId("avatar")).toBeNull();
+  });
+
+  it("should not render avatar when showAvatar is false in detail variant", () => {
+    const { queryByTestId } = render(
+      <TooltipProvider>
+        <PostHeader {...defaultProps} showAvatar={false} variant="detail" />
+      </TooltipProvider>
+    );
+
+    expect(queryByTestId("avatar")).toBeNull();
+  });
 });

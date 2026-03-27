@@ -369,6 +369,7 @@ export const PostCard = memo(({
               navigationHref={navigationHref}
               variant={variant}
               relevance={scoredEvent}
+              showAvatar={false}
             />
             
             {replyingToPubkey && variant === "feed" && (
