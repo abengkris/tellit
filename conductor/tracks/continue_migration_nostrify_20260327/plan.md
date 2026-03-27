@@ -8,9 +8,9 @@
 - [x] Task: Replace `NDKCacheAdapterDexie` with Nostrify SQL Store in the global NDK setup (if still needed) or parallelized Nostrify setup. (50c072c)
     - [x] Update `src/lib/ndk.ts` (or equivalent) to initialize Nostrify's store.
     - [x] Write tests to verify that the store is correctly initialized and accessible.
-- [ ] Task: Implement a data migration strategy (or a clean start) for moving from Dexie to the SQL store.
-    - [ ] Write failing tests for the migration logic.
-    - [ ] Implement the migration and verify that tests pass.
+- [x] Task: Implement a data migration strategy (or a clean start) for moving from Dexie to the SQL store. (e84507b)
+    - [x] Write failing tests for the migration logic.
+    - [x] Implement the migration and verify that tests pass.
 - [ ] Task: Conductor - User Manual Verification 'Phase 1: Foundation & Local Storage' (Protocol in workflow.md)
 
 #### **Phase 2: Core Note & Reaction Migration**
