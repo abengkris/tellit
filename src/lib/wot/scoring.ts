@@ -1,4 +1,4 @@
-import { db } from "../db";
+import { getKysely } from "../nostrify-sql-store";
 
 export interface WoTScore {
   pubkey: string;
@@ -40,6 +40,7 @@ export class WoTScorer {
    */
   public async calculateScores(rootPubkey: string, maxDepth: number = 2): Promise<void> {
     const scores = new Map<string, number>();
+    const sqlDb = await getKysely();
     
     // Base score for the root user
     scores.set(rootPubkey, 100);
@@ -53,19 +54,28 @@ export class WoTScorer {
 
       for (const pubkey of currentLayer) {
         const parentScore = scores.get(pubkey) || 0;
-        const followRecord = await db.table("follows").get(pubkey);
+        const followRecord = await sqlDb
+          .selectFrom('follows')
+          .selectAll()
+          .where('pubkey', '=', pubkey)
+          .executeTakeFirst();
 
         if (followRecord && followRecord.follows) {
-          for (const followedPubkey of followRecord.follows) {
-            const addedScore = parentScore * decay * 0.5; // Simple additive score
-            const currentScore = scores.get(followedPubkey) || 0;
-            
-            // Limit score to 100
-            scores.set(followedPubkey, Math.min(100, currentScore + addedScore));
-            
-            if (depth < maxDepth) {
-              nextLayer.add(followedPubkey);
+          try {
+            const followedPubkeys: string[] = JSON.parse(followRecord.follows);
+            for (const followedPubkey of followedPubkeys) {
+              const addedScore = parentScore * decay * 0.5; // Simple additive score
+              const currentScore = scores.get(followedPubkey) || 0;
+              
+              // Limit score to 100
+              scores.set(followedPubkey, Math.min(100, currentScore + addedScore));
+              
+              if (depth < maxDepth) {
+                nextLayer.add(followedPubkey);
+              }
             }
+          } catch (e) {
+            console.error("Failed to parse follows JSON:", e);
           }
         }
       }
@@ -74,15 +84,22 @@ export class WoTScorer {
       if (currentLayer.length === 0) break;
     }
 
-    // Store scores in Dexie
+    // Store scores in SQL
     const now = Date.now();
-    const records: WoTScore[] = Array.from(scores.entries()).map(([pubkey, score]) => ({
-      pubkey,
-      score: Math.round(score),
-      lastUpdated: now
-    }));
-
-    await db.table("wotScores").bulkPut(records);
+    for (const [pubkey, score] of scores.entries()) {
+      await sqlDb
+        .insertInto('wot_scores')
+        .values({
+          pubkey,
+          score: Math.round(score),
+          last_updated: now
+        })
+        .onConflict((oc) => oc.column('pubkey').doUpdateSet({
+          score: Math.round(score),
+          last_updated: now
+        }))
+        .execute();
+    }
   }
 
   /**
@@ -90,7 +107,12 @@ export class WoTScorer {
    * @param pubkey The pubkey to check.
    */
   public async getScore(pubkey: string): Promise<number> {
-    const record = await db.table("wotScores").get(pubkey);
+    const sqlDb = await getKysely();
+    const record = await sqlDb
+      .selectFrom('wot_scores')
+      .selectAll()
+      .where('pubkey', '=', pubkey)
+      .executeTakeFirst();
     return record ? record.score : 0;
   }
 }

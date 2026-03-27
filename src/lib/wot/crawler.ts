@@ -1,5 +1,5 @@
 import NDK, { NDKFilter } from "@nostr-dev-kit/ndk";
-import { db } from "../db";
+import { getKysely } from "../nostrify-sql-store";
 
 export class WoTCrawler {
   private ndk: NDK;
@@ -19,6 +19,7 @@ export class WoTCrawler {
     this.isCrawling = true;
 
     try {
+      const sqlDb = await getKysely();
       let currentQueue = [rootPubkey];
       const visited = new Set<string>();
 
@@ -44,12 +45,19 @@ export class WoTCrawler {
               .map(t => t[1]);
 
             if (follows.length > 0) {
-              // Store in Dexie
-              await db.table("follows").put({
-                pubkey: event.pubkey,
-                follows: follows,
-                timestamp: event.created_at
-              });
+              // Store in SQL
+              await sqlDb
+                .insertInto('follows')
+                .values({
+                  pubkey: event.pubkey,
+                  follows: JSON.stringify(follows),
+                  timestamp: event.created_at
+                })
+                .onConflict((oc) => oc.column('pubkey').doUpdateSet({
+                  follows: JSON.stringify(follows),
+                  timestamp: event.created_at
+                }))
+                .execute();
 
               // Add to next queue if not at max depth
               if (i < depth) {

@@ -1,4 +1,4 @@
-import { db } from "@/lib/db";
+import { getKysely } from "@/lib/nostrify-sql-store";
 
 export interface SocialSignals {
   networkDegreeMap: Map<string, number>;
@@ -18,9 +18,23 @@ export async function fetchSocialSignals(viewerPubkey: string, targetPubkeys: st
   if (targetPubkeys.length === 0) return { networkDegreeMap, mutualsMap };
 
   try {
+    const sqlDb = await getKysely();
+
     // 1. Fetch viewer's follows
-    const viewerFollowsRecord = await db.table("follows").get(viewerPubkey);
-    const viewerFollows = new Set<string>(viewerFollowsRecord?.follows || []);
+    const viewerFollowsRecord = await sqlDb
+      .selectFrom('follows')
+      .selectAll()
+      .where('pubkey', '=', viewerPubkey)
+      .executeTakeFirst();
+    
+    let viewerFollows = new Set<string>();
+    if (viewerFollowsRecord && viewerFollowsRecord.follows) {
+      try {
+        viewerFollows = new Set<string>(JSON.parse(viewerFollowsRecord.follows));
+      } catch (e) {
+        console.error("Failed to parse viewer follows JSON:", e);
+      }
+    }
 
     // 2. Identify Degree 1 (Direct Follows)
     targetPubkeys.forEach(pk => {
@@ -38,10 +52,11 @@ export async function fetchSocialSignals(viewerPubkey: string, targetPubkeys: st
       }
 
       // Find all people who follow this target
-      const followersOfTarget = await db.table("follows")
-        .where("follows")
-        .equals(targetPk)
-        .toArray();
+      const followersOfTarget = await sqlDb
+        .selectFrom('follows')
+        .selectAll()
+        .where('follows', 'like', `%${targetPk}%`)
+        .execute();
 
       const mutuals = followersOfTarget.filter(f => viewerFollows.has(f.pubkey));
       

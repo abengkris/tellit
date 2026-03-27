@@ -1,7 +1,7 @@
-import { db } from "@/lib/db";
+import { getKysely } from "@/lib/nostrify-sql-store";
 
 /**
- * Fetches Web of Trust scores for a list of pubkeys from the local Dexie database.
+ * Fetches Web of Trust scores for a list of pubkeys from the local SQL store.
  * @param pubkeys Array of pubkeys to fetch scores for.
  * @returns A Map of pubkey to trust score (0-100).
  */
@@ -11,10 +11,12 @@ export async function fetchWoTSignals(pubkeys: string[]): Promise<Map<string, nu
   if (pubkeys.length === 0) return scores;
 
   try {
-    const records = await db.table("wotScores")
-      .where("pubkey")
-      .anyOf(pubkeys)
-      .toArray();
+    const sqlDb = await getKysely();
+    const records = await sqlDb
+      .selectFrom('wot_scores')
+      .selectAll()
+      .where('pubkey', 'in', pubkeys)
+      .execute();
 
     records.forEach(record => {
       scores.set(record.pubkey, record.score);

@@ -15,6 +15,7 @@ import { getNDK, DEFAULT_RELAYS } from "@/lib/ndk";
 import { getSqlStore } from "@/lib/nostrify-sql-store";
 import { NostrifyNDKCacheAdapter } from "@/lib/nostrify-ndk-adapter";
 import { syncDMRelays } from "@/lib/actions/messages";
+import { migrateDexieToSql } from "@/lib/sync/db-migration";
 import { WoTServiceLocal } from "@/services/wot.service.local";
 import { formatNDKError, NDKErrorType } from "@/lib/error-handler";
 
@@ -401,6 +402,9 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
         const sqlStore = await getSqlStore();
         const adapter = new NostrifyNDKCacheAdapter(sqlStore) as ExtendedCacheAdapter;
         instance.cacheAdapter = adapter;
+        
+        // 1.1 Migrate Dexie data to SQL
+        migrateDexieToSql().catch(err => console.error("[NDKProvider] Migration failed:", err));
       } catch (err) {
         console.error("[NDKProvider] Failed to initialize SQL cache adapter:", err);
       }

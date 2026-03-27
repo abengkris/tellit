@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { db } from "@/lib/db";
+import { getKysely } from "@/lib/nostrify-sql-store";
 import { useAuthStore } from "@/store/auth";
 
 export function useWoT(pubkey?: string) {
@@ -20,24 +20,42 @@ export function useWoT(pubkey?: string) {
 
     const fetchData = async () => {
       try {
+        const sqlDb = await getKysely();
+
         // 1. Fetch Score
-        const scoreRecord = await db.table("wotScores").get(pubkey);
+        const scoreRecord = await sqlDb
+          .selectFrom('wot_scores')
+          .selectAll()
+          .where('pubkey', '=', pubkey)
+          .executeTakeFirst();
         setScore(scoreRecord ? scoreRecord.score : 0);
 
         // 2. Fetch Mutuals (people the current user follows who also follow this pubkey)
         if (currentUser?.pubkey) {
-          const myFollowsRecord = await db.table("follows").get(currentUser.pubkey);
+          const myFollowsRecord = await sqlDb
+            .selectFrom('follows')
+            .selectAll()
+            .where('pubkey', '=', currentUser.pubkey)
+            .executeTakeFirst();
+
           if (myFollowsRecord && myFollowsRecord.follows) {
-            const myFollowsSet = new Set(myFollowsRecord.follows);
-            
-            // Find all people who follow this 'pubkey'
-            const followersOfTarget = await db.table("follows")
-              .where("follows")
-              .equals(pubkey)
-              .toArray();
-            
-            const mutuals = followersOfTarget.filter(f => myFollowsSet.has(f.pubkey));
-            setMutualCount(mutuals.length);
+            try {
+              const myFollows: string[] = JSON.parse(myFollowsRecord.follows);
+              const myFollowsSet = new Set(myFollows);
+              
+              // Find all people who follow this 'pubkey'
+              // We use LIKE to find the pubkey in the JSON array string
+              const followersOfTarget = await sqlDb
+                .selectFrom('follows')
+                .selectAll()
+                .where('follows', 'like', `%${pubkey}%`)
+                .execute();
+              
+              const mutuals = followersOfTarget.filter(f => myFollowsSet.has(f.pubkey));
+              setMutualCount(mutuals.length);
+            } catch (e) {
+              console.error("Failed to parse follows JSON:", e);
+            }
           }
         }
       } catch (error) {

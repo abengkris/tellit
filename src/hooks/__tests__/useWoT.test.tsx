@@ -1,39 +1,38 @@
 import { renderHook, waitFor } from "@testing-library/react";
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { useWoT } from "../useWoT";
-import { db } from "@/lib/db";
 
-// Mock Dexie
-vi.mock("@/lib/db", () => {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const store: Record<string, any> = {
-    wotScores: {},
+// Mock Kysely
+vi.mock("@/lib/nostrify-sql-store", () => {
+  const store: Record<string, any> = { // eslint-disable-line @typescript-eslint/no-explicit-any
+    wot_scores: {},
     follows: {}
   };
-  return {
-    db: {
-      table: vi.fn((name: string) => ({
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        put: vi.fn(async (data: any) => {
-          store[name][data.pubkey] = data;
-        }),
-        get: vi.fn(async (pubkey: string) => {
-          return store[name][pubkey];
-        }),
-        clear: vi.fn(async () => {
-          store[name] = {};
-        }),
-        where: vi.fn(() => ({
-          equals: vi.fn((val: string) => ({
-            toArray: vi.fn(async () => {
-              // Simple mock implementation for 'follows' search
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              return Object.values(store.follows).filter((f: any) => f.follows.includes(val));
-            })
-          }))
+
+  const mockKysely = {
+    selectFrom: vi.fn((table: string) => ({
+      selectAll: vi.fn(() => ({
+        where: vi.fn((col: string, op: string, val: any) => ({ // eslint-disable-line @typescript-eslint/no-explicit-any
+          executeTakeFirst: vi.fn(async () => {
+            if (op === '=') return store[table][val];
+            return null;
+          }),
+          execute: vi.fn(async () => {
+            if (op === 'like') {
+              const target = val.replace(/%/g, '');
+              return Object.values(store[table]).filter((f: any) => f.follows.includes(target)); // eslint-disable-line @typescript-eslint/no-explicit-any
+            }
+            return [];
+          })
         }))
-      })),
-    },
+      }))
+    }))
+  };
+
+  return {
+    getKysely: vi.fn().mockResolvedValue(mockKysely),
+    // Helper for tests to populate mock store
+    __mockStore: store
   };
 });
 
@@ -46,18 +45,21 @@ vi.mock("@/store/auth", () => ({
 
 describe("useWoT hook", () => {
   const alice = "alice-pubkey";
+  let mockStore: any; // eslint-disable-line @typescript-eslint/no-explicit-any
 
   beforeEach(async () => {
-    await db.table("wotScores").clear();
-    await db.table("follows").clear();
+    const mod = await import("@/lib/nostrify-sql-store") as any; // eslint-disable-line @typescript-eslint/no-explicit-any
+    mockStore = mod.__mockStore;
+    mockStore.wot_scores = {};
+    mockStore.follows = {};
   });
 
   it("should return the trust score and mutual count for a pubkey", async () => {
-    await db.table("wotScores").put({ pubkey: alice, score: 75, lastUpdated: Date.now() });
+    mockStore.wot_scores[alice] = { pubkey: alice, score: 75, last_updated: Date.now() };
     
     // I follow Bob, and Bob follows Alice
-    await db.table("follows").put({ pubkey: "me", follows: ["bob"] });
-    await db.table("follows").put({ pubkey: "bob", follows: [alice] });
+    mockStore.follows["me"] = { pubkey: "me", follows: JSON.stringify(["bob"]) };
+    mockStore.follows["bob"] = { pubkey: "bob", follows: JSON.stringify([alice]) };
 
     const { result } = renderHook(() => useWoT(alice));
 

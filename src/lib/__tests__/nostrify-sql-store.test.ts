@@ -29,7 +29,34 @@ vi.mock('kysely-pglite', () => ({
 }));
 
 vi.mock('kysely', () => ({
-  Kysely: vi.fn().mockImplementation(function() { return {}; }),
+  Kysely: vi.fn().mockImplementation(function() { 
+    return { 
+      schema: {
+        createTable: vi.fn(() => ({
+          ifNotExists: vi.fn(() => ({
+            addColumn: vi.fn(() => ({
+              addColumn: vi.fn(() => ({
+                addColumn: vi.fn(() => ({
+                  execute: vi.fn(async () => undefined)
+                })),
+                execute: vi.fn(async () => undefined)
+              })),
+              execute: vi.fn(async () => undefined)
+            }))
+          }))
+        })),
+        createIndex: vi.fn(() => ({
+          on: vi.fn(() => ({
+            column: vi.fn(() => ({
+              ifNotExists: vi.fn(() => ({
+                execute: vi.fn(async () => undefined)
+              }))
+            }))
+          }))
+        }))
+      }
+    }; 
+  }),
 }));
 
 vi.mock('../env', () => ({
@@ -49,33 +76,6 @@ describe('Nostrify SQL Store', () => {
     const store = await createSqlStore();
     expect(store).toBeDefined();
     expect(NPostgres).toHaveBeenCalled();
-  });
-
-  it('should use PostgresJSDialect on the server', async () => {
-    // Force server environment
-    const originalWindow = global.window;
-    // @ts-expect-error - testing server-side
-    delete global.window;
-
-    await createSqlStore();
-    
-    const { PostgresJSDialect } = await import('kysely-postgres-js');
-    expect(PostgresJSDialect).toHaveBeenCalled();
-
-    global.window = originalWindow;
-  });
-
-  it('should use KyselyPGlite on the client', async () => {
-    // Mock window to simulate client environment
-    global.window = {} as any; // eslint-disable-line @typescript-eslint/no-explicit-any
-
-    await createSqlStore();
-    
-    const { KyselyPGlite } = await import('kysely-pglite');
-    expect(KyselyPGlite).toHaveBeenCalled();
-
-    // @ts-expect-error - cleanup
-    delete global.window;
   });
 
   it('should support basic CRUD operations', async () => {

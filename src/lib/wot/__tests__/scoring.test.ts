@@ -1,33 +1,44 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { WoTScorer } from "../scoring";
-import { db } from "../../db";
 
-// Mock Dexie
-vi.mock("../../db", () => {
+// Mock Kysely
+vi.mock("../../nostrify-sql-store", () => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const store: Record<string, any> = {
     follows: {},
-    wotScores: {}
+    wot_scores: {}
+  };
+  const mockKysely = {
+    insertInto: vi.fn((table: string) => ({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      values: vi.fn((data: any) => ({
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        onConflict: vi.fn((callback: any) => {
+          // Simulate the onConflict callback
+          const oc = {
+            column: vi.fn(() => oc),
+            doUpdateSet: vi.fn(() => ({
+              execute: vi.fn(async () => {
+                store[table][data.pubkey] = data;
+              })
+            }))
+          };
+          callback(oc);
+          return oc.doUpdateSet();
+        })
+      }))
+    })),
+    selectFrom: vi.fn((table: string) => ({
+      selectAll: vi.fn(() => ({
+        where: vi.fn((_col: string, _op: string, val: string) => ({
+          executeTakeFirst: vi.fn(async () => store[table][val])
+        }))
+      }))
+    }))
   };
   return {
-    db: {
-      table: vi.fn((name: string) => ({
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        put: vi.fn(async (data: any) => {
-          store[name][data.pubkey] = data;
-        }),
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        bulkPut: vi.fn(async (records: any[]) => {
-          records.forEach(r => { store[name][r.pubkey] = r; });
-        }),
-        get: vi.fn(async (pubkey: string) => {
-          return store[name][pubkey];
-        }),
-        clear: vi.fn(async () => {
-          store[name] = {};
-        }),
-      })),
-    },
+    getKysely: vi.fn().mockResolvedValue(mockKysely),
+    __mockStore: store
   };
 });
 
@@ -36,19 +47,25 @@ describe("WoTScorer", () => {
   const alice = "alice-pubkey";
   const bob = "bob-pubkey";
   const charlie = "charlie-pubkey";
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let mockStore: any;
 
   beforeEach(async () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const mod = await import("../../nostrify-sql-store") as any;
+    mockStore = mod.__mockStore;
+    mockStore.follows = {};
+    mockStore.wot_scores = {};
+    
     scorer = new WoTScorer();
-    await db.table("follows").clear();
-    await db.table("wotScores").clear();
   });
 
   it("should calculate and store trust scores based on follow distances", async () => {
     // Setup follow relationships
     // Alice follows Bob
-    await db.table("follows").put({ pubkey: alice, follows: [bob] });
+    mockStore.follows[alice] = { pubkey: alice, follows: JSON.stringify([bob]) };
     // Bob follows Charlie
-    await db.table("follows").put({ pubkey: bob, follows: [charlie] });
+    mockStore.follows[bob] = { pubkey: bob, follows: JSON.stringify([charlie]) };
 
     await scorer.calculateScores(alice, 2);
 

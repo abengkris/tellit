@@ -1,38 +1,38 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { fetchSocialSignals } from "../social";
-import { db } from "@/lib/db";
 
-// Mock Dexie
-vi.mock("@/lib/db", () => {
-  const store: Record<string, unknown> = {
+// Mock Kysely
+vi.mock("@/lib/nostrify-sql-store", () => {
+  const store: Record<string, any> = { // eslint-disable-line @typescript-eslint/no-explicit-any
     follows: {}
   };
-  return {
-    db: {
-       
-      table: vi.fn((_name: string) => ({
-        get: vi.fn(async (pubkey: string) => {
-          const follows = store.follows as Record<string, { pubkey: string; follows: string[] }>;
-          return follows[pubkey];
-        }),
-        where: vi.fn(() => ({
-          equals: vi.fn((val: string) => ({
-            toArray: vi.fn(async () => {
-              const follows = store.follows as Record<string, { pubkey: string; follows: string[] }>;
-              // Mock implementation for finding people who follow 'val'
-              return Object.values(follows).filter((f) => f.follows.includes(val));
-            })
-          }))
-        })),
-        put: vi.fn(async (data: { pubkey: string; follows: string[] }) => {
-          const follows = store.follows as Record<string, { pubkey: string; follows: string[] }>;
-          follows[data.pubkey] = data;
-        }),
-        clear: vi.fn(async () => {
-          store.follows = {};
-        })
+
+  const mockKysely = {
+    selectFrom: vi.fn((_table: string) => ({
+      selectAll: vi.fn(() => ({
+        where: vi.fn((col: string, op: string, val: any) => ({ // eslint-disable-line @typescript-eslint/no-explicit-any
+          executeTakeFirst: vi.fn(async () => {
+            if (op === '=') {
+              const record = store.follows[val];
+              return record;
+            }
+            return null;
+          }),
+          execute: vi.fn(async () => {
+            if (op === 'like') {
+              const target = val.replace(/%/g, '');
+              return Object.values(store.follows).filter((f: any) => f.follows.includes(target)); // eslint-disable-line @typescript-eslint/no-explicit-any
+            }
+            return [];
+          })
+        }))
       }))
-    }
+    }))
+  };
+
+  return {
+    getKysely: vi.fn().mockResolvedValue(mockKysely),
+    __mockStore: store
   };
 });
 
@@ -41,13 +41,16 @@ describe("Social Signal Extractor", () => {
   const friend = "friend";
   const stranger = "stranger";
   const mutualFriend = "mutualFriend";
+  let mockStore: any; // eslint-disable-line @typescript-eslint/no-explicit-any
 
   beforeEach(async () => {
-    await db.table("follows").clear();
+    const mod = await import("@/lib/nostrify-sql-store") as any; // eslint-disable-line @typescript-eslint/no-explicit-any
+    mockStore = mod.__mockStore;
+    mockStore.follows = {};
   });
 
   it("should identify Degree 1 (direct follows)", async () => {
-    await db.table("follows").put({ pubkey: me, follows: [friend] });
+    mockStore.follows[me] = { pubkey: me, follows: JSON.stringify([friend]) };
 
     const signals = await fetchSocialSignals(me, [friend, stranger]);
 
@@ -57,9 +60,9 @@ describe("Social Signal Extractor", () => {
 
   it("should identify Degree 2 and mutual count", async () => {
     // I follow friend
-    await db.table("follows").put({ pubkey: me, follows: [friend] });
+    mockStore.follows[me] = { pubkey: me, follows: JSON.stringify([friend]) };
     // friend follows stranger
-    await db.table("follows").put({ pubkey: friend, follows: [stranger] });
+    mockStore.follows[friend] = { pubkey: friend, follows: JSON.stringify([stranger]) };
 
     const signals = await fetchSocialSignals(me, [stranger]);
 
@@ -68,9 +71,9 @@ describe("Social Signal Extractor", () => {
   });
 
   it("should identify multiple mutuals", async () => {
-    await db.table("follows").put({ pubkey: me, follows: [friend, mutualFriend] });
-    await db.table("follows").put({ pubkey: friend, follows: [stranger] });
-    await db.table("follows").put({ pubkey: mutualFriend, follows: [stranger] });
+    mockStore.follows[me] = { pubkey: me, follows: JSON.stringify([friend, mutualFriend]) };
+    mockStore.follows[friend] = { pubkey: friend, follows: JSON.stringify([stranger]) };
+    mockStore.follows[mutualFriend] = { pubkey: mutualFriend, follows: JSON.stringify([stranger]) };
 
     const signals = await fetchSocialSignals(me, [stranger]);
 

@@ -2,28 +2,42 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import NDK from "@nostr-dev-kit/ndk";
 import { RelayPoolMock, EventGenerator, SignerGenerator } from "@nostr-dev-kit/ndk/test";
 import { WoTCrawler } from "../crawler";
-import { db } from "../../db";
 
-// Mock Dexie
-vi.mock("../../db", () => {
+// Mock Kysely
+vi.mock("../../nostrify-sql-store", () => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const store: Record<string, any> = {};
-  return {
-    db: {
-       
-      table: vi.fn((_name: string) => ({
+  const mockKysely = {
+    insertInto: vi.fn(() => ({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      values: vi.fn((data: any) => ({
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        put: vi.fn(async (data: any) => {
-          store[data.pubkey] = data;
-        }),
-        get: vi.fn(async (pubkey: string) => {
-          return store[pubkey];
-        }),
-        clear: vi.fn(async () => {
-          for (const key in store) delete store[key];
-        }),
-      })),
-    },
+        onConflict: vi.fn((callback: any) => {
+          // Simulate the onConflict callback
+          const oc = {
+            column: vi.fn(() => oc),
+            doUpdateSet: vi.fn(() => ({
+              execute: vi.fn(async () => {
+                store[data.pubkey] = data;
+              })
+            }))
+          };
+          callback(oc);
+          return oc.doUpdateSet();
+        })
+      }))
+    })),
+    selectFrom: vi.fn(() => ({
+      selectAll: vi.fn(() => ({
+        where: vi.fn((_col: string, _op: string, val: string) => ({
+          executeTakeFirst: vi.fn(async () => store[val])
+        }))
+      }))
+    }))
+  };
+  return {
+    getKysely: vi.fn().mockResolvedValue(mockKysely),
+    __mockStore: store
   };
 });
 
@@ -31,10 +45,17 @@ describe("WoTCrawler", () => {
   let ndk: NDK;
   let pool: RelayPoolMock;
   let crawler: WoTCrawler;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let mockStore: any;
 
   const charliePubkey = "0000000000000000000000000000000000000000000000000000000000000003";
 
   beforeEach(async () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const mod = await import("../../nostrify-sql-store") as any;
+    mockStore = mod.__mockStore;
+    for (const key in mockStore) delete mockStore[key];
+
     pool = new RelayPoolMock();
     ndk = new NDK({ explicitRelayUrls: [] });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -44,9 +65,6 @@ describe("WoTCrawler", () => {
     EventGenerator.setNDK(ndk as any);
     
     crawler = new WoTCrawler(ndk);
-    
-    // Clear the database before each test
-    await db.table("follows").clear();
   });
 
   afterEach(() => {
@@ -54,7 +72,7 @@ describe("WoTCrawler", () => {
     pool.resetAll();
   });
 
-  it("should crawl and store follows in Dexie", async () => {
+  it("should crawl and store follows in SQL", async () => {
     const relay = pool.getMockRelay("wss://relay.example.com");
     
     const signer = SignerGenerator.getSigner("alice");
@@ -80,9 +98,9 @@ describe("WoTCrawler", () => {
 
     await crawler.crawl(alicePubkey, 0);
 
-    const follows = await db.table("follows").get(alicePubkey);
-    expect(follows).toBeDefined();
-    expect(follows.follows).toContain(charliePubkey);
+    const record = mockStore[alicePubkey];
+    expect(record).toBeDefined();
+    expect(JSON.parse(record.follows)).toContain(charliePubkey);
   });
 
   it("should crawl multiple levels of follows", async () => {
@@ -121,12 +139,12 @@ describe("WoTCrawler", () => {
 
     await crawler.crawl(alice.pubkey, 1);
 
-    const aliceRecord = await db.table("follows").get(alice.pubkey);
-    const bobRecord = await db.table("follows").get(bob.pubkey);
+    const aliceRecord = mockStore[alice.pubkey];
+    const bobRecord = mockStore[bob.pubkey];
     
     expect(aliceRecord).toBeDefined();
-    expect(aliceRecord.follows).toContain(bob.pubkey);
+    expect(JSON.parse(aliceRecord.follows)).toContain(bob.pubkey);
     expect(bobRecord).toBeDefined();
-    expect(bobRecord.follows).toContain(charliePubkey);
+    expect(JSON.parse(bobRecord.follows)).toContain(charliePubkey);
   });
 });
