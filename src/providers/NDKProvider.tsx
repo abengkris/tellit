@@ -2,7 +2,6 @@
 
 import { createContext, useEffect, useLayoutEffect, useState, ReactNode, useRef, useMemo, useCallback } from "react";
 import NDK, { NDKEvent, NDKCacheAdapter, NDKRelay, NDKRelayAuthPolicies, NDKNip46Signer, ndkSignerFromPayload } from "@nostr-dev-kit/ndk";
-import NDKCacheAdapterDexie from "@nostr-dev-kit/ndk-cache-dexie";
 import { NDKMessenger, CacheModuleStorage, NDKMessage } from "@nostr-dev-kit/messages";
 import { NDKSessionManager, LocalStorage, NDKSession } from "@nostr-dev-kit/sessions";
 import { NDKNWCWallet, NDKCashuWallet, NDKWebLNWallet, NDKNutzapMonitor, NDKWallet } from "@nostr-dev-kit/wallet";
@@ -13,6 +12,8 @@ import { useAuthStore } from "@/store/auth";
 import { useUIStore } from "@/store/ui";
 import { useWalletStore } from "@/store/wallet";
 import { getNDK, DEFAULT_RELAYS } from "@/lib/ndk";
+import { getSqlStore } from "@/lib/nostrify-sql-store";
+import { NostrifyNDKCacheAdapter } from "@/lib/nostrify-ndk-adapter";
 import { syncDMRelays } from "@/lib/actions/messages";
 import { WoTServiceLocal } from "@/services/wot.service.local";
 import { formatNDKError, NDKErrorType } from "@/lib/error-handler";
@@ -240,45 +241,7 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
     if (typeof window === "undefined" || initializingRef.current) return;
     initializingRef.current = true;
 
-    let dexieAdapter: NDKCacheAdapterDexie | null = null;
-    try {
-      dexieAdapter = new NDKCacheAdapterDexie({ dbName: "ndk-cache" });
-    } catch { /* ignore */ }
-
     const instance = getNDK();
-
-    if (!instance.cacheAdapter && dexieAdapter) {
-      const adapter = dexieAdapter as unknown as ExtendedCacheAdapter;
-      instance.cacheAdapter = adapter;
-
-      adapter.discardUnpublishedEvent = async (eventId: string) => {
-        try {
-          // 1. Call the built-in method if available (handles memory)
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          if (typeof (dexieAdapter as any).discardUnpublishedEvent === 'function') {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            await (dexieAdapter as any).discardUnpublishedEvent(eventId);
-          }
-
-          // 2. Manually ensure it's deleted from the Dexie table
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          if (dexieAdapter && (dexieAdapter as any).db) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const dbInstance = (dexieAdapter as any).db;
-            await dbInstance.unpublishedEvents.delete(eventId);
-          }
-
-          // 3. Force a dump to ensure persistence
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          if (typeof (dexieAdapter as any).dump === 'function') {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            await (dexieAdapter as any).dump();
-          }
-        } catch (err) { 
-          console.error("Failed to discard unpublished event:", err);
-        }
-      };
-    }
 
     // NIP-42 Relay Authentication
     instance.relayAuthDefaultPolicy = async (relay: NDKRelay, challenge: string) => {
@@ -434,6 +397,14 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
       };
 
       // 1. Initialize core NDK instance and cache
+      try {
+        const sqlStore = await getSqlStore();
+        const adapter = new NostrifyNDKCacheAdapter(sqlStore) as ExtendedCacheAdapter;
+        instance.cacheAdapter = adapter;
+      } catch (err) {
+        console.error("[NDKProvider] Failed to initialize SQL cache adapter:", err);
+      }
+
       setNdk(instance);
       const syncInstance = new NDKSync(instance);
       setSync(syncInstance);
@@ -495,8 +466,8 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
         setNutzapMonitor(monitor);
 
         try {
-          const storage = (dexieAdapter && currentPubkey) 
-            ? new CacheModuleStorage(dexieAdapter as unknown as NDKCacheAdapter, currentPubkey) 
+          const storage = (instance.cacheAdapter && currentPubkey) 
+            ? new CacheModuleStorage(instance.cacheAdapter as unknown as NDKCacheAdapter, currentPubkey) 
             : undefined;
           const msgInstance = new NDKMessenger(instance, { storage });
           messengerRef.current = msgInstance;

@@ -1,6 +1,8 @@
 import NDK, { NDKPrivateKeySigner } from "@nostr-dev-kit/ndk";
 import { DEFAULT_RELAYS } from "./ndk";
 import { ENV } from "./env";
+import { getSqlStore } from "./nostrify-sql-store";
+import { NostrifyNDKCacheAdapter } from "./nostrify-ndk-adapter";
 
 let ndkInstance: NDK | null = null;
 
@@ -9,6 +11,13 @@ export async function getServerNDK(): Promise<NDK> {
     ndkInstance = new NDK({
       explicitRelayUrls: DEFAULT_RELAYS,
     });
+
+    try {
+      const sqlStore = await getSqlStore();
+      ndkInstance.cacheAdapter = new NostrifyNDKCacheAdapter(sqlStore);
+    } catch (err) {
+      console.error("[ServerNDK] Failed to initialize SQL cache adapter:", err);
+    }
 
     const nsec = ENV.TELLIT_NSEC;
     if (nsec) {
