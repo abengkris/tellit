@@ -5,9 +5,9 @@
     - [x] Research and implement the appropriate SQL adapter for the project (e.g., PostgreSQL or SQLite).
     - [x] Write failing tests for SQL store initialization and basic CRUD operations.
     - [x] Implement the store and verify that tests pass.
-- [ ] Task: Replace `NDKCacheAdapterDexie` with Nostrify SQL Store in the global NDK setup (if still needed) or parallelized Nostrify setup.
-    - [ ] Update `src/lib/ndk.ts` (or equivalent) to initialize Nostrify's store.
-    - [ ] Write tests to verify that the store is correctly initialized and accessible.
+- [x] Task: Replace `NDKCacheAdapterDexie` with Nostrify SQL Store in the global NDK setup (if still needed) or parallelized Nostrify setup. (50c072c)
+    - [x] Update `src/lib/ndk.ts` (or equivalent) to initialize Nostrify's store.
+    - [x] Write tests to verify that the store is correctly initialized and accessible.
 - [ ] Task: Implement a data migration strategy (or a clean start) for moving from Dexie to the SQL store.
     - [ ] Write failing tests for the migration logic.
     - [ ] Implement the migration and verify that tests pass.
