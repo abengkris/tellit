@@ -28,6 +28,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { Avatar } from "../common/Avatar";
 import { Card, CardContent } from "@/components/ui/card";
+import { Repeat2 } from "lucide-react";
 
 type ThreadLine = "none" | "top" | "bottom" | "both";
 
@@ -326,6 +327,16 @@ export const PostCard = memo(({
       )}
     >
       <CardContent className={cn("p-4 pb-2", indent > 0 ? "pl-4" : "")}>
+        {isRepost && (
+          <div className={cn(
+            "flex items-center space-x-2 text-muted-foreground text-xs font-bold mb-2 truncate min-w-0",
+            variant === "detail" ? "mb-4 ml-0" : "ml-10"
+          )}>
+            <Repeat2 size={variant === "detail" ? 16 : 14} className="shrink-0" aria-hidden="true" />
+            <span className="truncate">{repostAuthorName} reposted</span>
+          </div>
+        )}
+
         <div className="flex space-x-3">
           {/* Thread lines */}
           <div className="flex flex-col items-center">
@@ -349,9 +360,7 @@ export const PostCard = memo(({
               pubkey={displayEvent.pubkey}
               nip05={profile?.nip05}
               createdAt={displayEvent.created_at}
-              isRepost={isRepost}
               isReply={false}
-              repostAuthorName={repostAuthorName}
               bot={profile?.bot}
               isArticle={isArticle}
               isPoll={isPoll}

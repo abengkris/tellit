@@ -2,7 +2,6 @@
 
 import React from "react";
 import { 
-  Repeat2, 
   MoreHorizontal, 
   Trash2, 
   Flag, 
@@ -60,9 +59,7 @@ interface PostHeaderProps {
   pubkey: string;
   nip05?: string;
   createdAt: number | undefined;
-  isRepost?: boolean;
   isReply?: boolean;
-  repostAuthorName?: string;
   onMoreClick?: () => void;
   onDeleteClick?: () => void;
   onReportClick?: () => void;
@@ -92,9 +89,7 @@ export const PostHeader: React.FC<PostHeaderProps> = ({
   pubkey,
   nip05,
   createdAt,
-  isRepost,
   isReply,
-  repostAuthorName,
   onMoreClick,
   onDeleteClick,
   onReportClick,
@@ -134,14 +129,6 @@ export const PostHeader: React.FC<PostHeaderProps> = ({
   if (variant === "detail") {
     return (
       <div className="flex flex-col min-w-0 z-10">
-        {/* Repost Header */}
-        {isRepost && (
-          <div className="flex items-center space-x-2 text-muted-foreground text-[13px] font-bold mb-3 ml-0 truncate min-w-0">
-            <Repeat2 size={16} className="shrink-0" aria-hidden="true" />
-            <span className="truncate">{repostAuthorName} reposted</span>
-          </div>
-        )}
-
         <div className="flex items-center justify-between mb-3 min-w-0">
           <div className="flex items-center space-x-3 truncate min-w-0" onClick={(e) => e.stopPropagation()}>
             {showAvatar && (
@@ -309,17 +296,6 @@ export const PostHeader: React.FC<PostHeaderProps> = ({
 
   return (
     <>
-      {/* Repost Header */}
-      {isRepost && (
-        <div className={cn(
-          "flex items-center space-x-2 text-muted-foreground text-xs font-bold mb-2 truncate min-w-0",
-          showAvatar ? "ml-10" : "ml-0"
-        )}>
-          <Repeat2 size={14} className="shrink-0" aria-hidden="true" />
-          <span className="truncate">{repostAuthorName} reposted</span>
-        </div>
-      )}
-
       <div className="flex items-center justify-between mb-0.5 min-w-0">
         <div className="flex items-center space-x-1 truncate min-w-0" onClick={(e) => e.stopPropagation()}>
           {showAvatar && (
