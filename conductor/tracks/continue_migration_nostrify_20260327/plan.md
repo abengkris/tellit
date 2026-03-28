@@ -21,7 +21,7 @@
     - [x] Verify that all tests pass and coverage is >80%.
 - [x] Task: Conductor - User Manual Verification 'Phase 2: Core Note & Reaction Migration' (Protocol in workflow.md) (7170c42)
 
-#### **Phase 3: NIP-17 Messaging & Profile Migration**
+#### **Phase 3: NIP-17 Messaging & Profile Migration** [checkpoint: 037c277]
 - [x] Task: Migrate NIP-17 Private Messaging (Kind 1059, 1058, 14) to Nostrify. (7170c42)
     - [x] Write failing tests for NIP-17 messaging flows (send/receive) using Nostrify's messaging policies.
     - [x] Implement the migration in the `useMessages` hook and related services.
@@ -30,8 +30,7 @@
     - [x] Write failing tests for profile fetching and metadata updates.
     - [x] Implement the migration in the `useProfile` hook.
     - [x] Verify profile synchronization across devices.
-
-- [ ] Task: Conductor - User Manual Verification 'Phase 3: NIP-17 Messaging & Profile Migration' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Phase 3: NIP-17 Messaging & Profile Migration' (Protocol in workflow.md) (037c277)
 
 #### **Phase 4: Feed & Filtering Migration**
 - [ ] Task: Migrate Feed loading logic and filtering to use Nostrify's policies and pool management.
