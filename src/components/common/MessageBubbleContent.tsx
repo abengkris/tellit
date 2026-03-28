@@ -8,11 +8,12 @@ import { ImageEmbed } from "../post/tokens/ImageEmbed";
 import { VideoEmbed } from "../post/tokens/VideoEmbed";
 import { ShortenedUrl } from "../post/tokens/ShortenedUrl";
 import { NDKEvent } from "@nostr-dev-kit/ndk";
+import { type NostrEvent } from "@nostrify/types";
 import { cn } from "@/lib/utils";
 
 interface MessageBubbleContentProps {
   text: string;
-  event: NDKEvent;
+  event: NDKEvent | NostrEvent;
   isMe?: boolean;
 }
 
@@ -31,11 +32,11 @@ export const MessageBubbleContent: React.FC<MessageBubbleContentProps> = ({ text
 
   const cleanUrlFn = (u: string) => u.replace(/[.,;!?:()\[\]{}'"]+$/, "");
 
-  const isMediaUrl = (url: string) => {
+  const isMediaUrl = useCallback((url: string) => {
     const cleaned = cleanUrlFn(url);
     const path = cleaned.split('?')[0].split('#')[0].toLowerCase();
     return !!path.match(/\.(jpg|jpeg|png|gif|webp|avif|svg|jfif|mp4|mov|webm|ogg)$/);
-  };
+  }, []);
 
   const { textTokens, mediaTokens } = useMemo(() => {
     const textT: Token[] = [];
@@ -63,7 +64,7 @@ export const MessageBubbleContent: React.FC<MessageBubbleContentProps> = ({ text
     }
 
     return { textTokens: textT, mediaTokens: mediaT };
-  }, [tokens]);
+  }, [tokens, isMediaUrl]);
 
   return (
     <div className="flex flex-col gap-3">

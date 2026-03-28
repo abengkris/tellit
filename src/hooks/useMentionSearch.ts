@@ -1,15 +1,23 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNDK } from "./useNDK";
-import { NDKUser, NDKSubscriptionCacheUsage } from "@nostr-dev-kit/ndk";
+import { type NostrFilter } from "@nostrify/types";
+import { createRelayPool } from "@/lib/nostrify-relay";
+import { DEFAULT_RELAYS } from "@/lib/ndk";
 import { useDebounce } from "use-debounce";
+import { SimplifiedUser } from "@/components/common/UserRecommendation";
+import { toNpub } from "@/lib/utils/nip19";
 
+/**
+ * Hook to search for users to mention using Nostrify.
+ */
 export function useMentionSearch(query: string) {
   const { ndk } = useNDK();
-  const [results, setResults] = useState<NDKUser[]>([]);
+  const [results, setResults] = useState<SimplifiedUser[]>([]);
   const [loading, setLoading] = useState(false);
   const [debouncedQuery] = useDebounce(query, 300);
+  const poolRef = useRef<ReturnType<typeof createRelayPool> | null>(null);
 
   useEffect(() => {
     if (!ndk || !debouncedQuery || debouncedQuery.length < 2) {
@@ -22,25 +30,45 @@ export function useMentionSearch(query: string) {
 
     const searchUsers = async () => {
       try {
-        // NIP-50 search for kind 0 events
-        // Note: Not all relays support "search" filter
-        const events = await ndk.fetchEvents({ 
+        if (!poolRef.current) {
+          poolRef.current = createRelayPool(DEFAULT_RELAYS);
+        }
+
+        const filter: NostrFilter = { 
           kinds: [0], 
           search: debouncedQuery, 
           limit: 5 
-        }, { cacheUsage: NDKSubscriptionCacheUsage.PARALLEL });
-        
-        const users = Array.from(events).map(event => {
-          const user = ndk.getUser({ pubkey: event.pubkey });
-          user.profile = JSON.parse(event.content);
-          return user;
-        });
+        };
 
-        if (isMounted) {
-          setResults(users);
+        const stream = poolRef.current.req([filter]);
+        const foundUsers: SimplifiedUser[] = [];
+
+        for await (const msg of stream) {
+          if (!isMounted) break;
+          if (msg[0] === 'EVENT') {
+            const event = msg[2];
+            try {
+              const profile = JSON.parse(event.content);
+              foundUsers.push({
+                pubkey: event.pubkey,
+                npub: toNpub(event.pubkey),
+                profile: {
+                  ...profile,
+                  pubkey: event.pubkey
+                }
+              });
+              
+              // Update state as we find them for responsiveness
+              setResults([...foundUsers]);
+            } catch (e) {
+              console.warn("[useMentionSearch] Failed to parse profile:", e);
+            }
+          } else if (msg[0] === 'EOSE') {
+            break;
+          }
         }
       } catch (err) {
-        console.error("Mention search failed:", err);
+        console.error("[useMentionSearch] search failed:", err);
       } finally {
         if (isMounted) setLoading(false);
       }

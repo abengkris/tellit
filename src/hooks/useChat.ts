@@ -8,7 +8,7 @@ import { useUIStore } from "@/store/ui";
 import { NDKMessage, NDKConversation } from "@nostr-dev-kit/messages";
 import { mapNDKMessage } from "@/lib/utils/messages";
 import { sendMessage as sendChatMessage } from "@/lib/actions/messages";
-import { sendNostrifyMessage } from "@/lib/actions/nostrify-messages";
+import { sendNostrifyMessage } from "@/lib/actions/nostrify-actions";
 
 export function useChat(targetPubkey: string) {
   const { messenger, isReady, ndk, sync, signer } = useNDK();

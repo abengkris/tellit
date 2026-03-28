@@ -6,6 +6,7 @@ import { PostCard } from "@/components/post/PostCard";
 import { ErrorBoundary } from "@/components/common/ErrorBoundary";
 import { FeedSkeleton } from "./FeedSkeleton";
 import { NDKEvent } from "@nostr-dev-kit/ndk";
+import { type NostrEvent } from "@nostrify/types";
 import { ScoredEvent } from "@/lib/feed/types";
 import { WhoToFollow } from "@/components/profile/WhoToFollow";
 import { Search, Plus, Loader2 } from "lucide-react";
@@ -14,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 
 interface FeedListProps {
-  posts: NDKEvent[];
+  posts: (NDKEvent | NostrEvent)[];
   scoredEvents?: ScoredEvent[];
   isLoading: boolean;
   isProcessing?: boolean;

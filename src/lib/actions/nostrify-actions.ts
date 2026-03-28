@@ -64,7 +64,7 @@ export async function sendNostrifyMessage(
     
     // Fire and forget
     pool.event(giftWrap).catch(err => {
-      console.error("[NostrifyMessages] Failed to publish gift wrap to relays:", err);
+      console.error("[NostrifyActions] Failed to publish gift wrap to relays:", err);
     });
 
     // Also wrap for self (self-copy)
@@ -76,7 +76,41 @@ export async function sendNostrifyMessage(
 
     return true;
   } catch (err) {
-    console.error("[NostrifyMessages] Failed to send message:", err);
+    console.error("[NostrifyActions] Failed to send message:", err);
+    return false;
+  }
+}
+
+/**
+ * Publishes a user status (Kind 30315) using Nostrify.
+ */
+export async function publishStatus(
+  content: string,
+  signer: NostrSigner,
+  type: string = "general",
+  expiration?: number,
+  link?: string,
+  relays: string[] = DEFAULT_RELAYS
+): Promise<boolean> {
+  try {
+    const tags = [["d", type]];
+    if (expiration) tags.push(["expiration", expiration.toString()]);
+    if (link) tags.push(["r", link]);
+
+    const eventTemplate = {
+      kind: 30315,
+      content,
+      tags,
+      created_at: Math.floor(Date.now() / 1000),
+    };
+
+    const signed = await signer.signEvent(eventTemplate);
+    const pool = createRelayPool(relays);
+    
+    await pool.event(signed);
+    return true;
+  } catch (error) {
+    console.error("[NostrifyActions] Failed to publish status:", error);
     return false;
   }
 }

@@ -1,8 +1,7 @@
 "use client";
 
 import React, { Fragment } from "react";
-import { NDKUser } from "@nostr-dev-kit/ndk";
-import { shortenPubkey } from "@/lib/utils/nip19";
+import { shortenPubkey, toNpub } from "@/lib/utils/nip19";
 import { CheckCircle2 } from "lucide-react";
 import { Avatar } from "./Avatar";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
@@ -11,10 +10,17 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { getHandleTier } from "@/lib/utils/identity";
 import { cn } from "@/lib/utils";
+import { ProfileMetadata } from "@/hooks/useProfile";
+
+export interface SimplifiedUser {
+  pubkey: string;
+  npub?: string;
+  profile?: ProfileMetadata;
+}
 
 interface UserRecommendationProps {
-  users: NDKUser[];
-  onSelect: (user: NDKUser) => void;
+  users: SimplifiedUser[];
+  onSelect: (user: SimplifiedUser) => void;
   isLoading?: boolean;
 }
 
@@ -49,6 +55,7 @@ export const UserRecommendation: React.FC<UserRecommendationProps> = ({
             {users.map((user, index) => {
               const tier = getHandleTier(user.profile?.nip05);
               const badgeColor = tier === 'ultra' ? "bg-amber-500" : (tier === 'premium' ? "bg-cyan-500" : "bg-blue-500");
+              const npub = user.npub || toNpub(user.pubkey);
 
               return (
                 <Fragment key={user.pubkey}>
@@ -93,7 +100,7 @@ export const UserRecommendation: React.FC<UserRecommendationProps> = ({
                         )}
                       </div>
                       <p className="text-[10px] text-muted-foreground font-mono truncate">
-                        {shortenPubkey(user.npub, 16)}
+                        {shortenPubkey(npub, 16)}
                       </p>
                     </div>
                   </Button>

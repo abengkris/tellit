@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Loader2, Smile } from "lucide-react";
-import { updateStatus } from "@/lib/actions/profile";
+import { publishStatus } from "@/lib/actions/nostrify-actions";
 import { useNDK } from "@/hooks/useNDK";
 import { useUIStore } from "@/store/ui";
 import { useUserStatus } from "@/hooks/useUserStatus";
@@ -30,7 +30,7 @@ export const UserStatusModal: React.FC<UserStatusModalProps> = ({
   pubkey,
   onSuccess
 }) => {
-  const { ndk } = useNDK();
+  const { signer } = useNDK();
   const { addToast } = useUIStore();
   const { generalStatus } = useUserStatus(pubkey);
   
@@ -45,14 +45,14 @@ export const UserStatusModal: React.FC<UserStatusModalProps> = ({
 
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
-    if (!ndk) {
-      addToast("NDK not initialized. Please try again.", "error");
+    if (!signer) {
+      addToast("Signer not available. Please try again.", "error");
       return;
     }
 
     setLoading(true);
     try {
-      const success = await updateStatus(ndk, status, "general");
+      const success = await publishStatus(status, signer, "general");
       if (success) {
         addToast("Status updated!", "success");
         onSuccess?.();
@@ -69,13 +69,13 @@ export const UserStatusModal: React.FC<UserStatusModalProps> = ({
   };
 
   const clearStatus = async () => {
-    if (!ndk) {
-      addToast("NDK not initialized. Please try again.", "error");
+    if (!signer) {
+      addToast("Signer not available. Please try again.", "error");
       return;
     }
     setLoading(true);
     try {
-      const success = await updateStatus(ndk, "", "general");
+      const success = await publishStatus("", signer, "general");
       if (success) {
         setStatus("");
         addToast("Status cleared", "success");

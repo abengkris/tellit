@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { buildRumor, wrapMessage } from '../actions/nostrify-messages';
+import { buildRumor, wrapMessage } from '../actions/nostrify-actions';
 
 describe('Nostrify NIP-17 Messages', () => {
   const senderPubkey = 'sender-pubkey';
@@ -26,7 +26,8 @@ describe('Nostrify NIP-17 Messages', () => {
       };
 
       const rumor = buildRumor('Hello', recipientPubkey);
-      const giftWrap = await wrapMessage(rumor, recipientPubkey, mockSigner as any);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const giftWrap = await wrapMessage(rumor, recipientPubkey, mockSigner as unknown as any);
 
       expect(giftWrap.kind).toBe(1059);
       expect(giftWrap.tags).toContainEqual(['p', recipientPubkey]);
