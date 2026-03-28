@@ -25,4 +25,4 @@ This file tracks all major tracks for the project. Each track has its own detail
 ---
 
 - [x] **Track: Finalize Nostrify Migration**
-*Link: [./tracks/finalize_nostrify_migration_20260328/](./tracks/finalize_nostrify_migration_20260328/)*
+*Link: [./archive/finalize_nostrify_migration_20260328/](./archive/finalize_nostrify_migration_20260328/)*
