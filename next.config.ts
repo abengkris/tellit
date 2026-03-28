@@ -58,6 +58,23 @@ const nextConfig = {
       ...config.resolve.alias,
       "@codesandbox/sandpack-client": false,
       "shiki": false,
+      "kysely-codegen": false,
+      "kysely-bun-worker": false,
+      "@libsql/kysely-libsql": false,
+      "tarn": false,
+      "tedious": false,
+      "@tediousjs/connection-string": false,
+      "mysql2": false,
+      "pg": false,
+      "pg-native": false,
+      "pg-query-stream": false,
+      "better-sqlite3": false,
+      "sqlite3": false,
+      "chokidar": false,
+      "fs-extra": false,
+      "globby": false,
+      "jiti": false,
+      "@oclif/core": false,
     };
 
     if (!isServer) {
@@ -69,6 +86,15 @@ const nextConfig = {
         net: false,
         tls: false,
         perf_hooks: false,
+        assert: false,
+        crypto: false,
+        events: false,
+        os: false,
+        url: false,
+        util: false,
+        stream: false,
+        buffer: false,
+        process: false,
       };
     }
     

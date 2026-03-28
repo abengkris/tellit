@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import { type NostrFilter, type NostrEvent } from "@nostrify/types";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { type NostrFilter } from "@nostrify/types";
 import { getStorage } from "@/lib/nostrify-storage";
 import { createRelayPool } from "@/lib/nostrify-relay";
 import { DEFAULT_RELAYS } from "@/lib/ndk";

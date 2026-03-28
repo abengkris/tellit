@@ -97,7 +97,6 @@ export const PostHeader: React.FC<PostHeaderProps> = ({
   onPinClick,
   onMuteClick,
   onBookmarkClick,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   onRawEventClick,
   isPinned,
   isMuted,
@@ -109,7 +108,6 @@ export const PostHeader: React.FC<PostHeaderProps> = ({
   name,
   navigationHref,
   onSummarizeClick,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   isSummarizing,
   variant = "feed",
   relevance,
