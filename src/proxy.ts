@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
+import { validateUsernameRegistration } from './lib/username-validator';
 
 /**
  * Next.js 16 Proxy (formerly Middleware).
@@ -22,12 +23,32 @@ const publicOnlyRoutes = [
 ];
 
 export async function proxy(req: NextRequest) {
-  // 2. Check if the current route is protected or public
-  const path = req.nextUrl.pathname;
-  
+  const { pathname, searchParams } = req.nextUrl;
+
+  // 1. Early validation of username registration requests (Edge)
+  if (pathname.startsWith('/api/nip05/register')) {
+    const name = searchParams.get('name');
+    
+    if (name) {
+      const result = validateUsernameRegistration(name);
+      
+      if (!result.valid) {
+        return NextResponse.json(
+          { 
+            available: false, 
+            error: result.error,
+            reason: result.reason 
+          }, 
+          { status: 400 }
+        );
+      }
+    }
+  }
+
+  // 2. Route protection for standard pages
   // Check if any protected route matches the current path
-  const isProtectedRoute = protectedRoutes.some(route => path.startsWith(route));
-  const isPublicOnlyRoute = publicOnlyRoutes.some(route => path.startsWith(route));
+  const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route));
+  const isPublicOnlyRoute = publicOnlyRoutes.some(route => pathname.startsWith(route));
 
   // 3. Get the session from the cookie
   const cookieStore = await cookies();
@@ -36,7 +57,6 @@ export async function proxy(req: NextRequest) {
   // 4. Redirect to home (which shows login) if the user is not authenticated on a protected route
   if (isProtectedRoute && !session) {
     // For Nostr apps, usually the home page '/' handles the login UI if not logged in.
-    // Or we could redirect to a specific /login page if it existed.
     return NextResponse.redirect(new URL('/', req.nextUrl));
   }
 
@@ -53,12 +73,13 @@ export const config = {
   matcher: [
     /*
      * Match all request paths except for the ones starting with:
-     * - api (API routes)
+     * - api (API routes, except for nip05/register which we handle explicitly)
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      * - images, robots.txt, sitemap.xml (public assets)
      */
     '/((?!api|_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|.*\\.png$|.*\\.jpg$|.*\\.svg$).*)',
+    '/api/nip05/register',
   ],
 };

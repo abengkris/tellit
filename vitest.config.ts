@@ -14,8 +14,13 @@ export default defineConfig({
     },
     testTimeout: 60000,
     hookTimeout: 60000,
-    maxWorkers: 2,
+    maxWorkers: 1,
     minWorkers: 1,
+    isolate: true,
+    pool: 'forks',
+    forks: {
+      execArgv: ['--max-old-space-size=2048'],
+    },
   },
   resolve: {
     alias: {

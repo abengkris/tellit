@@ -1,12 +1,22 @@
 import { NextRequest } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase';
 import { checkBlinkInvoiceStatus } from '@/lib/blink';
+import { isRateLimited } from '@/lib/rate-limit';
 
 export async function GET(req: NextRequest) {
   const hash = req.nextUrl.searchParams.get('hash');
 
   if (!hash) {
     return Response.json({ error: 'Missing payment hash' }, { status: 400 });
+  }
+
+  // Rate Limiting (per IP and hash)
+  const ip = req.headers.get('x-forwarded-for') || 'unknown';
+  const limitCheck = await isRateLimited(`check-payment:${ip}:${hash}`, 30, 300); // 30 per 5 mins
+  if (limitCheck.limited) {
+    return Response.json({ 
+      error: 'Too many status checks. Please wait a few minutes.' 
+    }, { status: 429 });
   }
 
   try {
@@ -51,6 +61,8 @@ export async function GET(req: NextRequest) {
           // This is a rare edge case where two people paid for the same handle.
           // The first one to have their payment checked by the server wins.
           // We mark the registration as 'conflict' so admin can handle refund.
+          console.error(`[CRITICAL] NIP-05 Payment Conflict! Hash: ${hash}, Name: ${registration.name}, Pubkey: ${registration.pubkey}, Existing Owner: ${existingHandle.pubkey}`);
+          
           await supabase
             .from('registrations')
             .update({ status: 'conflict' })

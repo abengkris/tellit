@@ -321,7 +321,6 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
         const syncInstance = new NDKSync(instance);
         setSync(syncInstance);
         
-        // @ts-expect-error - NDKSessionManager constructor args vary by version
         const sessionManager = new NDKSessionManager(instance, { storage: new LocalStorage() });
         setSessions(sessionManager);
         setActiveSession(null);

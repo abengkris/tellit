@@ -1,23 +1,28 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import { useNDK } from "@/hooks/useNDK";
 import { useAuthStore } from "@/store/auth";
 import { useUIStore } from "@/store/ui";
 import { useRouter } from "next/navigation";
 import { publishNostrifyArticle } from "@/lib/actions/nostrify-actions";
 import { saveDraftWrap } from "@/lib/actions/drafts";
-import { ArrowLeft, Loader2, Image as ImageIcon, Send, Eye, PenLine, Save, Cloud } from "lucide-react";
+import { ArrowLeft, Loader2, Image as ImageIcon, Send, Eye, PenLine, Cloud, RotateCcw } from "lucide-react";
 import { ArticleRenderer } from "@/components/article/ArticleRenderer";
+import { MarkdownToolbar } from "@/components/article/MarkdownToolbar";
+import { DraftsModal } from "@/components/article/DraftsModal";
 import { type NostrEvent } from "@nostrify/types";
 import Image from "next/image";
 import { toNpub } from "@/lib/utils/nip19";
+
+const LOCAL_DRAFT_KEY = "tellit-article-draft";
 
 export default function NewArticlePage() {
   const { ndk, isReady, signer } = useNDK();
   const { user, isLoggedIn } = useAuthStore();
   const { addToast } = useUIStore();
   const router = useRouter();
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const [title, setTitle] = useState("");
   const [summary, setSummary] = useState("");
@@ -28,6 +33,62 @@ export default function NewArticlePage() {
   const [isSavingDraft, setIsSavingDraft] = useState(false);
   const [isCloudSyncing, setIsCloudSyncing] = useState(false);
   const [previewMode, setPreviewMode] = useState(false);
+  const [isDraftsModalOpen, setIsDraftsModalOpen] = useState(false);
+
+  // Load local draft on mount
+  useEffect(() => {
+    const saved = localStorage.getItem(LOCAL_DRAFT_KEY);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed.content || parsed.title) {
+          setTitle(parsed.title || "");
+          setSummary(parsed.summary || "");
+          setImage(parsed.image || "");
+          setContent(parsed.content || "");
+          setTags(parsed.tags || "");
+          addToast("Local draft restored!", "info");
+        }
+      } catch (e) {
+        console.error("Failed to parse local draft", e);
+      }
+    }
+  }, [addToast]);
+
+  // Auto-save to local storage
+  useEffect(() => {
+    if (!title && !content && !summary && !image && !tags) return;
+    
+    const timer = setTimeout(() => {
+      localStorage.setItem(LOCAL_DRAFT_KEY, JSON.stringify({
+        title, summary, image, content, tags,
+        updatedAt: Date.now()
+      }));
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [title, summary, image, content, tags]);
+
+  const clearDraft = () => {
+    if (confirm("Clear current draft?")) {
+      setTitle("");
+      setSummary("");
+      setImage("");
+      setContent("");
+      setTags("");
+      localStorage.removeItem(LOCAL_DRAFT_KEY);
+    }
+  };
+
+  const selectCloudDraft = (draft: Partial<NostrEvent>) => {
+    setTitle(draft.tags?.find((t: string[]) => t[0] === 'title')?.[1] || "");
+    setSummary(draft.tags?.find((t: string[]) => t[0] === 'summary')?.[1] || "");
+    setImage(draft.tags?.find((t: string[]) => t[0] === 'image')?.[1] || "");
+    setContent(draft.content || "");
+    setTags(draft.tags?.filter((t: string[]) => t[0] === 't').map((t: string[]) => t[1]).join(", ") || "");
+    setIsDraftsModalOpen(false);
+    addToast("Cloud draft loaded!", "success");
+  };
 
   const handleCloudSync = async () => {
     if (!ndk || !title || !content) {
@@ -78,18 +139,37 @@ export default function NewArticlePage() {
     try {
       const tagList = tags.split(",").map(t => t.trim()).filter(Boolean);
       const slug = title.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+      const d = slug || Date.now().toString();
+
+      // Slug Validation
+      if (!isDraft && ndk && user) {
+        const filter = {
+          kinds: [30023],
+          authors: [user.pubkey],
+          "#d": [d]
+        };
+        const existing = await ndk.fetchEvents(filter);
+        if (existing.size > 0) {
+          addToast("An article with this slug already exists. Try changing the title.", "error");
+          setIsSubmitting(false);
+          return;
+        }
+      }
       
       const success = await publishNostrifyArticle(content, signer, {
         title,
         summary,
         image,
         tags: tagList,
-        d: slug || Date.now().toString()
+        d
       });
       
       if (success) {
         addToast(isDraft ? "Draft saved successfully!" : "Article published successfully!", "success");
-        if (!isDraft) router.push(`/${user?.npub || (user?.pubkey ? toNpub(user.pubkey) : '')}`);
+        if (!isDraft) {
+          localStorage.removeItem(LOCAL_DRAFT_KEY);
+          router.push(`/${user?.npub || (user?.pubkey ? toNpub(user.pubkey) : '')}`);
+        }
       } else {
         addToast("Failed to publish article", "error");
       }
@@ -135,6 +215,14 @@ export default function NewArticlePage() {
         
         <div className="flex items-center gap-2">
           <button
+            onClick={clearDraft}
+            className="p-2 text-gray-500 hover:text-destructive transition-colors"
+            title="Clear Draft"
+          >
+            <RotateCcw size={22} />
+          </button>
+
+          <button
             onClick={() => setPreviewMode(!previewMode)}
             className="p-2 text-gray-500 hover:text-blue-500 transition-colors"
             title={previewMode ? "Edit" : "Preview"}
@@ -143,12 +231,11 @@ export default function NewArticlePage() {
           </button>
 
           <button
-            onClick={() => handlePublish(true)}
-            disabled={isSubmitting || isSavingDraft || isCloudSyncing || !title || !content}
-            className="px-4 py-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-full font-black text-sm flex items-center gap-2 transition-all active:scale-95"
+            onClick={() => setIsDraftsModalOpen(true)}
+            className="p-2 text-gray-500 hover:text-purple-500 transition-colors"
+            title="Cloud Drafts"
           >
-            {isSavingDraft ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
-            <span>Draft</span>
+            <Cloud size={22} />
           </button>
 
           <button
@@ -158,7 +245,7 @@ export default function NewArticlePage() {
             title="Sync encrypted draft to relays (NIP-37)"
           >
             {isCloudSyncing ? <Loader2 className="animate-spin" size={18} /> : <Cloud size={18} />}
-            <span>Cloud</span>
+            <span>Sync</span>
           </button>
 
           <button
@@ -240,18 +327,36 @@ export default function NewArticlePage() {
             </div>
 
             {/* Content Input */}
-            <div className="space-y-2">
-              <label className="text-xs font-black uppercase tracking-widest text-gray-400 ml-1">Content (Markdown)</label>
-              <textarea
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                placeholder="Start writing your story... Use Markdown for formatting!"
-                className="w-full bg-transparent text-lg leading-relaxed placeholder-gray-200 dark:placeholder-gray-800 outline-none border-none focus:ring-0 p-0 min-h-[400px] resize-none"
-              />
+            <div className="space-y-4 pt-4">
+              <div className="sticky top-[72px] z-10">
+                <MarkdownToolbar 
+                  content={content} 
+                  setContent={setContent} 
+                  textareaRef={textareaRef} 
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-xs font-black uppercase tracking-widest text-gray-400 ml-1">Content (Markdown)</label>
+                <textarea
+                  ref={textareaRef}
+                  value={content}
+                  onChange={(e) => setContent(e.target.value)}
+                  placeholder="Start writing your story... Use Markdown for formatting!"
+                  className="w-full bg-transparent text-lg leading-relaxed placeholder-gray-200 dark:placeholder-gray-800 outline-none border-none focus:ring-0 p-0 min-h-[500px] resize-none"
+                />
+              </div>
             </div>
           </div>
         )}
       </div>
+
+      {isDraftsModalOpen && (
+        <DraftsModal 
+          onSelect={selectCloudDraft} 
+          onClose={() => setIsDraftsModalOpen(false)} 
+        />
+      )}
     </>
   );
 }

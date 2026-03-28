@@ -7,15 +7,15 @@
     "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "test:related": "vitest related --run",
+    "test": "NODE_OPTIONS='--max-old-space-size=4096' vitest run",
+    "test:watch": "NODE_OPTIONS='--max-old-space-size=4096' vitest",
+    "test:related": "NODE_OPTIONS='--max-old-space-size=4096' vitest related --run",
     "prepare": "husky"
   },
   "lint-staged": {
     "*.{js,mjs,ts,tsx}": [
       "eslint --fix",
-      "vitest related --run"
+      "npm run test:related --"
     ]
   },
   "dependencies": {

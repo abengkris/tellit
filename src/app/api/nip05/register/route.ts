@@ -4,6 +4,7 @@ import { validateUsername, calculateHandlePrice } from '@/lib/nip05';
 import { createBlinkInvoice, checkBlinkInvoiceStatus } from '@/lib/blink';
 import { verifyEvent } from 'nostr-tools';
 import { verifySession } from '@/lib/dal';
+import { isRateLimited } from '@/lib/rate-limit';
 
 export async function GET(req: NextRequest) {
   const name = req.nextUrl.searchParams.get('name');
@@ -151,6 +152,15 @@ export async function POST(req: NextRequest) {
 
     if (!name || !pubkey) {
       return Response.json({ error: 'Missing required fields' }, { status: 400 });
+    }
+
+    // Rate Limiting (Combined IP + Pubkey)
+    const ip = req.headers.get('x-forwarded-for') || 'unknown';
+    const limitCheck = await isRateLimited(`register:${ip}:${pubkey}`, 10, 3600); // 10 per hour
+    if (limitCheck.limited) {
+      return Response.json({ 
+        error: `Too many registration attempts. Please try again in ${Math.ceil(limitCheck.reset / 60)} minutes.` 
+      }, { status: 429 });
     }
 
     // Secure check: Ensure requester owns the pubkey

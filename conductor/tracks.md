@@ -24,5 +24,15 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 ---
 
+- [x] **Track: Article Creator (Kind 30023) Enhancement**
+*Link: [./tracks/article_creator_enhancement_20260328/](./tracks/article_creator_enhancement_20260328/)*
+
+---
+
+- [x] **Track: NIP-05 Security & Flow Improvements**
+*Link: [./tracks/nip05_security_improvements_20260328/](./tracks/nip05_security_improvements_20260328/)*
+
+---
+
 - [x] **Track: Finalize Nostrify Migration**
 *Link: [./archive/finalize_nostrify_migration_20260328/](./archive/finalize_nostrify_migration_20260328/)*

@@ -217,7 +217,7 @@ function VerifyContent() {
                 </Button>
                 <Button 
                   variant="ghost" 
-                  onClick={() => router.push(`/${user?.npub || user.pubkey}`)}
+                  onClick={() => router.push(`/${user?.npub || user?.pubkey}`)}
                   className="h-12 rounded-2xl font-bold text-muted-foreground"
                 >
                   I&apos;ll do it later

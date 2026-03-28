@@ -1,5 +1,8 @@
+import { validateUsernameRegistration } from './username-validator';
+
 /**
  * Reserved usernames that cannot be registered by users.
+ * @deprecated Use validateUsernameRegistration from username-validator.ts for comprehensive checks.
  */
 export const RESERVED_USERNAMES = new Set([
   'admin',
@@ -32,14 +35,11 @@ export const RESERVED_USERNAMES = new Set([
  * Validates a username against format rules and reserved list.
  */
 export function validateUsername(name: string): { valid: boolean; error?: string } {
-  // Check length
-  if (name.length < 1) return { valid: false, error: 'Too short (min 1 characters)' };
-  if (name.length > 20) return { valid: false, error: 'Too long (max 20 characters)' };
-
-  // Alphanumeric + underscores only
-  const regex = /^[a-z0-9_]+$/;
-  if (!regex.test(name)) {
-    return { valid: false, error: 'Only lowercase letters, numbers, and underscores allowed' };
+  // Use the advanced high-performance validator
+  const result = validateUsernameRegistration(name);
+  
+  if (!result.valid) {
+    return { valid: false, error: result.error };
   }
 
   // We no longer block reserved names entirely, we just charge more for them

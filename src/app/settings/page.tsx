@@ -474,7 +474,7 @@ export default function SettingsPage() {
 
         {/* Footer info */}
         <div className="text-center text-muted-foreground text-[10px] font-black uppercase tracking-widest mt-20 opacity-50">
-          Tell it! v0.7.8 · Built with NDK & Next.js
+          Tell it! v0.7.15 · Built with NDK & Next.js
         </div>
       </div>
 
