@@ -13,13 +13,13 @@
     - [x] Implement the migration and verify that tests pass.
 - [x] Task: Conductor - User Manual Verification 'Phase 1: Foundation & Local Storage' (Protocol in workflow.md) (cc5a0c0)
 
-#### **Phase 2: Core Note & Reaction Migration**
+#### **Phase 2: Core Note & Reaction Migration** [checkpoint: 7170c42]
 - [x] Task: Migrate Kind 1 (Notes) and Kind 7 (Reactions) logic to use Nostrify's event handling and signing. (a2b8157)
     - [x] Write failing tests for fetching and publishing Kind 1 and Kind 7 events using Nostrify.
     - [x] Implement the migration in `useNostrifyPublish` or equivalent hooks.
     - [x] Refactor components (e.g., `PostCard`, `PostActions`) to use Nostrify's event schema instead of `NDKEvent`.
     - [x] Verify that all tests pass and coverage is >80%.
-- [ ] Task: Conductor - User Manual Verification 'Phase 2: Core Note & Reaction Migration' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Phase 2: Core Note & Reaction Migration' (Protocol in workflow.md) (7170c42)
 
 #### **Phase 3: NIP-17 Messaging & Profile Migration**
 - [ ] Task: Migrate NIP-17 Private Messaging (Kind 1059, 1058, 14) to Nostrify.
