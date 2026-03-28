@@ -7,13 +7,14 @@ import { NDKSessionManager, LocalStorage, NDKSession } from "@nostr-dev-kit/sess
 import { NDKNWCWallet, NDKCashuWallet, NDKWebLNWallet, NDKNutzapMonitor, NDKWallet } from "@nostr-dev-kit/wallet";
 import { NDKSync } from "@nostr-dev-kit/sync";
 import { NDKStore } from "@nostrify/ndk";
-import { NStore } from "@nostrify/nostrify";
+import { NStore, NostrSigner } from "@nostrify/nostrify";
 import { useAuthStore } from "@/store/auth";
 import { useUIStore } from "@/store/ui";
 import { useWalletStore } from "@/store/wallet";
 import { getNDK, DEFAULT_RELAYS } from "@/lib/ndk";
 import { getSqlStore } from "@/lib/nostrify-sql-store";
 import { NostrifyNDKCacheAdapter } from "@/lib/nostrify-ndk-adapter";
+import { createSigner } from "@/lib/nostrify-signer";
 import { syncDMRelays } from "@/lib/actions/messages";
 import { migrateDexieToSql } from "@/lib/sync/db-migration";
 import { WoTServiceLocal } from "@/services/wot.service.local";
@@ -31,6 +32,7 @@ export interface NDKContextType {
   activeSession: NDKSession | null;
   sync: NDKSync | null;
   relay: NStore | null;
+  signer: NostrSigner | null;
   nutzapMonitor: NDKNutzapMonitor | null;
   isReady: boolean;
   isWalletReady: boolean;
@@ -44,6 +46,7 @@ export const NDKContext = createContext<NDKContextType>({
   activeSession: null,
   sync: null,
   relay: null,
+  signer: null,
   nutzapMonitor: null,
   isReady: false,
   isWalletReady: false,
@@ -57,6 +60,7 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
   const [activeSession, setActiveSession] = useState<NDKSession | null>(null);
   const [sync, setSync] = useState<NDKSync | null>(null);
   const [relay, setRelay] = useState<NStore | null>(null);
+  const [signer, setSigner] = useState<NostrSigner | null>(null);
   const [nutzapMonitor, setNutzapMonitor] = useState<NDKNutzapMonitor | null>(null);
   const [isReady, setIsReady] = useState(false);
   const [isWalletReady, setIsWalletReady] = useState(false);
@@ -192,6 +196,17 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
       });
     }
   }, [ndk, nwcPairingCode, cashuMints, walletType, isLocked, initWallet]);
+
+  useEffect(() => {
+    const { privateKey } = stableDepsRef.current;
+    try {
+      const s = createSigner({ privateKey: privateKey || undefined });
+      setSigner(s);
+    } catch (e) {
+      console.warn("[NDKProvider] Failed to create Nostrify signer:", e);
+      setSigner(null);
+    }
+  }, [stableDepsRef.current.privateKey]);
 
   // Memoize stable refs for dependencies that change but shouldn't re-trigger NDK init
   const stableDepsRef = useRef({
@@ -626,11 +641,12 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
     activeSession, 
     sync,
     relay,
+    signer,
     nutzapMonitor,
     isReady, 
     isWalletReady, 
     refreshBalance 
-  }), [ndk, messenger, sessions, activeSession, sync, relay, nutzapMonitor, isReady, isWalletReady, refreshBalance]);
+  }), [ndk, messenger, sessions, activeSession, sync, relay, signer, nutzapMonitor, isReady, isWalletReady, refreshBalance]);
 
   return (
     <NDKContext.Provider value={contextValue}>

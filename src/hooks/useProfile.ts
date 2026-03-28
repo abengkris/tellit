@@ -3,6 +3,7 @@ import { useNDK } from "@/hooks/useNDK";
 import { getProfileUrl } from "@/lib/utils/identity";
 import { idLog } from "@/lib/utils/id-logger";
 import { NDKSubscriptionCacheUsage } from "@nostr-dev-kit/ndk";
+import { useNostrifyProfile } from "./useNostrifyProfile";
 
 export interface ProfileMetadata {
   pubkey?: string;
@@ -33,8 +34,10 @@ const globalProfileCache = new Map<string, ProfileMetadata>();
 /**
  * Hook to fetch and manage user profile metadata.
  * Uses NDK cache and outbox model for reliable results.
+ * Gradually migrating to useNostrifyProfile.
  */
 export function useProfile(pubkey?: string) {
+  const { profile: nostrifyProfile, loading: nostrifyLoading, refresh: nostrifyRefresh } = useNostrifyProfile(pubkey);
   const { ndk, isReady } = useNDK();
   const [profile, setProfile] = useState<ProfileMetadata | null>(pubkey ? (globalProfileCache.get(pubkey) || null) : null);
   const [loading, setLoading] = useState(false);
@@ -138,8 +141,6 @@ export function useProfile(pubkey?: string) {
 
     if (cached) {
       setProfile(prev => (prev === cached ? prev : cached));
-      // Even if cached, we might want to background-refresh if it's "old"
-      // But for session performance, we just return
       lastFetchedPubkey.current = pubkey;
       return;
     }
@@ -148,15 +149,19 @@ export function useProfile(pubkey?: string) {
   }, [ndk, isReady, pubkey, fetchMetadata]);
 
   const profileUrl = useMemo(() => {
-    return getProfileUrl(profile ? { ...profile, pubkey } : { pubkey });
-  }, [profile, pubkey]);
+    const p = nostrifyProfile || profile;
+    return getProfileUrl(p ? { ...p, pubkey } : { pubkey });
+  }, [nostrifyProfile, profile, pubkey]);
 
-  const refresh = useCallback(() => fetchMetadata(true), [fetchMetadata]);
+  const refresh = useCallback(() => {
+    nostrifyRefresh();
+    fetchMetadata(true);
+  }, [nostrifyRefresh, fetchMetadata]);
 
   return useMemo(() => ({ 
-    profile, 
-    loading, 
+    profile: nostrifyProfile || profile, 
+    loading: nostrifyLoading || loading, 
     profileUrl, 
     refresh 
-  }), [profile, loading, profileUrl, refresh]);
+  }), [nostrifyProfile, profile, nostrifyLoading, loading, profileUrl, refresh]);
 }

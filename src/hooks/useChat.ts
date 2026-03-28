@@ -8,9 +8,10 @@ import { useUIStore } from "@/store/ui";
 import { NDKMessage, NDKConversation } from "@nostr-dev-kit/messages";
 import { mapNDKMessage } from "@/lib/utils/messages";
 import { sendMessage as sendChatMessage } from "@/lib/actions/messages";
+import { sendNostrifyMessage } from "@/lib/actions/nostrify-messages";
 
 export function useChat(targetPubkey: string) {
-  const { messenger, isReady, ndk, sync } = useNDK();
+  const { messenger, isReady, ndk, sync, signer } = useNDK();
   const { user } = useAuthStore();
   const { setActiveChatPubkey } = useUIStore();
   const [messages, setMessages] = useState<Message[]>([]);
@@ -77,6 +78,18 @@ export function useChat(targetPubkey: string) {
     if (!content.trim()) return false;
     
     try {
+      // 1. Try Nostrify if signer is available
+      if (signer) {
+        console.log("[useChat] Sending via Nostrify");
+        const success = await sendNostrifyMessage(content, targetPubkey, signer);
+        if (success) {
+          // Trigger a re-fetch or wait for subscription to pick it up
+          setTimeout(() => fetchChatMessages(), 500);
+        }
+        return success;
+      }
+
+      // 2. Fallback to NDK
       if (convRef.current) {
         console.log("[useChat] Sending via convRef.current");
         await convRef.current.sendMessage(content);
@@ -94,7 +107,7 @@ export function useChat(targetPubkey: string) {
       console.error("Failed to send message:", err);
       return false;
     }
-  }, [messenger, ndk, targetPubkey, fetchChatMessages]);
+  }, [signer, targetPubkey, messenger, ndk, fetchChatMessages]);
 
   useEffect(() => {
     if (!messenger || !isReady || !user || !targetPubkey || !ndk) return;
