@@ -16,6 +16,7 @@ import { useUIStore } from "@/store/ui";
 import { Avatar } from "@/components/common/Avatar";
 import { shortenPubkey } from "@/lib/utils/nip19";
 import { SimplifiedUser } from "@/components/common/UserRecommendation";
+import { getKysely } from "@/lib/nostrify-sql-store";
 
 interface NostrWineEvent {
   id: string;
@@ -94,7 +95,41 @@ export function SearchContent() {
         }
       }
 
-      // 1. Fetch from api.nostr.wine
+      let results: NDKEvent[] = [];
+
+      // 1. Try local SQL search first (only for page 1)
+      if (searchPage === 1 && searchTab === 'posts') {
+        try {
+          const db = await getKysely();
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-ignore - nostr_events is added by NPostgres migration
+          const localResults = await db.selectFrom('nostr_events')
+            .selectAll()
+            .where('content', 'like', `%${searchQuery}%`)
+            .where('kind', 'in', [1, 30023])
+            .limit(10)
+            .execute();
+          
+          if (localResults.length > 0) {
+            results = localResults.map(raw => new NDKEvent(ndk, {
+              id: raw.id,
+              pubkey: raw.pubkey,
+              content: raw.content,
+              kind: raw.kind,
+              created_at: Number(raw.created_at),
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              tags: typeof raw.tags === 'string' ? JSON.parse(raw.tags) : (raw.tags as any),
+              sig: raw.sig
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            } as any));
+            setFetchedPosts(results);
+          }
+        } catch (e) {
+          console.warn("Local search failed:", e);
+        }
+      }
+
+      // 2. Fetch from api.nostr.wine
       const kinds = "1,30023"; 
       const url = `${NOSTR_WINE_API_URL}?query=${encodeURIComponent(searchQuery)}&kind=${kinds}&limit=${RESULTS_PER_PAGE}&page=${searchPage}&sort=relevance`;
       
@@ -103,10 +138,10 @@ export function SearchContent() {
         throw new Error(`API error: ${response.statusText}`);
       }
 
-      const result: NostrWineResponse = await response.json();
+      const wineResult: NostrWineResponse = await response.json();
 
-      if (result.data && result.data.length > 0) {
-        const ndkEvents = result.data.map(rawEvent => {
+      if (wineResult.data && wineResult.data.length > 0) {
+        const wineEvents = wineResult.data.map(rawEvent => {
           const event = new NDKEvent(ndk, {
             id: rawEvent.id,
             pubkey: rawEvent.pubkey,
@@ -120,14 +155,15 @@ export function SearchContent() {
           return event;
         });
 
-        if (searchPage === 1) {
-          setFetchedPosts(ndkEvents);
-        } else {
-          setFetchedPosts(prev => [...prev, ...ndkEvents]);
-        }
-        setHasMore(result.data.length === RESULTS_PER_PAGE);
+        // Merge results, avoiding duplicates
+        const existingIds = new Set(results.map(r => r.id));
+        const newUnique = wineEvents.filter(we => !existingIds.has(rawEventToId(we)));
+        
+        const finalResults = searchPage === 1 ? [...results, ...newUnique] : [...fetchedPosts, ...wineEvents];
+        setFetchedPosts(finalResults);
+        setHasMore(wineResult.data.length === RESULTS_PER_PAGE);
       } else {
-        if (searchPage === 1) setFetchedPosts([]);
+        if (searchPage === 1 && results.length === 0) setFetchedPosts([]);
         setHasMore(false);
       }
     } catch (err) {
@@ -136,7 +172,12 @@ export function SearchContent() {
     } finally {
       setLoading(false);
     }
-  }, [ndk, isReady, addToast]);
+  }, [ndk, isReady, addToast, fetchedPosts]);
+
+  // Helper to get ID from NDKEvent safely
+  const rawEventToId = (ev: NDKEvent): string => {
+    return ev.id;
+  };
 
   useEffect(() => {
     if (initialQuery && isReady && ndk) {
@@ -271,7 +312,7 @@ export function SearchContent() {
                 )}
 
                 {/* Search Results */}
-                {loading && page === 1 ? (
+                {loading && page === 1 && fetchedPosts.length === 0 ? (
                   <div className="space-y-4">
                     {[1, 2, 3].map(i => (
                       <div key={i} className="flex gap-4 p-4">

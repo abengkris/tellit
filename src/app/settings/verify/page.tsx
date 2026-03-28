@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, Suspense } from "react";
 import { useAuthStore } from "@/store/auth";
-import { useNDK } from "@/hooks/useNDK";
 import { useUIStore } from "@/store/ui";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,18 +10,18 @@ import { BadgeCheck, Loader2, ChevronLeft, Check, AlertCircle, Zap, RefreshCw } 
 import { useRouter, useSearchParams } from "next/navigation";
 import { validateUsername } from "@/lib/nip05";
 import { useDebounce } from "use-debounce";
-import { updateProfileNIP05 } from "@/lib/actions/profile";
 import { LNPaymentModal } from "@/components/common/LNPaymentModal";
 import { useRelayList } from "@/hooks/useRelayList";
+import { useNostrifyProfile } from "@/hooks/useNostrifyProfile";
 
 function VerifyContent() {
   const { user, isLoggedIn } = useAuthStore();
-  const { ndk } = useNDK();
   const { addToast } = useUIStore();
   const router = useRouter();
   const searchParams = useSearchParams();
   const renewHandle = searchParams.get("renew");
   const { relays: userRelays } = useRelayList(user?.pubkey);
+  const { updateProfile: updateNostrifyProfile } = useNostrifyProfile(user?.pubkey);
   
   const [handle, setHandle] = useState(renewHandle || "");
   const [debouncedHandle] = useDebounce(handle, 500);
@@ -137,14 +136,25 @@ function VerifyContent() {
   };
 
   const handleUpdateProfile = async () => {
-    if (!ndk || !registeredHandle) return;
+    if (!registeredHandle || !user) return;
     
     setIsUpdatingProfile(true);
     try {
-      const success = await updateProfileNIP05(ndk, registeredHandle);
+      const fullHandle = `${registeredHandle}@tellit.id`;
+      // Fetch current profile first to preserve other fields
+      const res = await fetch(`/api/profile?pubkey=${user.pubkey}`);
+      const currentProfile = await res.json();
+
+      const success = await updateNostrifyProfile({
+        ...(currentProfile || {}),
+        nip05: fullHandle,
+        lud16: fullHandle, 
+        pubkey: user.pubkey
+      });
+
       if (success) {
         addToast("Profile updated with verified handle!", "success");
-        router.push(`/${user?.npub}`);
+        router.push(`/${user?.npub || user.pubkey}`);
       } else {
         addToast("Failed to update profile", "error");
       }
@@ -207,7 +217,7 @@ function VerifyContent() {
                 </Button>
                 <Button 
                   variant="ghost" 
-                  onClick={() => router.push(`/${user?.npub}`)}
+                  onClick={() => router.push(`/${user?.npub || user.pubkey}`)}
                   className="h-12 rounded-2xl font-bold text-muted-foreground"
                 >
                   I&apos;ll do it later

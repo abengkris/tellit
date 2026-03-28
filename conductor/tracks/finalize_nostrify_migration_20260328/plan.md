@@ -9,15 +9,15 @@
     - [x] Verify rendering with both NDK and Nostrify events (if still needed).
 - [x] Task: Migrate `UserRecommendation` and related discovery components. (7beb6f7)
 
-#### **Phase 2: Articles & Long-form Content**
-- [~] Task: Migrate Kind 30023 fetching and display.
-    - [ ] Update `PremiumArticleContent` and `ArticleView`.
-    - [ ] Write failing tests for article resolution using Nostrify.
-- [ ] Task: Migrate Article publishing logic.
-    - [ ] Update `ArticleComposer` (or equivalent) to use Nostrify templates.
+#### **Phase 2: Articles & Long-form Content** [checkpoint: b3151fb]
+- [x] Task: Migrate Kind 30023 fetching and display. (b3151fb)
+    - [x] Update `PremiumArticleContent` and `ArticleView`.
+    - [x] Write failing tests for article resolution using Nostrify.
+- [x] Task: Migrate Article publishing logic. (b3151fb)
+    - [x] Update `ArticleComposer` (or equivalent) to use Nostrify templates.
 
 #### **Phase 3: Search & Settings Migration**
-- [ ] Task: Refactor `SearchContent` to use SQL store and relay pool.
+- [~] Task: Refactor `SearchContent` to use SQL store and relay pool.
     - [ ] Implement text-based search queries using Nostrify storage.
     - [ ] Verify search results consistency with previous NDK implementation.
 - [ ] Task: Migrate Settings (Relays, Handle Verification).

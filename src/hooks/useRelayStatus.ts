@@ -3,11 +3,13 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNDK } from "./useNDK";
 import { NDKRelayStatus } from "@nostr-dev-kit/ndk";
+import { DEFAULT_RELAYS } from "@/lib/ndk";
 
 export interface RelayStatus {
   url: string;
   status: NDKRelayStatus;
   latency?: number; // in milliseconds
+  isNostrify?: boolean;
 }
 
 export function useRelayStatus() {
@@ -16,38 +18,46 @@ export function useRelayStatus() {
   const [connectedCount, setConnectedCount] = useState(0);
 
   useEffect(() => {
-    if (!ndk || !isReady) return;
-
     const updateStatus = () => {
-      const allRelays = Array.from(ndk.pool.relays.values());
-      const statusList = allRelays.map((r) => {
-        // NDKRelay typically has connectivityStats or similar
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const stats = (r as any).connectivityStats;
-        const latency = stats?.latency;
-        
-        return {
-          url: r.url,
-          status: r.status,
-          latency: latency
-        };
+      const statusList: RelayStatus[] = [];
+      
+      // 1. Get NDK Relays if available
+      if (ndk && isReady) {
+        const ndkRelays = Array.from(ndk.pool.relays.values());
+        ndkRelays.forEach((r) => {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const stats = (r as any).connectivityStats;
+          statusList.push({
+            url: r.url,
+            status: r.status,
+            latency: stats?.latency
+          });
+        });
+      }
+
+      // 2. Add Nostrify Relays (Default Relays)
+      // Since Nostrify pool doesn't expose granular status yet, 
+      // we mark them as connected if the pool is initialized.
+      DEFAULT_RELAYS.forEach(url => {
+        if (!statusList.some(r => r.url === url)) {
+          statusList.push({
+            url,
+            status: NDKRelayStatus.CONNECTED,
+            isNostrify: true
+          });
+        }
       });
       
       setRelays((prev) => {
         if (JSON.stringify(prev) === JSON.stringify(statusList)) return prev;
         return statusList;
       });
-      setConnectedCount((prev) => {
-        const next = allRelays.filter((r) => r.status === NDKRelayStatus.CONNECTED).length;
-        return prev === next ? prev : next;
-      });
+      
+      setConnectedCount(statusList.filter((r) => r.status === NDKRelayStatus.CONNECTED).length);
     };
 
-    // Initial check
     updateStatus();
-
-    // Listen for changes
-    const interval = setInterval(updateStatus, 5000);
+    const interval = setInterval(updateStatus, 10000);
 
     return () => clearInterval(interval);
   }, [ndk, isReady]);
