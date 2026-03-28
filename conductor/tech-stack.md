@@ -6,8 +6,9 @@
 - **TypeScript**: Ensuring type safety and maintainable code.
 
 ## Protocol Integration
-- **NDK (@nostr-dev-kit/ndk)**: Comprehensive Nostr protocol support.
-- **@nostr-dev-kit/messages (NIP-17)**: High-level API for metadata-resistant direct messaging.
+- **Nostrify**: Modern protocol implementation for core events, messaging, and feeds.
+- **NDK (@nostr-dev-kit/ndk)**: Gradual transition to Nostrify for core features.
+- **@nostr-dev-kit/messages (NIP-17)**: Gradual transition to Nostrify messaging.
 
 ## User Interface (UI)
 - **Shadcn UI**: Pre-built accessible components.
@@ -16,8 +17,9 @@
 
 ## Data and State
 - **Zustand**: Simple and effective state management.
+- **Nostrify SQL Store (PGlite)**: Primary local-first storage for Nostr events.
 - **Supabase**: Backend database for centralized storage (if needed).
-- **Dexie**: Local-first indexedDB wrapper for client-side caching.
+- **Dexie**: Legacy local-first indexedDB wrapper.
 - **Redis**: High-performance data storage for caching and sessions.
 
 ## Tooling and Deployment

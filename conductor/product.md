@@ -19,7 +19,7 @@ To provide a private, censorship-resistant platform for sharing thoughts and med
 - **User Status**: Real-time status updates (Kind 30315).
 - **Long-form Content**: Read and write articles using Kind 30023.
 - **Web of Trust (WoT)**: Integration for discovery and spam prevention.
-- **Local-First Experience**: Using NStore (NPostgres) and Dexie for local-first storage and caching to ensure a snappy UI.
+- **Local-First Experience**: Using Nostrify SQL Store (PGlite) for local-first storage and caching to ensure a snappy UI. (Transitioning from Dexie)
 
 ## Success Metrics
 - Seamless user onboarding with NIP-07 or NIP-46.
