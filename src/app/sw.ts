@@ -6,6 +6,7 @@ import { Serwist } from "serwist";
 declare global {
   interface ServiceWorkerGlobalScope extends SerwistGlobalConfig {
     __SW_MANIFEST: (string | PrecacheEntry)[] | undefined;
+    Notification: typeof Notification;
   }
 }
 
