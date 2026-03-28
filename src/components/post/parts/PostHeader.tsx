@@ -14,7 +14,8 @@ import {
   BarChart2,
   ExternalLink,
   Sparkles,
-  ShieldCheck
+  ShieldCheck,
+  Loader2
 } from "lucide-react";
 import Link from "next/link";
 
@@ -60,12 +61,12 @@ interface PostHeaderProps {
   nip05?: string;
   createdAt: number | undefined;
   isReply?: boolean;
-  onMoreClick?: () => void;
   onDeleteClick?: () => void;
   onReportClick?: () => void;
   onPinClick?: () => void;
   onMuteClick?: () => void;
   onBookmarkClick?: () => void;
+  onRawEventClick?: () => void;
   isPinned?: boolean;
   isMuted?: boolean;
   isBookmarked?: boolean;
@@ -75,6 +76,7 @@ interface PostHeaderProps {
   tags?: string[][];
   navigationHref?: string;
   onSummarizeClick?: () => void;
+  isSummarizing?: boolean;
   variant?: "feed" | "detail";
   relevance?: ScoredEvent;
   showAvatar?: boolean;
@@ -90,12 +92,13 @@ export const PostHeader: React.FC<PostHeaderProps> = ({
   nip05,
   createdAt,
   isReply,
-  onMoreClick,
   onDeleteClick,
   onReportClick,
   onPinClick,
   onMuteClick,
   onBookmarkClick,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  onRawEventClick,
   isPinned,
   isMuted,
   isBookmarked,
@@ -106,6 +109,8 @@ export const PostHeader: React.FC<PostHeaderProps> = ({
   name,
   navigationHref,
   onSummarizeClick,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  isSummarizing,
   variant = "feed",
   relevance,
   showAvatar = true
@@ -224,16 +229,24 @@ export const PostHeader: React.FC<PostHeaderProps> = ({
                     <span>Report Content</span>
                   </DropdownMenuItem>
                 )}
-                {onMoreClick && (
-                  <DropdownMenuItem onClick={onMoreClick} className="gap-2">
+                {onRawEventClick && (
+                  <DropdownMenuItem onClick={onRawEventClick} className="gap-2">
                     <Code className="size-4" aria-hidden="true" />
                     <span>View Raw Data</span>
                   </DropdownMenuItem>
                 )}
                 {onSummarizeClick && (
-                  <DropdownMenuItem onClick={onSummarizeClick} className="gap-2 text-purple-500 focus:text-purple-600 focus:bg-purple-500/10">
-                    <BarChart2 className="size-4" aria-hidden="true" />
-                    <span>Summarize with AI</span>
+                  <DropdownMenuItem 
+                    onClick={onSummarizeClick} 
+                    disabled={isSummarizing}
+                    className="gap-2 text-purple-500 focus:text-purple-600 focus:bg-purple-500/10"
+                  >
+                    {isSummarizing ? (
+                      <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+                    ) : (
+                      <BarChart2 className="size-4" aria-hidden="true" />
+                    )}
+                    <span>{isSummarizing ? "Summarizing…" : "Summarize with AI"}</span>
                   </DropdownMenuItem>
                 )}
                 {onDeleteClick && (
@@ -476,16 +489,24 @@ export const PostHeader: React.FC<PostHeaderProps> = ({
                 <span>Report Content</span>
               </DropdownMenuItem>
             )}
-            {onMoreClick && (
-              <DropdownMenuItem onClick={onMoreClick} className="gap-2">
+            {onRawEventClick && (
+              <DropdownMenuItem onClick={onRawEventClick} className="gap-2">
                 <Code className="size-4" aria-hidden="true" />
                 <span>View Raw Data</span>
               </DropdownMenuItem>
             )}
             {onSummarizeClick && (
-              <DropdownMenuItem onClick={onSummarizeClick} className="gap-2 text-purple-500 focus:text-purple-600 focus:bg-purple-500/10">
-                <BarChart2 className="size-4" aria-hidden="true" />
-                <span>Summarize with AI</span>
+              <DropdownMenuItem 
+                onClick={onSummarizeClick} 
+                disabled={isSummarizing}
+                className="gap-2 text-purple-500 focus:text-purple-600 focus:bg-purple-500/10"
+              >
+                {isSummarizing ? (
+                  <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+                ) : (
+                  <BarChart2 className="size-4" aria-hidden="true" />
+                )}
+                <span>{isSummarizing ? "Summarizing…" : "Summarize with AI"}</span>
               </DropdownMenuItem>
             )}
             {onDeleteClick && (

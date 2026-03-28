@@ -173,7 +173,7 @@ export const PostComposer: React.FC<PostComposerProps> = ({
   };
 
   const insertMention = (npub?: string, pubkey?: string) => {
-    const mention = npub || (pubkey ? toNpub(pubkey) : "");
+    const mention = npub || (pubkey ? nip19.npubEncode(pubkey) : "");
     if (!mention) return;
 
     const lastAt = content.lastIndexOf("@", cursorPos - 1);

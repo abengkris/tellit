@@ -6,6 +6,7 @@ import remarkGfm from "remark-gfm";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { NDKEvent } from "@nostr-dev-kit/ndk";
+import { type NostrEvent } from "@nostrify/types";
 import Link from "next/link";
 import { decodeNip19 } from "@/lib/utils/nip19";
 import { Separator } from "@/components/ui/separator";
@@ -14,7 +15,7 @@ import { Lightbox } from "@/components/common/Lightbox";
 
 interface ArticleRendererProps {
   content: string;
-  event: NDKEvent;
+  event: NDKEvent | NostrEvent;
 }
 
 export function ArticleRenderer({ content: rawContent }: ArticleRendererProps) {
@@ -22,13 +23,9 @@ export function ArticleRenderer({ content: rawContent }: ArticleRendererProps) {
   const [lightboxAlt, setLightboxAlt] = useState<string | undefined>(undefined);
 
   // Pre-parse content for inline NIP-27 mentions (nostr:npub1...)
-  // This turns raw nostr: URIs into markdown links so they are handled by our 'a' component
   const content = useMemo(() => {
     const nostrRegex = /nostr:([a-zA-Z0-9]+)/g;
     return rawContent.replace(nostrRegex, (match, nip19) => {
-      // Basic check: if it's already inside a markdown link [text](nostr:...) 
-      // or already a markdown link [nostr:...](nostr:...), we might double-wrap it.
-      // But ReactMarkdown is usually smart enough to handle nested links by ignoring them.
       return `[${nip19}](${match})`;
     });
   }, [rawContent]);

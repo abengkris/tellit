@@ -6,7 +6,6 @@ import { type NostrEvent } from "@nostrify/types";
 import { useProfile } from "@/hooks/useProfile";
 import { usePostStats } from "@/hooks/usePostStats";
 import { useNDK } from "@/hooks/useNDK";
-import { useAuthStore } from "@/store/auth";
 import Link from "next/link";
 import { 
   getPostUrl, 
@@ -17,23 +16,21 @@ import {
 import { pinPost, unpinPost, muteUser, unmuteUser } from "@/lib/actions/profile";
 import { useUIStore } from "@/store/ui";
 import { useLists } from "@/hooks/useLists";
-import { getEventNip19 } from "@/lib/utils/nip19";
+import { getEventNip19, toNpub, shortenPubkey } from "@/lib/utils/nip19";
 import { useNostrifyPublish } from "@/hooks/useNostrifyPublish";
 import { PostHeader } from "./parts/PostHeader";
 import { PostContentRenderer } from "./parts/PostContent";
 import { PostActions } from "./parts/PostActions";
 import { PollRenderer } from "./PollRenderer";
-import { ArticleCardPreview } from "@/components/article/ArticleCardPreview";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { ScoredEvent } from "@/lib/feed/types";
-import { ThreadScore } from "@/components/feed/ThreadScore";
 import { ReplyModal } from "./parts/ReplyModal";
 import { QuoteModal } from "./parts/QuoteModal";
 import { RawEventModal } from "./parts/RawEventModal";
 import { ZapModal } from "@/components/common/ZapModal";
-import { Repeat2 } from "lucide-react";
+import { Repeat2, FileText } from "lucide-react";
 
 type ThreadLine = "none" | "top" | "bottom" | "both";
 
@@ -48,7 +45,6 @@ interface PostCardProps {
 
 export const PostCard = memo(({ 
   event, 
-  scoredEvent,
   threadLine = "none",
   isFocal = false,
   indent = 0,
@@ -57,7 +53,6 @@ export const PostCard = memo(({
   const [repostedEvent, setRepostedEvent] = useState<NDKEvent | NostrEvent | null>(null);
   const [repostLoading, setRepostLoading] = useState(false);
   const [isDeleted, setIsDeleted] = useState(false);
-  const { user: currentUser } = useAuthStore();
   const { ndk, isReady } = useNDK();
   const { react, repost } = useNostrifyPublish();
   const { addToast } = useUIStore();
@@ -312,8 +307,6 @@ export const PostCard = memo(({
     );
   }
 
-  const isMyPost = currentUser?.pubkey === displayEvent.pubkey;
-
   return (
     <Card className={cn(
       "border-none shadow-none bg-transparent group/card transition-colors relative flex",
@@ -321,11 +314,6 @@ export const PostCard = memo(({
       isFocal ? "bg-muted/10 ring-1 ring-primary/10" : "",
       indent > 0 ? "border-l-2 border-primary/10 ml-4 pl-2" : ""
     )}>
-      {/* Thread Score Sidebar */}
-      {scoredEvent && variant === "feed" && (
-        <ThreadScore score={scoredEvent.score} signals={scoredEvent.signals} />
-      )}
-
       {/* Thread Lines */}
       {(threadLine === "top" || threadLine === "both") && (
         <div className="absolute top-0 left-[2.25rem] w-0.5 h-4 bg-border/50" />
@@ -374,19 +362,19 @@ export const PostCard = memo(({
           <div className="flex-1 min-w-0">
             <PostHeader 
               display_name={display_name}
+              userNpub={profile ? toNpub(displayEvent.pubkey) : shortenPubkey(displayEvent.pubkey)}
               pubkey={displayEvent.pubkey}
-              created_at={displayEvent.created_at}
+              createdAt={displayEvent.created_at}
               nip05={profile?.nip05}
-              isMyPost={isMyPost}
               isPinned={isPinned(displayEvent.id)}
               isMuted={isMuted(displayEvent.pubkey)}
               isBookmarked={isBookmarked(displayEvent.id)}
-              onDelete={handleDelete}
-              onPin={handlePin}
-              onMute={handleMute}
-              onBookmark={handleBookmarkToggle}
-              onRawEvent={() => setShowRawEventModal(true)}
-              onSummarize={handleSummarize}
+              onDeleteClick={handleDelete}
+              onPinClick={handlePin}
+              onMuteClick={handleMute}
+              onBookmarkClick={handleBookmarkToggle}
+              onRawEventClick={() => setShowRawEventModal(true)}
+              onSummarizeClick={handleSummarize}
               isSummarizing={isSummarizing}
             />
 
@@ -399,11 +387,16 @@ export const PostCard = memo(({
 
             <Link href={navigationHref} className="block">
               {isArticle ? (
-                <ArticleCardPreview 
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  event={displayEvent as any} 
-                  profile={profile || undefined} 
-                />
+                <Card className="p-4 bg-muted/20 border-border/50 rounded-2xl hover:bg-muted/30 transition-colors">
+                  <div className="flex items-center gap-3">
+                    <FileText className="size-8 text-primary" />
+                    <div className="min-w-0">
+                      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                      <h3 className="font-bold truncate">{(displayEvent as any).tags.find((t: any[]) => t[0] === 'title')?.[1] || "Untitled Article"}</h3>
+                      <p className="text-xs text-muted-foreground truncate">Kind 30023 • Long-form</p>
+                    </div>
+                  </div>
+                </Card>
               ) : (
                 <PostContentRenderer 
                   content={displayEvent.content} 
@@ -423,18 +416,19 @@ export const PostCard = memo(({
               comments={comments}
               quotes={quotes}
               bookmarks={bookmarks}
-              totalSats={totalSats}
-              userLiked={userLiked}
+              zaps={totalSats}
+              userReacted={userLiked ? '+' : null}
               userReposted={userReposted}
               eventId={displayEvent.id}
-              eventPubkey={displayEvent.pubkey}
-              onReply={() => setShowReplyModal(true)}
-              onRepost={handleRepost}
-              onLike={handleLike}
-              onQuote={handleQuote}
-              onZap={() => setShowZapModal(true)}
-              onShare={handleShare}
+              authorPubkey={displayEvent.pubkey}
+              onReplyClick={() => setShowReplyModal(true)}
+              onRepostClick={handleRepost}
+              onLikeClick={handleLike}
+              onQuoteClick={handleQuote}
+              onZapClick={() => setShowZapModal(true)}
+              onShareClick={handleShare}
               onEmojiReaction={handleEmojiReaction}
+              combinedReposts={0}
             />
           </div>
         </div>
@@ -443,7 +437,6 @@ export const PostCard = memo(({
       {/* Modals */}
       {showZapModal && (
         <ZapModal
-          isOpen={showZapModal}
           onClose={() => setShowZapModal(false)}
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           event={displayEvent as any}
@@ -460,7 +453,6 @@ export const PostCard = memo(({
       )}
       {showReplyModal && (
         <ReplyModal
-          isOpen={showReplyModal}
           onClose={() => setShowReplyModal(false)}
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           event={displayEvent as any}

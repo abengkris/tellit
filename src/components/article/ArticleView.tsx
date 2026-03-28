@@ -253,13 +253,15 @@ export function ArticleView({ article, slug, authorPubkey }: ArticleViewProps) {
                   reposts={reposts}
                   comments={comments}
                   quotes={quotes}
-                  combinedReposts={0} // Not used anymore
+                  combinedReposts={0} 
                   bookmarks={bookmarks}
-                  totalSats={totalSats}
-                  userLiked={userLiked}
+                  zaps={totalSats}
+                  userReacted={userLiked ? '+' : null}
                   userReposted={userReposted}
                   variant="detail"
-                  eventPubkey={article.pubkey || authorPubkey}
+                  authorPubkey={article.pubkey || authorPubkey}
+                  onReplyClick={jumpToComments}
+                  onShareClick={handleShare}
                 />
               </div>
             </div>

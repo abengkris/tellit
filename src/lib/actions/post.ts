@@ -1,5 +1,5 @@
 import NDK, { NDKEvent, NDKTag, NDKArticle, NDKDVMRequest, NDKKind, nip19 } from "@nostr-dev-kit/ndk";
-
+import { ProfileMetadata } from "@/hooks/useProfile";
 import { createPoll, CreatePollOptions } from "./poll";
 import { addClientTag } from "@/lib/utils/nostr";
 
@@ -21,6 +21,16 @@ interface PostOptions {
   proxy?: { id: string; protocol: string };
   contentWarning?: string;
 }
+
+export const getPostUrl = (event: NDKEvent | { id: string }, _profile?: ProfileMetadata | null): string => {
+  return `/post/${event.id}`;
+};
+
+export const getArticleUrl = (event: NDKEvent | { tags: string[][] }, _profile?: ProfileMetadata | null): string => {
+  const dTag = event.tags.find(t => t[0] === 'd')?.[1];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return `/article/${dTag || (event as any).id}`;
+};
 
 export const publishPost = async (
   ndk: NDK,
@@ -358,4 +368,3 @@ export const requestSummarization = async (ndk: NDK, eventToSummarize: NDKEvent)
   
   return req;
 };
-

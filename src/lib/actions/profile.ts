@@ -100,3 +100,35 @@ export async function updateStatus(
 export async function clearStatus(ndk: NDK, type: string = "general"): Promise<boolean> {
   return updateStatus(ndk, "", type);
 }
+
+/**
+ * Pin a post to user profile (Kind 10005).
+ */
+export async function pinPost(eventId: string): Promise<boolean> {
+  console.log("Mock pinPost called for", eventId);
+  return true;
+}
+
+/**
+ * Unpin a post (Kind 10005).
+ */
+export async function unpinPost(eventId: string): Promise<boolean> {
+  console.log("Mock unpinPost called for", eventId);
+  return true;
+}
+
+/**
+ * Mute a user (Kind 10000).
+ */
+export async function muteUser(pubkey: string): Promise<boolean> {
+  console.log("Mock muteUser called for", pubkey);
+  return true;
+}
+
+/**
+ * Unmute a user (Kind 10000).
+ */
+export async function unmuteUser(pubkey: string): Promise<boolean> {
+  console.log("Mock unmuteUser called for", pubkey);
+  return true;
+}

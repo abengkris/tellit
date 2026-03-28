@@ -35,7 +35,7 @@ interface NostrWineResponse {
 const NOSTR_WINE_API_URL = "https://api.nostr.wine/v1/search";
 const RESULTS_PER_PAGE = 20;
 
-export default function SearchContent() {
+export function SearchContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { ndk, isReady } = useNDK();
@@ -355,7 +355,7 @@ export default function SearchContent() {
                         </div>
                         <p className="text-xs text-muted-foreground font-medium mb-1">@{shortenPubkey((directMatch.data as NDKUser).npub, 12)}</p>
                         {(directMatch.data as NDKUser).profile?.about && (
-                          <p className="text-xs text-muted-foreground line-clamp-2 italic font-medium leading-relaxed">&ldquo;{(directMatch.data as NDKUser).profile.about}&rdquo;</p>
+                          <p className="text-xs text-muted-foreground line-clamp-2 italic font-medium leading-relaxed">&ldquo;{(directMatch.data as NDKUser).profile?.about}&rdquo;</p>
                         )}
                       </div>
                     </Button>
