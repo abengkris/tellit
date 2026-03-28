@@ -1,6 +1,6 @@
 ### **Plan: continue_migration_nostrify_20260327**
 
-#### **Phase 1: Foundation & Local Storage (SQL Store)**
+#### **Phase 1: Foundation & Local Storage (SQL Store)** [checkpoint: cc5a0c0]
 - [x] Task: Set up Nostrify SQL Store (`@nostrify/store/sql`) and establish the base connection and schema. (5ab12d4)
     - [x] Research and implement the appropriate SQL adapter for the project (e.g., PostgreSQL or SQLite).
     - [x] Write failing tests for SQL store initialization and basic CRUD operations.
@@ -11,7 +11,7 @@
 - [x] Task: Implement a data migration strategy (or a clean start) for moving from Dexie to the SQL store. (e84507b)
     - [x] Write failing tests for the migration logic.
     - [x] Implement the migration and verify that tests pass.
-- [ ] Task: Conductor - User Manual Verification 'Phase 1: Foundation & Local Storage' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Phase 1: Foundation & Local Storage' (Protocol in workflow.md) (cc5a0c0)
 
 #### **Phase 2: Core Note & Reaction Migration**
 - [ ] Task: Migrate Kind 1 (Notes) and Kind 7 (Reactions) logic to use Nostrify's event handling and signing.
