@@ -24,9 +24,9 @@
     - [x] Update `RelayModal` and `RelayStatus` hook.
     - [x] Refactor `VerifyHandle` logic to use Nostrify signers.
 
-#### **Phase 4: Zaps, Wallets & Final Cleanup**
-- [~] Task: Migrate `ZapModal` and Zap Request templates.
-- [ ] Task: Conduct a final audit and remove redundant NDK code.
-    - [ ] Search for remaining `new NDKEvent` or `new NDKUser` calls.
-    - [ ] Remove unused NDK-related hooks and utilities.
-- [ ] Task: Conductor - Final full suite verification.
+#### **Phase 4: Zaps, Wallets & Final Cleanup** [checkpoint: cbd0cf6]
+- [x] Task: Migrate `ZapModal` and Zap Request templates. (cbd0cf6)
+- [x] Task: Conduct a final audit and remove redundant NDK code. (cbd0cf6)
+    - [x] Search for remaining `new NDKEvent` or `new NDKUser` calls.
+    - [x] Remove unused NDK-related hooks and utilities.
+- [x] Task: Conductor - Final full suite verification. (cbd0cf6)
