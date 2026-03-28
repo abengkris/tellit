@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { NDKEvent } from "@nostr-dev-kit/ndk";
+import { type NostrEvent } from "@nostrify/types";
 import { useNostrifyFeed, UseNostrifyFeedOptions } from "./useNostrifyFeed";
 
 interface UseNostrifyPausedFeedReturn {
-  posts: NDKEvent[];            
+  posts: NostrEvent[];            
   newCount: number;             
   isLoading: boolean;
   flushNewPosts: () => void;    
@@ -20,42 +20,42 @@ interface UseNostrifyPausedFeedReturn {
  */
 export function useNostrifyPausedFeed(options: UseNostrifyFeedOptions = {}): UseNostrifyPausedFeedReturn {
   const { posts: allPosts, loading, hasMore, loadMore, refresh } = useNostrifyFeed(options);
-  const [visiblePosts, setVisiblePosts] = useState<NDKEvent[]>([]);
+  const [visiblePosts, setVisiblePosts] = useState<NostrEvent[]>([]);
   const [newCount, setNewCount] = useState(0);
   const isInitialLoadDone = useRef(false);
 
   // Sync initial posts or paginated posts
   useEffect(() => {
     if (!loading && !isInitialLoadDone.current) {
-      setVisiblePosts(allPosts);
+      Promise.resolve().then(() => setVisiblePosts(allPosts));
       isInitialLoadDone.current = true;
     } else if (isInitialLoadDone.current) {
       const visibleIds = new Set(visiblePosts.map(p => p.id));
       const news = allPosts.filter(p => !visibleIds.has(p.id));
-      
+
       const oldestVisible = visiblePosts.length > 0 ? visiblePosts[visiblePosts.length - 1].created_at ?? 0 : 0;
       const paginated = news.filter(p => (p.created_at ?? 0) <= oldestVisible);
       const trulyNew = news.filter(p => (p.created_at ?? 0) > oldestVisible);
 
       if (paginated.length > 0) {
-        setVisiblePosts(prev => {
-          const combined = [...prev, ...paginated];
-          const unique = Array.from(new Map(combined.map(p => [p.id, p])).values())
-            .sort((a, b) => (b.created_at ?? 0) - (a.created_at ?? 0));
-          
-          if (unique.length === prev.length) return prev;
-          return unique;
+        Promise.resolve().then(() => {
+          setVisiblePosts(prev => {
+            const combined = [...prev, ...paginated];
+            const unique = Array.from(new Map(combined.map(p => [p.id, p])).values())
+              .sort((a, b) => (b.created_at ?? 0) - (a.created_at ?? 0));
+
+            if (unique.length === prev.length) return prev;
+            return unique as NostrEvent[];
+          });
         });
       }
-
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setNewCount(prev => {
-        // Calculate trulyNew using the functional state 'prev' is not possible here easily,
-        // but we can compute oldestVisible from allPosts and the logic.
-        // Actually, we can just use the computed trulyNew.length.
         return prev === trulyNew.length ? prev : trulyNew.length;
       });
     }
-  }, [allPosts, loading]);
+  }, [allPosts, loading, visiblePosts]);
+
 
   const flushNewPosts = useCallback(() => {
     setVisiblePosts(allPosts);

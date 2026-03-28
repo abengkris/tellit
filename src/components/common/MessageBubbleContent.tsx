@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useMemo, useCallback } from "react";
 import { tokenize, Token } from "@/lib/content/tokenizer";
 import { MentionLink } from "../post/tokens/MentionLink";
 import { HashtagLink } from "../post/tokens/HashtagLink";

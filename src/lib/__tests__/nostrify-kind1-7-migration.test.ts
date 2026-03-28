@@ -26,7 +26,8 @@ describe('Nostrify Kind 1 & 7 Migration', () => {
         kind: 1,
         tags: []
       };
-      const template = buildPostTemplate('Reply', { replyTo: parent });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const template = buildPostTemplate('Reply', { replyTo: parent as any });
       expect(template.tags).toContainEqual(['e', 'parent-id', '', 'root']);
       expect(template.tags).toContainEqual(['p', 'parent-pubkey']);
     });

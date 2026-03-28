@@ -1,111 +1,80 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { Search, Loader2, TrendingUp, X, CheckCircle2 } from "lucide-react";
-import { useDebounce } from "use-debounce";
-import { PostCard } from "@/components/post/PostCard";
-import Link from "next/link";
-import Image from "next/image";
-import { FeedSkeleton } from "@/components/feed/FeedSkeleton";
-import { shortenPubkey } from "@/lib/utils/nip19";
-import { useSearchParams, useRouter } from "next/navigation";
-import { useFollowingList } from "@/hooks/useFollowingList";
-import { useAuthStore } from "@/store/auth";
-import { UserRecommendation } from "@/components/common/UserRecommendation";
+import React, { useState, useEffect, useCallback, useRef } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { NDKEvent, NDKUser } from "@nostr-dev-kit/ndk";
-import { getProfileUrl } from "@/lib/utils/identity";
 import { useNDK } from "@/hooks/useNDK";
-import { useTrending } from "@/hooks/useTrending";
-import { useTrendingPosts } from "@/hooks/useTrendingPosts";
+import { PostCard } from "@/components/post/PostCard";
+import { Search, Loader2, User as UserIcon, MessageSquare, Filter, ChevronLeft, ChevronRight } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useUIStore } from "@/store/ui";
+import { Avatar } from "@/components/common/Avatar";
+import { shortenPubkey } from "@/lib/utils/nip19";
+import { SimplifiedUser } from "@/components/common/UserRecommendation";
 
-// Constants for API and pagination
-const NOSTR_WINE_API_URL = "https://api.nostr.wine/search";
-const RESULTS_PER_PAGE = 20;
-
-// Define types for API response
 interface NostrWineEvent {
-  content: string;
-  created_at: number;
   id: string;
-  kind: number;
   pubkey: string;
-  sig: string;
+  created_at: number;
+  kind: number;
   tags: string[][];
+  content: string;
+  sig: string;
 }
 
 interface NostrWineResponse {
+  status: string;
   data: NostrWineEvent[];
-  pagination: {
-    last_page: boolean;
-    limit: number;
-    next_url: string | null;
-    page: number;
-    total_pages: number;
-    total_records: number;
-  };
 }
 
-export function SearchContent() {
-  const searchParams = useSearchParams();
+const NOSTR_WINE_API_URL = "https://api.nostr.wine/v1/search";
+const RESULTS_PER_PAGE = 20;
+
+export default function SearchContent() {
   const router = useRouter();
-  const { user } = useAuthStore();
+  const searchParams = useSearchParams();
   const { ndk, isReady } = useNDK();
-  const { followingUsers, loading: loadingFollowing } = useFollowingList(user?.pubkey);
-  const { trending, loading: loadingTrending } = useTrending();
-  const { trendingPosts, loading: loadingTrendingPosts } = useTrendingPosts(ndk, { hours: 24, order: "replies" });
-
-  const initialQuery = searchParams.get("q") || "";
+  const { addToast } = useUIStore();
   
-  const [searchInput, setSearchInput] = useState(initialQuery);
-  const [showMentions, setShowMentions] = useState(false);
-  const [mentionQuery, setMentionQuery] = useState("");
+  const initialQuery = searchParams.get("q") || "";
+  const initialTab = (searchParams.get("t") as 'posts' | 'users') || "posts";
+  const initialPage = parseInt(searchParams.get("p") || "1");
 
-  const [debouncedQuery] = useDebounce(searchInput, 500);
-
-  // New state variables for search results
+  const [query, setQuery] = useState(initialQuery);
+  const [activeTab, setActiveTab] = useState<'posts' | 'users'>(initialTab);
+  const [page, setPage] = useState(initialPage);
+  const [loading, setLoading] = useState(false);
   const [fetchedPosts, setFetchedPosts] = useState<NDKEvent[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [hasMorePosts, setHasMorePosts] = useState(true);
-  const [searchError, setSearchError] = useState<string | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
   const [directMatch, setDirectMatch] = useState<{ type: 'user' | 'event', data: NDKUser | NDKEvent } | null>(null);
+  const [hasMore, setHasMore] = useState(false);
 
-  // Function to fetch search results
-  const fetchSearchResults = useCallback(async (query: string, page: number) => {
-    if (!query || !ndk || !isReady) {
-      if (!query) {
-        setFetchedPosts([]);
-        setDirectMatch(null);
-        setHasMorePosts(true);
-        setSearchError(null);
-        setIsLoading(false);
-      }
-      return;
-    }
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
-    setIsLoading(true);
-    setSearchError(null);
+  const performSearch = useCallback(async (searchQuery: string, searchTab: string, searchPage: number) => {
+    if (!searchQuery.trim() || !ndk || !isReady) return;
+
+    setLoading(true);
+    setDirectMatch(null);
     
-    // Clear previous results for new search
-    if (page === 1) {
-      setFetchedPosts([]);
-      setDirectMatch(null);
-    }
-
     try {
-      // 0. Handle direct matches (npub, note, nevent, nprofile, naddr)
-      if (page === 1) {
-        const isHex = /^[0-9a-fA-F]{64}$/.test(query);
-        const isNip19 = query.startsWith("npub") || query.startsWith("nprofile") || 
-                        query.startsWith("note") || query.startsWith("nevent") || 
-                        query.startsWith("naddr");
+      // 0. Check if query is a pubkey or event ID
+      if (searchPage === 1) {
+        const isHex = /^[0-9a-fA-F]{64}$/.test(searchQuery);
+        const isNip19 = searchQuery.startsWith("npub") || searchQuery.startsWith("nprofile") || 
+                        searchQuery.startsWith("note") || searchQuery.startsWith("nevent") || 
+                        searchQuery.startsWith("naddr");
         
         if (isNip19 || isHex) {
-          if (query.startsWith("npub") || query.startsWith("nprofile") || (isHex && !query.startsWith("note"))) {
+          if (searchQuery.startsWith("npub") || searchQuery.startsWith("nprofile") || (isHex && !searchQuery.startsWith("note"))) {
             try {
               const user = ndk.getUser({ 
-                npub: query.startsWith("npub") ? query : undefined,
-                pubkey: isHex ? query : undefined
+                npub: searchQuery.startsWith("npub") ? searchQuery : undefined,
+                pubkey: isHex ? searchQuery : undefined
               });
               if (user) {
                 await user.fetchProfile();
@@ -114,9 +83,9 @@ export function SearchContent() {
             } catch {
               console.warn("Direct user fetch failed");
             }
-          } else if (query.startsWith("note") || query.startsWith("nevent") || query.startsWith("naddr") || isHex) {
+          } else if (searchQuery.startsWith("note") || searchQuery.startsWith("nevent") || searchQuery.startsWith("naddr") || isHex) {
             try {
-              const event = await ndk.fetchEvent(query);
+              const event = await ndk.fetchEvent(searchQuery);
               if (event) setDirectMatch({ type: 'event', data: event });
             } catch {
               console.warn("Direct event fetch failed");
@@ -126,9 +95,8 @@ export function SearchContent() {
       }
 
       // 1. Fetch from api.nostr.wine
-      // Documentation parameters: query, kind, since, until, limit, pubkey, sort, page, order, first_seen
-      const kinds = "1,30023"; // Search for posts and long-form articles
-      const url = `${NOSTR_WINE_API_URL}?query=${encodeURIComponent(query)}&kind=${kinds}&limit=${RESULTS_PER_PAGE}&page=${page}&sort=relevance`;
+      const kinds = "1,30023"; 
+      const url = `${NOSTR_WINE_API_URL}?query=${encodeURIComponent(searchQuery)}&kind=${kinds}&limit=${RESULTS_PER_PAGE}&page=${searchPage}&sort=relevance`;
       
       const response = await fetch(url);
       if (!response.ok) {
@@ -147,340 +115,292 @@ export function SearchContent() {
             tags: rawEvent.tags,
             content: rawEvent.content,
             sig: rawEvent.sig
-          });
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          } as any);
           return event;
         });
 
-        setFetchedPosts(prevPosts => page === 1 ? ndkEvents : [...prevPosts, ...ndkEvents]);
-        setHasMorePosts(!result.pagination.last_page);
-        setCurrentPage(page);
+        if (searchPage === 1) {
+          setFetchedPosts(ndkEvents);
+        } else {
+          setFetchedPosts(prev => [...prev, ...ndkEvents]);
+        }
+        setHasMore(result.data.length === RESULTS_PER_PAGE);
       } else {
-        if (page === 1) setFetchedPosts([]);
-        setHasMorePosts(false);
+        if (searchPage === 1) setFetchedPosts([]);
+        setHasMore(false);
       }
-
-    } catch (error: unknown) {
-      console.error("Search API error:", error);
-      setSearchError(`Failed to fetch search results: ${error instanceof Error ? error.message : String(error)}`);
+    } catch (err) {
+      console.error("Search failed:", err);
+      addToast("Search failed. Please try again later.", "error");
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
-  }, [ndk, isReady]);
+  }, [ndk, isReady, addToast]);
 
-  // Trigger search when debouncedQuery changes
   useEffect(() => {
-    if (debouncedQuery && debouncedQuery.length >= 2) {
-      fetchSearchResults(debouncedQuery, 1);
-    } else if (!debouncedQuery) {
-      setFetchedPosts([]);
-      setDirectMatch(null);
-      setHasMorePosts(true);
-      setSearchError(null);
-      setIsLoading(false);
-      setCurrentPage(1);
+    if (initialQuery && isReady && ndk) {
+      performSearch(initialQuery, initialTab, initialPage);
     }
-  }, [debouncedQuery, fetchSearchResults]);
+  }, [initialQuery, initialTab, initialPage, isReady, ndk, performSearch]);
 
-  // Load more function
-  const loadMorePosts = useCallback(() => {
-    if (!isLoading && hasMorePosts && debouncedQuery) {
-      fetchSearchResults(debouncedQuery, currentPage + 1);
-    }
-  }, [isLoading, hasMorePosts, debouncedQuery, currentPage, fetchSearchResults]);
-
-  // Mention filtering
-  const filteredUsers = useMemo(() => {
-    if (!mentionQuery) return followingUsers.slice(0, 8);
-    const q = mentionQuery.toLowerCase();
-    return followingUsers
-      .filter(u => 
-        String(u.profile?.name || "").toLowerCase().includes(q) || 
-        String(u.profile?.display_name || "").toLowerCase().includes(q) ||
-        String(u.profile?.nip05 || "").toLowerCase().includes(q)
-      )
-      .slice(0, 8);
-  }, [followingUsers, mentionQuery]);
-
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setSearchInput(value);
-
-    if (value.startsWith("@")) {
-      setMentionQuery(value.slice(1));
-      setShowMentions(true);
-    } else {
-      setShowMentions(false);
-      // Clear mention query if it's not a mention anymore
-      if (mentionQuery) {
-        setMentionQuery("");
-      }
-    }
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!query.trim()) return;
+    
+    setPage(1);
+    const params = new URLSearchParams();
+    params.set("q", query);
+    params.set("t", activeTab);
+    params.set("p", "1");
+    router.push(`/search?${params.toString()}`);
   };
 
-  const handleSelectUser = (u: NDKUser) => {
-    setSearchInput(u.npub); // Set input to npub for search
-    setMentionQuery(""); 
-    setShowMentions(false);
-    // Optionally trigger search for npub here if direct user lookup is implemented
+  const handleTabChange = (tab: string) => {
+    const newTab = tab as 'posts' | 'users';
+    setActiveTab(newTab);
+    const params = new URLSearchParams();
+    params.set("q", query);
+    params.set("t", newTab);
+    params.set("p", page.toString());
+    router.push(`/search?${params.toString()}`);
   };
 
-  // Sync URL with search input (debounced to avoid history spam)
-  useEffect(() => {
-    const params = new URLSearchParams(searchParams.toString());
-    if (debouncedQuery) {
-      params.set("q", debouncedQuery);
-    } else {
-      params.delete("q");
-    }
-    
-    const queryStr = params.toString();
-    const newUrl = queryStr ? `/search?${queryStr}` : "/search";
-    
-    // Use searchParams.toString() to check if we actually need to navigate
-    if (searchParams.toString() !== queryStr) {
-      router.replace(newUrl, { scroll: false });
-    }
-  }, [debouncedQuery, router, searchParams]);
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage);
+    const params = new URLSearchParams();
+    params.set("q", query);
+    params.set("t", activeTab);
+    params.set("p", newPage.toString());
+    router.push(`/search?${params.toString()}`);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
-  const displayTrending = useMemo(() => {
-    if (trending.length > 0) return trending.map(t => t.tag);
-    return ["nostr", "bitcoin", "tellit", "art", "tech", "zap", "photography", "meme"];
-  }, [trending]);
+  const handleSelectUser = (u: SimplifiedUser | NDKUser) => {
+    router.push(`/p/${u.pubkey}`);
+  };
 
   return (
-    <>
-      <div className="sticky top-0 z-10 bg-white/80 dark:bg-black/80 backdrop-blur-md p-4 border-b border-gray-200 dark:border-gray-800">
-        <div className="relative group">
-          <label htmlFor="search-input" className="sr-only">Search people, hashtags, or content</label>
-          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-blue-500 transition-colors">
-            <Search className="h-5 w-5" />
-          </div>
-          <input
-            id="search-input"
-            type="text"
-            value={searchInput}
-            onChange={handleSearchChange}
-            placeholder="Search npub, note, #hashtag, or keyword…"
-            className="block w-full pl-12 pr-12 py-3 border border-gray-100 dark:border-gray-800 rounded-2xl bg-gray-50 dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:bg-white dark:focus:bg-black transition-all font-medium"
-            autoFocus
-          />
-          
-          {showMentions && (
-            <div className="absolute left-0 right-0 top-full mt-2">
-              <UserRecommendation 
-                users={filteredUsers} 
-                onSelect={handleSelectUser} 
-                isLoading={loadingFollowing}
-              />
-            </div>
-          )}
-          {searchInput && (
-            <button 
-              onClick={() => {
-                setSearchInput("");
-                // Need to update debouncedQuery state as well to trigger the search effect
-                // Since debouncedQuery is derived, we can't directly set it. Setting searchInput will cause debouncedQuery to eventually become empty.
-                // To clear results immediately, we manually reset states.
-                setFetchedPosts([]); 
-                setDirectMatch(null);
-                setHasMorePosts(true);
-                setSearchError(null);
-                setIsLoading(false);
-                setCurrentPage(1);
-                setMentionQuery(""); // Clear mention query too
-                setShowMentions(false);
-              }}
-              className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
-            >
-              <X size={18} />
-            </button>
-          )}
+    <div className="flex flex-col min-h-screen bg-background">
+      {/* Header with Search Input */}
+      <div className="sticky top-0 z-30 bg-background/80 backdrop-blur-md border-b border-border/50">
+        <div className="max-w-2xl mx-auto px-4 py-3">
+          <form onSubmit={handleSearch} className="relative">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-5 text-muted-foreground" />
+            <Input
+              ref={searchInputRef}
+              type="text"
+              placeholder="Search posts, users, or IDs…"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              className="h-12 rounded-2xl pl-12 bg-muted/30 border-none shadow-sm focus-visible:ring-primary/20 font-medium"
+            />
+            {loading && (
+              <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                <Loader2 className="size-4 animate-spin text-primary" />
+              </div>
+            )}
+          </form>
         </div>
       </div>
 
-      <div className="p-0">
-        {/* Direct Results (Exact Matches) - Placeholder, requires specific API support */}
-        {directMatch && (
-          <section className="border-b-4 border-gray-100 dark:border-gray-900 animate-in slide-in-from-top duration-500">
-            <div className="bg-blue-50/50 dark:bg-blue-900/10 p-4 border-b border-blue-100 dark:border-blue-900/30 flex items-center justify-between">
-              <span className="text-[10px] font-black uppercase tracking-tighter text-blue-500 flex items-center gap-1.5">
-                <CheckCircle2 size={12} />
-                Exact Match Found
-              </span>
+      <div className="max-w-2xl mx-auto w-full px-4 py-6 space-y-6">
+        {/* Results Info & Tabs */}
+        {initialQuery && (
+          <div className="flex flex-col gap-4">
+            <div className="flex items-center justify-between">
+              <h1 className="text-xl font-black">
+                Search Results for <span className="text-primary">&ldquo;{initialQuery}&rdquo;</span>
+              </h1>
+              {fetchedPosts.length > 0 && (
+                <Badge variant="secondary" className="font-black">
+                  {fetchedPosts.length}+ found
+                </Badge>
+              )}
             </div>
-            
-            {directMatch.type === 'event' && <PostCard event={directMatch.data as NDKEvent} />}
-            {directMatch.type === 'user' && (() => {
-              const userMatch = directMatch.data as NDKUser;
-              return (
-                <Link 
-                  href={getProfileUrl(userMatch)} 
-                  className="flex items-center gap-4 p-6 bg-white dark:bg-black hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
-                >
-                  <div className="relative">
-                    <Image
-                      src={userMatch.profile?.picture || `https://robohash.org/${userMatch.pubkey}?set=set1`}
-                      alt={userMatch.profile?.name || "Profile"}
-                      width={64}
-                      height={64}
-                      className="w-16 h-16 rounded-2xl object-cover bg-zinc-100 dark:bg-zinc-800 shadow-sm"
-                      unoptimized
-                    />
-                    {userMatch.profile?.nip05 && (
-                      <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-blue-500 text-white rounded-full flex items-center justify-center border-2 border-white dark:border-black shadow-sm">
-                        <CheckCircle2 size={10} fill="currentColor" />
+
+            <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
+              <TabsList className="grid w-full grid-cols-2 h-12 p-1 bg-muted/30 rounded-2xl">
+                <TabsTrigger value="posts" className="rounded-xl font-black text-xs uppercase tracking-widest data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                  <MessageSquare className="size-4 mr-2" />
+                  Posts
+                </TabsTrigger>
+                <TabsTrigger value="users" className="rounded-xl font-black text-xs uppercase tracking-widest data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                  <UserIcon className="size-4 mr-2" />
+                  Users
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="posts" className="mt-6 focus-visible:ring-0">
+                {/* Direct Match Event */}
+                {directMatch?.type === 'event' && (
+                  <div className="mb-8 animate-in fade-in slide-in-from-top-4 duration-500">
+                    <div className="flex items-center gap-2 mb-3 px-1">
+                      <div className="size-2 bg-green-500 rounded-full animate-pulse" />
+                      <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Direct ID Match</span>
+                    </div>
+                    <Card className="border-2 border-primary/10 overflow-hidden rounded-3xl shadow-xl shadow-primary/5">
+                      <PostCard event={directMatch.data as NDKEvent} variant="detail" />
+                    </Card>
+                  </div>
+                )}
+
+                {/* Direct Match User (when in posts tab) */}
+                {directMatch?.type === 'user' && (
+                  <div className="mb-8 p-1">
+                    <Button 
+                      variant="outline" 
+                      className="w-full h-auto p-4 justify-between rounded-2xl bg-muted/20 border-primary/10 hover:bg-muted/30 group"
+                      onClick={() => handleSelectUser(directMatch.data as NDKUser)}
+                    >
+                      <div className="flex items-center gap-4">
+                        <Avatar 
+                          pubkey={(directMatch.data as NDKUser).pubkey} 
+                          src={(directMatch.data as NDKUser).profile?.picture} 
+                          size={48} 
+                          className="rounded-xl shadow-lg group-hover:scale-105 transition-transform"
+                        />
+                        <div className="text-left">
+                          <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Jump to User</p>
+                          <p className="font-bold text-lg">{(directMatch.data as NDKUser).profile?.display_name || (directMatch.data as NDKUser).profile?.name || shortenPubkey((directMatch.data as NDKUser).pubkey)}</p>
+                        </div>
+                      </div>
+                      <ChevronRight className="text-muted-foreground group-hover:translate-x-1 transition-transform" />
+                    </Button>
+                  </div>
+                )}
+
+                {/* Search Results */}
+                {loading && page === 1 ? (
+                  <div className="space-y-4">
+                    {[1, 2, 3].map(i => (
+                      <div key={i} className="flex gap-4 p-4">
+                        <Skeleton className="size-12 rounded-full shrink-0" />
+                        <div className="flex-1 space-y-3">
+                          <Skeleton className="h-4 w-1/4" />
+                          <Skeleton className="h-20 w-full" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : fetchedPosts.length > 0 ? (
+                  <div className="space-y-4">
+                    {fetchedPosts.map((post) => (
+                      <div key={post.id} className="border-b border-border/50 last:border-0">
+                        <PostCard event={post} />
+                      </div>
+                    ))}
+                    
+                    {/* Pagination */}
+                    {(hasMore || page > 1) && (
+                      <div className="flex items-center justify-center gap-4 py-8">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          disabled={page === 1}
+                          onClick={() => handlePageChange(page - 1)}
+                          className="rounded-full font-black text-[10px] uppercase tracking-widest h-10 px-6"
+                        >
+                          <ChevronLeft className="size-4 mr-2" />
+                          Prev
+                        </Button>
+                        <span className="font-black text-sm tabular-nums text-muted-foreground">
+                          Page {page}
+                        </span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          disabled={!hasMore}
+                          onClick={() => handlePageChange(page + 1)}
+                          className="rounded-full font-black text-[10px] uppercase tracking-widest h-10 px-6"
+                        >
+                          Next
+                          <ChevronRight className="size-4 ml-2" />
+                        </Button>
                       </div>
                     )}
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-black text-lg truncate">
-                      {userMatch.profile?.display_name || userMatch.profile?.name || shortenPubkey(userMatch.pubkey)}
-                    </h3>
-                    <p className="text-sm text-gray-500 font-mono truncate">
-                      {userMatch.profile?.nip05 
-                        ? (userMatch.profile.nip05.startsWith('_@') ? userMatch.profile.nip05.substring(1) : userMatch.profile.nip05)
-                        : `@${userMatch.profile?.name || shortenPubkey(userMatch.pubkey, 12)}`}
+                ) : !loading && (
+                  <div className="py-20 text-center">
+                    <div className="size-16 bg-muted/30 rounded-3xl flex items-center justify-center mx-auto mb-4">
+                      <Search className="size-8 text-muted-foreground/50" />
+                    </div>
+                    <h3 className="text-lg font-black">No posts found</h3>
+                    <p className="text-sm text-muted-foreground max-w-xs mx-auto mt-2 font-medium">
+                      We couldn&apos;t find any posts matching your query. Try different keywords or check the ID.
                     </p>
                   </div>
-                  <div className="bg-blue-500 text-white text-xs font-black px-4 py-2 rounded-xl shadow-lg shadow-blue-500/20">
-                    View Profile
-                  </div>
-                </Link>
-              );
-            })()}
-          </section>
-        )}
+                )}
+              </TabsContent>
 
-        {/* Initial/Empty Query State */}
-        {!debouncedQuery && !isLoading && fetchedPosts.length === 0 && !directMatch && searchError === null && (
-          <div className="animate-in fade-in duration-500">
-            <div className="p-8 text-center text-gray-500">
-              <div className="inline-flex items-center justify-center w-20 h-20 bg-blue-50 dark:bg-blue-900/10 text-blue-500 rounded-3xl mb-6">
-                <Search size={40} />
-              </div>
-              <h2 className="text-2xl font-black text-gray-900 dark:text-white mb-2">Discovery</h2>
-              <p className="text-sm max-w-xs mx-auto">Explore the Nostr network. Search for names, #hashtags, or paste a Nostr identifier (npub, note, nevent).</p>
-            </div>
-
-            <div className="px-6 py-4">
-              <div className="flex items-center gap-2 mb-4 text-gray-400">
-                <TrendingUp size={16} />
-                <span className="text-xs font-black uppercase tracking-widest">Trending Topics</span>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {loadingTrending && trending.length === 0 ? (
-                  <div className="flex flex-wrap gap-2 animate-pulse">
-                    {[1, 2, 3, 4, 5].map(i => (
-                      <div key={i} className="h-9 w-20 bg-gray-100 dark:bg-gray-900 rounded-2xl" />
-                    ))}
+              <TabsContent value="users" className="mt-6 focus-visible:ring-0">
+                {/* Users search is currently limited to direct match or wine results filtered */}
+                {directMatch?.type === 'user' ? (
+                  <div className="space-y-4">
+                    <Button 
+                      variant="ghost" 
+                      className="w-full h-auto p-4 justify-start rounded-2xl hover:bg-muted/30 group"
+                      onClick={() => handleSelectUser(directMatch.data as NDKUser)}
+                    >
+                      <Avatar 
+                        pubkey={(directMatch.data as NDKUser).pubkey} 
+                        src={(directMatch.data as NDKUser).profile?.picture} 
+                        size={64} 
+                        className="rounded-2xl shadow-xl mr-4 group-hover:scale-105 transition-transform"
+                      />
+                      <div className="text-left flex-1">
+                        <div className="flex items-center gap-2">
+                          <p className="font-bold text-xl">{(directMatch.data as NDKUser).profile?.display_name || (directMatch.data as NDKUser).profile?.name || shortenPubkey((directMatch.data as NDKUser).pubkey)}</p>
+                          <Badge variant="secondary" className="bg-green-500/10 text-green-500 border-green-500/20 font-black text-[8px] uppercase tracking-tighter h-4">Exact Match</Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground font-medium mb-1">@{shortenPubkey((directMatch.data as NDKUser).npub, 12)}</p>
+                        {(directMatch.data as NDKUser).profile?.about && (
+                          <p className="text-xs text-muted-foreground line-clamp-2 italic font-medium leading-relaxed">&ldquo;{(directMatch.data as NDKUser).profile.about}&rdquo;</p>
+                        )}
+                      </div>
+                    </Button>
                   </div>
                 ) : (
-                  displayTrending.map(tag => (
-                    <button
-                      key={tag}
-                      onClick={() => setSearchInput(`#${tag}`)}
-                      className="px-4 py-2 bg-gray-100 dark:bg-gray-900 hover:bg-blue-50 dark:hover:bg-blue-900/20 border border-gray-200 dark:border-gray-800 rounded-2xl text-sm font-bold transition-all active:scale-95"
-                    >
-                      #{tag}
-                    </button>
-                  ))
+                  <div className="py-20 text-center">
+                    <div className="size-16 bg-muted/30 rounded-3xl flex items-center justify-center mx-auto mb-4">
+                      <UserIcon className="size-8 text-muted-foreground/50" />
+                    </div>
+                    <h3 className="text-lg font-black">Find people</h3>
+                    <p className="text-sm text-muted-foreground max-w-xs mx-auto mt-2 font-medium">
+                      Enter a pubkey, npub, or name to find people on the decentralized web.
+                    </p>
+                  </div>
                 )}
-              </div>
-            </div>
-
-            {/* Trending Posts Section */}
-            <div className="mt-4">
-              <div className="px-6 py-4 flex items-center gap-2 text-gray-400 border-t border-gray-100 dark:border-gray-900">
-                <TrendingUp size={16} />
-                <span className="text-xs font-black uppercase tracking-widest">Trending Posts</span>
-              </div>
-              
-              {loadingTrendingPosts ? (
-                <div className="mt-2">
-                  <FeedSkeleton />
-                </div>
-              ) : (
-                <div className="divide-y divide-gray-100 dark:divide-gray-900">
-                  {trendingPosts.map((post) => (
-                    <PostCard key={post.id} event={post} />
-                  ))}
-                </div>
-              )}
-            </div>
+              </TabsContent>
+            </Tabs>
           </div>
         )}
 
-        {/* Loading State */}
-        {isLoading && fetchedPosts.length === 0 && !directMatch && (
-          <div className="py-6 overflow-hidden">
-            <div className="h-4 w-32 bg-gray-100 dark:bg-gray-900 rounded-full animate-pulse mb-6 px-6 mx-6" />
-            <div className="flex overflow-x-auto pb-4 space-x-4 scrollbar-hide px-6">
-              {[1, 2, 3, 4, 5, 6].map((i) => (
-                <div key={i} className="flex flex-col items-center min-w-[130px] max-w-[130px] animate-pulse">
-                  <div className="w-20 h-20 rounded-3xl bg-gray-100 dark:bg-gray-900 mb-3" />
-                  <div className="h-3 w-20 bg-gray-100 dark:bg-gray-900 rounded mb-2" />
-                  <div className="h-2 w-14 bg-gray-50 dark:bg-black rounded" />
-                </div>
-              ))}
+        {!initialQuery && (
+          <div className="py-20 text-center animate-in fade-in duration-700">
+            <div className="size-24 bg-primary/5 rounded-[2.5rem] flex items-center justify-center mx-auto mb-8 shadow-inner">
+              <Search className="size-10 text-primary/40" />
             </div>
-            <div className="mt-8 px-0">
-              <FeedSkeleton />
+            <h2 className="text-2xl font-black mb-2">Explore Nostr</h2>
+            <p className="text-muted-foreground max-w-sm mx-auto font-medium leading-relaxed">
+              Search for your friends, discover interesting posts, or jump directly to an ID. Everything is searchable.
+            </p>
+            
+            <div className="mt-12 grid grid-cols-2 gap-4 max-w-sm mx-auto">
+              <Card className="bg-muted/20 border-none shadow-sm hover:bg-muted/30 transition-colors cursor-pointer p-4 rounded-3xl text-left">
+                <Filter className="size-5 text-primary mb-2" />
+                <p className="font-black text-xs uppercase tracking-widest mb-1">Keywords</p>
+                <p className="text-[10px] text-muted-foreground font-medium">Search content</p>
+              </Card>
+              <Card className="bg-muted/20 border-none shadow-sm hover:bg-muted/30 transition-colors cursor-pointer p-4 rounded-3xl text-left">
+                <UserIcon className="size-5 text-primary mb-2" />
+                <p className="font-black text-xs uppercase tracking-widest mb-1">Pubkeys</p>
+                <p className="text-[10px] text-muted-foreground font-medium">Jump to profile</p>
+              </Card>
             </div>
-          </div>
-        )}
-
-        {/* Posts Results */}
-        {fetchedPosts.length > 0 && (
-          <section className="pb-20 animate-in fade-in duration-500">
-            <h2 className="text-sm font-black uppercase tracking-widest text-gray-400 p-6">
-              {directMatch?.type === 'event' ? "Related Results" : "Posts"}
-            </h2>
-            <div className="divide-y divide-gray-100 dark:divide-gray-900">
-              {fetchedPosts.map((post) => (
-                <PostCard key={post.id} event={post} />
-              ))}
-            </div>
-            {hasMorePosts && fetchedPosts.length >= RESULTS_PER_PAGE && (
-              <div className="p-10 text-center border-t border-gray-100 dark:divide-gray-900">
-                <button 
-                  onClick={loadMorePosts}
-                  disabled={isLoading}
-                  className="px-8 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-2xl text-sm font-black transition-all shadow-lg shadow-blue-500/20 active:scale-95 disabled:opacity-50"
-                >
-                  {isLoading ? (
-                    <span className="flex items-center gap-2">
-                      <Loader2 size={18} className="animate-spin" />
-                      Loading Results…
-                    </span>
-                  ) : "Load More Content"}
-                </button>
-              </div>
-            )}
-          </section>
-        )}
-        
-        {/* No results found state */}
-        {!isLoading && debouncedQuery && fetchedPosts.length === 0 && !directMatch && searchError === null && (
-          <div className="text-center p-20 animate-in zoom-in-95 duration-300">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-red-50 dark:bg-red-900/10 text-red-500 rounded-2xl mb-6">
-              <X size={32} />
-            </div>
-            <h3 className="text-xl font-black text-gray-900 dark:text-white mb-2">No matches found</h3>
-            <p className="text-sm text-gray-500 max-w-xs mx-auto">We couldn&apos;t find anything for &quot;{debouncedQuery}&quot;. Try a different keyword or hashtag.</p>
-          </div>
-        )}
-        
-        {/* Error state */}
-        {searchError && (
-          <div className="text-center p-20 animate-in zoom-in-95 duration-300">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-red-50 dark:bg-red-900/10 text-red-500 rounded-2xl mb-6">
-              <X size={32} />
-            </div>
-            <h3 className="text-xl font-black text-gray-900 dark:text-white mb-2">Search Error</h3>
-            <p className="text-sm text-gray-500 max-w-xs mx-auto">{searchError}</p>
           </div>
         )}
       </div>
-    </>
+    </div>
   );
 }

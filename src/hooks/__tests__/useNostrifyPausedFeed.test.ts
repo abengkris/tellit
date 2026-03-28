@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi } from 'vitest';
-import { renderHook, act } from '@testing-library/react';
+import { renderHook, act, waitFor } from '@testing-library/react';
 import { useNostrifyPausedFeed } from '../useNostrifyPausedFeed';
 import { useNostrifyFeed } from '../useNostrifyFeed';
 
@@ -10,7 +10,7 @@ vi.mock('../useNostrifyFeed', () => ({
 }));
 
 describe('useNostrifyPausedFeed', () => {
-  it('should initialize with provided posts', () => {
+  it('should initialize with provided posts', async () => {
     vi.mocked(useNostrifyFeed).mockReturnValue({
       posts: [{ id: '1', created_at: 100 } as any],
       loading: false,
@@ -20,11 +20,15 @@ describe('useNostrifyPausedFeed', () => {
     });
 
     const { result } = renderHook(() => useNostrifyPausedFeed({}));
-    expect(result.current.posts).toHaveLength(1);
+    
+    await waitFor(() => {
+      expect(result.current.posts).toHaveLength(1);
+    });
+    
     expect(result.current.newCount).toBe(0);
   });
 
-  it('should buffer new posts until flushed', () => {
+  it('should buffer new posts until flushed', async () => {
     // Initial state
     vi.mocked(useNostrifyFeed).mockReturnValue({
       posts: [{ id: '1', created_at: 100 } as any],
@@ -35,7 +39,10 @@ describe('useNostrifyPausedFeed', () => {
     });
 
     const { result, rerender } = renderHook(() => useNostrifyPausedFeed({}));
-    expect(result.current.posts).toHaveLength(1);
+    
+    await waitFor(() => {
+      expect(result.current.posts).toHaveLength(1);
+    });
 
     // Add a new post in the base hook
     vi.mocked(useNostrifyFeed).mockReturnValue({
@@ -52,8 +59,11 @@ describe('useNostrifyPausedFeed', () => {
     rerender();
 
     // Should still only show 1 post, but have newCount = 1
+    await waitFor(() => {
+      expect(result.current.newCount).toBe(1);
+    });
+    
     expect(result.current.posts).toHaveLength(1);
-    expect(result.current.newCount).toBe(1);
 
     // Flush
     act(() => {

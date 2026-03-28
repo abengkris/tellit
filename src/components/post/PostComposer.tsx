@@ -172,17 +172,20 @@ export const PostComposer: React.FC<PostComposerProps> = ({
     }
   };
 
-  const insertMention = (npub: string) => {
+  const insertMention = (npub?: string, pubkey?: string) => {
+    const mention = npub || (pubkey ? toNpub(pubkey) : "");
+    if (!mention) return;
+
     const lastAt = content.lastIndexOf("@", cursorPos - 1);
     if (lastAt !== -1) {
       const before = content.slice(0, lastAt);
       const after = content.slice(cursorPos);
-      const newContent = `${before}nostr:${npub} ${after}`;
+      const newContent = `${before}nostr:${mention} ${after}`;
       setContent(newContent);
       setShowMentionPicker(false);
       setTimeout(() => {
         textareaRef.current?.focus();
-        const newPos = before.length + npub.length + 7; // nostr: + space
+        const newPos = before.length + mention.length + 7; // nostr: + space
         textareaRef.current?.setSelectionRange(newPos, newPos);
       }, 0);
     }
@@ -469,7 +472,7 @@ export const PostComposer: React.FC<PostComposerProps> = ({
                   <React.Fragment key={u.pubkey}>
                     <Button
                       variant="ghost"
-                      onClick={() => insertMention(u.npub)}
+                      onClick={() => insertMention(u.npub, u.pubkey)}
                       className="w-full justify-start h-auto px-4 py-3 rounded-none gap-3 hover:bg-accent"
                     >
                       <Avatar pubkey={u.pubkey} size={32} nip05={u.profile?.nip05} aria-hidden="true" />

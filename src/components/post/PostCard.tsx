@@ -8,27 +8,31 @@ import { usePostStats } from "@/hooks/usePostStats";
 import { useNDK } from "@/hooks/useNDK";
 import { useAuthStore } from "@/store/auth";
 import Link from "next/link";
-import { ZapModal } from "@/components/common/ZapModal";
+import { 
+  getPostUrl, 
+  getArticleUrl, 
+  deletePost, 
+  requestSummarization 
+} from "@/lib/actions/post";
+import { pinPost, unpinPost, muteUser, unmuteUser } from "@/lib/actions/profile";
+import { useUIStore } from "@/store/ui";
+import { useLists } from "@/hooks/useLists";
+import { getEventNip19 } from "@/lib/utils/nip19";
+import { useNostrifyPublish } from "@/hooks/useNostrifyPublish";
 import { PostHeader } from "./parts/PostHeader";
 import { PostContentRenderer } from "./parts/PostContent";
 import { PostActions } from "./parts/PostActions";
-import { deletePost, requestSummarization } from "@/lib/actions/post";
-import { useNostrifyPublish } from "@/hooks/useNostrifyPublish";
-import { useUIStore } from "@/store/ui";
-import { RawEventModal } from "./parts/RawEventModal";
-import { ReportModal } from "./parts/ReportModal";
-import { ReplyModal } from "./parts/ReplyModal";
-import { QuoteModal } from "./parts/QuoteModal";
 import { PollRenderer } from "./PollRenderer";
-import { shortenPubkey, getEventNip19 } from "@/lib/utils/nip19";
-import { getPostUrl, getArticleUrl } from "@/lib/utils/identity";
-import { formatFullTimestamp } from "@/lib/utils/date";
-import { useLists } from "@/hooks/useLists";
-import { ScoredEvent } from "@/lib/feed/types";
+import { ArticleCardPreview } from "@/components/article/ArticleCardPreview";
+import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { Avatar } from "../common/Avatar";
-import { Card, CardContent } from "@/components/ui/card";
+import { ScoredEvent } from "@/lib/feed/types";
+import { ThreadScore } from "@/components/feed/ThreadScore";
+import { ReplyModal } from "./parts/ReplyModal";
+import { QuoteModal } from "./parts/QuoteModal";
+import { RawEventModal } from "./parts/RawEventModal";
+import { ZapModal } from "@/components/common/ZapModal";
 import { Repeat2 } from "lucide-react";
 
 type ThreadLine = "none" | "top" | "bottom" | "both";
@@ -56,17 +60,14 @@ export const PostCard = memo(({
   const { user: currentUser } = useAuthStore();
   const { ndk, isReady } = useNDK();
   const { react, repost } = useNostrifyPublish();
-  const [showZapModal, setShowZapModal] = useState(false);
-  const [showRawModal, setShowRawModal] = useState(false);
-  const [showReportModal, setShowReportModal] = useState(false);
+  const { addToast } = useUIStore();
+  const { isPinned, isMuted, isBookmarked, bookmarkPost, unbookmarkPost } = useLists();
+  
   const [showReplyModal, setShowReplyModal] = useState(false);
   const [showQuoteModal, setShowQuoteModal] = useState(false);
-  const { addToast } = useUIStore();
-  const { 
-    isPinned, pinPost, unpinPost, 
-    isMuted, muteUser, unmuteUser,
-    isBookmarked, bookmarkPost, unbookmarkPost
-  } = useLists();
+  const [showRawEventModal, setShowRawEventModal] = useState(false);
+  const [showZapModal, setShowZapModal] = useState(false);
+  const [isSummarizing, setIsSummarizing] = useState(false);
 
   const isRepost = event?.kind === 6 || event?.kind === 16;
   const isHighlight = event?.kind === 9802;
@@ -84,7 +85,6 @@ export const PostCard = memo(({
     reposts: repostsCount, 
     comments, 
     quotes, 
-    combinedReposts,
     bookmarks, 
     totalSats, 
     userLiked, 
@@ -124,32 +124,19 @@ export const PostCard = memo(({
     }
   }, [isRepost, event, isReady, ndk]);
 
-  const display_name = useMemo(() => 
-    profile?.display_name || profile?.name || (displayEvent?.pubkey ? shortenPubkey(displayEvent.pubkey) : ""),
-  [profile, displayEvent?.pubkey]);
-
-  const avatar = profile?.picture || (profile as Record<string, unknown> | undefined)?.image as string | undefined;
-
-  const repostAuthorName = useMemo(() => {
-    if (!event) return "";
-    return event.pubkey === currentUser?.pubkey 
-      ? "You" 
-      : (repostAuthorProfile?.display_name || repostAuthorProfile?.name || (event.pubkey ? shortenPubkey(event.pubkey) : ""));
-  }, [event, currentUser?.pubkey, repostAuthorProfile]);
-
-  const userNpub = useMemo(() => {
-    try {
-      return (displayEvent as NDKEvent & { author?: { npub?: string } }).author?.npub || "";
-    } catch {
-      return "";
-    }
-  }, [displayEvent]);
+  const display_name = useMemo(() => {
+    if (profileLoading) return "…";
+    return profile?.display_name || profile?.name || "Anonymous";
+  }, [profile, profileLoading]);
 
   const navigationHref = useMemo(() => {
     if (!displayEvent) return "#";
-    if (isArticle) return getArticleUrl(displayEvent, profile);
-    return getPostUrl(displayEvent, profile);
-  }, [isArticle, displayEvent, profile]);
+    const ndkEvent = displayEvent instanceof NDKEvent ? displayEvent : (ndk ? new NDKEvent(ndk, displayEvent) : null);
+    if (!ndkEvent) return "#";
+
+    if (isArticle) return getArticleUrl(ndkEvent, profile);
+    return getPostUrl(ndkEvent, profile);
+  }, [isArticle, displayEvent, profile, ndk]);
 
   const replyingToPubkey = useMemo(() => {
     if (!displayEvent?.tags) return null;
@@ -196,7 +183,8 @@ export const PostCard = memo(({
   const handleRepost = async (e: React.MouseEvent) => {
     e.stopPropagation();
     try {
-      await repost(displayEvent);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await repost(displayEvent as any);
     } catch (err) {
       console.error(err);
       addToast("Failed to repost", "error");
@@ -207,7 +195,8 @@ export const PostCard = memo(({
     e.stopPropagation();
     try {
       if (userLiked) return;
-      await react(displayEvent, "+");
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await react(displayEvent as any, "+");
     } catch (err) {
       console.error(err);
       addToast("Failed to like post", "error");
@@ -216,7 +205,8 @@ export const PostCard = memo(({
 
   const handleEmojiReaction = async (emoji: { shortcode: string, url: string }) => {
     try {
-      await react(displayEvent, `:${emoji.shortcode}:`, emoji.url);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await react(displayEvent as any, `:${emoji.shortcode}:`, emoji.url);
     } catch (err) {
       console.error(err);
       addToast("Failed to send reaction", "error");
@@ -288,14 +278,17 @@ export const PostCard = memo(({
   };
 
   const handleSummarize = async () => {
-    if (!ndk) return;
+    if (!ndk || !displayEvent) return;
+    setIsSummarizing(true);
     try {
-      addToast("Requesting AI summary...", "info");
-      await requestSummarization(ndk, displayEvent);
-      addToast("Summary requested! It may take a moment for DVMs to respond.", "success");
+      const ndkEvent = displayEvent instanceof NDKEvent ? displayEvent : new NDKEvent(ndk, displayEvent);
+      await requestSummarization(ndk, ndkEvent);
+      addToast("Summarization request sent!", "success");
     } catch (err) {
       console.error(err);
       addToast("Failed to request summary", "error");
+    } finally {
+      setIsSummarizing(false);
     }
   };
 
@@ -319,215 +312,165 @@ export const PostCard = memo(({
     );
   }
 
+  const isMyPost = currentUser?.pubkey === displayEvent.pubkey;
+
   return (
-    <Card 
-      className={cn(
-        "border-0 border-b border-border/50 rounded-none bg-transparent hover:bg-muted/30 transition-colors",
-        isFocal ? "bg-muted/10 border-b-0" : "",
-        indent > 0 ? "ml-4 border-l border-border/50" : ""
+    <Card className={cn(
+      "border-none shadow-none bg-transparent group/card transition-colors relative flex",
+      variant === "feed" ? "hover:bg-muted/30" : "",
+      isFocal ? "bg-muted/10 ring-1 ring-primary/10" : "",
+      indent > 0 ? "border-l-2 border-primary/10 ml-4 pl-2" : ""
+    )}>
+      {/* Thread Score Sidebar */}
+      {scoredEvent && variant === "feed" && (
+        <ThreadScore score={scoredEvent.score} signals={scoredEvent.signals} />
       )}
-    >
-      <CardContent className={cn("p-4 pb-2", indent > 0 ? "pl-4" : "")}>
+
+      {/* Thread Lines */}
+      {(threadLine === "top" || threadLine === "both") && (
+        <div className="absolute top-0 left-[2.25rem] w-0.5 h-4 bg-border/50" />
+      )}
+      {(threadLine === "bottom" || threadLine === "both") && (
+        <div className="absolute top-12 bottom-0 left-[2.25rem] w-0.5 bg-border/50" />
+      )}
+
+      <div className="flex-1 min-w-0 flex flex-col py-3 px-4">
+        {/* Repost Header */}
         {isRepost && (
-          <div className={cn(
-            "flex items-center space-x-2 text-muted-foreground text-xs font-bold mb-2 truncate min-w-0",
-            variant === "detail" ? "mb-4 ml-0" : "ml-10"
-          )}>
-            <Repeat2 size={variant === "detail" ? 16 : 14} className="shrink-0" aria-hidden="true" />
-            <span className="truncate">{repostAuthorName} reposted</span>
+          <div className="flex items-center gap-2 mb-2 ml-10 text-muted-foreground/70 group-hover:text-muted-foreground transition-colors">
+            <Repeat2 size={14} className="animate-in zoom-in duration-300" />
+            <Link 
+              href={`/p/${event.pubkey}`}
+              onClick={(e) => e.stopPropagation()}
+              className="text-[11px] font-black uppercase tracking-widest hover:text-primary transition-colors truncate"
+            >
+              {repostAuthorProfile?.display_name || repostAuthorProfile?.name || "Someone"} reposted
+            </Link>
           </div>
         )}
 
-        <div className="flex space-x-3">
-          {/* Thread lines */}
-          <div className="flex flex-col items-center">
-            <div className={cn("w-0.5 grow", (threadLine === "top" || threadLine === "both") ? "bg-border/50" : "bg-transparent")} />
-            <Avatar 
-              pubkey={displayEvent.pubkey} 
-              src={avatar} 
-              size={variant === "detail" ? 52 : 48}
-              className="z-10"
-            />
-            <div className={cn("w-0.5 grow mt-2", (threadLine === "bottom" || threadLine === "both") ? "bg-border/50" : "bg-transparent")} />
+        <div className="flex gap-3">
+          {/* Avatar Container */}
+          <div className="flex flex-col items-center shrink-0">
+            <Link 
+              href={profileUrl}
+              onClick={(e) => e.stopPropagation()}
+              className="relative z-10"
+            >
+              <Skeleton className={cn("size-12 rounded-full absolute inset-0", !profileLoading && "hidden")} />
+              <div className={cn("size-12 rounded-full overflow-hidden border-2 border-transparent hover:border-primary/20 transition-all", profileLoading && "opacity-0")}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img 
+                  src={profile?.picture || "/file.svg"} 
+                  alt={display_name}
+                  className="size-full object-cover"
+                  loading="lazy"
+                />
+              </div>
+            </Link>
           </div>
 
+          {/* Post Content */}
           <div className="flex-1 min-w-0">
             <PostHeader 
               display_name={display_name}
-              avatar={avatar}
-              isLoading={profileLoading}
-              userNpub={userNpub}
-              profileUrl={profileUrl}
               pubkey={displayEvent.pubkey}
+              created_at={displayEvent.created_at}
               nip05={profile?.nip05}
-              createdAt={displayEvent.created_at}
-              isReply={false}
-              bot={profile?.bot}
-              isArticle={isArticle}
-              isPoll={isPoll}
+              isMyPost={isMyPost}
               isPinned={isPinned(displayEvent.id)}
               isMuted={isMuted(displayEvent.pubkey)}
               isBookmarked={isBookmarked(displayEvent.id)}
-              onPinClick={currentUser?.pubkey === displayEvent.pubkey ? handlePin : undefined}
-              onMuteClick={currentUser?.pubkey !== displayEvent.pubkey ? handleMute : undefined}
-              onBookmarkClick={handleBookmarkToggle}
-              onDeleteClick={currentUser?.pubkey === displayEvent.pubkey ? handleDelete : undefined}
-              onReportClick={currentUser?.pubkey !== displayEvent.pubkey ? () => setShowReportModal(true) : undefined}
-              onMoreClick={() => setShowRawModal(true)}
-              onSummarizeClick={handleSummarize}
-              tags={isRepost ? (repostAuthorProfile?.tags || displayEvent.tags) : displayEvent.tags}
-              navigationHref={navigationHref}
-              variant={variant}
-              relevance={scoredEvent}
-              showAvatar={false}
+              onDelete={handleDelete}
+              onPin={handlePin}
+              onMute={handleMute}
+              onBookmark={handleBookmarkToggle}
+              onRawEvent={() => setShowRawEventModal(true)}
+              onSummarize={handleSummarize}
+              isSummarizing={isSummarizing}
             />
-            
-            {replyingToPubkey && variant === "feed" && (
-              <div className="text-[13px] text-muted-foreground mt-0.5 mb-1">
-                Replying to <Link href={`/p/${replyingToPubkey}`} className="text-primary hover:underline">@{shortenPubkey(replyingToPubkey)}</Link>
+
+            {/* Replying to... */}
+            {replyingToPubkey && (
+              <div className="mt-0.5 mb-1 text-[11px] text-muted-foreground font-medium">
+                Replying to <Link href={`/p/${replyingToPubkey}`} className="text-primary hover:underline" onClick={e => e.stopPropagation()}>@{replyingToPubkey.slice(0, 8)}</Link>
               </div>
             )}
 
-            {(() => {
-              const subj = displayEvent.tags.find(t => t[0] === 'subject')?.[1];
-              if (!subj) return null;
-              return (
-                <div className={cn(
-                  "font-bold text-foreground mb-1",
-                  variant === "detail" ? "text-2xl mt-4" : "text-base"
-                )}>
-                  {subj}
-                </div>
-              );
-            })()}
+            <Link href={navigationHref} className="block">
+              {isArticle ? (
+                <ArticleCardPreview 
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  event={displayEvent as any} 
+                  profile={profile || undefined} 
+                />
+              ) : (
+                <PostContentRenderer 
+                  content={displayEvent.content} 
+                  event={displayEvent}
+                  variant={variant}
+                  isHighlight={isHighlight}
+                  isQuote={isQuote}
+                />
+              )}
+            </Link>
 
-            <div className={cn(
-              "mt-2",
-              variant === "detail" ? "text-xl sm:text-2xl leading-normal mb-6 font-normal tracking-tight" : "text-[15px] sm:text-[16px] leading-relaxed"
-            )}>
-              <PostContentRenderer
-                content={displayEvent.content || ""}
-                event={displayEvent}
-                replyingToPubkey={replyingToPubkey}
-                isRepost={isRepost}
-                isHighlight={isHighlight}
-                isArticle={isArticle}
-                isQuote={isQuote}
-                className={variant === "detail" ? "prose-2xl" : ""}
-                variant={variant}
-              />
-            </div>
-
-            {isPoll && (
-              <div className={cn(variant !== "detail" && "ml-14 mt-3")}>
-                <PollRenderer event={displayEvent} />
-              </div>
-            )}
-
-            {variant === "detail" && (
-              <div className="flex flex-col mt-6">
-                <div className="py-4 text-muted-foreground text-[15px] border-t border-border/50 flex items-center justify-between">
-                  <span>{formatFullTimestamp(displayEvent.created_at)}</span>
-                  {(() => {
-                    const clientTag = displayEvent.tags.find(t => t[0] === 'client');
-                    const clientName = clientTag?.[1];
-                    if (!clientName) return null;
-                    return (
-                      <span className="flex items-center gap-1.5 shrink-0">
-                        <span className="opacity-50">·</span>
-                        <span className="text-primary font-bold">via {clientName}</span>
-                      </span>
-                    );
-                  })()}
-                </div>
-                
-                {(combinedReposts > 0 || likes > 0 || totalSats > 0 || comments > 0) && (
-                  <div className="py-4 border-t border-border/50 flex items-center gap-6 text-[15px]">
-                    {comments > 0 && (
-                      <div className="flex items-center gap-1 hover:underline cursor-pointer" onClick={() => {}}>
-                        <span className="font-bold text-foreground">{comments.toLocaleString()}</span>
-                        <span className="text-muted-foreground">Comments</span>
-                      </div>
-                    )}
-                    {combinedReposts > 0 && (
-                      <div className="flex items-center gap-1 hover:underline cursor-pointer" onClick={() => {}}>
-                        <span className="font-bold text-foreground">{combinedReposts.toLocaleString()}</span>
-                        <span className="text-muted-foreground">Reposts</span>
-                      </div>
-                    )}
-                    {likes > 0 && (
-                      <div className="flex items-center gap-1 hover:underline cursor-pointer" onClick={() => {}}>
-                        <span className="font-bold text-foreground">{likes.toLocaleString()}</span>
-                        <span className="text-muted-foreground">Likes</span>
-                      </div>
-                    )}
-                    {totalSats > 0 && (
-                      <div className="flex items-center gap-1 hover:underline cursor-pointer" onClick={() => {}}>
-                        <span className="font-bold text-foreground">{totalSats.toLocaleString()}</span>
-                        <span className="text-muted-foreground">Sats</span>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
+            {isPoll && <PollRenderer event={displayEvent} />}
 
             <PostActions 
-              eventId={displayEvent.id}
-              authorPubkey={displayEvent.pubkey}
               likes={likes}
               reposts={repostsCount}
               comments={comments}
               quotes={quotes}
-              combinedReposts={combinedReposts}
               bookmarks={bookmarks}
-              zaps={totalSats}
-              userReacted={userLiked ? "+" : null}
+              totalSats={totalSats}
+              userLiked={userLiked}
               userReposted={userReposted}
-              onReplyClick={() => setShowReplyModal(true)}
-              onRepostClick={handleRepost}
-              onLikeClick={handleLike}
-              onZapClick={() => setShowZapModal(true)}
-              onQuoteClick={handleQuote}
+              eventId={displayEvent.id}
+              eventPubkey={displayEvent.pubkey}
+              onReply={() => setShowReplyModal(true)}
+              onRepost={handleRepost}
+              onLike={handleLike}
+              onQuote={handleQuote}
+              onZap={() => setShowZapModal(true)}
+              onShare={handleShare}
               onEmojiReaction={handleEmojiReaction}
-              onShareClick={handleShare}
-              variant={variant}
             />
           </div>
         </div>
-      </CardContent>
+      </div>
 
+      {/* Modals */}
       {showZapModal && (
-        <ZapModal 
-          onClose={() => setShowZapModal(false)} 
-          event={displayEvent}
+        <ZapModal
+          isOpen={showZapModal}
+          onClose={() => setShowZapModal(false)}
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          event={displayEvent as any}
+          user={ndk?.getUser({ pubkey: displayEvent.pubkey })}
         />
       )}
-      {showRawModal && (
+      {showRawEventModal && (
         <RawEventModal
-          isOpen={showRawModal}
-          onClose={() => setShowRawModal(false)}
-          event={displayEvent}
-        />
-      )}
-      {showReportModal && (
-        <ReportModal
-          targetPubkey={displayEvent.pubkey}
-          targetEventId={displayEvent.id}
-          isOpen={showReportModal}
-          onClose={() => setShowReportModal(false)}
+          isOpen={showRawEventModal}
+          onClose={() => setShowRawEventModal(false)}
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          event={displayEvent as any}
         />
       )}
       {showReplyModal && (
         <ReplyModal
+          isOpen={showReplyModal}
           onClose={() => setShowReplyModal(false)}
-          event={displayEvent}
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          event={displayEvent as any}
         />
       )}
       {showQuoteModal && (
         <QuoteModal
           onClose={() => setShowQuoteModal(false)}
-          event={displayEvent}
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          event={displayEvent as any}
         />
       )}
     </Card>
