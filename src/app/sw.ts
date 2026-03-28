@@ -1,6 +1,7 @@
+/// <reference lib="webworker" />
 import { defaultCache } from "@serwist/next/worker";
-import type { PrecacheEntry, SerwistGlobalConfig } from "@serwist/sw";
-import { Serwist } from "@serwist/sw";
+import type { PrecacheEntry, SerwistGlobalConfig } from "serwist";
+import { Serwist } from "serwist";
 
 declare global {
   interface ServiceWorkerGlobalScope extends SerwistGlobalConfig {
@@ -18,13 +19,12 @@ const serwist = new Serwist({
   runtimeCaching: defaultCache,
 });
 
-self.addEventListener("push", (event) => {
+self.addEventListener("push", (event: PushEvent) => {
   if (!(self.Notification && self.Notification.permission === "granted")) {
     return;
   }
 
-  const pushEvent = event as PushEvent;
-  const data = pushEvent.data?.json() ?? {};
+  const data = event.data?.json() ?? {};
   const title = data.title || "New notification";
   const options = {
     body: data.body || "Whatever it is, just Tell It.",
@@ -35,25 +35,24 @@ self.addEventListener("push", (event) => {
     },
   };
 
-  pushEvent.waitUntil(self.registration.showNotification(title, options));
+  event.waitUntil(self.registration.showNotification(title, options));
 });
 
-self.addEventListener("notificationclick", (event) => {
-  const notificationEvent = event as NotificationEvent;
-  notificationEvent.notification.close();
-  notificationEvent.waitUntil(
+self.addEventListener("notificationclick", (event: NotificationEvent) => {
+  event.notification.close();
+  event.waitUntil(
     self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
       const windowClients = clientList as WindowClient[];
       if (windowClients.length > 0) {
         let client = windowClients[0];
         for (let i = 0; i < windowClients.length; i++) {
-          if (windowClients[i].focused) {
+          if (clientList[i].focused) {
             client = windowClients[i];
           }
         }
         return client.focus();
       }
-      return self.clients.openWindow(notificationEvent.notification.data.url);
+      return self.clients.openWindow(event.notification.data.url);
     })
   );
 });
