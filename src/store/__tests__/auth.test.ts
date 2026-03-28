@@ -92,7 +92,13 @@ describe("Auth Store", () => {
     expect(state.loginType).toBe("privateKey");
   });
 
-  it("should handle logout", () => {
+  it("should handle logout", async () => {
+    // Mock window.location
+    const originalLocation = window.location;
+    // @ts-expect-error - deleting window.location is required for mocking
+    delete window.location;
+    window.location = { ...originalLocation, href: "" };
+
     useAuthStore.setState({
       isLoggedIn: true,
       publicKey: "some-key",
@@ -100,12 +106,16 @@ describe("Auth Store", () => {
     });
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    useAuthStore.getState().logout(mockSessions as any);
+    await useAuthStore.getState().logout(mockSessions as any);
 
     const state = useAuthStore.getState();
     expect(state.isLoggedIn).toBe(false);
     expect(state.publicKey).toBe(null);
     expect(state.loginType).toBe("none");
     expect(mockSessions.logout).toHaveBeenCalled();
+    expect(window.location.href).toBe("/");
+
+    // Restore window.location
+    window.location = originalLocation;
   });
 });

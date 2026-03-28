@@ -250,41 +250,61 @@ export const useAuthStore = create<AuthState>()(
       },
 
       logout: async (sessions) => {
-        useWalletStore.getState().resetWallet();
-        if (sessions) {
-          sessions.logout();
+        try {
+          useWalletStore.getState().resetWallet();
+          if (sessions) {
+            sessions.logout();
+          }
+          await deleteSessionCookie();
+        } catch (error) {
+          console.error("Logout error:", error);
+        } finally {
+          // Clear all auth state
+          set({ 
+            user: null, 
+            publicKey: null, 
+            privateKey: null, 
+            bunkerUri: null,
+            bunkerLocalNsec: null,
+            signerPayload: null,
+            isLoggedIn: false, 
+            loginType: 'none' 
+          });
+          
+          // Force a hard redirect to ensure NDK and all other states are reset
+          if (typeof window !== 'undefined') {
+            window.location.href = "/";
+          }
         }
-        set({ 
-          user: null, 
-          publicKey: null, 
-          privateKey: null, 
-          bunkerUri: null,
-          bunkerLocalNsec: null,
-          signerPayload: null,
-          isLoggedIn: false, 
-          loginType: 'none' 
-        });
-        await deleteSessionCookie();
       },
 
       logoutAll: async (sessions) => {
-        useWalletStore.getState().resetWallet();
-        if (sessions) {
-          const pubkeys = Array.from(sessions.getSessions().keys());
-          pubkeys.forEach(pk => sessions.logout(pk));
+        try {
+          useWalletStore.getState().resetWallet();
+          if (sessions) {
+            const pubkeys = Array.from(sessions.getSessions().keys());
+            pubkeys.forEach(pk => sessions.logout(pk));
+          }
+          await deleteSessionCookie();
+        } catch (error) {
+          console.error("LogoutAll error:", error);
+        } finally {
+          set({ 
+            user: null, 
+            publicKey: null, 
+            privateKey: null, 
+            bunkerUri: null,
+            bunkerLocalNsec: null,
+            signerPayload: null,
+            accounts: [],
+            isLoggedIn: false, 
+            loginType: 'none' 
+          });
+          
+          if (typeof window !== 'undefined') {
+            window.location.href = "/";
+          }
         }
-        set({ 
-          user: null, 
-          publicKey: null, 
-          privateKey: null, 
-          bunkerUri: null,
-          bunkerLocalNsec: null,
-          signerPayload: null,
-          accounts: [],
-          isLoggedIn: false, 
-          loginType: 'none' 
-        });
-        await deleteSessionCookie();
       },
     }),
     {
