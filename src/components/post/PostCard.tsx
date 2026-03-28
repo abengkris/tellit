@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo, memo } from "react";
 import { NDKEvent } from "@nostr-dev-kit/ndk";
+import { type NostrEvent } from "@nostrify/types";
 import { useProfile } from "@/hooks/useProfile";
 import { usePostStats } from "@/hooks/usePostStats";
 import { useNDK } from "@/hooks/useNDK";
@@ -33,7 +34,7 @@ import { Repeat2 } from "lucide-react";
 type ThreadLine = "none" | "top" | "bottom" | "both";
 
 interface PostCardProps {
-  event: NDKEvent;
+  event: NDKEvent | NostrEvent;
   scoredEvent?: ScoredEvent;
   threadLine?: ThreadLine;
   isFocal?: boolean;
@@ -49,7 +50,7 @@ export const PostCard = memo(({
   indent = 0,
   variant = "feed"
 }: PostCardProps) => {
-  const [repostedEvent, setRepostedEvent] = useState<NDKEvent | null>(null);
+  const [repostedEvent, setRepostedEvent] = useState<NDKEvent | NostrEvent | null>(null);
   const [repostLoading, setRepostLoading] = useState(false);
   const [isDeleted, setIsDeleted] = useState(false);
   const { user: currentUser } = useAuthStore();
@@ -92,13 +93,13 @@ export const PostCard = memo(({
 
   useEffect(() => {
     if (isRepost && isReady && ndk && event) {
-      if (event.content && event.content.trim().startsWith('{')) {
+      const content = ('content' in event) ? event.content : '';
+      if (content && content.trim().startsWith('{')) {
         try {
-          const raw = JSON.parse(event.content);
+          const raw = JSON.parse(content);
           if (raw.id && raw.pubkey && raw.content !== undefined) {
-            const ev = new NDKEvent(ndk, raw);
             Promise.resolve().then(() => {
-              setRepostedEvent(ev);
+              setRepostedEvent(raw as NostrEvent);
               setRepostLoading(false);
             });
             return;
@@ -112,7 +113,7 @@ export const PostCard = memo(({
       const targetId = eTag?.[1];
 
       if (targetId) {
-        Promise.resolve().then(() => setRepostLoading(true));
+        setRepostLoading(true);
         ndk.fetchEvent(targetId)
           .then(ev => {
             if (ev) setRepostedEvent(ev);

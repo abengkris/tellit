@@ -5,6 +5,7 @@ import { createRelayPool } from "@/lib/nostrify-relay";
 import { getStorage } from "@/lib/nostrify-storage";
 import { DEFAULT_RELAYS } from "@/lib/ndk";
 import { useAuthStore } from "@/store/auth";
+import { buildReactionTemplate } from "@/lib/actions/nostrify-reaction";
 
 export function useNostrifyPublish(relays: string[] = DEFAULT_RELAYS) {
   const { privateKey } = useAuthStore();
@@ -46,22 +47,8 @@ export function useNostrifyPublish(relays: string[] = DEFAULT_RELAYS) {
   }, [privateKey, relays]);
 
   const react = useCallback(async (targetEvent: { id: string; pubkey: string; kind: number }, content: string = '+', emojiUrl?: string): Promise<NostrEvent> => {
-    const tags = [
-      ["e", targetEvent.id],
-      ["p", targetEvent.pubkey],
-      ["k", String(targetEvent.kind)],
-    ];
-
-    if (emojiUrl && content.startsWith(":") && content.endsWith(":")) {
-      const shortcode = content.slice(1, -1);
-      tags.push(["emoji", shortcode, emojiUrl]);
-    }
-
-    return publish({
-      kind: 7,
-      content,
-      tags,
-    });
+    const template = buildReactionTemplate(targetEvent, content, emojiUrl);
+    return publish(template);
   }, [publish]);
 
   const repost = useCallback(async (targetEvent: { id: string; pubkey: string; kind: number }): Promise<NostrEvent> => {

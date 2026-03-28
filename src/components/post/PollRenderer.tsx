@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { NDKEvent } from "@nostr-dev-kit/ndk";
+import { type NostrEvent } from "@nostrify/types";
 import { usePoll } from "@/hooks/usePoll";
 import { Loader2, CheckCircle2, Circle, Clock } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
@@ -12,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
 interface PollRendererProps {
-  event: NDKEvent;
+  event: NDKEvent | NostrEvent;
 }
 
 export const PollRenderer: React.FC<PollRendererProps> = ({ event }) => {

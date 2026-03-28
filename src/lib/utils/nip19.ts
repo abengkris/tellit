@@ -1,4 +1,5 @@
 import { nip19, NDKEvent, NDKUser } from "@nostr-dev-kit/ndk";
+import { type NostrEvent } from "@nostrify/types";
 
 /**
  * Decodes a NIP-19 string and returns its ID and any associated relays.
@@ -149,35 +150,41 @@ export function shortenPubkey(pubkey: string, length = 8): string {
 }
 
 /**
- * Helper to encode an NDK entity properly.
+ * Helper to encode an NDK entity or raw Nostr event properly.
  */
-export function encodeEntity(entity: NDKEvent | NDKUser): string {
+export function encodeEntity(entity: NDKEvent | NDKUser | NostrEvent): string {
   if (entity instanceof NDKUser) return entity.npub;
-  return getEventNip19(entity);
+  if (entity instanceof NDKEvent) return getEventNip19(entity);
+  
+  // For raw NostrEvent
+  return toNEvent(entity.id, entity.pubkey, entity.kind);
 }
 
 /**
  * Returns a nevent1 string for an event, ensuring relay hints are included.
  * This is more reliable than note1 for routing.
  */
-export function getEventNip19(event: NDKEvent): string {
+export function getEventNip19(event: NDKEvent | NostrEvent): string {
   try {
-    // If it's already encoded and is an nevent, return it
-    // But usually we want to re-encode to ensure current relay hints
-    const relays = event.onRelays?.map(r => r.url) || [];
+    const id = (event as NostrEvent).id;
+    const pubkey = (event as NostrEvent).pubkey;
+    const kind = (event as NostrEvent).kind;
+    const relays = (event as NDKEvent).onRelays?.map(r => r.url) || [];
     
-    // Fallback to NDK's encode which prefers nevent if possible
-    const encoded = event.encode();
-    if (encoded.startsWith('nevent1')) return encoded;
+    // For NDKEvent, we can try its encode method first
+    if (event instanceof NDKEvent) {
+      const encoded = event.encode();
+      if (encoded.startsWith('nevent1')) return encoded;
+    }
 
-    // Force nevent if NDK returned a note1
+    // Force nevent for better routing
     return nip19.neventEncode({
-      id: event.id,
+      id,
       relays: relays.slice(0, 3),
-      author: event.pubkey,
-      kind: event.kind
+      author: pubkey,
+      kind
     });
   } catch {
-    return event.id;
+    return (event as NostrEvent).id;
   }
 }

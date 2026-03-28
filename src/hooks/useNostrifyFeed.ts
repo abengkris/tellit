@@ -1,7 +1,5 @@
 import { useEffect, useState, useRef, useCallback, useMemo } from "react";
-import { type NostrFilter } from "@nostrify/types";
-import { NDKEvent } from "@nostr-dev-kit/ndk";
-import { useNDK } from "@/hooks/useNDK";
+import { type NostrFilter, type NostrEvent } from "@nostrify/types";
 import { createRelayPool } from "@/lib/nostrify-relay";
 import { getStorage } from "@/lib/nostrify-storage";
 import { DEFAULT_RELAYS } from "@/lib/ndk";
@@ -18,9 +16,8 @@ export interface UseNostrifyFeedOptions {
  * Fetches events from relays and storage, and provides a real-time feed.
  */
 export function useNostrifyFeed(options: UseNostrifyFeedOptions = {}) {
-  const { ndk } = useNDK();
   const { authors, kinds = [1], relays = DEFAULT_RELAYS, limit = 50 } = options;
-  const [posts, setPosts] = useState<NDKEvent[]>([]);
+  const [posts, setPosts] = useState<NostrEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [hasMore, setHasMore] = useState(true);
   const poolRef = useRef<ReturnType<typeof createRelayPool> | null>(null);
@@ -32,7 +29,6 @@ export function useNostrifyFeed(options: UseNostrifyFeedOptions = {}) {
   const relaysKey = useMemo(() => JSON.stringify(relays), [relays]);
 
   const fetchFeed = useCallback(async (until?: number) => {
-    if (!ndk) return;
     if (!until) {
       setLoading(true);
     }
@@ -56,10 +52,9 @@ export function useNostrifyFeed(options: UseNostrifyFeedOptions = {}) {
         const cachedEvents = await storage.query(filters);
         
         if (cachedEvents.length > 0) {
-          const ndkCachedEvents = cachedEvents.map(e => new NDKEvent(ndk, e));
           setPosts((prev) => {
-            if (!until) return ndkCachedEvents;
-            const combined = [...prev, ...ndkCachedEvents];
+            if (!until) return cachedEvents;
+            const combined = [...prev, ...cachedEvents];
             const unique = Array.from(new Map(combined.map(p => [p.id, p])).values());
             return unique.sort((a, b) => (b.created_at ?? 0) - (a.created_at ?? 0)).slice(0, 500);
           });
@@ -90,8 +85,7 @@ export function useNostrifyFeed(options: UseNostrifyFeedOptions = {}) {
           const event = msg[2];
           setPosts((prev) => {
             if (prev.some(p => p.id === event.id)) return prev;
-            const newPost = new NDKEvent(ndk, event);
-            const combined = [newPost, ...prev];
+            const combined = [event, ...prev];
             const sorted = combined
               .sort((a, b) => (b.created_at ?? 0) - (a.created_at ?? 0))
               .slice(0, 500);
@@ -118,7 +112,7 @@ export function useNostrifyFeed(options: UseNostrifyFeedOptions = {}) {
       console.error('Failed to fetch feed:', error);
       setLoading(false);
     }
-  }, [ndk, authorsKey, kindsKey, relaysKey, limit]);
+  }, [authorsKey, kindsKey, relaysKey, limit, authors, kinds, relays]);
 
   const loadMore = useCallback(() => {
     if (oldestTimestampRef.current) {
@@ -127,16 +121,14 @@ export function useNostrifyFeed(options: UseNostrifyFeedOptions = {}) {
   }, [fetchFeed]);
 
   useEffect(() => {
-    if (ndk) {
-      fetchFeed();
-    }
+    fetchFeed();
 
     return () => {
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
       }
     };
-  }, [ndk, fetchFeed]);
+  }, [fetchFeed]);
 
   return {
     posts,

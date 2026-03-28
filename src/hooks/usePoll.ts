@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { NDKEvent, NDKSubscription, NDKKind } from "@nostr-dev-kit/ndk";
+import { type NostrEvent } from "@nostrify/types";
 import { useNDK } from "./useNDK";
 import { useAuthStore } from "@/store/auth";
 import { respondToPoll } from "@/lib/actions/poll";
@@ -10,7 +11,7 @@ interface PollResults {
   [optionId: string]: number;
 }
 
-export function usePoll(pollEvent: NDKEvent) {
+export function usePoll(pollEvent: NDKEvent | NostrEvent) {
   const { ndk, isReady } = useNDK();
   const { user } = useAuthStore();
   const [responses, setResponses] = useState<NDKEvent[]>([]);
@@ -45,7 +46,7 @@ export function usePoll(pollEvent: NDKEvent) {
     const relayUrls = pollEvent.tags.filter(t => t[0] === "relay").map(t => t[1]);
 
     return { options, pollType, endsAt, relayUrls };
-  }, [pollEvent]);
+  }, [pollEvent.tags]);
 
   // Fetch responses (Kind 1018)
   useEffect(() => {
@@ -131,7 +132,8 @@ export function usePoll(pollEvent: NDKEvent) {
       throw new Error("Poll has ended");
     }
 
-    return respondToPoll(ndk, pollEvent, optionIds);
+    const event = pollEvent instanceof NDKEvent ? pollEvent : new NDKEvent(ndk, pollEvent);
+    return respondToPoll(ndk, event, optionIds);
   }, [ndk, isReady, user, pollEvent, config.endsAt]);
 
   const hasEnded = config.endsAt > 0 && now !== undefined && now > config.endsAt;

@@ -16,6 +16,7 @@ import { UrlPreview } from "../tokens/UrlPreview";
 import { PodcastEmbed } from "../tokens/PodcastEmbed";
 import { AsyncMediaEmbed } from "../tokens/AsyncMediaEmbed";
 import { NDKEvent, NDKHighlight } from "@nostr-dev-kit/ndk";
+import { type NostrEvent } from "@nostrify/types";
 import { shortenPubkey, toNpub } from "@/lib/utils/nip19";
 import { useProfile } from "@/hooks/useProfile";
 import { Play } from "lucide-react";
@@ -23,7 +24,7 @@ import { Lightbox } from "@/components/common/Lightbox";
 
 interface PostContentRendererProps {
   content: string;
-  event: NDKEvent;
+  event: NDKEvent | NostrEvent;
   renderMedia?: boolean;
   renderQuotes?: boolean;
   maxLines?: number;
@@ -76,8 +77,16 @@ export function PostContentRenderer({
     return altFallback || "";
   }, [rawContent, altFallback]);
 
-  const highlight = useMemo(() => isHighlight ? NDKHighlight.from(event) : null, [event, isHighlight]);
-  const comment = useMemo(() => highlight?.context || event.tags.find(t => t[0] === "comment")?.[1], [highlight, event.tags]);
+  const highlight = useMemo(() => {
+    if (!isHighlight) return null;
+    if (event instanceof NDKEvent) return NDKHighlight.from(event);
+    return null;
+  }, [event, isHighlight]);
+
+  const comment = useMemo(() => {
+    if (highlight) return highlight.context;
+    return event.tags.find(t => t[0] === "comment")?.[1];
+  }, [highlight, event.tags]);
   const highlightSource = useMemo(() => {
     if (!highlight) return null;
     
