@@ -32,13 +32,14 @@
     - [x] Verify profile synchronization across devices.
 - [x] Task: Conductor - User Manual Verification 'Phase 3: NIP-17 Messaging & Profile Migration' (Protocol in workflow.md) (037c277)
 
-#### **Phase 4: Feed & Filtering Migration**
+#### **Phase 4: Feed & Filtering Migration** [checkpoint: 7381425]
 - [x] Task: Migrate Feed loading logic and filtering to use Nostrify's policies and pool management. (037c277)
     - [x] Write failing tests for feed fetching with complex filters (e.g., following list, global feed).
     - [x] Implement the migration in `useFeed` and related hooks.
     - [x] Refactor filtering and sorting logic to use Nostrify's patterns.
     - [x] Verify feed performance and real-time update handling.
+- [x] Task: Conductor - User Manual Verification 'Phase 4: Feed & Filtering Migration' (Protocol in workflow.md) (7381425)
+
 - [ ] Task: Final verification of the entire migration and cleanup of NDK dependencies.
     - [ ] Conduct a thorough review of the codebase for remaining NDK references.
     - [ ] Run the full test suite and verify >80% coverage.
-- [ ] Task: Conductor - User Manual Verification 'Phase 4: Feed & Filtering Migration' (Protocol in workflow.md)
