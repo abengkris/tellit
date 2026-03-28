@@ -16,16 +16,16 @@
 - [x] Task: Migrate Article publishing logic. (b3151fb)
     - [x] Update `ArticleComposer` (or equivalent) to use Nostrify templates.
 
-#### **Phase 3: Search & Settings Migration**
-- [~] Task: Refactor `SearchContent` to use SQL store and relay pool.
-    - [ ] Implement text-based search queries using Nostrify storage.
-    - [ ] Verify search results consistency with previous NDK implementation.
-- [ ] Task: Migrate Settings (Relays, Handle Verification).
-    - [ ] Update `RelayModal` and `RelayStatus` hook.
-    - [ ] Refactor `VerifyHandle` logic to use Nostrify signers.
+#### **Phase 3: Search & Settings Migration** [checkpoint: 5732b70]
+- [x] Task: Refactor `SearchContent` to use SQL store and relay pool. (5732b70)
+    - [x] Implement text-based search queries using Nostrify storage.
+    - [x] Verify search results consistency with previous NDK implementation.
+- [x] Task: Migrate Settings (Relays, Handle Verification). (5732b70)
+    - [x] Update `RelayModal` and `RelayStatus` hook.
+    - [x] Refactor `VerifyHandle` logic to use Nostrify signers.
 
 #### **Phase 4: Zaps, Wallets & Final Cleanup**
-- [ ] Task: Migrate `ZapModal` and Zap Request templates.
+- [~] Task: Migrate `ZapModal` and Zap Request templates.
 - [ ] Task: Conduct a final audit and remove redundant NDK code.
     - [ ] Search for remaining `new NDKEvent` or `new NDKUser` calls.
     - [ ] Remove unused NDK-related hooks and utilities.

@@ -1,4 +1,4 @@
-import { type NostrEvent, type NostrSigner } from "@nostrify/types";
+import { type NostrEvent, type NostrSigner, type NostrFilter } from "@nostrify/types";
 import { createRelayPool } from "../nostrify-relay";
 import { DEFAULT_RELAYS } from "../ndk";
 
@@ -163,4 +163,43 @@ export async function publishNostrifyArticle(
     console.error("[NostrifyActions] Failed to publish article:", error);
     return false;
   }
+}
+
+/**
+ * Listens for zap receipts (Kind 9735) using Nostrify.
+ */
+export function listenForNostrifyZapReceipt(
+  targetId: string,
+  onReceipt: (receipt: NostrEvent) => void,
+  isUser: boolean = false,
+  relays: string[] = DEFAULT_RELAYS
+): () => void {
+  const pool = createRelayPool(relays);
+  const filter: NostrFilter = { kinds: [9735] };
+  
+  if (isUser) {
+    filter["#p"] = [targetId];
+  } else {
+    filter["#e"] = [targetId];
+  }
+
+  const abortController = new AbortController();
+  const stream = pool.req([filter], { signal: abortController.signal });
+
+  (async () => {
+    try {
+      for await (const msg of stream) {
+        if (msg[0] === 'EVENT') {
+          onReceipt(msg[2]);
+        }
+      }
+    } catch (e) {
+      if (e instanceof Error && e.name === 'AbortError') return;
+      console.error("[NostrifyActions] Zap receipt stream error:", e);
+    }
+  })();
+
+  return () => {
+    abortController.abort();
+  };
 }

@@ -2,9 +2,11 @@
 
 import React, { useState, useEffect } from "react";
 import { NDKEvent, NDKUser, NDKSubscriptionCacheUsage } from "@nostr-dev-kit/ndk";
+import { type NostrEvent } from "@nostrify/types";
 import { useNDK } from "@/hooks/useNDK";
 import { useWallet } from "@/hooks/useWallet";
-import { createZapInvoice, listenForZapReceipt } from "@/lib/actions/zap";
+import { createZapInvoice } from "@/lib/actions/zap";
+import { listenForNostrifyZapReceipt } from "@/lib/actions/nostrify-actions";
 import { Zap, Loader2, CheckCircle2, ExternalLink, Copy } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { useUIStore } from "@/store/ui";
@@ -33,7 +35,7 @@ declare global {
 }
 
 interface ZapModalProps {
-  event?: NDKEvent;
+  event?: NDKEvent | NostrEvent;
   user?: NDKUser;
   onClose: () => void;
   onSuccess?: () => void;
@@ -53,12 +55,12 @@ export const ZapModal: React.FC<ZapModalProps> = ({ event, user, onClose, onSucc
 
   // Listen for zap confirmation (receipt)
   useEffect(() => {
-    if (!ndk || !target || !invoice) return;
+    if (!target || !invoice) return;
 
     const targetId = event ? event.id : user?.pubkey;
     if (!targetId) return;
 
-    const stopListening = listenForZapReceipt(ndk, targetId, (receipt) => {
+    const stopListening = listenForNostrifyZapReceipt(targetId, (receipt) => {
       console.log("Zap confirmed:", receipt);
       setPaid(true);
       triggerZapConfetti();
@@ -68,7 +70,7 @@ export const ZapModal: React.FC<ZapModalProps> = ({ event, user, onClose, onSucc
     }, !!user);
 
     return () => stopListening();
-  }, [ndk, event, user, invoice, onSuccess, addToast, target, refreshNDKBalance]);
+  }, [event, user, invoice, onSuccess, addToast, target, refreshNDKBalance]);
 
   const handleZap = async () => {
     if (!ndk) {
@@ -80,10 +82,19 @@ export const ZapModal: React.FC<ZapModalProps> = ({ event, user, onClose, onSucc
 
     setLoading(true);
     try {
-      const targetUser = event ? event.author : user;
+      let targetUser: NDKUser | undefined;
+      
+      if (user) {
+        targetUser = user;
+      } else if (event) {
+        if (event instanceof NDKEvent) {
+          targetUser = event.author;
+        } else {
+          targetUser = ndk.getUser({ pubkey: event.pubkey });
+        }
+      }
       
       if (targetUser) {
-        // Use parallel fetching from multiple relays to ensure we get the lud16
         try {
           await targetUser.fetchProfile({ 
             cacheUsage: NDKSubscriptionCacheUsage.PARALLEL,
@@ -92,9 +103,6 @@ export const ZapModal: React.FC<ZapModalProps> = ({ event, user, onClose, onSucc
           console.warn("[ZapModal] Failed to fetch profile:", e);
         }
       }
-
-      const zapTarget = event || user;
-      if (!zapTarget) throw new Error("No target for zap");
 
       // Robust check for Lightning Address
       const lud16 = targetUser?.profile?.lud16;
@@ -122,7 +130,16 @@ export const ZapModal: React.FC<ZapModalProps> = ({ event, user, onClose, onSucc
         }
       }
 
-      const { invoice: bolt11, alreadyPaid, error } = await createZapInvoice(ndk, amount * 1000, zapTarget, comment);
+      // Wrap target in NDK class for createZapInvoice if needed
+      let zapTarget = event || user;
+      if (event && !(event instanceof NDKEvent)) {
+        zapTarget = new NDKEvent(ndk, event);
+      }
+      
+      if (!zapTarget) throw new Error("No target for zap");
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { invoice: bolt11, alreadyPaid, error } = await createZapInvoice(ndk, amount * 1000, zapTarget as any, comment);
       
       if (alreadyPaid) {
         setPaid(true);
