@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback, useRef, useEffect } from "react";
+import React, { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { 
   Loader2, 
   ArrowLeft, 
@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { NDKEvent } from "@nostr-dev-kit/ndk";
+import { type NostrEvent } from "@nostrify/types";
 import { useProfile } from "@/hooks/useProfile";
 import Image from "next/image";
 import Link from "next/link";
@@ -24,7 +25,7 @@ import { getReadingTime, cn } from "@/lib/utils";
 import { useUIStore } from "@/store/ui";
 
 interface ArticleViewProps {
-  article: NDKEvent;
+  article: NDKEvent | NostrEvent;
   slug?: string; // Optional vanity slug or npub for the author link
   authorPubkey: string;
 }
@@ -44,7 +45,6 @@ export function ArticleView({ article, slug, authorPubkey }: ArticleViewProps) {
     reposts, 
     comments, 
     quotes, 
-    combinedReposts,
     bookmarks,
     totalSats, 
     userLiked, 
@@ -76,8 +76,14 @@ export function ArticleView({ article, slug, authorPubkey }: ArticleViewProps) {
     return () => window.removeEventListener("scroll", handleScroll);
   }, [handleScroll]);
 
+  const title = useMemo(() => article.tags.find(t => t[0] === 'title')?.[1] || "Untitled Article", [article.tags]);
+  const image = useMemo(() => article.tags.find(t => t[0] === 'image')?.[1], [article.tags]);
+  const summary = useMemo(() => article.tags.find(t => t[0] === 'summary')?.[1], [article.tags]);
+  const tags = useMemo(() => article.tags.filter(t => t[0] === 't').map(t => t[1]), [article.tags]);
+  const publishedAt = article.created_at;
+  const readingTime = useMemo(() => getReadingTime(article.content || ""), [article.content]);
+
   const handleShare = async () => {
-    const title = article.tags.find(t => t[0] === "title")?.[1] || "Untitled Article";
     try {
       if (navigator.share) {
         await navigator.share({
@@ -97,13 +103,6 @@ export function ArticleView({ article, slug, authorPubkey }: ArticleViewProps) {
   const jumpToComments = () => {
     commentsRef.current?.scrollIntoView({ behavior: "smooth" });
   };
-
-  const title = article.tags.find(t => t[0] === 'title')?.[1] || "Untitled Article";
-  const image = article.tags.find(t => t[0] === 'image')?.[1];
-  const summary = article.tags.find(t => t[0] === 'summary')?.[1];
-  const tags = article.tags.filter(t => t[0] === 't').map(t => t[1]);
-  const publishedAt = article.created_at;
-  const readingTime = getReadingTime(article.content || "");
 
   const authorLink = slug ? `/${slug}` : `/${toNpub(article.pubkey || authorPubkey)}`;
 
@@ -254,12 +253,13 @@ export function ArticleView({ article, slug, authorPubkey }: ArticleViewProps) {
                   reposts={reposts}
                   comments={comments}
                   quotes={quotes}
-                  combinedReposts={combinedReposts}
+                  combinedReposts={0} // Not used anymore
                   bookmarks={bookmarks}
-                  zaps={totalSats}
-                  userReacted={userLiked ? '+' : null}
+                  totalSats={totalSats}
+                  userLiked={userLiked}
                   userReposted={userReposted}
                   variant="detail"
+                  eventPubkey={article.pubkey || authorPubkey}
                 />
               </div>
             </div>

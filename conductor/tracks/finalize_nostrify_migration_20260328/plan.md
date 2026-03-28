@@ -1,16 +1,16 @@
 ### **Plan: finalize_nostrify_migration_20260328**
 
-#### **Phase 1: Component & Basic Kind Migration**
-- [~] Task: Refactor Kind 30315 (User Status) logic to use Nostrify.
-    - [ ] Update `useUserStatus` hook.
-    - [ ] Update components displaying status.
-- [ ] Task: Update `FeedList` and `MessageBubbleContent` to use raw `NostrEvent`.
-    - [ ] Audit props and internal logic.
-    - [ ] Verify rendering with both NDK and Nostrify events (if still needed).
-- [ ] Task: Migrate `UserRecommendation` and related discovery components.
+#### **Phase 1: Component & Basic Kind Migration** [checkpoint: 7beb6f7]
+- [x] Task: Refactor Kind 30315 (User Status) logic to use Nostrify. (7beb6f7)
+    - [x] Update `useUserStatus` hook.
+    - [x] Update components displaying status.
+- [x] Task: Update `FeedList` and `MessageBubbleContent` to use raw `NostrEvent`. (7beb6f7)
+    - [x] Audit props and internal logic.
+    - [x] Verify rendering with both NDK and Nostrify events (if still needed).
+- [x] Task: Migrate `UserRecommendation` and related discovery components. (7beb6f7)
 
 #### **Phase 2: Articles & Long-form Content**
-- [ ] Task: Migrate Kind 30023 fetching and display.
+- [~] Task: Migrate Kind 30023 fetching and display.
     - [ ] Update `PremiumArticleContent` and `ArticleView`.
     - [ ] Write failing tests for article resolution using Nostrify.
 - [ ] Task: Migrate Article publishing logic.

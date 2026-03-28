@@ -1,19 +1,20 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useNDK } from "@/hooks/useNDK";
 import { useAuthStore } from "@/store/auth";
 import { useUIStore } from "@/store/ui";
 import { useRouter } from "next/navigation";
-import { publishArticle } from "@/lib/actions/post";
+import { publishNostrifyArticle } from "@/lib/actions/nostrify-actions";
 import { saveDraftWrap } from "@/lib/actions/drafts";
 import { ArrowLeft, Loader2, Image as ImageIcon, Send, Eye, PenLine, Save, Cloud } from "lucide-react";
 import { ArticleRenderer } from "@/components/article/ArticleRenderer";
-import { NDKEvent } from "@nostr-dev-kit/ndk";
+import { type NostrEvent } from "@nostrify/types";
 import Image from "next/image";
+import { toNpub } from "@/lib/utils/nip19";
 
 export default function NewArticlePage() {
-  const { ndk, isReady } = useNDK();
+  const { ndk, isReady, signer } = useNDK();
   const { user, isLoggedIn } = useAuthStore();
   const { addToast } = useUIStore();
   const router = useRouter();
@@ -39,7 +40,6 @@ export default function NewArticlePage() {
       const slug = title.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
       const identifier = slug || `article-${Date.now()}`;
       
-      // Draft event structure for kind 30023
       const draftEvent = {
         kind: 30023,
         content,
@@ -67,8 +67,8 @@ export default function NewArticlePage() {
   };
 
   const handlePublish = async (isDraft = false) => {
-    if (!ndk || !title || !content) {
-      addToast("Title and content are required", "error");
+    if (!signer || !title || !content) {
+      addToast("Signer, Title and content are required", "error");
       return;
     }
 
@@ -79,17 +79,20 @@ export default function NewArticlePage() {
       const tagList = tags.split(",").map(t => t.trim()).filter(Boolean);
       const slug = title.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
       
-      await publishArticle(ndk, content, {
+      const success = await publishNostrifyArticle(content, signer, {
         title,
         summary,
         image,
         tags: tagList,
-        isDraft,
         d: slug || Date.now().toString()
       });
       
-      addToast(isDraft ? "Draft saved successfully!" : "Article published successfully!", "success");
-      if (!isDraft) router.push(`/${user?.npub}`);
+      if (success) {
+        addToast(isDraft ? "Draft saved successfully!" : "Article published successfully!", "success");
+        if (!isDraft) router.push(`/${user?.npub || (user?.pubkey ? toNpub(user.pubkey) : '')}`);
+      } else {
+        addToast("Failed to publish article", "error");
+      }
     } catch (err) {
       console.error(err);
       addToast(isDraft ? "Failed to save draft" : "Failed to publish article", "error");
@@ -99,19 +102,23 @@ export default function NewArticlePage() {
     }
   };
 
-  if (!isReady || !isLoggedIn) return null;
-
   // Mock event for preview
-  const mockEvent = new NDKEvent(ndk || undefined);
-  mockEvent.kind = 30023;
-  mockEvent.content = content;
-  mockEvent.pubkey = user?.pubkey || "";
-  mockEvent.tags = [
-    ["title", title],
-    ["summary", summary],
-    ["image", image],
-    ...tags.split(",").map(t => ["t", t.trim()]).filter(t => t[1])
-  ];
+  const mockEvent = useMemo((): NostrEvent => ({
+    id: "preview",
+    kind: 30023,
+    content,
+    pubkey: user?.pubkey || "",
+    created_at: Math.floor(Date.now() / 1000),
+    sig: "",
+    tags: [
+      ["title", title],
+      ["summary", summary],
+      ["image", image],
+      ...tags.split(",").map(t => ["t", t.trim()]).filter(t => t[1])
+    ]
+  }), [content, user?.pubkey, title, summary, image, tags]);
+
+  if (!isReady || !isLoggedIn) return null;
 
   return (
     <>

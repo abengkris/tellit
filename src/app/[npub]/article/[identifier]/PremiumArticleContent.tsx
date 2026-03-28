@@ -5,8 +5,11 @@ import { Loader2, RefreshCw } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useNDK } from "@/hooks/useNDK";
 import { decodeNip19 } from "@/lib/utils/nip19";
-import { NDKEvent, NDKSubscriptionCacheUsage, NDKRelaySet } from "@nostr-dev-kit/ndk";
+import { type NostrFilter, type NostrEvent } from "@nostrify/types";
+import { createRelayPool } from "@/lib/nostrify-relay";
+import { getStorage } from "@/lib/nostrify-storage";
 import { ArticleView } from "@/components/article/ArticleView";
+import { DEFAULT_RELAYS } from "@/lib/ndk";
 
 interface PremiumArticleContentProps {
   hexPubkey: string;
@@ -14,91 +17,80 @@ interface PremiumArticleContentProps {
   slug: string;
 }
 
+const ARTICLE_RELAYS = [
+  ...DEFAULT_RELAYS,
+  "wss://nostr.wine",
+  "wss://relay.nostr.band",
+  "wss://relay.primal.net",
+];
+
 export function PremiumArticleContent({ hexPubkey, identifier, slug }: PremiumArticleContentProps) {
-  const { ndk, isReady } = useNDK();
-  const [article, setArticle] = useState<NDKEvent | null>(null);
+  const { isReady } = useNDK();
+  const [article, setArticle] = useState<NostrEvent | null>(null);
   const [loading, setLoading] = useState(true);
   const [attempts, setAttempts] = useState(0);
   const router = useRouter();
   const fetchInitiated = useRef(false);
-
-  // Debug logging
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      console.log("[PremiumArticle] Render state:", { hexPubkey, identifier, slug, isReady, hasNdk: !!ndk });
-    }
-  }, [hexPubkey, identifier, slug, isReady, ndk]);
+  const poolRef = useRef<ReturnType<typeof createRelayPool> | null>(null);
 
   const fetchArticle = useCallback(async (force = false) => {
-    if (!ndk || !hexPubkey || !identifier) return;
+    if (!hexPubkey || !identifier) return;
     
     setLoading(true);
     setAttempts(prev => prev + 1);
     
-    const safetyTimeout = setTimeout(() => {
-      setLoading(false);
-    }, 30000);
-
     try {
-      let event: NDKEvent | null = null;
-      const cacheUsage = force ? NDKSubscriptionCacheUsage.ONLY_RELAY : NDKSubscriptionCacheUsage.CACHE_FIRST;
+      const storage = await getStorage();
       
-      const articleRelayUrls = [
-        "wss://relay.damus.io",
-        "wss://relay.snort.social",
-        "wss://nostr.wine",
-        "wss://relay.nostr.band",
-        "wss://nos.lol",
-        "wss://relay.primal.net",
-        "wss://purplepag.es"
-      ];
-      const articleRelaySet = NDKRelaySet.fromRelayUrls(articleRelayUrls, ndk);
-
+      let filter: NostrFilter;
       if (identifier.startsWith('naddr1')) {
-        const { id: hexId } = decodeNip19(identifier);
-        event = await ndk.fetchEvent(hexId, { cacheUsage, closeOnEose: true }, articleRelaySet);
+        const decoded = decodeNip19(identifier);
+        filter = { ids: [decoded.id] };
       } else {
-        const filter = { kinds: [30023], authors: [hexPubkey], "#d": [identifier] };
-        event = await ndk.fetchEvent(filter, { cacheUsage, closeOnEose: true }, articleRelaySet);
-        
-        if (!event) {
-          const broadFilter = { kinds: [30023], authors: [hexPubkey], limit: 50 };
-          const allArticles = await ndk.fetchEvents(broadFilter, { cacheUsage, closeOnEose: true }, articleRelaySet);
-          event = Array.from(allArticles).find(ev => 
-            ev.tags.find(t => t[0] === 'd' && t[1] === identifier) || ev.id === identifier
-          ) || null;
-        }
+        filter = { kinds: [30023], authors: [hexPubkey], "#d": [identifier] };
+      }
 
-        if (!event && !force) {
-          const relayListEvents = await ndk.fetchEvents({ kinds: [10002], authors: [hexPubkey] }, { closeOnEose: true }, articleRelaySet);
-          const relayListEvent = Array.from(relayListEvents)[0];
-          if (relayListEvent) {
-            const writeUrls = relayListEvent.tags.filter(t => t[0] === 'r' && (!t[2] || t[2] === 'write')).map(t => t[1]);
-            if (writeUrls.length > 0) {
-              const discoveredSet = NDKRelaySet.fromRelayUrls(writeUrls, ndk);
-              event = await ndk.fetchEvent(filter, { closeOnEose: true }, discoveredSet);
-            }
-          }
+      // 1. Try Storage first
+      if (storage && !force) {
+        const cached = await storage.query([filter]);
+        if (cached.length > 0) {
+          setArticle(cached[0]);
+          setLoading(false);
+          return;
         }
       }
 
-      if (event) {
-        setArticle(event);
+      // 2. Fetch from Relays
+      if (!poolRef.current) {
+        poolRef.current = createRelayPool(ARTICLE_RELAYS);
+      }
+
+      const stream = poolRef.current.req([filter]);
+      for await (const msg of stream) {
+        if (msg[0] === 'EVENT') {
+          const event = msg[2];
+          setArticle(event);
+          if (storage) {
+            storage.event(event).catch(() => {});
+          }
+          break; // Found the article
+        } else if (msg[0] === 'EOSE') {
+          break;
+        }
       }
     } catch (err) {
       console.error("[PremiumArticle] Fetch fatal error:", err);
     } finally {
-      clearTimeout(safetyTimeout);
       setLoading(false);
     }
-  }, [ndk, hexPubkey, identifier]);
+  }, [hexPubkey, identifier]);
 
   useEffect(() => {
-    if (isReady && ndk && !fetchInitiated.current) {
+    if (isReady && !fetchInitiated.current) {
       fetchInitiated.current = true;
       fetchArticle();
     }
-  }, [isReady, ndk, fetchArticle]);
+  }, [isReady, fetchArticle]);
 
   if (loading && !article) {
     return (

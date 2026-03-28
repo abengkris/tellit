@@ -114,3 +114,53 @@ export async function publishStatus(
     return false;
   }
 }
+
+export interface PublishArticleOptions {
+  title: string;
+  summary?: string;
+  image?: string;
+  tags?: string[];
+  d: string;
+  published_at?: number;
+}
+
+/**
+ * Publishes a long-form article (Kind 30023) using Nostrify.
+ */
+export async function publishNostrifyArticle(
+  content: string,
+  signer: NostrSigner,
+  options: PublishArticleOptions,
+  relays: string[] = DEFAULT_RELAYS
+): Promise<boolean> {
+  try {
+    const tags: string[][] = [
+      ["d", options.d],
+      ["title", options.title],
+    ];
+
+    if (options.summary) tags.push(["summary", options.summary]);
+    if (options.image) tags.push(["image", options.image]);
+    if (options.published_at) tags.push(["published_at", options.published_at.toString()]);
+    
+    if (options.tags) {
+      options.tags.forEach(t => tags.push(["t", t]));
+    }
+
+    const eventTemplate = {
+      kind: 30023,
+      content,
+      tags,
+      created_at: Math.floor(Date.now() / 1000),
+    };
+
+    const signed = await signer.signEvent(eventTemplate);
+    const pool = createRelayPool(relays);
+    
+    await pool.event(signed);
+    return true;
+  } catch (error) {
+    console.error("[NostrifyActions] Failed to publish article:", error);
+    return false;
+  }
+}
