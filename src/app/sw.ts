@@ -1,11 +1,10 @@
 import { defaultCache } from "@serwist/next/worker";
-import type { PrecacheEntry, SerwistGlobalConfig } from "serwist";
-import { Serwist } from "serwist";
+import type { PrecacheEntry, SerwistGlobalConfig } from "@serwist/sw";
+import { Serwist } from "@serwist/sw";
 
 declare global {
   interface ServiceWorkerGlobalScope extends SerwistGlobalConfig {
     __SW_MANIFEST: (string | PrecacheEntry)[] | undefined;
-    Notification: typeof Notification;
   }
 }
 
@@ -24,7 +23,8 @@ self.addEventListener("push", (event) => {
     return;
   }
 
-  const data = event.data?.json() ?? {};
+  const pushEvent = event as PushEvent;
+  const data = pushEvent.data?.json() ?? {};
   const title = data.title || "New notification";
   const options = {
     body: data.body || "Whatever it is, just Tell It.",
@@ -35,23 +35,25 @@ self.addEventListener("push", (event) => {
     },
   };
 
-  event.waitUntil(self.registration.showNotification(title, options));
+  pushEvent.waitUntil(self.registration.showNotification(title, options));
 });
 
 self.addEventListener("notificationclick", (event) => {
-  event.notification.close();
-  event.waitUntil(
+  const notificationEvent = event as NotificationEvent;
+  notificationEvent.notification.close();
+  notificationEvent.waitUntil(
     self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
-      if (clientList.length > 0) {
-        let client = clientList[0];
-        for (let i = 0; i < clientList.length; i++) {
-          if (clientList[i].focused) {
-            client = clientList[i];
+      const windowClients = clientList as WindowClient[];
+      if (windowClients.length > 0) {
+        let client = windowClients[0];
+        for (let i = 0; i < windowClients.length; i++) {
+          if (windowClients[i].focused) {
+            client = windowClients[i];
           }
         }
         return client.focus();
       }
-      return self.clients.openWindow(event.notification.data.url);
+      return self.clients.openWindow(notificationEvent.notification.data.url);
     })
   );
 });
