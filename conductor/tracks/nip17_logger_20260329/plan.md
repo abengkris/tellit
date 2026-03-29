@@ -35,15 +35,15 @@ This plan outlines the steps to implement a high-performance, resilient error lo
     - [x] Implement `RateLimiter` using a `Map` with automatic cleanup
 - [ ] Task: Conductor - User Manual Verification 'Phase 3: Infrastructure and Resilience' (Protocol in workflow.md)
 
-## Phase 4: Logger Module Implementation (TDD)
+## Phase 4: Logger Module Implementation (TDD) [checkpoint: a239bff]
 
-- [ ] Task: Write Integration Tests for Logger
-    - [ ] Create `src/lib/logger/__tests__/logger.test.ts`
-    - [ ] Test the public `error()` and `fatal()` API
-- [ ] Task: Implement Logger Public API
-    - [ ] Create `src/lib/logger/index.ts`
-    - [ ] Orchestrate NIP-17 composition, rate limiting, and publishing
-    - [ ] Implement fire-and-forget logic using asynchronous execution without awaiting relay results
+- [x] Task: Write Integration Tests for Logger
+    - [x] Create `src/lib/logger/__tests__/logger.test.ts`
+    - [x] Test the public `error()` and `fatal()` API
+- [x] Task: Implement Logger Public API
+    - [x] Create `src/lib/logger/index.ts`
+    - [x] Orchestrate NIP-17 composition, rate limiting, and publishing
+    - [x] Implement fire-and-forget logic using asynchronous execution without awaiting relay results
 - [ ] Task: Conductor - User Manual Verification 'Phase 4: Logger Module Implementation' (Protocol in workflow.md)
 
 ## Phase 5: Final Cleanup and Examples
