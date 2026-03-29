@@ -69,7 +69,7 @@ const LightningAddressDialog = ({
   const [isOpen, setIsOpen] = useState(false);
 
   const handleSave = async () => {
-    if (!ndk || !user) return;
+    if (!ndk || !ndk.signer || !user) return;
     
     if (address && !address.includes("@")) {
       addToast("Invalid lightning address format (user@domain.com)", "error");
@@ -210,7 +210,7 @@ const RelayEditorDialog = ({
   };
 
   const handleSave = async () => {
-    if (!ndk || !user) return;
+    if (!ndk || !ndk.signer || !user) return;
     if (relays.length === 0) {
       addToast("At least one relay is required", "error");
       return;
@@ -332,7 +332,7 @@ const CancelRegistrationDialog = ({
   const [isDeleting, setIsDeleting] = useState(false);
 
   const handleCancel = async () => {
-    if (!ndk || !user) return;
+    if (!ndk || !ndk.signer || !user) return;
 
     setIsDeleting(true);
     try {
@@ -414,7 +414,7 @@ const TransferHandleDialog = ({
   const otherAccounts = accounts.filter(a => a !== user?.pubkey);
 
   const handleTransfer = async (pubkeyToUse: string) => {
-    if (!ndk || !user) return;
+    if (!ndk || !ndk.signer || !user) return;
 
     setIsTransferring(true);
     try {
@@ -568,7 +568,7 @@ export default function ManageHandlePage() {
   };
 
   const handleSetPrimary = async (handleName: string) => {
-    if (!ndk || !user) return;
+    if (!ndk || !ndk.signer || !user) return;
 
     try {
       const event = new NDKEvent(ndk);
@@ -592,7 +592,7 @@ export default function ManageHandlePage() {
   };
 
   const handleUpdateProfile = async (handleName: string) => {
-    if (!ndk) return;
+    if (!ndk || !ndk.signer) return;
     
     const fullHandle = `${handleName}@tellit.id`;
     setUpdatingHandle(fullHandle);
@@ -613,7 +613,7 @@ export default function ManageHandlePage() {
   };
 
   const handleRegenerateInvoice = async (hash: string) => {
-    if (!ndk || !user) return;
+    if (!ndk || !ndk.signer || !user) return;
 
     try {
       const event = new NDKEvent(ndk);

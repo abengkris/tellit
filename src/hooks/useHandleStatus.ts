@@ -55,10 +55,13 @@ export function useHandleStatus() {
   const { user, isLoggedIn } = useAuthStore();
   const [handles, setHandles] = useState<HandleStatus[]>([]);
   const [pendingHandles, setPendingHandles] = useState<PendingHandle[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const checkStatus = useCallback(async () => {
-    if (!user?.pubkey || !isLoggedIn) return;
+    if (!user?.pubkey || !isLoggedIn) {
+      setLoading(false);
+      return;
+    }
 
     setLoading(true);
     try {
@@ -100,18 +103,23 @@ export function useHandleStatus() {
       }
 
       if (data.pendingRegistrations && data.pendingRegistrations.length > 0) {
-        const processedPending = await Promise.all(data.pendingRegistrations.map(async (ph: PendingHandleDetail) => {
+        // Limit auto-check to the 3 most recent pending handles
+        const sortedPending = [...data.pendingRegistrations].sort((a, b) => 
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
+
+        const processedPending = await Promise.all(sortedPending.map(async (ph: PendingHandleDetail, index: number) => {
           const createdAt = new Date(ph.created_at);
           const now = new Date();
           const isExpired = ph.status === 'expired' || (now.getTime() - createdAt.getTime() > 24 * 60 * 60 * 1000);
           
           // If it's pending and not obviously expired, check the actual payment status
-          if (ph.status === 'pending' && !isExpired) {
+          // ONLY check the first 3 most recent ones to avoid excessive requests
+          if (ph.status === 'pending' && !isExpired && index < 3) {
             try {
               const checkRes = await fetch(`/api/nip05/check-payment?hash=${ph.payment_hash}`);
               const checkData = await checkRes.json();
               if (checkData.status === 'PAID') {
-                // If it was just paid, we should probably refresh the whole thing 
                 return {
                   name: ph.name,
                   amount: ph.amount,
