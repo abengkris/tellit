@@ -143,8 +143,9 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
   const refreshBalance = useCallback(async () => {
     if (!ndk || !ndk.wallet) return;
     try {
-      // @ts-expect-error - balance can be getter or method
-      const balance = await (typeof ndk.wallet.balance === 'function' ? ndk.wallet.balance() : ndk.wallet.balance);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const walletAny = ndk.wallet as any;
+      const balance = await (typeof walletAny.balance === 'function' ? walletAny.balance() : ndk.wallet.balance);
       if (balance) {
 
         setBalance(balance.amount);
@@ -184,14 +185,18 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
         setIsWalletReady(true);
         
         // Fetch balance and info
-        // @ts-expect-error - balance can be getter or method
-        const balance = await (typeof wallet.balance === 'function' ? wallet.balance() : wallet.balance);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const walletAny = wallet as any;
+        const balance = await (typeof walletAny.balance === 'function' ? walletAny.balance() : wallet.balance);
         if (balance) {
           setBalance(balance.amount);
         }
 
-        // @ts-expect-error - info might not be defined on all wallet types
-        const info = await wallet.info?.();
+        const info = typeof walletAny.info === 'function' 
+          ? await walletAny.info() 
+          : typeof walletAny.getInfo === 'function' 
+            ? await walletAny.getInfo() 
+            : undefined;
         if (info) {
           setWalletInfo(info);
         }

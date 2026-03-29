@@ -16,13 +16,40 @@ export interface UseNostrifyFeedOptions {
 }
 
 const MAX_POSTS = 500;
+const DEFAULT_KINDS = [1];
 
 /**
  * Enhanced hook to manage a stream of Nostr events using Nostrify.
  * Supports complex filtering, paging, and real-time updates.
  */
 export function useNostrifyFeed(options: UseNostrifyFeedOptions = {}) {
-  const { authors, kinds = [1], relays = DEFAULT_RELAYS, limit = 50, filterType = "all" } = options;
+  const { 
+    authors: authorsRaw, 
+    kinds: kindsRaw = DEFAULT_KINDS, 
+    relays: relaysRaw = DEFAULT_RELAYS, 
+    limit = 50, 
+    filterType = "all" 
+  } = options;
+
+  // Use refs to stabilize array/object dependencies
+  const authorsRef = useRef(authorsRaw);
+  const kindsRef = useRef(kindsRaw);
+  const relaysRef = useRef(relaysRaw);
+
+  if (JSON.stringify(authorsRef.current) !== JSON.stringify(authorsRaw)) {
+    authorsRef.current = authorsRaw;
+  }
+  if (JSON.stringify(kindsRef.current) !== JSON.stringify(kindsRaw)) {
+    kindsRef.current = kindsRaw;
+  }
+  if (JSON.stringify(relaysRef.current) !== JSON.stringify(relaysRaw)) {
+    relaysRef.current = relaysRaw;
+  }
+
+  const authors = authorsRef.current;
+  const kinds = kindsRef.current;
+  const relays = relaysRef.current;
+
   const [posts, setPosts] = useState<NostrEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [hasMore, setHasMore] = useState(true);

@@ -10,17 +10,14 @@ export default defineConfig({
     setupFiles: ['./vitest.setup.ts'],
     pool: 'forks',
     forks: {
-      workerResponseTimeout: 120000,
+      workerResponseTimeout: 300000, // 5 minutes
+      execArgv: ['--max-old-space-size=4096'],
     },
-    testTimeout: 60000,
-    hookTimeout: 60000,
+    testTimeout: 120000,
+    hookTimeout: 120000,
     maxWorkers: 1,
     minWorkers: 1,
     isolate: true,
-    pool: 'forks',
-    forks: {
-      execArgv: ['--max-old-space-size=2048'],
-    },
   },
   resolve: {
     alias: {

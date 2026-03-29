@@ -97,7 +97,8 @@ describe("Auth Store", () => {
     const originalLocation = window.location;
     // @ts-expect-error - deleting window.location is required for mocking
     delete window.location;
-    window.location = { ...originalLocation, href: "" };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    window.location = { ...originalLocation, href: "" } as any;
 
     useAuthStore.setState({
       isLoggedIn: true,
@@ -116,6 +117,7 @@ describe("Auth Store", () => {
     expect(window.location.href).toBe("/");
 
     // Restore window.location
-    window.location = originalLocation;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    window.location = originalLocation as any;
   });
 });

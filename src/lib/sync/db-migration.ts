@@ -1,5 +1,6 @@
 import { db as dexieDb } from "../db";
 import { getKysely } from "../nostrify-sql-store";
+import { track } from "@vercel/analytics";
 
 /**
  * Migrates data from Dexie (TellItDB) to the new SQL store.
@@ -61,9 +62,24 @@ export async function migrateDexieToSql(): Promise<boolean> {
 
     localStorage.setItem(migrationKey, 'true');
     console.log("[Migration] Migration complete.");
+    try {
+      track("migration_dexie_to_sql_complete", {
+        followsCount: follows.length,
+        wotCount: wotScores.length
+      });
+    } catch (_e) {
+      // Ignore tracking errors
+    }
     return true;
   } catch (err) {
     console.error("[Migration] Migration failed:", err);
+    try {
+      track("migration_dexie_to_sql_failed", {
+        error: String(err)
+      });
+    } catch (_e) {
+      // Ignore tracking errors
+    }
     return false;
   }
 }

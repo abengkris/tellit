@@ -21,11 +21,11 @@ vi.mock('@/hooks/useNDK', () => ({
 }));
 
 vi.mock('@nostr-dev-kit/ndk', () => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const NDKEvent = vi.fn().mockImplementation(function (this: any, ndk, event) {
     Object.assign(this, event);
     this.ndk = ndk;
-  });
-  return { NDKEvent };
+  });  return { NDKEvent };
 });
 
 vi.mock('@/lib/nostrify-relay', () => ({
@@ -41,6 +41,7 @@ describe('useNostrifyFeed', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     mockedUseNDK.mockReturnValue({ ndk: {} } as any);
     mockStorage.query.mockResolvedValue([]);
     mockPool.req.mockImplementation(() => {
@@ -117,7 +118,7 @@ describe('useNostrifyFeed', () => {
     const { result } = renderHook(() => useNostrifyFeed());
     
     await waitFor(() => expect(result.current.loading).toBe(false));
-    expect(consoleSpy).toHaveBeenCalledWith('Failed to fetch feed:', expect.any(Error));
+    expect(consoleSpy).toHaveBeenCalledWith('[useNostrifyFeed] Failed to fetch feed:', expect.any(Error));
     consoleSpy.mockRestore();
   });
 });
