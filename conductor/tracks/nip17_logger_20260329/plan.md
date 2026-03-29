@@ -23,16 +23,16 @@ This plan outlines the steps to implement a high-performance, resilient error lo
     - [x] Verify tests pass (Green Phase)
 - [ ] Task: Conductor - User Manual Verification 'Phase 2: NIP-17 functional Utilities' (Protocol in workflow.md)
 
-## Phase 3: Infrastructure and Resilience (TDD)
+## Phase 3: Infrastructure and Resilience (TDD) [checkpoint: 3b94630]
 
-- [ ] Task: Write Tests for Rate Limiter and Connection
-    - [ ] Create `src/lib/logger/__tests__/infra.test.ts`
-    - [ ] Test rate limiting logic (1 msg/min for identical keys)
-    - [ ] Test graceful fallback to `console.error` on simulated network failure
-- [ ] Task: Implement Persistent Connection Pool
-    - [ ] Initialize persistent `NPool` with default relays
-- [ ] Task: Implement In-Memory Rate Limiter
-    - [ ] Implement `RateLimiter` using a `Map` with automatic cleanup
+- [x] Task: Write Tests for Rate Limiter and Connection
+    - [x] Create `src/lib/logger/__tests__/infra.test.ts`
+    - [x] Test rate limiting logic (1 msg/min for identical keys)
+    - [x] Test graceful fallback to `console.error` on simulated network failure
+- [x] Task: Implement Persistent Connection Pool
+    - [x] Initialize persistent `NPool` with default relays
+- [x] Task: Implement In-Memory Rate Limiter
+    - [x] Implement `RateLimiter` using a `Map` with automatic cleanup
 - [ ] Task: Conductor - User Manual Verification 'Phase 3: Infrastructure and Resilience' (Protocol in workflow.md)
 
 ## Phase 4: Logger Module Implementation (TDD)
