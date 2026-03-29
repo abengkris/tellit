@@ -12,11 +12,15 @@ export async function getServerNDK(): Promise<NDK> {
       explicitRelayUrls: DEFAULT_RELAYS,
     });
 
-    try {
-      const sqlStore = await getSqlStore();
-      ndkInstance.cacheAdapter = new NostrifyNDKCacheAdapter(sqlStore);
-    } catch (err) {
-      console.error("[ServerNDK] Failed to initialize SQL cache adapter:", err);
+    if (ENV.DATABASE.URL) {
+      try {
+        const sqlStore = await getSqlStore();
+        ndkInstance.cacheAdapter = new NostrifyNDKCacheAdapter(sqlStore);
+      } catch (err) {
+        console.error("[ServerNDK] Failed to initialize SQL cache adapter:", err);
+      }
+    } else {
+      console.log("[ServerNDK] DATABASE_URL not set, running without SQL cache adapter");
     }
 
     const nsec = ENV.TELLIT_NSEC;

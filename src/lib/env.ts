@@ -29,7 +29,7 @@ export const ENV = {
     WALLET_ID: getOptionalEnv('BLINK_WALLET_ID'),
   },
   DATABASE: {
-    URL: getOptionalEnv('TELLIT_POSTGRES_URL') || getOptionalEnv('DATABASE_URL'),
+    URL: getOptionalEnv('TELLIT_POSTGRES_URL') || getOptionalEnv('DATABASE_URL') || getOptionalEnv('POSTGRES_URL') || getOptionalEnv('POSTGRES_PRISMA_URL') || getOptionalEnv('TELLIT_POSTGRES_PRISMA_URL'),
   },
   VAPID: {
     PUBLIC: getOptionalEnv('NEXT_PUBLIC_VAPID_PUBLIC_KEY'),

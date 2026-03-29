@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.7.16] - 2026-03-29
+
+### Fixed
+- **ServerNDK Optimization:** Fixed a common error log when running server actions in environments where `DATABASE_URL` is not configured. The SQL cache adapter is now conditionally initialized, and the error is handled gracefully with a clear log message.
+- **Improved Logging Resilience:** Fixed an issue in the Log API where missing server-side configuration (database/signer) would cause excessive error noise.
+
 ## [0.7.15] - 2026-03-24
 
 ### Fixed

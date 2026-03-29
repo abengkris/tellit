@@ -1,6 +1,6 @@
 {
   "name": "tellit",
-  "version": "0.7.15",
+  "version": "0.7.16",
   "private": true,
   "scripts": {
     "dev": "NODE_OPTIONS='--require ./mock-os.js' next dev",
