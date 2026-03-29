@@ -37,7 +37,7 @@ import { cn } from "@/lib/utils";
 
 export default function SettingsPage() {
   const { isLoggedIn, publicKey, user, logout, logoutAll, accounts } = useAuthStore();
-  const { sessions, ndk, isReady } = useNDK();
+  const { sessions, ndk } = useNDK();
   const { profile } = useProfile(user?.pubkey || publicKey || undefined);
   const { mutedPubkeys, loading: loadingLists } = useLists();
   const { loading: settingsLoading, lastSync, saveSettings, fetchSettings } = useAppSettings();
@@ -99,7 +99,7 @@ export default function SettingsPage() {
             <Card className="rounded-3xl overflow-hidden border-none bg-muted/30 shadow-none">
               <CardContent className="p-4 flex flex-col gap-4">
                 <div className="flex items-center gap-4">
-                  <Avatar pubkey={user?.pubkey || publicKey || ""} src={user?.profile?.image || profile?.image} size={60} />
+                  <Avatar pubkey={user?.pubkey || publicKey || ""} src={user?.profile?.image || profile?.picture || profile?.image} size={60} />
                   <div className="flex-1 min-w-0">
                     <div className="font-bold text-lg truncate">{user?.profile?.display_name || user?.profile?.name || profile?.display_name || profile?.name || "Nostrich"}</div>
                     <div className="text-muted-foreground text-xs truncate font-mono">

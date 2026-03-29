@@ -9,6 +9,7 @@ export interface ProfileMetadata {
   pubkey?: string;
   name?: string;
   picture?: string;
+  image?: string; // Common alternative to picture
   about?: string;
   nip05?: string;
   lud16?: string;

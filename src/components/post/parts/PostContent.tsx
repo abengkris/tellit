@@ -21,6 +21,7 @@ import { shortenPubkey, toNpub } from "@/lib/utils/nip19";
 import { useProfile } from "@/hooks/useProfile";
 import { Play } from "lucide-react";
 import { Lightbox } from "@/components/common/Lightbox";
+import { cn } from "@/lib/utils";
 
 interface PostContentRendererProps {
   content: string;
