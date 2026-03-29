@@ -13,7 +13,7 @@ interface PollResults {
 
 export function usePoll(pollEvent: NDKEvent | NostrEvent) {
   const { ndk, isReady } = useNDK();
-  const { user } = useAuthStore();
+  const { user, publicKey } = useAuthStore();
   const [responses, setResponses] = useState<NDKEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [now, setNow] = useState<number | undefined>(undefined);
@@ -118,11 +118,12 @@ export function usePoll(pollEvent: NDKEvent | NostrEvent) {
 
   // Check if current user has voted
   const userVote = useMemo(() => {
-    if (!user) return null;
-    const resp = responses.find(r => r.pubkey === user.pubkey);
+    const currentPubkey = user?.pubkey || publicKey;
+    if (!currentPubkey) return null;
+    const resp = responses.find(r => r.pubkey === currentPubkey);
     if (!resp) return null;
     return resp.tags.filter(t => t[0] === "response").map(t => t[1]);
-  }, [responses, user]);
+  }, [responses, user, publicKey]);
 
   const vote = useCallback(async (optionIds: string[]) => {
     if (!ndk || !isReady || !user) return;

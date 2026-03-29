@@ -52,21 +52,22 @@ import { getHandleStatusAction } from "@/lib/actions/server/nip05";
  * Hook to check and monitor the expiration status of the user's registered handles.
  */
 export function useHandleStatus() {
-  const { user, isLoggedIn } = useAuthStore();
+  const { user, publicKey, isLoggedIn } = useAuthStore();
   const [handles, setHandles] = useState<HandleStatus[]>([]);
   const [pendingHandles, setPendingHandles] = useState<PendingHandle[]>([]);
   const [loading, setLoading] = useState(true);
 
   const checkStatus = useCallback(async () => {
-    if (!user?.pubkey || !isLoggedIn) {
+    const currentPubkey = user?.pubkey || publicKey;
+    if (!currentPubkey || !isLoggedIn) {
       setLoading(false);
       return;
     }
 
     setLoading(true);
     try {
-      idLog.debug(`Checking handle status for: ${user.pubkey}`);
-      const data = await getHandleStatusAction(undefined, user.pubkey);
+      idLog.debug(`Checking handle status for: ${currentPubkey}`);
+      const data = await getHandleStatusAction(undefined, currentPubkey);
       
       if (!data || 'error' in data) {
         throw new Error(data?.error || 'Failed to fetch handle status');
@@ -99,7 +100,7 @@ export function useHandleStatus() {
         });
         
         setHandles(statuses);
-        idLog.debug(`Found ${statuses.length} registered handles for ${user.pubkey}`);
+        idLog.debug(`Found ${statuses.length} registered handles for ${currentPubkey}`);
       }
 
       if (data.pendingRegistrations && data.pendingRegistrations.length > 0) {
@@ -150,7 +151,7 @@ export function useHandleStatus() {
 
         // If any were marked as paid, we should refresh to get them in the active list
         if (processedPending.some(p => p.status === 'paid')) {
-          const finalData = await getHandleStatusAction(undefined, user.pubkey);
+          const finalData = await getHandleStatusAction(undefined, currentPubkey);
           
           if (finalData && 'allHandleDetails' in finalData && finalData.allHandleDetails) {
             const now = new Date();
@@ -186,11 +187,11 @@ export function useHandleStatus() {
         setPendingHandles([]);
       }
     } catch (err) {
-      idLog.error(`Failed to check handle status for ${user.pubkey}`, err);
+      idLog.error(`Failed to check handle status for ${currentPubkey}`, err);
     } finally {
       setLoading(false);
     }
-  }, [user?.pubkey, isLoggedIn]);
+  }, [user?.pubkey, publicKey, isLoggedIn]);
 
   useEffect(() => {
     checkStatus();

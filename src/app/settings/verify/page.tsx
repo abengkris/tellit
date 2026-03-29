@@ -16,13 +16,13 @@ import { useNostrifyProfile } from "@/hooks/useNostrifyProfile";
 import { useAuthenticatedFetch } from "@/hooks/useAuthenticatedFetch";
 
 function VerifyContent() {
-  const { user, isLoggedIn } = useAuthStore();
+  const { user, publicKey, isLoggedIn } = useAuthStore();
   const { addToast } = useUIStore();
   const router = useRouter();
   const searchParams = useSearchParams();
   const renewHandle = searchParams.get("renew");
-  const { relays: userRelays } = useRelayList(user?.pubkey);
-  const { updateProfile: updateNostrifyProfile } = useNostrifyProfile(user?.pubkey);
+  const { relays: userRelays } = useRelayList(user?.pubkey || publicKey || undefined);
+  const { updateProfile: updateNostrifyProfile } = useNostrifyProfile(user?.pubkey || publicKey || undefined);
   const fetch = useAuthenticatedFetch();
   
   const [handle, setHandle] = useState(renewHandle || "");
@@ -45,13 +45,14 @@ function VerifyContent() {
   useEffect(() => {
     let isMounted = true;
     async function checkExistingHandle() {
-      if (!user) return;
+      const currentPubkey = user?.pubkey || publicKey;
+      if (!currentPubkey) return;
       
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
 
       try {
-        const res = await fetch(`/api/nip05/register?pubkey=${user.pubkey}`, {
+        const res = await fetch(`/api/nip05/register?pubkey=${currentPubkey}`, {
           signal: controller.signal
         });
         
