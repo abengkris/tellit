@@ -8,12 +8,21 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, ShieldCheck, Share2, AlertTriangle } from "lucide-react";
 import { useUIStore } from "@/store/ui";
+import { ENV } from "@/lib/env";
 
-// Authorized pubkeys for publishing app metadata
-const AUTHORIZED_PUBKEYS = [
-  "5e7ff05d59cb6808762cf1ed5a69ae2a21b8457056652fdc42970d36fc5c31d0",
-  "07907690ce3fec30fb2089eb5a61c147548c244ba85605e713d7991cd4e015f6"
-];
+// Authorized pubkeys for publishing app metadata from environment variable
+const AUTHORIZED_PUBKEYS = (ENV.ADMIN_PUBKEYS || "")
+  .split(",")
+  .map((pk) => pk.trim())
+  .filter(Boolean);
+
+// Fallback hardcoded defaults if environment is empty
+if (AUTHORIZED_PUBKEYS.length === 0) {
+  AUTHORIZED_PUBKEYS.push(
+    "5e7ff05d59cb6808762cf1ed5a69ae2a21b8457056652fdc42970d36fc5c31d0",
+    "07907690ce3fec30fb2089eb5a61c147548c244ba85605e713d7991cd4e015f6"
+  );
+}
 
 const APP_IDENTIFIER = "tell-it-web";
 

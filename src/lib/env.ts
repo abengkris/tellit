@@ -36,4 +36,5 @@ export const ENV = {
     PRIVATE: getOptionalEnv('VAPID_PRIVATE_KEY'),
   },
   TELLIT_NSEC: getOptionalEnv('TELLIT_NSEC'),
+  ADMIN_PUBKEYS: getOptionalEnv('NEXT_PUBLIC_TELLIT_ADMIN_PUBKEYS') || getOptionalEnv('TELLIT_ADMIN_PUBKEYS') || '',
 };
