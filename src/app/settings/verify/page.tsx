@@ -13,6 +13,7 @@ import { useDebounce } from "use-debounce";
 import { LNPaymentModal } from "@/components/common/LNPaymentModal";
 import { useRelayList } from "@/hooks/useRelayList";
 import { useNostrifyProfile } from "@/hooks/useNostrifyProfile";
+import { useAuthenticatedFetch } from "@/hooks/useAuthenticatedFetch";
 
 function VerifyContent() {
   const { user, isLoggedIn } = useAuthStore();
@@ -22,6 +23,7 @@ function VerifyContent() {
   const renewHandle = searchParams.get("renew");
   const { relays: userRelays } = useRelayList(user?.pubkey);
   const { updateProfile: updateNostrifyProfile } = useNostrifyProfile(user?.pubkey);
+  const fetch = useAuthenticatedFetch();
   
   const [handle, setHandle] = useState(renewHandle || "");
   const [debouncedHandle] = useDebounce(handle, 500);

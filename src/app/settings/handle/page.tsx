@@ -20,6 +20,7 @@ import { useHandleStatus, PendingHandle } from "@/hooks/useHandleStatus";
 import { useRelayList } from "@/hooks/useRelayList";
 import { LNPaymentModal } from "@/components/common/LNPaymentModal";
 import { HandleIntegrityBadge } from "@/components/profile/HandleIntegrityBadge";
+import { useAuthenticatedFetch } from "@/hooks/useAuthenticatedFetch";
 import { 
   Dialog, 
   DialogContent, 
@@ -531,6 +532,7 @@ export default function ManageHandlePage() {
   const { ndk } = useNDK();
   const { addToast } = useUIStore();
   const router = useRouter();
+  const fetch = useAuthenticatedFetch();
   const { profile, refresh: refreshProfile } = useProfile(user?.pubkey);
   const { handles: activeHandles, pendingHandles, loading: statusLoading, refresh: refreshStatus } = useHandleStatus();
   
