@@ -36,9 +36,9 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 
 export default function SettingsPage() {
-  const { isLoggedIn, user, logout, logoutAll, accounts } = useAuthStore();
-  const { sessions, ndk } = useNDK();
-  const { profile } = useProfile(user?.pubkey);
+  const { isLoggedIn, publicKey, user, logout, logoutAll, accounts } = useAuthStore();
+  const { sessions, ndk, isReady } = useNDK();
+  const { profile } = useProfile(user?.pubkey || publicKey || undefined);
   const { mutedPubkeys, loading: loadingLists } = useLists();
   const { loading: settingsLoading, lastSync, saveSettings, fetchSettings } = useAppSettings();
   const { 
@@ -91,7 +91,7 @@ export default function SettingsPage() {
         <h1 className="text-3xl font-black">Settings</h1>
 
         {/* Account Section */}
-        {isLoggedIn && user && (
+        {isLoggedIn && (
           <section className="space-y-4">
             <h2 className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2 px-1">
               <User size={14} /> Account
@@ -99,10 +99,12 @@ export default function SettingsPage() {
             <Card className="rounded-3xl overflow-hidden border-none bg-muted/30 shadow-none">
               <CardContent className="p-4 flex flex-col gap-4">
                 <div className="flex items-center gap-4">
-                  <Avatar pubkey={user.pubkey} src={user.profile?.image} size={60} />
+                  <Avatar pubkey={user?.pubkey || publicKey || ""} src={user?.profile?.image || profile?.image} size={60} />
                   <div className="flex-1 min-w-0">
-                    <div className="font-bold text-lg truncate">{user.profile?.display_name || user.profile?.name || "Nostrich"}</div>
-                    <div className="text-muted-foreground text-xs truncate font-mono">{user.npub.slice(0, 12)}...{user.npub.slice(-8)}</div>
+                    <div className="font-bold text-lg truncate">{user?.profile?.display_name || user?.profile?.name || profile?.display_name || profile?.name || "Nostrich"}</div>
+                    <div className="text-muted-foreground text-xs truncate font-mono">
+                      {user?.npub || (publicKey ? publicKey.slice(0, 12) + "..." + publicKey.slice(-8) : "Loading...")}
+                    </div>
                   </div>
                 </div>
                 
@@ -169,7 +171,7 @@ export default function SettingsPage() {
         )}
 
         {/* Security Section */}
-        {isLoggedIn && user && (
+        {isLoggedIn && (
           <section className="space-y-4">
             <h2 className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2 px-1">
               <Shield size={14} /> Security
