@@ -165,6 +165,7 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
     } = stableDepsRef.current;
 
     if (!type || type === "none") return;
+    if (!ndkInstance.signer) return;
 
     try {
       let wallet: NDKWallet | null = null;
@@ -206,7 +207,10 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
 
       // If NIP-60, we need to start it
       if (wallet instanceof NDKCashuWallet) {
-        wallet.start();
+        // Start returns a promise, must handle its error
+        wallet.start().catch((err) => {
+          console.warn("[NDKProvider] Failed to start Cashu wallet:", err instanceof Error ? err.message : err);
+        });
       }
 
     } catch (err) {
