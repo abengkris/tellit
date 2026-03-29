@@ -39,5 +39,5 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 ---
 
-- [ ] **Track: Nostrify NIP-17 Error Logger**
+- [x] **Track: Nostrify NIP-17 Error Logger**
 *Link: [./tracks/nip17_logger_20260329/](./tracks/nip17_logger_20260329/)*
