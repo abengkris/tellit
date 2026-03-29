@@ -2,7 +2,7 @@
 
 This plan outlines the steps to implement a high-performance, resilient error logger using the Nostrify ecosystem and NIP-17 private messaging.
 
-## Phase 1: Setup and Foundation
+## Phase 1: Setup and Foundation [checkpoint: 3daffcb]
 
 - [x] Task: Project Scaffolding and Dependencies
     - [x] Create directory `src/lib/logger/`
