@@ -43,12 +43,12 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({ isOpen, onClose, onO
 };
 
 const MobileDrawerContent = ({ onClose, onOpenRelays }: { onClose: () => void; onOpenRelays: () => void }) => {
-  const { user } = useAuthStore();
+  const { user, publicKey } = useAuthStore();
   const { unreadMessagesCount, hideBalance } = useUIStore();
   const { connectedCount, totalCount } = useRelayStatus();
-  const { profile, loading: profileLoading, profileUrl } = useProfile(user?.pubkey);
-  const { count: followingCount } = useFollowingList(user?.pubkey);
-  const { count: followerCount } = useFollowerCount(user?.pubkey);
+  const { profile, loading: profileLoading, profileUrl } = useProfile(publicKey || user?.pubkey || undefined);
+  const { count: followingCount } = useFollowingList(publicKey || user?.pubkey || undefined);
+  const { count: followerCount } = useFollowerCount(publicKey || user?.pubkey || undefined);
   const { balance, nwcPairingCode } = useWalletStore();
 
   return (
@@ -65,7 +65,7 @@ const MobileDrawerContent = ({ onClose, onOpenRelays }: { onClose: () => void; o
               <div className="flex justify-between items-start">
                 <Link href={profileUrl} onClick={onClose} className="block">
                   <Avatar 
-                    pubkey={user?.pubkey || ""} 
+                    pubkey={publicKey || user?.pubkey || ""} 
                     src={profile?.picture || (profile as { image?: string })?.image} 
                     size={64} 
                     className="border-2 border-background shadow-sm rounded-full"
@@ -101,7 +101,7 @@ const MobileDrawerContent = ({ onClose, onOpenRelays }: { onClose: () => void; o
                       {profile?.display_name || profile?.name || "Nostrich"}
                     </h2>
                     <p className="text-muted-foreground text-sm font-mono truncate">
-                      @{shortenPubkey(user?.pubkey || "")}
+                      @{shortenPubkey(publicKey || user?.pubkey || "")}
                     </p>
                   </>
                 )}

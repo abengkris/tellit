@@ -92,9 +92,9 @@ const SidebarItem = React.memo(({
 SidebarItem.displayName = "SidebarItem";
 
 export const Sidebar = () => {
-  const { user, isLoggedIn, login } = useAuthStore();
+  const { user, publicKey, isLoggedIn, login } = useAuthStore();
   const { ndk, sessions } = useNDK();
-  const { profile, loading: profileLoading, profileUrl } = useProfile(user?.pubkey);
+  const { profile, loading: profileLoading, profileUrl } = useProfile(publicKey || user?.pubkey || undefined);
   const { unreadCount } = useNotifications();
   const { unreadMessagesCount, hideBalance } = useUIStore();
   const { connectedCount, totalCount } = useRelayStatus();
@@ -122,7 +122,7 @@ export const Sidebar = () => {
             <SidebarItem 
               href={profileUrl} 
               label="Profile" 
-              pubkey={user?.pubkey} 
+              pubkey={publicKey || user?.pubkey} 
               isLoading={profileLoading} 
               nip05={profile?.nip05}
             />
