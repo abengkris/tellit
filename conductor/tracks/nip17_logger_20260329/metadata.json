@@ -1,0 +1,8 @@
+{
+  "track_id": "nip17_logger_20260329",
+  "type": "feature",
+  "status": "new",
+  "created_at": "2026-03-29T09:45:00Z",
+  "updated_at": "2026-03-29T09:45:00Z",
+  "description": "Create a logger module in TypeScript utilizing the 'nostrify' library ecosystem for NIP-17 error reporting."
+}
