@@ -45,4 +45,28 @@ describe('NIP-17 Composition', () => {
     // Gift wrap content should be NIP-44 encrypted seal JSON
     expect(giftWrap.content).not.toBe(JSON.stringify(seal));
   });
+
+  it('should be decryptable by the receiver', async () => {
+    const rumor = createRumor(senderPubkey, 'Test message', { foo: 'bar' });
+    const seal = await wrapSeal(senderSigner, receiverPubkey, rumor);
+    const giftWrap = await wrapGift(receiverPubkey, seal);
+
+    const { nip44 } = await import('nostr-tools');
+
+    // 1. Receiver decrypts Gift Wrap to get Seal
+    const conversationKey1 = nip44.getConversationKey(receiverPrivkey, giftWrap.pubkey);
+    const decryptedSealJson = nip44.decrypt(giftWrap.content, conversationKey1);
+    const decryptedSeal = JSON.parse(decryptedSealJson);
+    expect(decryptedSeal.kind).toBe(13);
+    expect(decryptedSeal.pubkey).toBe(senderPubkey);
+
+    // 2. Receiver decrypts Seal to get Rumor
+    const receiverSigner = new NSecSigner(receiverPrivkey);
+    const decryptedRumorJson = await receiverSigner.nip44.decrypt(senderPubkey, decryptedSeal.content);
+    const decryptedRumor = JSON.parse(decryptedRumorJson);
+    
+    expect(decryptedRumor.kind).toBe(14);
+    expect(decryptedRumor.content).toBe('Test message');
+    expect(decryptedRumor.tags).toContainEqual(['foo', 'bar']);
+  });
 });

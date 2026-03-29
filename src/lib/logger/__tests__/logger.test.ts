@@ -4,7 +4,7 @@ import { LoggerConfig } from '../config';
 import { NPool } from '@nostrify/nostrify';
 import { RateLimiter } from '../rate-limiter';
 
-import { generateSecretKey, getPublicKey } from 'nostr-tools';
+import { generateSecretKey, getPublicKey, nip19 } from 'nostr-tools';
 
 describe('NostrifyLogger', () => {
   const receiverPubkey = getPublicKey(generateSecretKey());
@@ -73,5 +73,21 @@ describe('NostrifyLogger', () => {
     
     expect(consoleSpy).toHaveBeenCalled();
     consoleSpy.mockRestore();
+  });
+
+  describe('Singleton Factory', () => {
+    const testPrivkey = generateSecretKey();
+    const testNsec = nip19.nsecEncode(testPrivkey);
+
+    beforeEach(() => {
+      vi.stubEnv('LOGGER_NSEC', testNsec);
+      vi.stubEnv('RECEIVER_PUBKEY', '0000000000000000000000000000000000000000000000000000000000000000');
+    });
+
+    it('should create a singleton instance', async () => {
+      const instance1 = await NostrifyLogger.get();
+      const instance2 = await NostrifyLogger.get();
+      expect(instance1).toBe(instance2);
+    });
   });
 });
