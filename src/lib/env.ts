@@ -20,8 +20,8 @@ export function getOptionalEnv(name: string): string | undefined {
 
 export const ENV = {
   SUPABASE: {
-    URL: getOptionalEnv('NEXT_PUBLIC_SUPABASE_URL') || getOptionalEnv('NEXT_PUBLIC_TELLIT_SUPABASE_URL') || getOptionalEnv('SUPABASE_URL'),
-    ANON_KEY: getOptionalEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY') || getOptionalEnv('TELLIT_SUPABASE_ANON_KEY') || getOptionalEnv('SUPABASE_ANON_KEY'),
+    URL: process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_TELLIT_SUPABASE_URL || getOptionalEnv('SUPABASE_URL'),
+    ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || getOptionalEnv('TELLIT_SUPABASE_ANON_KEY') || getOptionalEnv('SUPABASE_ANON_KEY'),
     SERVICE_KEY: getOptionalEnv('TELLIT_SUPABASE_SERVICE_ROLE_KEY') || getOptionalEnv('SUPABASE_SERVICE_ROLE_KEY'),
   },
   BLINK: {
@@ -32,9 +32,9 @@ export const ENV = {
     URL: getOptionalEnv('TELLIT_POSTGRES_URL') || getOptionalEnv('DATABASE_URL') || getOptionalEnv('POSTGRES_URL') || getOptionalEnv('POSTGRES_PRISMA_URL') || getOptionalEnv('TELLIT_POSTGRES_PRISMA_URL'),
   },
   VAPID: {
-    PUBLIC: getOptionalEnv('NEXT_PUBLIC_VAPID_PUBLIC_KEY'),
+    PUBLIC: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
     PRIVATE: getOptionalEnv('VAPID_PRIVATE_KEY'),
   },
   TELLIT_NSEC: getOptionalEnv('TELLIT_NSEC'),
-  ADMIN_PUBKEYS: getOptionalEnv('NEXT_PUBLIC_TELLIT_ADMIN_PUBKEYS') || getOptionalEnv('TELLIT_ADMIN_PUBKEYS') || '',
+  ADMIN_PUBKEYS: process.env.NEXT_PUBLIC_TELLIT_ADMIN_PUBKEYS || getOptionalEnv('TELLIT_ADMIN_PUBKEYS') || '',
 };
