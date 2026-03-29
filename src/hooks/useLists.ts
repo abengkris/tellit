@@ -61,9 +61,9 @@ export interface ExternalIdentity {
  */
 export function useLists(targetPubkey?: string) {
   const { ndk, isReady } = useNDK();
-  const { user: currentUser } = useAuthStore();
-  const pubkey = targetPubkey || currentUser?.pubkey;
-  const isOwnProfile = !!currentUser && pubkey === currentUser.pubkey;
+  const { user: currentUser, publicKey } = useAuthStore();
+  const pubkey = targetPubkey || currentUser?.pubkey || publicKey || undefined;
+  const isOwnProfile = !!(currentUser?.pubkey || publicKey) && pubkey === (currentUser?.pubkey || publicKey);
   
   const [mutedPubkeys, setMutedPubkeys] = useState<Set<string>>(new Set());
   const [bookmarkedEventIds, setBookmarkedEventIds] = useState<Set<string>>(new Set());

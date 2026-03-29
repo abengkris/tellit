@@ -6,7 +6,7 @@ export function useWoT(pubkey?: string) {
   const [score, setScore] = useState<number>(0);
   const [mutualCount, setMutualCount] = useState<number>(0);
   const [loading, setLoading] = useState<boolean>(true);
-  const { user: currentUser } = useAuthStore();
+  const { user: currentUser, publicKey } = useAuthStore();
 
   useEffect(() => {
     if (!pubkey) {
@@ -31,11 +31,12 @@ export function useWoT(pubkey?: string) {
         setScore(scoreRecord ? scoreRecord.score : 0);
 
         // 2. Fetch Mutuals (people the current user follows who also follow this pubkey)
-        if (currentUser?.pubkey) {
+        const myPubkey = currentUser?.pubkey || publicKey;
+        if (myPubkey) {
           const myFollowsRecord = await sqlDb
             .selectFrom('follows')
             .selectAll()
-            .where('pubkey', '=', currentUser.pubkey)
+            .where('pubkey', '=', myPubkey)
             .executeTakeFirst();
 
           if (myFollowsRecord && myFollowsRecord.follows) {
@@ -66,7 +67,7 @@ export function useWoT(pubkey?: string) {
     };
 
     fetchData();
-  }, [pubkey, currentUser?.pubkey]);
+  }, [pubkey, currentUser?.pubkey, publicKey]);
 
   return useMemo(() => ({ 
     score, 

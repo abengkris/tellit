@@ -9,7 +9,7 @@ export interface TellItNotification extends NDKEvent {
 
 export function useNotifications() {
   const { ndk, isReady, sync } = useNDK();
-  const { user, isLoggedIn } = useAuthStore();
+  const { user, publicKey, isLoggedIn } = useAuthStore();
   const [notifications, setNotifications] = useState<TellItNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -18,7 +18,8 @@ export function useNotifications() {
   const oldestTimestampRef = useRef<number | undefined>(undefined);
 
   const processEvent = useCallback((event: NDKEvent): TellItNotification | null => {
-    if (!user || event.pubkey === user.pubkey) return null;
+    const currentPubkey = user?.pubkey || publicKey;
+    if (!currentPubkey || event.pubkey === currentPubkey) return null;
 
     const notif = event as TellItNotification;
     
@@ -53,16 +54,17 @@ export function useNotifications() {
     }
 
     return notif;
-  }, [user]);
+  }, [user, publicKey]);
 
   const fetchNotifications = useCallback(async (isLoadMore = false) => {
-    if (!ndk || !isReady || !isLoggedIn || !user) return;
+    const currentPubkey = user?.pubkey || publicKey;
+    if (!ndk || !isReady || !isLoggedIn || !currentPubkey) return;
 
     setLoading(true);
 
     const filter: NDKFilter = {
       kinds: [1, 3, 6, 7, 1111, 9735, 30023],
-      "#p": [user.pubkey],
+      "#p": [currentPubkey],
       limit: 30,
     };
 
@@ -93,15 +95,16 @@ export function useNotifications() {
     });
 
     setLoading(false);
-  }, [ndk, isReady, isLoggedIn, user, processEvent]);
+  }, [ndk, isReady, isLoggedIn, user, publicKey, processEvent]);
 
   useEffect(() => {
-    if (!ndk || !isReady || !isLoggedIn || !user) return;
+    const currentPubkey = user?.pubkey || publicKey;
+    if (!ndk || !isReady || !isLoggedIn || !currentPubkey) return;
 
     // Filter for sync and real-time updates
     const filter: NDKFilter = {
       kinds: [1, 3, 6, 7, 1111, 9735, 30023],
-      "#p": [user.pubkey],
+      "#p": [currentPubkey],
       limit: 30,
     };
 
@@ -170,7 +173,7 @@ export function useNotifications() {
     return () => {
       if (subscriptionRef.current) subscriptionRef.current.stop();
     };
-  }, [ndk, isReady, sync, isLoggedIn, user, processEvent]);
+  }, [ndk, isReady, sync, isLoggedIn, user, publicKey, processEvent]);
 
   const loadMore = useCallback(() => {
     if (!loading && hasMore) {
