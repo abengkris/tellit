@@ -66,15 +66,17 @@ const AccountItem = React.memo(({
 AccountItem.displayName = "AccountItem";
 
 export const AccountSwitcher = React.memo(() => {
-  const { user, accounts, switchAccount, removeAccount, logout } = useAuthStore();
+  const { user, publicKey, accounts, switchAccount, removeAccount, logout } = useAuthStore();
   const { sessions } = useNDK();
   const router = useRouter();
-  const { profile, loading } = useProfile(user?.pubkey);
+  
+  const currentPubkey = user?.pubkey || publicKey;
+  const { profile, loading } = useProfile(currentPubkey || undefined);
 
-  if (!user || accounts.length === 0) return null;
+  if (!currentPubkey || accounts.length === 0) return null;
 
-  const otherAccounts = accounts.filter(a => a !== user.pubkey);
-  const name = profile?.display_name || profile?.name || shortenPubkey(user.pubkey);
+  const otherAccounts = accounts.filter(a => a !== currentPubkey);
+  const name = profile?.display_name || profile?.name || shortenPubkey(currentPubkey);
 
   const handleAddAccount = () => {
     router.push("/login?add=true");
@@ -88,7 +90,7 @@ export const AccountSwitcher = React.memo(() => {
   };
 
   const handleSwitchAccount = (pubkey: string) => {
-    if (sessions && pubkey !== user.pubkey) {
+    if (sessions && pubkey !== currentPubkey) {
       switchAccount(pubkey, sessions);
     }
   };
@@ -101,7 +103,7 @@ export const AccountSwitcher = React.memo(() => {
           className="flex items-center justify-start gap-4 p-3 h-auto rounded-full hover:bg-accent transition-colors w-fit lg:w-full group"
         >
           <div className="relative flex items-center justify-center shrink-0 size-7">
-            <Avatar pubkey={user.pubkey} size={28} isLoading={loading} nip05={profile?.nip05} />
+            <Avatar pubkey={currentPubkey} size={28} isLoading={loading} nip05={profile?.nip05} />
           </div>
           <div className="hidden lg:flex flex-col items-start min-w-0 text-left">
             <span className="text-sm font-black truncate w-full">{name}</span>
@@ -124,7 +126,7 @@ export const AccountSwitcher = React.memo(() => {
         
         <DropdownMenuGroup className="space-y-1">
           <AccountItem 
-            pubkey={user.pubkey} 
+            pubkey={currentPubkey} 
             isActive={true} 
             onSelect={handleSwitchAccount}
             onRemove={handleRemoveAccount}

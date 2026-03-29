@@ -184,8 +184,8 @@ export function HomeContent() {
 
       <PostComposer />
 
-      {isLoggedIn && user && (
-        <ProfileSetupCard pubkey={user.pubkey} />
+      {isLoggedIn && (
+        <ProfileSetupCard pubkey={user?.pubkey || publicKey || ""} />
       )}
 
       <div className="pb-20">
