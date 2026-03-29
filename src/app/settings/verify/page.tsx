@@ -41,18 +41,35 @@ function VerifyContent() {
 
   // Check if user already has a handle on mount
   useEffect(() => {
+    let isMounted = true;
     async function checkExistingHandle() {
       if (!user) return;
+      
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+
       try {
-        const res = await fetch(`/api/nip05/register?pubkey=${user.pubkey}`);
+        const res = await fetch(`/api/nip05/register?pubkey=${user.pubkey}`, {
+          signal: controller.signal
+        });
+        
+        if (!res.ok) throw new Error(`Status ${res.status}`);
+        
         const data = await res.json();
-        if (data.handles && data.handles.length > 0) {
+        if (isMounted && data.handles && data.handles.length > 0) {
           setHasHandles(true);
         }
       } catch (err) {
-        console.error("Failed to check existing handle:", err);
+        if (err instanceof Error && err.name === 'AbortError') {
+          console.warn("Handle check timed out");
+        } else {
+          console.error("Failed to check existing handle:", err);
+        }
+        // If it fails or times out, we still want to show the page
+        // but maybe with a toast if it's a real error
       } finally {
-        setIsInitialLoading(false);
+        clearTimeout(timeoutId);
+        if (isMounted) setIsInitialLoading(false);
       }
     }
 
@@ -61,6 +78,10 @@ function VerifyContent() {
     } else {
       setIsInitialLoading(false);
     }
+
+    return () => {
+      isMounted = false;
+    };
   }, [isLoggedIn, user]);
 
   useEffect(() => {
