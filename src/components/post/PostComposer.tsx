@@ -62,12 +62,12 @@ export const PostComposer: React.FC<PostComposerProps> = ({
   onSuccess,
   autoFocus = false
 }) => {
-  const { user, isLoggedIn } = useAuthStore();
+  const { user, publicKey, isLoggedIn } = useAuthStore();
   const { ndk, isReady } = useNDK();
   const { addToast } = useUIStore();
   const { recordInteraction } = useInteractionHistory();
   const { emojis } = useEmojis();
-  const { profile } = useProfile(user?.pubkey);
+  const { profile } = useProfile(user?.pubkey || publicKey || undefined);
   
   // Create a unique key for the draft
   const draftKey = replyTo ? `reply-${replyTo.id}` : quoteEvent ? `quote-${quoteEvent.id}` : 'main-composer';
@@ -417,7 +417,7 @@ export const PostComposer: React.FC<PostComposerProps> = ({
     <div className={cn("p-4", !replyTo && "border-b border-border")}>
       <div className="flex gap-3">
         <Avatar 
-          pubkey={user?.pubkey || ""} 
+          pubkey={user?.pubkey || publicKey || ""} 
           src={profile?.picture || (profile as { image?: string })?.image} 
           size={48} 
           nip05={profile?.nip05}

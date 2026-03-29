@@ -19,13 +19,13 @@ import { cn } from "@/lib/utils";
 import { HandleExpirationBanner } from "./HandleExpirationBanner";
 
 export const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, isLoggedIn } = useAuthStore();
+  const { user, publicKey, isLoggedIn } = useAuthStore();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isRelayModalOpen, setIsRelayModalOpen] = useState(false);
   const pathname = usePathname();
   const { unreadCount } = useNotifications();
   const { unreadMessagesCount } = useUIStore();
-  const { profile } = useProfile(user?.pubkey);
+  const { profile } = useProfile(user?.pubkey || publicKey || undefined);
 
   const isLoginPage = pathname === "/login";
   const isOnboardingPage = pathname === "/onboarding";
@@ -50,7 +50,7 @@ export const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }
             className="relative active:scale-95 transition-transform focus-visible:ring-2 focus-visible:ring-primary rounded-full outline-hidden"
           >
             <Avatar 
-              pubkey={user?.pubkey || ""} 
+              pubkey={user?.pubkey || publicKey || ""} 
               src={profile?.picture || (profile as { image?: string })?.image} 
               size={32} 
               className="border border-border"
