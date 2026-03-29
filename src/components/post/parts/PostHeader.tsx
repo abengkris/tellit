@@ -307,41 +307,20 @@ export const PostHeader: React.FC<PostHeaderProps> = ({
 
   return (
     <>
-      <div className="flex items-center justify-between mb-0.5 min-w-0">
+      <div className="flex items-center justify-between mb-0 min-w-0">
         <div className="flex items-center space-x-1 truncate min-w-0" onClick={(e) => e.stopPropagation()}>
-          {showAvatar && (
-            <div className="mr-4 shrink-0 z-10">
-              <Link href={finalProfileUrl} aria-label={`View ${display_name}'s profile`}>
-                <Avatar 
-                  pubkey={pubkey} 
-                  src={avatar} 
-                  isLoading={isLoading} 
-                  size={48} 
-                  nip05={nip05}
-                  className="w-12 h-12 ring-4 ring-background" 
-                  aria-hidden="true"
-                />
-              </Link>
-            </div>
-          )}
           <div className="flex items-center gap-1 truncate min-w-0">
             <Link href={finalProfileUrl} className="flex items-center gap-1 truncate min-w-0 hover:underline">
-              <UserIdentity 
-                pubkey={pubkey}
-                display_name={display_name}
-                name={name}
-                nip05={nip05}
-                variant="post"
-                tags={tags}
-              />
+              <span className="font-bold text-[15px] text-foreground truncate">{display_name}</span>
+              <span className="text-muted-foreground text-[15px] truncate">@{name || userNpub.slice(0, 12)}</span>
             </Link>
-            <div className="flex items-center gap-1 shrink-0 mt-1">
+            <div className="flex items-center gap-1 shrink-0">
               {score > 0 && (
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <div className="flex items-center cursor-help">
                       <ShieldCheck className={cn(
-                        "size-3",
+                        "size-3.5",
                         score > 80 ? "text-green-500" : "text-muted-foreground/60"
                       )} />
                     </div>
@@ -373,36 +352,19 @@ export const PostHeader: React.FC<PostHeaderProps> = ({
                   Bot
                 </Badge>
               )}
-              {proxyProtocol && (
-                <Badge variant="outline" className="h-4 px-1 rounded font-bold uppercase tracking-tighter text-[8px] bg-muted/5 text-muted-foreground border-border/50">
-                  {proxyId?.startsWith('http') ? (
-                    <a href={proxyId} target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">
-                      {proxyProtocol}
-                    </a>
-                  ) : (
-                    proxyProtocol
-                  )}
-                </Badge>
-              )}
             </div>
           </div>
-          <span className="text-muted-foreground text-xs shrink-0 mt-1">·</span>
-          {languageLabel && (
-            <>
-              <span className="text-muted-foreground text-[10px] font-black uppercase tracking-tighter mt-1.5 ml-0.5">{languageLabel}</span>
-              <span className="text-muted-foreground text-xs shrink-0 mt-1 ml-0.5">·</span>
-            </>
-          )}
+          <span className="text-muted-foreground text-[15px] shrink-0">·</span>
           {navigationHref ? (
             <Link 
               href={navigationHref} 
-              className="text-muted-foreground text-xs whitespace-nowrap shrink-0 mt-1 hover:underline"
+              className="text-muted-foreground text-[15px] whitespace-nowrap shrink-0 hover:underline"
               onClick={(e) => e.stopPropagation()}
             >
               {formattedTime}
             </Link>
           ) : (
-            <span className="text-muted-foreground text-xs whitespace-nowrap shrink-0 mt-1">
+            <span className="text-muted-foreground text-[15px] whitespace-nowrap shrink-0">
               {formattedTime}
             </span>
           )}
@@ -410,7 +372,7 @@ export const PostHeader: React.FC<PostHeaderProps> = ({
           {relevance && relevance.signals && (
             <Tooltip>
               <TooltipTrigger asChild>
-                <div className="flex items-center shrink-0 mt-1 ml-1 cursor-help opacity-60 hover:opacity-100 transition-opacity">
+                <div className="flex items-center shrink-0 mt-0.5 ml-1 cursor-help opacity-60 hover:opacity-100 transition-opacity">
                   <Sparkles className="size-3 text-blue-500" fill="currentColor" />
                 </div>
               </TooltipTrigger>
@@ -442,88 +404,96 @@ export const PostHeader: React.FC<PostHeaderProps> = ({
               </TooltipContent>
             </Tooltip>
           )}
-
-          {clientName && (
-            <span className="text-muted-foreground text-[10px] uppercase font-black tracking-tighter mt-1.5 opacity-40 ml-1 shrink-0">
-              via {clientName}
-            </span>
-          )}
         </div>
         
-        <DropdownMenu modal={false}>
-          <DropdownMenuTrigger asChild>
-            <Button 
-              variant="ghost" 
-              size="icon-xs" 
-              aria-label="More options"
-              className="text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-full transition-colors shrink-0"
-            >
-              <MoreHorizontal className="size-4" aria-hidden="true" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56" onCloseAutoFocus={(e) => e.preventDefault()}>
-            {onPinClick && (
-              <DropdownMenuItem onClick={onPinClick} className="gap-2">
-                {isPinned ? <PinOff className="size-4" aria-hidden="true" /> : <Pin className="size-4" aria-hidden="true" />}
-                <span>{isPinned ? "Unpin from Profile" : "Pin to Profile"}</span>
-              </DropdownMenuItem>
-            )}
-            {onBookmarkClick && (
-              <DropdownMenuItem onClick={onBookmarkClick} className="gap-2">
-                <Bookmark className={cn("size-4", isBookmarked && "fill-current")} aria-hidden="true" />
-                <span>{isBookmarked ? "Remove Bookmark" : "Save Bookmark"}</span>
-              </DropdownMenuItem>
-            )}
-            {onMuteClick && (
-              <DropdownMenuItem onClick={onMuteClick} className={cn("gap-2", !isMuted && "text-destructive focus:text-destructive")}>
-                {isMuted ? <Volume2 className="size-4" aria-hidden="true" /> : <VolumeX className="size-4" aria-hidden="true" />}
-                <span>{isMuted ? `Unmute @${display_name}` : `Mute @${display_name}`}</span>
-              </DropdownMenuItem>
-            )}
-            <DropdownMenuSeparator />
-            {onReportClick && (
-              <DropdownMenuItem onClick={onReportClick} className="gap-2">
-                <Flag className="size-4" aria-hidden="true" />
-                <span>Report Content</span>
-              </DropdownMenuItem>
-            )}
-            {onRawEventClick && (
-              <DropdownMenuItem onClick={onRawEventClick} className="gap-2">
-                <Code className="size-4" aria-hidden="true" />
-                <span>View Raw Data</span>
-              </DropdownMenuItem>
-            )}
-            {onSummarizeClick && (
-              <DropdownMenuItem 
-                onClick={onSummarizeClick} 
-                disabled={isSummarizing}
-                className="gap-2 text-purple-500 focus:text-purple-600 focus:bg-purple-500/10"
+        <div className="flex items-center gap-1">
+          {proxyProtocol && (
+            <Badge variant="outline" className="h-4 px-1 rounded font-bold uppercase tracking-tighter text-[8px] bg-muted/5 text-muted-foreground border-border/50 hidden sm:flex">
+              {proxyId?.startsWith('http') ? (
+                <a href={proxyId} target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">
+                  {proxyProtocol}
+                </a>
+              ) : (
+                proxyProtocol
+              )}
+            </Badge>
+          )}
+          
+          <DropdownMenu modal={false}>
+            <DropdownMenuTrigger asChild>
+              <Button 
+                variant="ghost" 
+                size="icon-xs" 
+                aria-label="More options"
+                className="text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-full transition-colors shrink-0"
               >
-                {isSummarizing ? (
-                  <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-                ) : (
-                  <BarChart2 className="size-4" aria-hidden="true" />
-                )}
-                <span>{isSummarizing ? "Summarizing…" : "Summarize with AI"}</span>
-              </DropdownMenuItem>
-            )}
-            {onDeleteClick && (
-              <>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem 
-                  onSelect={(e) => {
-                    e.preventDefault();
-                    setShowDeleteDialog(true);
-                  }} 
-                  className="gap-2 text-destructive focus:text-destructive focus:bg-destructive/10"
-                >
-                  <Trash2 className="size-4" aria-hidden="true" />
-                  <span>Delete Post</span>
+                <MoreHorizontal className="size-4" aria-hidden="true" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56" onCloseAutoFocus={(e) => e.preventDefault()}>
+              {onPinClick && (
+                <DropdownMenuItem onClick={onPinClick} className="gap-2">
+                  {isPinned ? <PinOff className="size-4" aria-hidden="true" /> : <Pin className="size-4" aria-hidden="true" />}
+                  <span>{isPinned ? "Unpin from Profile" : "Pin to Profile"}</span>
                 </DropdownMenuItem>
-              </>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
+              )}
+              {onBookmarkClick && (
+                <DropdownMenuItem onClick={onBookmarkClick} className="gap-2">
+                  <Bookmark className={cn("size-4", isBookmarked && "fill-current")} aria-hidden="true" />
+                  <span>{isBookmarked ? "Remove Bookmark" : "Save Bookmark"}</span>
+                </DropdownMenuItem>
+              )}
+              {onMuteClick && (
+                <DropdownMenuItem onClick={onMuteClick} className={cn("gap-2", !isMuted && "text-destructive focus:text-destructive")}>
+                  {isMuted ? <Volume2 className="size-4" aria-hidden="true" /> : <VolumeX className="size-4" aria-hidden="true" />}
+                  <span>{isMuted ? `Unmute @${display_name}` : `Mute @${display_name}`}</span>
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuSeparator />
+              {onReportClick && (
+                <DropdownMenuItem onClick={onReportClick} className="gap-2">
+                  <Flag className="size-4" aria-hidden="true" />
+                  <span>Report Content</span>
+                </DropdownMenuItem>
+              )}
+              {onRawEventClick && (
+                <DropdownMenuItem onClick={onRawEventClick} className="gap-2">
+                  <Code className="size-4" aria-hidden="true" />
+                  <span>View Raw Data</span>
+                </DropdownMenuItem>
+              )}
+              {onSummarizeClick && (
+                <DropdownMenuItem 
+                  onClick={onSummarizeClick} 
+                  disabled={isSummarizing}
+                  className="gap-2 text-purple-500 focus:text-purple-600 focus:bg-purple-500/10"
+                >
+                  {isSummarizing ? (
+                    <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+                  ) : (
+                    <BarChart2 className="size-4" aria-hidden="true" />
+                  )}
+                  <span>{isSummarizing ? "Summarizing…" : "Summarize with AI"}</span>
+                </DropdownMenuItem>
+              )}
+              {onDeleteClick && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem 
+                    onSelect={(e) => {
+                      e.preventDefault();
+                      setShowDeleteDialog(true);
+                    }} 
+                    className="gap-2 text-destructive focus:text-destructive focus:bg-destructive/10"
+                  >
+                    <Trash2 className="size-4" aria-hidden="true" />
+                    <span>Delete Post</span>
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
 
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>

@@ -338,11 +338,12 @@ export function PostContentRenderer({
           {(commentTokens.length > 0 || (textTokens.length > 0 && !isHighlight)) && (
             <div className="relative group mb-2">
               <div
-                className={`text-[15px] leading-relaxed whitespace-pre-wrap break-words text-gray-900 dark:text-gray-100 text-pretty min-w-0 ${
-                  shouldTruncate ? "max-h-[300px] overflow-hidden" : ""
-                } ${
+                className={cn(
+                  "leading-normal whitespace-pre-wrap break-words text-gray-900 dark:text-gray-100 text-pretty min-w-0",
+                  variant === "detail" ? "text-[23px] leading-tight mb-4" : "text-[15px]",
+                  shouldTruncate ? "max-h-[300px] overflow-hidden" : "",
                   maxLines && !showFull ? `line-clamp-${maxLines}` : ""
-                }`}
+                )}
               >
                 {(isHighlight ? commentTokens : textTokens).map((token, i) => (
                   <TokenRenderer key={i} token={token} emojiMap={emojiMap} />

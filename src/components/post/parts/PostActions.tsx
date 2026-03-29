@@ -232,11 +232,11 @@ export const PostActions = memo(({
   return (
     <>
       <div className={cn(
-        "flex items-center justify-between max-w-lg text-muted-foreground -ml-2",
-        variant === "detail" ? "py-2 border-t border-border/50 mt-2" : ""
+        "flex items-center justify-between max-w-md text-muted-foreground -ml-2 mt-1",
+        variant === "detail" ? "py-3 border-y border-border/50 mt-4 px-2" : ""
       )}>
         {/* Reply */}
-        <div className="flex items-center">
+        <div className="flex items-center group">
           <Tooltip>
             <TooltipTrigger asChild>
               <Button 
@@ -246,21 +246,21 @@ export const PostActions = memo(({
                   e.stopPropagation();
                   onReplyClick?.(e);
                 }}
-                className="hover:text-primary hover:bg-primary/10 rounded-full"
+                className="size-9 p-0 hover:text-blue-500 hover:bg-blue-500/10 rounded-full transition-colors"
                 aria-label="Reply"
               >
-                <MessageCircle className="size-5" />
+                <MessageCircle className="size-[18px]" />
               </Button>
             </TooltipTrigger>
             <TooltipContent side="bottom">Reply</TooltipContent>
           </Tooltip>
-          {variant === "feed" && (
-            <span className="text-xs ml-0.5">{comments > 0 ? formatCount(comments) : ""}</span>
+          {variant === "feed" && comments > 0 && (
+            <span className="text-[13px] ml-1 group-hover:text-blue-500 transition-colors">{formatCount(comments)}</span>
           )}
         </div>
 
         {/* Repost & Quote */}
-        <div className="flex items-center">
+        <div className="flex items-center group">
           <DropdownMenu modal={false}>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -269,12 +269,12 @@ export const PostActions = memo(({
                     variant="ghost" 
                     size="icon" 
                     className={cn(
-                      "hover:text-green-500 hover:bg-green-500/10 rounded-full",
+                      "size-9 p-0 hover:text-green-500 hover:bg-green-500/10 rounded-full transition-colors",
                       optimisticReposted && "text-green-500"
                     )}
                     aria-label="Repost and Quote options"
                   >
-                    <Repeat2 className={cn("size-5", optimisticReposted && "animate-in spin-in-180 duration-500")} />
+                    <Repeat2 className={cn("size-[18px]", optimisticReposted && "animate-in spin-in-180 duration-500")} />
                   </Button>
                 </DropdownMenuTrigger>
               </TooltipTrigger>
@@ -293,20 +293,20 @@ export const PostActions = memo(({
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          {variant === "feed" && (
+          {variant === "feed" && optimisticCombined > 0 && (
             <button 
-              className="text-xs cursor-pointer hover:underline ml-0.5 pr-2 py-2 outline-none focus-visible:underline focus-visible:text-primary disabled:opacity-50 disabled:pointer-events-none"
+              className="text-[13px] ml-1 group-hover:text-green-500 transition-colors"
               onClick={openRepostsModal}
               disabled={!isReady}
               aria-label={`${optimisticCombined} reposts and quotes`}
             >
-              {optimisticCombined > 0 ? formatCount(optimisticCombined) : ""}
+              {formatCount(optimisticCombined)}
             </button>
           )}
         </div>
 
         {/* Like & Custom Emoji */}
-        <div className="flex items-center">
+        <div className="flex items-center group">
           <DropdownMenu modal={false}>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -315,13 +315,13 @@ export const PostActions = memo(({
                     variant="ghost" 
                     size="icon" 
                     className={cn(
-                      "hover:text-pink-500 hover:bg-pink-500/10 rounded-full",
+                      "size-9 p-0 hover:text-pink-500 hover:bg-pink-500/10 rounded-full transition-colors",
                       optimisticReacted && optimisticReacted !== "" && "text-pink-500"
                     )}
                     aria-label={optimisticReacted === '+' ? "Unlike" : "Like or React"}
                   >
                     <Heart 
-                      className={cn("size-5", optimisticReacted && optimisticReacted !== "" && "animate-in zoom-in-125 duration-300")} 
+                      className={cn("size-[18px]", optimisticReacted && optimisticReacted !== "" && "animate-in zoom-in-125 duration-300")} 
                       fill={optimisticReacted && optimisticReacted !== "" ? 'currentColor' : 'none'} 
                     />
                   </Button>
@@ -362,20 +362,20 @@ export const PostActions = memo(({
             </DropdownMenuContent>
           </DropdownMenu>
           
-          {variant === "feed" && (
+          {variant === "feed" && optimisticLikes > 0 && (
             <button 
-              className="text-xs cursor-pointer hover:underline ml-0.5 pr-2 py-2 outline-none focus-visible:underline focus-visible:text-pink-500 disabled:opacity-50 disabled:pointer-events-none"
+              className="text-[13px] ml-1 group-hover:text-pink-500 transition-colors"
               onClick={openLikesModal}
               disabled={!isReady}
               aria-label={`${optimisticLikes} likes`}
             >
-              {optimisticLikes > 0 ? formatCount(optimisticLikes) : ""}
+              {formatCount(optimisticLikes)}
             </button>
           )}
         </div>
 
         {/* Zap */}
-        <div className="flex items-center">
+        <div className="flex items-center group">
           <Tooltip>
             <TooltipTrigger asChild>
               <Button 
@@ -387,33 +387,33 @@ export const PostActions = memo(({
                   onZapClick?.(e);
                 }}
                 loading={isZapping}
-                className="hover:text-yellow-500 hover:bg-yellow-500/10 rounded-full"
+                className="size-9 p-0 hover:text-yellow-500 hover:bg-yellow-500/10 rounded-full transition-colors"
                 aria-label="Zap"
               >
                 {!isZapping && (
-                  <Zap className={cn("size-5", optimisticZaps > 0 && "text-yellow-500 fill-yellow-500")} />
+                  <Zap className={cn("size-[18px]", optimisticZaps > 0 && "text-yellow-500 fill-yellow-500")} />
                 )}
               </Button>
             </TooltipTrigger>
             <TooltipContent side="bottom">Zap (Right-click for custom)</TooltipContent>
           </Tooltip>
-          {variant === "feed" && (
+          {variant === "feed" && optimisticZaps > 0 && (
             <button 
               className={cn(
-                "text-xs cursor-pointer hover:underline ml-0.5 pr-2 py-2 outline-none focus-visible:underline disabled:opacity-50 disabled:pointer-events-none",
+                "text-[13px] ml-1 transition-colors group-hover:text-yellow-500",
                 optimisticZaps > 0 && "text-yellow-600 dark:text-yellow-400 font-bold"
               )}
               onClick={openZapsModal}
               disabled={!isReady}
               aria-label={`${optimisticZaps} zaps`}
             >
-              {optimisticZaps > 0 ? formatCount(optimisticZaps) : ""}
+              {formatCount(optimisticZaps)}
             </button>
           )}
         </div>
 
-        {/* Bookmark */}
-        <div className="flex items-center">
+        {/* Share & Bookmark */}
+        <div className="flex items-center gap-0.5">
           <Tooltip>
             <TooltipTrigger asChild>
               <Button 
@@ -421,42 +421,38 @@ export const PostActions = memo(({
                 size="icon" 
                 onClick={handleBookmark}
                 className={cn(
-                  "hover:text-primary hover:bg-primary/10 rounded-full",
-                  isBookmarked && "text-primary"
+                  "size-9 p-0 hover:text-blue-500 hover:bg-blue-500/10 rounded-full transition-colors",
+                  isBookmarked && "text-blue-500"
                 )}
                 aria-label={isBookmarked ? "Remove Bookmark" : "Bookmark"}
               >
                 <Bookmark 
-                  className={cn("size-5", isBookmarked && "animate-in zoom-in-125 duration-300")} 
+                  className={cn("size-[18px]", isBookmarked && "animate-in zoom-in-125 duration-300")} 
                   fill={isBookmarked ? 'currentColor' : 'none'} 
                 />
               </Button>
             </TooltipTrigger>
             <TooltipContent side="bottom">Bookmark</TooltipContent>
           </Tooltip>
-          {variant === "feed" && (
-            <span className="text-xs ml-0.5">{bookmarks > 0 ? formatCount(bookmarks) : ""}</span>
-          )}
-        </div>
 
-        {/* Share */}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={(e) => {
-                e.stopPropagation();
-                onShareClick?.(e);
-              }}
-              className="hover:text-primary hover:bg-primary/10 rounded-full"
-              aria-label="Share"
-            >
-              <Share className="size-5" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="bottom">Share</TooltipContent>
-        </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onShareClick?.(e);
+                }}
+                className="size-9 p-0 hover:text-blue-500 hover:bg-blue-500/10 rounded-full transition-colors"
+                aria-label="Share"
+              >
+                <Share className="size-[18px]" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">Share</TooltipContent>
+          </Tooltip>
+        </div>
       </div>
 
       <UserListModal

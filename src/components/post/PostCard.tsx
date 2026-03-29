@@ -309,28 +309,28 @@ export const PostCard = memo(({
 
   return (
     <Card className={cn(
-      "border-none shadow-none bg-transparent group/card transition-colors relative flex",
-      variant === "feed" ? "hover:bg-muted/30" : "",
-      isFocal ? "bg-muted/10 ring-1 ring-primary/10" : "",
-      indent > 0 ? "border-l-2 border-primary/10 ml-4 pl-2" : ""
+      "border-none shadow-none bg-transparent group/card transition-colors relative flex border-b border-border/50",
+      variant === "feed" ? "hover:bg-muted/10 cursor-pointer" : "",
+      isFocal ? "bg-muted/5 ring-1 ring-primary/5" : "",
+      indent > 0 ? "ml-4 pl-2" : ""
     )}>
       {/* Thread Lines */}
       {(threadLine === "top" || threadLine === "both") && (
-        <div className="absolute top-0 left-[2.25rem] w-0.5 h-4 bg-border/50" />
+        <div className="absolute top-0 left-8 w-0.5 h-3 bg-border/50" />
       )}
       {(threadLine === "bottom" || threadLine === "both") && (
-        <div className="absolute top-12 bottom-0 left-[2.25rem] w-0.5 bg-border/50" />
+        <div className="absolute top-14 bottom-0 left-8 w-0.5 bg-border/50" />
       )}
 
       <div className="flex-1 min-w-0 flex flex-col py-3 px-4">
         {/* Repost Header */}
         {isRepost && (
-          <div className="flex items-center gap-2 mb-2 ml-10 text-muted-foreground/70 group-hover:text-muted-foreground transition-colors">
+          <div className="flex items-center gap-2 mb-1 ml-8 text-muted-foreground/70 group-hover:text-muted-foreground transition-colors">
             <Repeat2 size={14} className="animate-in zoom-in duration-300" />
             <Link 
               href={`/p/${event.pubkey}`}
               onClick={(e) => e.stopPropagation()}
-              className="text-[11px] font-black uppercase tracking-widest hover:text-primary transition-colors truncate"
+              className="text-xs font-bold hover:underline truncate"
             >
               {repostAuthorProfile?.display_name || repostAuthorProfile?.name || "Someone"} reposted
             </Link>
@@ -345,8 +345,8 @@ export const PostCard = memo(({
               onClick={(e) => e.stopPropagation()}
               className="relative z-10"
             >
-              <Skeleton className={cn("size-12 rounded-full absolute inset-0", !profileLoading && "hidden")} />
-              <div className={cn("size-12 rounded-full overflow-hidden border-2 border-transparent hover:border-primary/20 transition-all", profileLoading && "opacity-0")}>
+              <Skeleton className={cn("size-10 rounded-full absolute inset-0", !profileLoading && "hidden")} />
+              <div className={cn("size-10 rounded-full overflow-hidden transition-all hover:opacity-90", profileLoading && "opacity-0")}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img 
                   src={profile?.picture || "/file.svg"} 
@@ -363,6 +363,7 @@ export const PostCard = memo(({
             <PostHeader 
               display_name={display_name}
               userNpub={profile ? toNpub(displayEvent.pubkey) : shortenPubkey(displayEvent.pubkey)}
+              name={profile?.name}
               pubkey={displayEvent.pubkey}
               createdAt={displayEvent.created_at}
               nip05={profile?.nip05}
@@ -376,18 +377,19 @@ export const PostCard = memo(({
               onRawEventClick={() => setShowRawEventModal(true)}
               onSummarizeClick={handleSummarize}
               isSummarizing={isSummarizing}
+              variant={variant}
             />
 
             {/* Replying to... */}
             {replyingToPubkey && (
-              <div className="mt-0.5 mb-1 text-[11px] text-muted-foreground font-medium">
+              <div className="mt-0 mb-1 text-[13px] text-muted-foreground">
                 Replying to <Link href={`/p/${replyingToPubkey}`} className="text-primary hover:underline" onClick={e => e.stopPropagation()}>@{replyingToPubkey.slice(0, 8)}</Link>
               </div>
             )}
 
-            <Link href={navigationHref} className="block">
+            <Link href={navigationHref} className="block mt-0.5">
               {isArticle ? (
-                <Card className="p-4 bg-muted/20 border-border/50 rounded-2xl hover:bg-muted/30 transition-colors">
+                <Card className="p-4 bg-muted/20 border-border/50 rounded-2xl hover:bg-muted/30 transition-colors my-2">
                   <div className="flex items-center gap-3">
                     <FileText className="size-8 text-primary" />
                     <div className="min-w-0">
@@ -429,6 +431,7 @@ export const PostCard = memo(({
               onShareClick={handleShare}
               onEmojiReaction={handleEmojiReaction}
               combinedReposts={0}
+              variant={variant}
             />
           </div>
         </div>
