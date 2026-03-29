@@ -14,6 +14,7 @@ To provide a private, censorship-resistant platform for sharing thoughts and med
 
 ## Core Features
 - **NIP-17 Private Messaging**: Secure, end-to-end encrypted direct messages using Gift Wraps (Kind 1059).
+- **Resilient Error Logging**: Internal alerts sent via NIP-17 for production monitoring.
 - **Microblogging**: Post notes (Kind 1), replies, and reactions (Kind 7).
 - **Rich Media Support**: Seamlessly share and view images, videos, and links.
 - **User Status**: Real-time status updates (Kind 30315).
