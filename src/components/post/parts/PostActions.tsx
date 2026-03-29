@@ -231,9 +231,38 @@ export const PostActions = memo(({
 
   return (
     <>
+      {variant === "detail" && (
+        <div className="flex flex-wrap gap-x-5 gap-y-2 py-4 border-b border-border/50 text-[15px]">
+          {optimisticReposts > 0 && (
+            <button onClick={openRepostsModal} className="hover:underline flex gap-1 items-baseline">
+              <span className="font-bold text-foreground">{formatCount(optimisticReposts)}</span>
+              <span className="text-muted-foreground">Reposts</span>
+            </button>
+          )}
+          {optimisticQuotes > 0 && (
+            <div className="flex gap-1 items-baseline">
+              <span className="font-bold text-foreground">{formatCount(optimisticQuotes)}</span>
+              <span className="text-muted-foreground">Quotes</span>
+            </div>
+          )}
+          {optimisticLikes > 0 && (
+            <button onClick={openLikesModal} className="hover:underline flex gap-1 items-baseline">
+              <span className="font-bold text-foreground">{formatCount(optimisticLikes)}</span>
+              <span className="text-muted-foreground">Likes</span>
+            </button>
+          )}
+          {bookmarks > 0 && (
+            <div className="flex gap-1 items-baseline">
+              <span className="font-bold text-foreground">{formatCount(bookmarks)}</span>
+              <span className="text-muted-foreground">Bookmarks</span>
+            </div>
+          )}
+        </div>
+      )}
+
       <div className={cn(
-        "flex items-center justify-between max-w-md text-muted-foreground -ml-2 mt-1",
-        variant === "detail" ? "py-3 border-y border-border/50 mt-4 px-2" : ""
+        "flex items-center justify-between text-muted-foreground",
+        variant === "detail" ? "py-1 mt-1 border-b border-border/50 px-2" : "-ml-2 mt-1 max-w-md"
       )}>
         {/* Reply */}
         <div className="flex items-center group">
@@ -249,7 +278,7 @@ export const PostActions = memo(({
                 className="size-9 p-0 hover:text-blue-500 hover:bg-blue-500/10 rounded-full transition-colors"
                 aria-label="Reply"
               >
-                <MessageCircle className="size-[18px]" />
+                <MessageCircle className="size-[20px]" />
               </Button>
             </TooltipTrigger>
             <TooltipContent side="bottom">Reply</TooltipContent>
@@ -274,7 +303,7 @@ export const PostActions = memo(({
                     )}
                     aria-label="Repost and Quote options"
                   >
-                    <Repeat2 className={cn("size-[18px]", optimisticReposted && "animate-in spin-in-180 duration-500")} />
+                    <Repeat2 className={cn("size-[20px]", optimisticReposted && "animate-in spin-in-180 duration-500")} />
                   </Button>
                 </DropdownMenuTrigger>
               </TooltipTrigger>
@@ -321,7 +350,7 @@ export const PostActions = memo(({
                     aria-label={optimisticReacted === '+' ? "Unlike" : "Like or React"}
                   >
                     <Heart 
-                      className={cn("size-[18px]", optimisticReacted && optimisticReacted !== "" && "animate-in zoom-in-125 duration-300")} 
+                      className={cn("size-[20px]", optimisticReacted && optimisticReacted !== "" && "animate-in zoom-in-125 duration-300")} 
                       fill={optimisticReacted && optimisticReacted !== "" ? 'currentColor' : 'none'} 
                     />
                   </Button>
@@ -391,7 +420,7 @@ export const PostActions = memo(({
                 aria-label="Zap"
               >
                 {!isZapping && (
-                  <Zap className={cn("size-[18px]", optimisticZaps > 0 && "text-yellow-500 fill-yellow-500")} />
+                  <Zap className={cn("size-[20px]", optimisticZaps > 0 && "text-yellow-500 fill-yellow-500")} />
                 )}
               </Button>
             </TooltipTrigger>
@@ -427,7 +456,7 @@ export const PostActions = memo(({
                 aria-label={isBookmarked ? "Remove Bookmark" : "Bookmark"}
               >
                 <Bookmark 
-                  className={cn("size-[18px]", isBookmarked && "animate-in zoom-in-125 duration-300")} 
+                  className={cn("size-[20px]", isBookmarked && "animate-in zoom-in-125 duration-300")} 
                   fill={isBookmarked ? 'currentColor' : 'none'} 
                 />
               </Button>
@@ -447,7 +476,7 @@ export const PostActions = memo(({
                 className="size-9 p-0 hover:text-blue-500 hover:bg-blue-500/10 rounded-full transition-colors"
                 aria-label="Share"
               >
-                <Share className="size-[18px]" />
+                <Share className="size-[20px]" />
               </Button>
             </TooltipTrigger>
             <TooltipContent side="bottom">Share</TooltipContent>

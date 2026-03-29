@@ -309,23 +309,28 @@ export const PostCard = memo(({
 
   return (
     <Card className={cn(
-      "border-none shadow-none bg-transparent group/card transition-colors relative flex border-b border-border/50",
-      variant === "feed" ? "hover:bg-muted/10 cursor-pointer" : "",
+      "border-none shadow-none bg-transparent group/card transition-colors relative flex flex-col",
+      variant === "feed" ? "border-b border-border/50 hover:bg-muted/10 cursor-pointer" : "pb-0",
       isFocal ? "bg-muted/5 ring-1 ring-primary/5" : "",
-      indent > 0 ? "ml-4 pl-2" : ""
+      indent > 0 ? "border-l-2 border-primary/10 ml-4 pl-2" : ""
     )}>
       {/* Thread Lines */}
-      {(threadLine === "top" || threadLine === "both") && (
-        <div className="absolute top-0 left-8 w-0.5 h-3 bg-border/50" />
-      )}
-      {(threadLine === "bottom" || threadLine === "both") && (
-        <div className="absolute top-14 bottom-0 left-8 w-0.5 bg-border/50" />
-      )}
+      <>
+        {(threadLine === "top" || threadLine === "both") && (
+          <div className="absolute top-0 left-[2.25rem] w-0.5 h-[0.75rem] bg-border/50" />
+        )}
+        {(threadLine === "bottom" || threadLine === "both") && variant === "feed" && (
+          <div className="absolute top-[3.25rem] bottom-0 left-[2.25rem] w-0.5 bg-border/50" />
+        )}
+      </>
 
       <div className="flex-1 min-w-0 flex flex-col py-3 px-4">
         {/* Repost Header */}
         {isRepost && (
-          <div className="flex items-center gap-2 mb-1 ml-8 text-muted-foreground/70 group-hover:text-muted-foreground transition-colors">
+          <div className={cn(
+            "flex items-center gap-2 mb-1 text-muted-foreground/70 group-hover:text-muted-foreground transition-colors",
+            variant === "feed" ? "ml-8" : "ml-0 mb-3"
+          )}>
             <Repeat2 size={14} className="animate-in zoom-in duration-300" />
             <Link 
               href={`/p/${event.pubkey}`}
@@ -337,31 +342,34 @@ export const PostCard = memo(({
           </div>
         )}
 
-        <div className="flex gap-3">
-          {/* Avatar Container */}
-          <div className="flex flex-col items-center shrink-0">
-            <Link 
-              href={profileUrl}
-              onClick={(e) => e.stopPropagation()}
-              className="relative z-10"
-            >
-              <Skeleton className={cn("size-10 rounded-full absolute inset-0", !profileLoading && "hidden")} />
-              <div className={cn("size-10 rounded-full overflow-hidden transition-all hover:opacity-90", profileLoading && "opacity-0")}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img 
-                  src={profile?.picture || "/file.svg"} 
-                  alt={display_name}
-                  className="size-full object-cover"
-                  loading="lazy"
-                />
-              </div>
-            </Link>
-          </div>
+        <div className={cn("flex", variant === "feed" ? "gap-3" : "flex-col")}>
+          {/* Avatar Container (Feed only) */}
+          {variant === "feed" && (
+            <div className="flex flex-col items-center shrink-0">
+              <Link 
+                href={profileUrl}
+                onClick={(e) => e.stopPropagation()}
+                className="relative z-10"
+              >
+                <Skeleton className={cn("size-10 rounded-full absolute inset-0", !profileLoading && "hidden")} />
+                <div className={cn("size-10 rounded-full overflow-hidden transition-all hover:opacity-90", profileLoading && "opacity-0")}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img 
+                    src={profile?.picture || "/file.svg"} 
+                    alt={display_name}
+                    className="size-full object-cover"
+                    loading="lazy"
+                  />
+                </div>
+              </Link>
+            </div>
+          )}
 
           {/* Post Content */}
           <div className="flex-1 min-w-0">
             <PostHeader 
               display_name={display_name}
+              avatar={profile?.picture}
               userNpub={profile ? toNpub(displayEvent.pubkey) : shortenPubkey(displayEvent.pubkey)}
               name={profile?.name}
               pubkey={displayEvent.pubkey}
@@ -378,16 +386,20 @@ export const PostCard = memo(({
               onSummarizeClick={handleSummarize}
               isSummarizing={isSummarizing}
               variant={variant}
+              showAvatar={variant === "detail"}
             />
 
             {/* Replying to... */}
             {replyingToPubkey && (
-              <div className="mt-0 mb-1 text-[13px] text-muted-foreground">
+              <div className={cn(
+                "mb-1 text-muted-foreground",
+                variant === "feed" ? "mt-0 text-[13px]" : "mt-2 text-[15px]"
+              )}>
                 Replying to <Link href={`/p/${replyingToPubkey}`} className="text-primary hover:underline" onClick={e => e.stopPropagation()}>@{replyingToPubkey.slice(0, 8)}</Link>
               </div>
             )}
 
-            <Link href={navigationHref} className="block mt-0.5">
+            <Link href={navigationHref} className={cn("block", variant === "feed" ? "mt-0.5" : "mt-2")}>
               {isArticle ? (
                 <Card className="p-4 bg-muted/20 border-border/50 rounded-2xl hover:bg-muted/30 transition-colors my-2">
                   <div className="flex items-center gap-3">
@@ -409,6 +421,20 @@ export const PostCard = memo(({
                 />
               )}
             </Link>
+
+            {variant === "detail" && (
+              <div className="flex items-center gap-1.5 py-4 text-[15px] text-muted-foreground border-b border-border/50">
+                <span>{new Date((displayEvent.created_at || 0) * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                <span>·</span>
+                <span>{new Date((displayEvent.created_at || 0) * 1000).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                {displayEvent.tags.find(t => t[0] === 'client') && (
+                  <>
+                    <span>·</span>
+                    <span className="font-bold text-foreground">Tell it!</span>
+                  </>
+                )}
+              </div>
+            )}
 
             {isPoll && <PollRenderer event={displayEvent} />}
 
