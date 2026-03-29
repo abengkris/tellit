@@ -145,7 +145,7 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const walletAny = ndk.wallet as any;
-      const balance = await (typeof walletAny.balance === 'function' ? walletAny.balance() : ndk.wallet.balance);
+      const balance = await (typeof walletAny.balance === 'function' ? walletAny.balance() : walletAny.balance);
       if (balance) {
 
         setBalance(balance.amount);
@@ -187,7 +187,7 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
         // Fetch balance and info
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const walletAny = wallet as any;
-        const balance = await (typeof walletAny.balance === 'function' ? walletAny.balance() : wallet.balance);
+        const balance = await (typeof walletAny.balance === 'function' ? walletAny.balance() : walletAny.balance);
         if (balance) {
           setBalance(balance.amount);
         }
