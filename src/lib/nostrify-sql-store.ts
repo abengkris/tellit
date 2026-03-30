@@ -1,6 +1,19 @@
 import { type NPostgresSchema, NPostgres } from '@nostrify/db';
 import { Kysely } from 'kysely';
 import { ENV } from './env';
+import { logger } from './logger';
+import { clientLogger } from './logger/client';
+
+/**
+ * Universal error reporter that picks the right logger based on environment.
+ */
+async function reportError(message: string, error?: Error) {
+  if (typeof window === 'undefined') {
+    await logger.error(message, error);
+  } else {
+    await clientLogger.error(message, error);
+  }
+}
 
 /**
  * Extended schema for TellIt application, adding follows and WoT tables.
@@ -27,32 +40,37 @@ let kyselyInstance: Kysely<TellItSqlSchema> | null = null;
 export async function createKyselyInstance(): Promise<Kysely<TellItSqlSchema>> {
   const isServer = typeof window === 'undefined';
 
-  if (isServer) {
-    const [{ PostgresJSDialect }, { default: postgres }] = await Promise.all([
-      import('kysely-postgres-js'),
-      import('postgres'),
-    ]);
+  try {
+    if (isServer) {
+      const [{ PostgresJSDialect }, { default: postgres }] = await Promise.all([
+        import('kysely-postgres-js'),
+        import('postgres'),
+      ]);
 
-    const url = ENV.DATABASE.URL;
-    if (!url) {
-      throw new Error('DATABASE_URL is required for server-side SQL store.');
+      const url = ENV.DATABASE.URL;
+      if (!url) {
+        throw new Error('DATABASE_URL is required for server-side SQL store.');
+      }
+
+      const sql = postgres(url);
+      return new Kysely<TellItSqlSchema>({
+        dialect: new PostgresJSDialect({
+          postgres: sql,
+        }),
+      });
+    } else {
+      const [{ KyselyPGlite }] = await Promise.all([
+        import('kysely-pglite'),
+      ]);
+
+      const kpg = new KyselyPGlite('idb://tellit-nostr-v1');
+      return new Kysely<TellItSqlSchema>({
+        dialect: kpg.dialect,
+      });
     }
-
-    const sql = postgres(url);
-    return new Kysely<TellItSqlSchema>({
-      dialect: new PostgresJSDialect({
-        postgres: sql,
-      }),
-    });
-  } else {
-    const [{ KyselyPGlite }] = await Promise.all([
-      import('kysely-pglite'),
-    ]);
-
-    const kpg = new KyselyPGlite('idb://tellit-nostr-v1');
-    return new Kysely<TellItSqlSchema>({
-      dialect: kpg.dialect,
-    });
+  } catch (err) {
+    await reportError('[SQLStore] Failed to create Kysely instance', err as Error);
+    throw err;
   }
 }
 
@@ -80,12 +98,17 @@ export async function getKysely(): Promise<Kysely<TellItSqlSchema>> {
  */
 export async function getSqlStore(): Promise<NPostgres> {
   if (!sqlStoreInstance) {
-    sqlStoreInstance = await createSqlStore();
-    // Automatically migrate the database schema on initialization
-    await sqlStoreInstance.migrate();
-    
-    // Also ensure custom tables exist
-    await ensureCustomTables(await getKysely());
+    try {
+      sqlStoreInstance = await createSqlStore();
+      // Automatically migrate the database schema on initialization
+      await sqlStoreInstance.migrate();
+      
+      // Also ensure custom tables exist
+      await ensureCustomTables(await getKysely());
+    } catch (err) {
+      await reportError('[SQLStore] Failed to initialize SQL store', err as Error);
+      throw err;
+    }
   }
   return sqlStoreInstance;
 }
@@ -94,27 +117,32 @@ export async function getSqlStore(): Promise<NPostgres> {
  * Ensures TellIt custom tables (follows, wot_scores) exist in the database.
  */
 async function ensureCustomTables(db: Kysely<TellItSqlSchema>): Promise<void> {
-  await db.schema
-    .createTable('follows')
-    .ifNotExists()
-    .addColumn('pubkey', 'text', (col) => col.primaryKey())
-    .addColumn('follows', 'text', (col) => col.notNull()) // Stored as JSON string
-    .addColumn('timestamp', 'integer')
-    .execute();
+  try {
+    await db.schema
+      .createTable('follows')
+      .ifNotExists()
+      .addColumn('pubkey', 'text', (col) => col.primaryKey())
+      .addColumn('follows', 'text', (col) => col.notNull()) // Stored as JSON string
+      .addColumn('timestamp', 'integer')
+      .execute();
 
-  await db.schema
-    .createTable('wot_scores')
-    .ifNotExists()
-    .addColumn('pubkey', 'text', (col) => col.primaryKey())
-    .addColumn('score', 'integer', (col) => col.notNull())
-    .addColumn('last_updated', 'integer', (col) => col.notNull())
-    .execute();
-  
-  // Add index for WoT scores
-  await db.schema
-    .createIndex('wot_scores_score_idx')
-    .on('wot_scores')
-    .column('score')
-    .ifNotExists()
-    .execute();
+    await db.schema
+      .createTable('wot_scores')
+      .ifNotExists()
+      .addColumn('pubkey', 'text', (col) => col.primaryKey())
+      .addColumn('score', 'integer', (col) => col.notNull())
+      .addColumn('last_updated', 'integer', (col) => col.notNull())
+      .execute();
+    
+    // Add index for WoT scores
+    await db.schema
+      .createIndex('wot_scores_score_idx')
+      .on('wot_scores')
+      .column('score')
+      .ifNotExists()
+      .execute();
+  } catch (err) {
+    await reportError('[SQLStore] Failed to ensure custom tables', err as Error);
+    throw err;
+  }
 }
