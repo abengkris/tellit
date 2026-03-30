@@ -1,6 +1,7 @@
 import { type NostrEvent, type NostrSigner, type NostrFilter } from "@nostrify/types";
 import { createRelayPool } from "../nostrify-relay";
 import { DEFAULT_RELAYS } from "../ndk";
+import { clientLogger } from "../logger/client";
 
 /**
  * Builds a NIP-17 Rumor (Kind 14).
@@ -63,8 +64,8 @@ export async function sendNostrifyMessage(
     const pool = createRelayPool(relays);
     
     // Fire and forget
-    pool.event(giftWrap).catch(err => {
-      console.error("[NostrifyActions] Failed to publish gift wrap to relays:", err);
+    pool.event(giftWrap).catch(async (err) => {
+      await clientLogger.error("[NostrifyActions] Failed to publish gift wrap to relays", err as Error);
     });
 
     // Also wrap for self (self-copy)
@@ -76,7 +77,7 @@ export async function sendNostrifyMessage(
 
     return true;
   } catch (err) {
-    console.error("[NostrifyActions] Failed to send message:", err);
+    await clientLogger.error("[NostrifyActions] Failed to send message", err as Error);
     return false;
   }
 }
@@ -110,7 +111,7 @@ export async function publishStatus(
     await pool.event(signed);
     return true;
   } catch (error) {
-    console.error("[NostrifyActions] Failed to publish status:", error);
+    await clientLogger.error("[NostrifyActions] Failed to publish status", error as Error);
     return false;
   }
 }
@@ -160,7 +161,7 @@ export async function publishNostrifyArticle(
     await pool.event(signed);
     return true;
   } catch (error) {
-    console.error("[NostrifyActions] Failed to publish article:", error);
+    await clientLogger.error("[NostrifyActions] Failed to publish article", error as Error);
     return false;
   }
 }
@@ -195,7 +196,7 @@ export function listenForNostrifyZapReceipt(
       }
     } catch (e) {
       if (e instanceof Error && e.name === 'AbortError') return;
-      console.error("[NostrifyActions] Zap receipt stream error:", e);
+      await clientLogger.error("[NostrifyActions] Zap receipt stream error", e as Error);
     }
   })();
 
