@@ -12,7 +12,7 @@ This plan outlines the steps to integrate the NIP-17 Error Logger into the "Tell
     - [ ] Create `src/lib/logger/client.ts`
     - [ ] Implement `clientLogger` with `error` and `fatal` methods
     - [ ] Ensure it uses `fetch` to call `/api/log`
-- [ ] Task: TDD - Verify Proxy and Client Utility
+- [x] Task: TDD - Verify Proxy and Client Utility [10824e1]
     - [ ] Write tests in `src/lib/logger/__tests__/client.test.ts`
     - [ ] Verify that client logs reach the server without exposing `LOGGER_NSEC`
 - [ ] Task: Conductor - User Manual Verification 'Phase 1: Secure Client-Side Logging Foundation' (Protocol in workflow.md)
