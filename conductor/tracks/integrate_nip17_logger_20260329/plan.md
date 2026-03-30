@@ -29,7 +29,7 @@ This plan outlines the steps to integrate the NIP-17 Error Logger into the "Tell
 
 ## Phase 3: Server Actions and Middleware Integration
 
-- [ ] Task: Audit and Update Server Actions
+- [x] Task: Audit and Update Server Actions [b710a10]
     - [ ] Integrate logger into NIP-05 registration actions
     - [ ] Integrate logger into publishing and profile update actions
 - [ ] Task: Middleware and API Route Hardening
