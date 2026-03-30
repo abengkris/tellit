@@ -4,7 +4,7 @@ This plan outlines the steps to integrate the NIP-17 Error Logger into the "Tell
 
 ## Phase 1: Secure Client-Side Logging Foundation
 
-- [ ] Task: Implement Logger Proxy API
+- [x] Task: Implement Logger Proxy API [751bc60]
     - [ ] Create `src/app/api/log/route.ts`
     - [ ] Implement POST handler that uses `NostrifyLogger`
     - [ ] Add basic payload validation and rate limit headers
