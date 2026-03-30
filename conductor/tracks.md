@@ -36,8 +36,3 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 - [x] **Track: Finalize Nostrify Migration**
 *Link: [./archive/finalize_nostrify_migration_20260328/](./archive/finalize_nostrify_migration_20260328/)*
-
----
-
-- [x] **Track: Nostrify NIP-17 Error Logger**
-*Link: [./tracks/nip17_logger_20260329/](./tracks/nip17_logger_20260329/)*
