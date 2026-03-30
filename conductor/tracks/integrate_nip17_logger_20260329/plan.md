@@ -19,7 +19,7 @@ This plan outlines the steps to integrate the NIP-17 Error Logger into the "Tell
 
 ## Phase 2: Infrastructure and Sync Integration
 
-- [ ] Task: Integrate into Database and Storage
+- [x] Task: Integrate into Database and Storage [3f1d382]
     - [ ] Update `src/lib/db.ts` to log connection failures
     - [ ] Update `src/lib/nostrify-sql-store.ts` to log SQL errors
 - [ ] Task: Integrate into Sync Engine
