@@ -18,6 +18,7 @@ import { createSigner } from "@/lib/nostrify-signer";
 import { syncDMRelays } from "@/lib/actions/messages";
 import { migrateDexieToSql } from "@/lib/sync/db-migration";
 import { formatNDKError, NDKErrorType } from "@/lib/error-handler";
+import { clientLogger } from "@/lib/logger/client";
 
 type ExtendedCacheAdapter = NDKCacheAdapter & {
   discardUnpublishedEvent?: (eventId: string) => Promise<void>;
@@ -214,7 +215,7 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
       }
 
     } catch (err) {
-      console.error(`[NDKProvider] Failed to initialize ${type} wallet:`, err);
+      clientLogger.error(`[NDKProvider] Failed to initialize ${type} wallet`, err as Error);
     }
   }, [setBalance]);
 
@@ -321,9 +322,9 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
           instance.cacheAdapter = adapter;
           
           // 1.1 Migrate Dexie data to SQL
-          migrateDexieToSql().catch(err => console.error("[NDKProvider] Migration failed:", err));
+          migrateDexieToSql().catch(err => clientLogger.error("[NDKProvider] Migration failed", err));
         } catch (err) {
-          console.error("[NDKProvider] Failed to initialize SQL cache adapter:", err);
+          clientLogger.error("[NDKProvider] Failed to initialize SQL cache adapter", err as Error);
         }
 
         setNdk(instance);
@@ -364,12 +365,12 @@ export const NDKProvider = ({ children }: { children: ReactNode }) => {
           syncDMRelays(msgInstance, DEFAULT_RELAYS);
 
         } catch (e) {
-          console.error("[NDKProvider] Failed to init messenger:", e);
+          clientLogger.error("[NDKProvider] Failed to init messenger", e as Error);
         }
 
         setIsReady(true);
       } catch (err) {
-        console.error("[NDKProvider] Initialization failed:", err);
+        clientLogger.error("[NDKProvider] Initialization failed", err as Error);
         const formatted = formatNDKError(err as Error, NDKErrorType.PUBLISH_FAILED);
         addToast(formatted.message, "error");
       } finally {
