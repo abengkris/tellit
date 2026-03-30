@@ -2,7 +2,7 @@
 
 This plan outlines the steps to integrate the NIP-17 Error Logger into the "Tell it!" codebase, including a secure proxy for client-side errors.
 
-## Phase 1: Secure Client-Side Logging Foundation
+## Phase 1: Secure Client-Side Logging Foundation [checkpoint: acd79fa]
 
 - [x] Task: Implement Logger Proxy API [751bc60]
     - [ ] Create `src/app/api/log/route.ts`
