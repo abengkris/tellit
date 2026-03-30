@@ -2,6 +2,7 @@ import NDK, { NDKEvent, NDKTag, NDKArticle, NDKDVMRequest, NDKKind, nip19 } from
 import { ProfileMetadata } from "@/hooks/useProfile";
 import { createPoll, CreatePollOptions } from "./poll";
 import { addClientTag } from "@/lib/utils/nostr";
+import { clientLogger } from "../logger/client";
 
 export interface ZapSplit {
   pubkey: string;
@@ -222,7 +223,7 @@ export const publishPost = async (
     event.publish();
     return event;
   } catch (err) {
-    console.error("[Post] Publish failed:", err);
+    await clientLogger.error("[Post] Publish failed", err as Error);
     throw err;
   }
 };
@@ -347,7 +348,7 @@ export const deletePost = async (ndk: NDK, eventId: string): Promise<boolean> =>
     event.publish();
     return true;
   } catch (err) {
-    console.error("Failed to delete post:", err);
+    await clientLogger.error("Failed to delete post", err as Error);
     return false;
   }
 };

@@ -1,6 +1,7 @@
 import NDK, { NDKEvent } from "@nostr-dev-kit/ndk";
 import { addClientTag } from "@/lib/utils/nostr";
 import { RelayMetadata } from "@/hooks/useRelayList";
+import { clientLogger } from "../logger/client";
 
 /**
  * Updates the user's relay list (Kind 10002).
@@ -33,7 +34,7 @@ export async function updateRelayList(ndk: NDK, relays: RelayMetadata[]): Promis
     
     return true;
   } catch (error) {
-    console.error("Failed to update relay list:", error);
+    await clientLogger.error("Failed to update relay list", error as Error);
     return false;
   }
 }

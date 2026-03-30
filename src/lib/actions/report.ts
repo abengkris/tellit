@@ -1,6 +1,7 @@
 import NDK, { NDKEvent, NDKTag } from "@nostr-dev-kit/ndk";
 import { addClientTag } from "@/lib/utils/nostr";
 import { publishLabel } from "./labels";
+import { clientLogger } from "../logger/client";
 
 export type ReportType = "nudity" | "malware" | "profanity" | "illegal" | "spam" | "impersonation" | "other";
 
@@ -65,7 +66,7 @@ export const reportContent = async (
 
     return true;
   } catch (err) {
-    console.error("Failed to send report/label:", err);
+    await clientLogger.error("Failed to send report/label", err as Error);
     return false;
   }
 };

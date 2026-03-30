@@ -1,4 +1,5 @@
 import NDK, { NDKEvent, NDKUser, NDKZapper, NDKFilter } from "@nostr-dev-kit/ndk";
+import { clientLogger } from "../logger/client";
 
 /**
  * Handle the zap process for a specific event or user.
@@ -114,7 +115,7 @@ export const createZapInvoice = async (
 
     return result;
   } catch (error) {
-    console.error("Zap error:", error);
+    await clientLogger.error("Zap error", error as Error);
     return { invoice: null, alreadyPaid: false, error: "Unexpected error" };
   }
 };

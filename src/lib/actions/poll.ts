@@ -1,5 +1,6 @@
-import NDK, { NDKEvent, NDKKind, NDKTag } from "@nostr-dev-kit/ndk";
+import NDK, { NDKEvent, NDKKind } from "@nostr-dev-kit/ndk";
 import { addClientTag } from "@/lib/utils/nostr";
+import { clientLogger } from "../logger/client";
 
 export interface PollOption {
   id: string;
@@ -90,8 +91,8 @@ export const createPoll = async (
     
     return event;
   } catch (err) {
-    console.error("[Poll] Error in createPoll:", err);
-    throw err;
+    await clientLogger.error("[Poll] Error in createPoll", err as Error);
+    return false;
   }
 };
 
@@ -128,7 +129,7 @@ export const respondToPoll = async (
     event.publish();
     return event;
   } catch (err) {
-    console.error("[Poll] Error in respondToPoll:", err);
-    throw err;
+    await clientLogger.error("[Poll] Error in respondToPoll", err as Error);
+    return false;
   }
 };

@@ -1,5 +1,6 @@
 import NDK, { NDKEvent, NDKKind, NDKRelaySet } from "@nostr-dev-kit/ndk";
 import { addClientTag } from "@/lib/utils/nostr";
+import { clientLogger } from "../logger/client";
 
 /**
  * Request to Vanish (NIP-62).
@@ -39,7 +40,7 @@ export const requestVanish = async (
           await event.publish(new NDKRelaySet(new Set([relay]), ndk));
         }
       } catch (e) {
-        console.error(`Failed to publish vanish request to ${url}:`, e);
+        await clientLogger.error(`Failed to publish vanish request to ${url}`, e as Error);
       }
     }
   }

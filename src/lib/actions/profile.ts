@@ -1,6 +1,7 @@
 import NDK, { NDKEvent } from "@nostr-dev-kit/ndk";
 import { ProfileMetadata } from "@/hooks/useProfile";
 import { addClientTag } from "@/lib/utils/nostr";
+import { clientLogger } from "../logger/client";
 
 /**
  * Update user profile metadata (kind 0).
@@ -25,7 +26,7 @@ export async function updateProfile(
     
     return true;
   } catch (error) {
-    console.error("Failed to update profile:", error);
+    await clientLogger.error("Failed to update profile", error as Error);
     return false;
   }
 }
@@ -53,7 +54,7 @@ export async function updateProfileNIP05(
 
     return updateProfile(ndk, metadata);
   } catch (error) {
-    console.error("Failed to update NIP-05/LUD16 profile:", error);
+    await clientLogger.error("Failed to update NIP-05/LUD16 profile", error as Error);
     return false;
   }
 }
@@ -89,7 +90,7 @@ export async function updateStatus(
     event.publishReplaceable();
     return true;
   } catch (error) {
-    console.error("Failed to update status:", error);
+    await clientLogger.error("Failed to update status", error as Error);
     return false;
   }
 }

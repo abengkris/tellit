@@ -1,5 +1,6 @@
 import { NDKUser } from "@nostr-dev-kit/ndk";
 import { NDKMessenger } from "@nostr-dev-kit/messages";
+import { clientLogger } from "../logger/client";
 
 /**
  * Send a Private Direct Message (NIP-17) using NDKMessenger
@@ -26,7 +27,7 @@ export const sendMessage = async (
     console.log(`[Messages] Message sent result:`, result);
     return true;
   } catch (err) {
-    console.error("Failed to send NIP-17 message:", err);
+    await clientLogger.error("Failed to send NIP-17 message", err as Error);
     return false;
   }
 };
