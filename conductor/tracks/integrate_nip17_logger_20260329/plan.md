@@ -8,7 +8,7 @@ This plan outlines the steps to integrate the NIP-17 Error Logger into the "Tell
     - [ ] Create `src/app/api/log/route.ts`
     - [ ] Implement POST handler that uses `NostrifyLogger`
     - [ ] Add basic payload validation and rate limit headers
-- [ ] Task: Create Client-Side Logger Utility
+- [x] Task: Create Client-Side Logger Utility [2eed027]
     - [ ] Create `src/lib/logger/client.ts`
     - [ ] Implement `clientLogger` with `error` and `fatal` methods
     - [ ] Ensure it uses `fetch` to call `/api/log`
