@@ -17,7 +17,7 @@ This plan outlines the steps to integrate the NIP-17 Error Logger into the "Tell
     - [ ] Verify that client logs reach the server without exposing `LOGGER_NSEC`
 - [ ] Task: Conductor - User Manual Verification 'Phase 1: Secure Client-Side Logging Foundation' (Protocol in workflow.md)
 
-## Phase 2: Infrastructure and Sync Integration
+## Phase 2: Infrastructure and Sync Integration [checkpoint: eff0a16]
 
 - [x] Task: Integrate into Database and Storage [3f1d382]
     - [ ] Update `src/lib/db.ts` to log connection failures
